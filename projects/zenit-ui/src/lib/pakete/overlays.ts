@@ -1,2 +1,3 @@
-/* Paket overlays: wird in Welle 1 gefuellt. */
-export {};
+/* Paket overlays: Dialog und Menu. */
+export * from '../dialog';
+export * from '../menu';

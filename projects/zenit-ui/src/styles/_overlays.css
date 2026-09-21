@@ -1,1 +1,46 @@
-/* Paket overlays: wird in Welle 1 gefuellt. */
+/* Paket overlays: Dialog und Menu.
+   Die Abschnitte Dialog, Menu und CDK-Overlays stehen woertlich wie in
+   spec/components/bundle.css. `.z-scrim` bekommt sein display schon hier aus
+   dem Abschnitt Dialog und steht deshalb in keiner zweiten Host-Regel. */
+
+/* Dialog */
+.z-scrim { display: grid; place-items: center; padding: var(--space-5); background: var(--scrim); }
+.z-dialog { width: min(480px, 100%); border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface-raised); box-shadow: var(--shadow-overlay); }
+.z-dialog__header { padding: var(--space-5) var(--space-5) 0; }
+.z-dialog__title { margin: 0; font-family: var(--font-display); font-size: 20px; line-height: 28px; font-weight: 600; }
+.z-dialog__body { display: grid; gap: var(--space-4); padding: var(--space-3) var(--space-5) var(--space-5); color: var(--text-muted); }
+.z-dialog__body .z-input { background: var(--bg); }
+.z-dialog__footer { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: var(--space-2); padding: var(--space-4) var(--space-5); border-top: 1px solid var(--border); }
+
+/* Menu */
+.z-menu { display: grid; min-width: 200px; padding: var(--space-1); border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface-raised); box-shadow: var(--shadow-overlay); }
+.z-menu__item { display: flex; align-items: center; gap: var(--space-3); height: 36px; padding: 0 var(--space-3); border: 0; border-radius: var(--radius-sm); background: none; cursor: pointer; text-align: left; color: var(--text); }
+.z-menu__item:hover { background: var(--surface-hover); }
+.z-menu__item--danger, .z-menu__item--danger .z-icon { color: var(--danger); }
+.z-menu__key { margin-left: auto; font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); }
+.z-menu__sep { height: 1px; margin: var(--space-1) 0; background: var(--border); }
+
+/* CDK-Overlays */
+.z-backdrop { background: var(--scrim); }
+.z-dialog-panel { width: min(480px, calc(100vw - 2 * var(--space-4))); max-height: calc(100vh - 2 * var(--space-5)); }
+.z-dialog-panel .z-dialog { width: 100%; max-height: inherit; overflow: auto; }
+.z-dialog { display: block; }
+@media (max-width: 640px) {
+  .z-dialog-panel { width: 100vw; align-self: flex-end; }
+  .z-dialog-panel .z-dialog { border-radius: var(--radius-md) var(--radius-md) 0 0; }
+}
+.z-menu__item:disabled, .z-menu__item[aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; }
+.z-menu__item:focus-visible { background: var(--surface-hover); }
+
+/* Angular-Hosts */
+/* Ergänzung zur Referenz: CDK-Backdrop ohne Einblenden (CLAUDE.md, Bewegung). */
+.z-backdrop.cdk-overlay-backdrop { transition: none; }
+/* Die Trennlinie ist ein eigenes Element und deshalb sonst inline. */
+z-menu-separator { display: block; }
+/* Der Koerper des Dialogs faerbt seinen Text text-muted, das Label eines
+   Feldes bleibt text (in der Vorschau als style am Label). */
+.z-dialog__body .z-field__label { color: var(--text); }
+/* Klickziel mobil mindestens 40px, der Eintrag misst sonst 36px. */
+@media (max-width: 640px) {
+  .z-menu__item { height: var(--control-md); }
+}
