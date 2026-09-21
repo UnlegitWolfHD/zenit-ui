@@ -1,5 +1,13 @@
 import { DialogRef } from '@angular/cdk/dialog';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  DOCUMENT,
+  inject,
+  resource,
+  signal,
+} from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { form, FormField } from '@angular/forms/signals';
 import {
@@ -132,6 +140,141 @@ export class AnpassenDialog {
 }
 
 /**
+ * The directory the server search searches in. Made up for this preview: the
+ * names are numbered and the addresses use the reserved domain example.org.
+ */
+const NUTZER: ZComboOption[] = Array.from({ length: 24 }, (_, i) => ({
+  value: `u-${i + 1}`,
+  label: `Beispiel-Nutzer ${i + 1}`,
+  note: `nutzer${i + 1}@example.org`,
+}));
+
+/**
+ * Stands in for the request a real page would send. A pure filter over the
+ * example directory behind an artificial delay, so the waiting row of the
+ * combobox stays on screen long enough to be looked at.
+ *
+ * @param anfrage The text the field reported.
+ * @param dauer How long the answer takes, in milliseconds.
+ * @param abbruch Abort signal of the resource; a newer query cancels this one.
+ * @returns The matching entries.
+ */
+function sucheNutzer(
+  anfrage: string,
+  dauer: number,
+  abbruch: AbortSignal,
+): Promise<ZComboOption[]> {
+  const gesucht = anfrage.toLowerCase();
+  return new Promise((fertig, fehlgeschlagen) => {
+    const uhr = setTimeout(
+      () =>
+        fertig(NUTZER.filter((n) => `${n.label} ${n.note ?? ''}`.toLowerCase().includes(gesucht))),
+      dauer,
+    );
+    abbruch.addEventListener('abort', () => {
+      clearTimeout(uhr);
+      fehlgeschlagen(abbruch.reason);
+    });
+  });
+}
+
+/**
+ * A combobox whose list comes from the server: it filters nothing itself,
+ * reports every keystroke through `queryChange`, shows the waiting row while
+ * the `resource()` runs and names the chosen entry through `selectedLabel`,
+ * because the answer to the next query no longer holds it.
+ */
+@Component({
+  selector: 'demo-server-suche',
+  imports: [ZCombobox, ZField],
+  template: `
+    <z-field label="Nutzer" for="kf-suche" hint="Ab zwei Zeichen wird auf dem Server gesucht.">
+      <z-combobox
+        inputId="kf-suche"
+        placeholder="Name oder E-Mail"
+        [options]="ergebnis.value()"
+        [filterLocally]="false"
+        [loading]="ergebnis.isLoading()"
+        [minQueryLength]="2"
+        [value]="gewaehlt()?.value ?? ''"
+        [selectedLabel]="gewaehlt()?.label ?? ''"
+        (valueChange)="merke($event)"
+        (queryChange)="anfrage.set($event)"
+        emptyText="Kein Nutzer gefunden"
+      />
+    </z-field>
+    @if (gewaehlt(); as nutzer) {
+      <p class="demo-grund body-sm">Gewählt: {{ nutzer.label }}, {{ nutzer.note }}</p>
+    }
+  `,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class ServerSuche {
+  /** What the field last reported. The request is built from this and nothing else. */
+  protected readonly anfrage = signal('');
+
+  /**
+   * The chosen entry with its label. A page that stores only the id still has
+   * to name it: the next answer from the server will not carry that entry.
+   */
+  protected readonly gewaehlt = signal<ZComboOption | null>(null);
+
+  /**
+   * How long the example answer takes. `?suchdauer=` in the URL raises it,
+   * which is what the accessibility check needs: axe takes longer to walk the
+   * page than the answer takes to arrive, and it has to see the waiting row.
+   */
+  private readonly dauer =
+    Number(new URLSearchParams(inject(DOCUMENT).location.search).get('suchdauer')) || 600;
+
+  protected readonly ergebnis = resource({
+    // No debounce here either: `params` changes with the text, and a running
+    // request is aborted by the resource itself when the next one starts.
+    params: () => {
+      const text = this.anfrage().trim();
+      return text.length >= 2 ? text : undefined;
+    },
+    loader: ({ params, abortSignal }) => sucheNutzer(params, this.dauer, abortSignal),
+    defaultValue: [] as ZComboOption[],
+  });
+
+  protected merke(wert: string): void {
+    this.gewaehlt.set(this.ergebnis.value().find((n) => n.value === wert) ?? null);
+  }
+}
+
+/** A combobox that also takes a tag which is not in the list yet. */
+@Component({
+  selector: 'demo-freie-eingabe',
+  imports: [ZCombobox, ZField],
+  template: `
+    <z-field label="Wiki-Tag" for="kf-tag" hint="Ein vorhandener Tag oder ein neuer.">
+      <z-combobox
+        inputId="kf-tag"
+        placeholder="Tag suchen oder anlegen"
+        [options]="tags"
+        [(value)]="tag"
+        allowCustom
+        emptyText="Kein Tag gefunden"
+      />
+    </z-field>
+    @if (tag()) {
+      <p class="demo-grund body-sm">Tag: {{ tag() }}</p>
+    }
+  `,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class FreieEingabe {
+  protected readonly tags: ZComboOption[] = [
+    { value: 'hardware', label: 'hardware', note: '12 Artikel' },
+    { value: 'netzwerk', label: 'netzwerk', note: '8 Artikel' },
+    { value: 'minecraft', label: 'minecraft', note: '31 Artikel' },
+  ];
+
+  protected readonly tag = signal('');
+}
+
+/**
  * Gallery of the configurator building blocks: every block once per state from
  * `spec/guidelines/15-zustaende.md` and from its README.
  */
@@ -154,6 +297,8 @@ export class AnpassenDialog {
     ZWizard,
     ZWizardActions,
     ZWizardStep,
+    ServerSuche,
+    FreieEingabe,
   ],
   template: `
     <h1 class="display-lg demo-title">Konfigurator</h1>
@@ -241,6 +386,23 @@ export class AnpassenDialog {
         <z-field label="Region" for="kf-gesperrt" hint="Nur Nürnberg verfügbar.">
           <z-combobox inputId="kf-gesperrt" [options]="regionen" value="nbg" disabled />
         </z-field>
+      </div>
+
+      <p class="demo-cap caption">
+        Suche auf dem Server: die Liste kommt von der Anfrage, deshalb filtert die Combobox nicht
+        selbst. Unter zwei Zeichen steht eine Hinweiszeile, während der Anfrage eine Zeile mit
+        Spinner, ohne Treffer die Leerzeile. Alle Namen und Adressen sind Beispieldaten.
+      </p>
+      <div class="demo-grid demo-grid--narrow demo-grid--start">
+        <demo-server-suche />
+      </div>
+
+      <p class="demo-cap caption">
+        Freie Eingabe: Enter oder das Verlassen des Feldes übernimmt den getippten Text als Wert,
+        und die erste Zeile im Panel bietet dasselbe mit Zeiger und Pfeiltasten an.
+      </p>
+      <div class="demo-grid demo-grid--narrow demo-grid--start">
+        <demo-freie-eingabe />
       </div>
 
       <p class="demo-cap caption">

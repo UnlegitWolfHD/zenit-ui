@@ -340,6 +340,129 @@ test.describe('Combobox mit der Tastatur', () => {
   });
 });
 
+/**
+ * The three modes the Combobox gained: a list that comes from the server, the
+ * waiting row while it is on its way, and a value that is in no entry. These
+ * are English, as CONTRIBUTING asks for new specs; the German suites above are
+ * older and stay as they are.
+ */
+test.describe('Combobox searching on the server', () => {
+  test('keyboard only: type, wait, arrow, Enter', async ({ page }) => {
+    await seiteOeffnen(page, 'konfigurator', 1440);
+    const feld = page.locator('#kf-suche');
+    await feld.scrollIntoViewIfNeeded();
+    await feld.focus();
+    await expect(feld).toBeFocused();
+
+    // Nothing typed yet, so the panel says how much it needs.
+    await page.keyboard.press('ArrowDown');
+    await expect(page.locator('.z-listbox__empty')).toHaveText('Mindestens 2 Zeichen eingeben');
+    await expect(page.locator('.z-listbox__option')).toHaveCount(0);
+
+    await page.keyboard.type('B');
+    await expect(page.locator('.z-listbox__empty')).toHaveText('Mindestens 2 Zeichen eingeben');
+
+    await page.keyboard.type('eispiel-Nutzer 1');
+    await expect(page.locator('.z-listbox__loading')).toBeVisible();
+    // 1, 1x: the answer holds more than the one exact name.
+    await expect(page.locator('.z-listbox__option')).toHaveCount(11);
+    await expect(page.locator('.z-listbox')).not.toHaveAttribute('aria-busy', 'true');
+
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('Enter');
+    await expect(page.locator('.z-listbox')).toHaveCount(0);
+    await expect(feld).toHaveValue('Beispiel-Nutzer 10');
+    await expect(feld).toBeFocused();
+    // The label of the chosen entry survives the next query, which no longer
+    // holds it: that is what selectedLabel is for.
+    await expect(page.locator('demo-server-suche p')).toContainText(
+      'Beispiel-Nutzer 10, nutzer10@example.org',
+    );
+
+    await feld.press('Control+a');
+    await page.keyboard.type('zz');
+    await expect(page.locator('.z-listbox__empty')).toHaveText('Kein Nutzer gefunden');
+
+    await page.keyboard.press('Escape');
+    await expect(feld).toHaveValue('Beispiel-Nutzer 10');
+  });
+
+  test('the waiting row keeps the options it already has', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/konfigurator?suchdauer=20000');
+    await page.locator('main h1').waitFor();
+    const feld = page.locator('#kf-suche');
+    await feld.scrollIntoViewIfNeeded();
+    await feld.focus();
+
+    await page.keyboard.type('zz');
+    const liste = page.locator('.z-listbox');
+    await expect(liste).toHaveAttribute('aria-busy', 'true');
+    await expect(page.locator('.z-listbox__loading')).toHaveText('Lädt');
+    // No "no match" row while nothing is known yet.
+    await expect(page.locator('.z-listbox__empty')).toHaveCount(1);
+    // The waiting row is no entry, so the keyboard cannot land on it.
+    await expect(page.locator('.z-listbox__option')).toHaveCount(0);
+    await expect(feld).not.toHaveAttribute('aria-activedescendant', /./);
+  });
+
+  for (const schema of ['dark', 'light', 'contrast'] as const) {
+    test(`axe with the waiting row open in ${schema}`, async ({ page }) => {
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await page.goto('/konfigurator?suchdauer=20000');
+      await page.locator('main h1').waitFor();
+      await page.selectOption('#theme-schema', schema);
+      await expect(page.locator('html')).toHaveAttribute('data-theme', schema);
+
+      const feld = page.locator('#kf-suche');
+      await feld.scrollIntoViewIfNeeded();
+      await feld.focus();
+      await page.keyboard.type('Beispiel');
+      await expect(page.locator('.z-listbox__loading')).toBeVisible();
+
+      await axeHier(page, `/konfigurator mit ladender Combobox (${schema})`);
+      // Still loading after the run, so axe really saw the row.
+      await expect(page.locator('.z-listbox__loading')).toBeVisible();
+    });
+  }
+});
+
+test.describe('Combobox with free text', () => {
+  test('a tag that is in no list becomes the value', async ({ page }) => {
+    await seiteOeffnen(page, 'konfigurator', 1440);
+    const feld = page.locator('#kf-tag');
+    await feld.scrollIntoViewIfNeeded();
+    await feld.focus();
+
+    await page.keyboard.type('hard');
+    // The own row stands above the matches and is the one the keyboard is on.
+    await expect(page.locator('.z-listbox__option')).toHaveText([
+      '„hard“ übernehmen',
+      'hardware12 Artikel',
+    ]);
+    await expect(feld).toHaveAttribute('aria-activedescendant', /-0$/);
+
+    await page.keyboard.press('Enter');
+    await expect(feld).toHaveValue('hard');
+    await expect(page.locator('demo-freie-eingabe p')).toHaveText('Tag: hard');
+
+    // Leaving the field commits as well, instead of snapping back.
+    await feld.press('Control+a');
+    await page.keyboard.type('neuer tag');
+    await page.keyboard.press('Tab');
+    await expect(feld).toHaveValue('neuer tag');
+    await expect(page.locator('demo-freie-eingabe p')).toHaveText('Tag: neuer tag');
+
+    // An existing tag is still taken as that entry, not as free text.
+    await feld.focus();
+    await feld.press('Control+a');
+    await page.keyboard.type('netzwerk');
+    await expect(page.locator('.z-listbox__option')).toHaveText(['netzwerk8 Artikel']);
+    await page.keyboard.press('Enter');
+    await expect(page.locator('demo-freie-eingabe p')).toHaveText('Tag: netzwerk');
+  });
+});
+
 test.describe('Combobox beim Scrollen', () => {
   test('das Panel schließt, wenn das Feld aus dem Bild scrollt', async ({ page }) => {
     await seiteOeffnen(page, 'konfigurator', 1440, 700);

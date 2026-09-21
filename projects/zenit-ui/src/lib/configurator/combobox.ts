@@ -753,6 +753,10 @@ export class ZCombobox implements ControlValueAccessor, FormValueControl<string>
       return;
     }
     if (ereignis.key === 'Tab') {
+      // Tab is a way of leaving the field, so it commits what leaving commits.
+      // It has to happen here: the panel closes before the focus moves, and by
+      // the time the blur arrives the typed text is gone.
+      this.uebernimmEigenes();
       this.schliesse();
       return;
     }
@@ -791,11 +795,17 @@ export class ZCombobox implements ControlValueAccessor, FormValueControl<string>
    * or, with {@link allowCustom}, the moment it becomes the value.
    */
   protected aufVerlassen(): void {
-    if (this.eigenerWert()) {
-      this.uebernimm(this.eigenerWert());
-    }
+    this.uebernimmEigenes();
     this.schliesse();
     this.aufBeruehrt?.();
+  }
+
+  /** Takes the typed text where {@link allowCustom} lets it become the value. */
+  private uebernimmEigenes(): void {
+    const wert = this.eigenerWert();
+    if (wert) {
+      this.uebernimm(wert);
+    }
   }
 
   /** The chosen entry starts out active, otherwise the first one. */

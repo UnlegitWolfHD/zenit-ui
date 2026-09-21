@@ -816,6 +816,17 @@ describe('ZCombobox', () => {
       expect(document.activeElement).not.toBe(feld(fixture));
     });
 
+    it('takes the typed text on Tab, before the panel closes under it', () => {
+      const fixture = TestBed.createComponent(EigeneHost);
+      fixture.detectChanges();
+      tippe(fixture, 'per tab');
+      taste(fixture, 'Tab');
+
+      expect(fixture.componentInstance.tag()).toBe('per tab');
+      expect(feld(fixture).value).toBe('per tab');
+      expect(panel()).toBeNull();
+    });
+
     it('gives the text up on Escape, as it always did', () => {
       const fixture = TestBed.createComponent(EigeneHost);
       fixture.detectChanges();
