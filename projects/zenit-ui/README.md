@@ -177,6 +177,8 @@ Entries marked "(addition)" are not part of the reference table in `spec/guideli
 | PriceSummary | `z-price-summary` | `label`, `price`, `period`, `lines: {label, value}[]`, `note`; content is the button |
 | SpecList | `z-spec-list` | `items: {term, value, note, mono}[]` |
 | Faq | `z-faq` | `question`, `open`; content is the answer |
+| Theme | service `ZTheme`, `provideZenitTheme(config)` | `scheme()`, `resolvedScheme()`, `accent()`, `setScheme(id)`, `setAccent(id)`, `reset()`; config `schemes`, `accents`, `defaultScheme`, `defaultAccent`, `storageKey`, `target` |
+| Labels | `provideZenitLabels(partial)`, `Z_LABELS`, `Z_LABELS_DE`, `Z_LABELS_EN` | one key per built-in text; the inputs of the components still win |
 
 The generated reference with every signature, type and default is produced by `npm run docs:api` into `docs/api/`.
 
@@ -184,6 +186,48 @@ Two things are worth knowing before you build a page from this table. Both turne
 
 - **Menu: import the three classes, not `Z_MENU`.** In the emitted types the bundle collapses to `declare const Z_MENU: (typeof ZMenu)[]`, because the three classes are structurally compatible. The Angular compiler then sees only `ZMenu` and rejects the array with `NG1010`. Put `ZMenu`, `ZMenuItem` and `ZMenuSeparator` into `imports` instead.
 - **Slots and control flow.** `z-panel` picks `z-pagination` out of the projected content, and Alert, EmptyState, AppHeader and Footer have slots of their own. A node inside `@if`, `@for` or `@switch` only reaches its slot while it is the single root node of that block; otherwise it stays in the default content. Give such a node an `@if` of its own.
+
+## Themes
+
+`tokens.css` carries one colour scheme, `dark`. The opt-in stylesheet `zenit-ui/styles/themes.css` adds `light` and `contrast` plus the accents `blau`, `gruen` and `violett`, and `provideZenitTheme()` switches between them and stores the choice:
+
+```json
+"styles": [
+  "zenit-ui/styles/tokens.css",
+  "@angular/cdk/overlay-prebuilt.css",
+  "zenit-ui/styles/themes.css",
+  "zenit-ui/styles/zenit-ui.css",
+  "src/styles.css"
+]
+```
+
+```ts
+providers: [provideZenitTheme({ defaultScheme: 'system' })];
+```
+
+The order is binding, because `:root` and `[data-theme="light"]` weigh the same and the later rule wins. A scheme is a block of token overrides, so an own scheme is CSS plus its id in `schemes`. Components never learn about any of this.
+
+**These values are not part of the design system yet.** They were derived by the contrast rules in `docs/theming.md` and checked by `node tools/check-theme-contrast.mjs` (3 schemes × 4 accents, 456 pairs), but they still need the design owner's approval before they move into `tokens.json`. Everything about schemes, accents, the service, SSR and the gate is in [`docs/theming.md`](../../docs/theming.md).
+
+## Labels and languages
+
+The library holds no copy except the accessible names and the one sentence a component cannot leave empty. They live in one registry, so an application in another language sets them once at bootstrap:
+
+```ts
+providers: [provideZenitLabels(Z_LABELS_EN)];
+```
+
+`provideZenitLabels` merges over the German defaults, which keeps a partial override valid, and every input that used to carry a German default still wins over the registry. The keys, the per-usage inputs and how to set them for one subtree only are in [`docs/labels.md`](../../docs/labels.md).
+
+## `ng add`
+
+The setup above is a schematic as well:
+
+```bash
+ng add zenit-ui --themes
+```
+
+It registers the stylesheets in `angular.json` in the prescribed order, merges `z-root` into `<html>` and `<body>`, adds `@angular/cdk` and the four font packages with their `@import` rules, and mounts `<z-toast-outlet />` in the root component. Every step is idempotent. What it changes exactly, which options it takes and how to run it against the local tarball is in [`docs/ng-add.md`](../../docs/ng-add.md).
 
 ## Documented deviations from the reference styles
 
@@ -243,17 +287,20 @@ Plus an ESLint entry `no-restricted-imports` for the pattern `@angular/material*
 Inside the workspace `zenit-ui-workspace`:
 
 ```bash
-ng build zenit-ui     # build the library, output in dist/zenit-ui
-ng test zenit-ui      # unit tests of the library
-npm run lint          # ESLint over library and demo
-npm run lint:css      # Stylelint over projects/**/*.css
-npm run e2e           # Playwright with axe over the demo pages
-npm run docs:api      # TypeDoc reference into docs/api
-npm run check         # lint, lint:css, all builds and the unit tests in one run
-ng serve ui-demo      # demo app with every building block in all states
+npm run build:lib      # library into dist/zenit-ui plus the compiled schematics
+ng test zenit-ui       # unit tests of the library
+npm run test:schematics # the ng add schematic against generated fixtures
+npm run check:themes   # contrast gate over every scheme and accent
+npm run lint           # ESLint over library, demo and example app
+npm run lint:css       # Stylelint over projects/**/*.css
+npm run e2e            # Playwright with axe over the demo pages
+npm run e2e:beispiel   # the same checks over the example app, in all three schemes
+npm run docs:api       # TypeDoc reference into docs/api
+npm run check          # everything above except the Playwright runs
+ng serve ui-demo       # demo app with every building block in all states
 npm run start:beispiel # example app: one complete page against dist/zenit-ui
 ```
 
 The demo app `ui-demo` shows every building block in the states idle, hover, focus, active, disabled, loading, error, empty and success. It is the reference for markup and classes.
 
-The example app `beispiel-app` shows one complete page of the customer area, built the way an application builds it: it imports from the package in `dist/zenit-ui` and follows the setup steps above one by one. Copy it as the starting point for a real page; `projects/beispiel-app/README.md` maps every region of the page to the rule it follows.
+The example app `beispiel-app` shows one complete page of the customer area, built the way an application builds it: it imports from the package in `dist/zenit-ui` and follows the setup steps above one by one. Its page "Einbindung" and the disclosures on the Gameserver page show the real files of that setup, generated from the sources themselves. Copy it as the starting point for a real page; `projects/beispiel-app/README.md` maps every region of the page to the rule it follows.
