@@ -42,12 +42,17 @@ Or, in `angular.json`:
 
 ```json
 "styles": [
-  "node_modules/zenit-ui/styles/tokens.css",
-  "node_modules/@angular/cdk/overlay-prebuilt.css",
-  "node_modules/zenit-ui/styles/themes.css",
-  "node_modules/zenit-ui/styles/zenit-ui.css"
+  "zenit-ui/styles/tokens.css",
+  "@angular/cdk/overlay-prebuilt.css",
+  "zenit-ui/styles/themes.css",
+  "zenit-ui/styles/zenit-ui.css"
 ]
 ```
+
+Write the package specifier, not `node_modules/zenit-ui/styles/…`: the specifier is resolved through
+Node and therefore also works where the folder is somewhere else, in a git worktree without its own
+`node_modules`, in a monorepo that hoists, and under pnpm. The `ng-add` schematic writes this form
+and recognises the `node_modules/` spelling only to normalise an entry that is already there.
 
 Single files work as well, as long as the order inside `themes.css` is kept:
 
