@@ -5,10 +5,11 @@ import { ZAppHeader, ZBrand, ZHeaderEnd, ZHeaderLink } from './app-header';
 
 @Component({
   imports: [ZAppHeader, ZBrand, ZHeaderEnd, ZHeaderLink],
-  template: `<z-app-header [navLabel]="navLabel()">
+  template: `<z-app-header [navLabel]="navLabel()" [open]="offen()" (openChange)="melde($event)">
     <span zBrand>Zenit</span>
     <a zHeaderLink href="#server" [active]="aktiv() === 0">Server</a>
     <a zHeaderLink href="#rechnungen" [active]="aktiv() === 1">Rechnungen</a>
+    <button type="button">Konto</button>
     <button zHeaderEnd type="button">Guthaben</button>
   </z-app-header>`,
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -16,6 +17,23 @@ import { ZAppHeader, ZBrand, ZHeaderEnd, ZHeaderLink } from './app-header';
 class HeaderHost {
   readonly navLabel = signal('Hauptnavigation');
   readonly aktiv = signal(0);
+  readonly offen = signal(false);
+  /** Every value openChange has emitted, oldest first. */
+  readonly gemeldet: boolean[] = [];
+
+  melde(wert: boolean): void {
+    this.gemeldet.push(wert);
+    this.offen.set(wert);
+  }
+}
+
+@Component({
+  imports: [ZAppHeader],
+  template: `<z-app-header [(open)]="offen" />`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class ZweiwegHost {
+  readonly offen = signal(false);
 }
 
 @Component({
@@ -49,6 +67,11 @@ class VorschauHost {}
 
 function menueKnopf(fixture: { nativeElement: HTMLElement }): HTMLButtonElement {
   return fixture.nativeElement.querySelector('button.z-header__menu')!;
+}
+
+/** Escape as it arrives from inside the header: from the focused element upwards. */
+function escape(el: Element): void {
+  el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', keyCode: 27, bubbles: true }));
 }
 
 describe('ZAppHeader', () => {
@@ -118,6 +141,78 @@ describe('ZAppHeader', () => {
 
     expect(menueKnopf(fixture).getAttribute('aria-expanded')).toBe('false');
     expect(kopf.classList.contains('z-header--open')).toBe(false);
+  });
+
+  it('closes when a projected link is clicked and reports the new state', () => {
+    const fixture = TestBed.createComponent(HeaderHost);
+    fixture.detectChanges();
+    const kopf = fixture.nativeElement.querySelector('z-app-header');
+
+    menueKnopf(fixture).click();
+    fixture.detectChanges();
+    expect(fixture.componentInstance.gemeldet).toEqual([true]);
+
+    fixture.nativeElement.querySelector('a[href="#rechnungen"]').click();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.gemeldet).toEqual([true, false]);
+    expect(fixture.componentInstance.offen()).toBe(false);
+    expect(menueKnopf(fixture).getAttribute('aria-expanded')).toBe('false');
+    expect(kopf.classList.contains('z-header--open')).toBe(false);
+  });
+
+  it('stays open when a button inside the nav is clicked', () => {
+    const fixture = TestBed.createComponent(HeaderHost);
+    fixture.detectChanges();
+
+    menueKnopf(fixture).click();
+    fixture.detectChanges();
+
+    const konto: HTMLButtonElement = fixture.nativeElement.querySelector('nav button');
+    konto.click();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.gemeldet).toEqual([true]);
+    expect(menueKnopf(fixture).getAttribute('aria-expanded')).toBe('true');
+  });
+
+  it('opens from outside through [(open)]', () => {
+    const fixture = TestBed.createComponent(ZweiwegHost);
+    fixture.detectChanges();
+    const kopf = fixture.nativeElement.querySelector('z-app-header');
+
+    fixture.componentInstance.offen.set(true);
+    fixture.detectChanges();
+
+    expect(menueKnopf(fixture).getAttribute('aria-expanded')).toBe('true');
+    expect(kopf.classList.contains('z-header--open')).toBe(true);
+
+    menueKnopf(fixture).click();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.offen()).toBe(false);
+  });
+
+  it('closes on Escape from inside the header and returns the focus to the menu button', () => {
+    const fixture = TestBed.createComponent(HeaderHost);
+    fixture.detectChanges();
+    const link: HTMLAnchorElement = fixture.nativeElement.querySelector('a[href="#server"]');
+
+    escape(link);
+    fixture.detectChanges();
+    expect(fixture.componentInstance.gemeldet).toEqual([]);
+    expect(document.activeElement).not.toBe(menueKnopf(fixture));
+
+    menueKnopf(fixture).click();
+    fixture.detectChanges();
+    link.focus();
+
+    escape(link);
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.offen()).toBe(false);
+    expect(menueKnopf(fixture).getAttribute('aria-expanded')).toBe('false');
+    expect(document.activeElement).toBe(menueKnopf(fixture));
   });
 
   it('labels the menu button "Menü" by default', () => {
