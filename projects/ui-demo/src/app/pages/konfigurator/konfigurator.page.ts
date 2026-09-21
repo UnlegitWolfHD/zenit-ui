@@ -5,6 +5,7 @@ import {
   computed,
   DOCUMENT,
   inject,
+  linkedSignal,
   resource,
   signal,
 } from '@angular/core';
@@ -192,7 +193,7 @@ function sucheNutzer(
       <z-combobox
         inputId="kf-suche"
         placeholder="Name oder E-Mail"
-        [options]="ergebnis.value()"
+        [options]="gezeigt()"
         [filterLocally]="false"
         [loading]="ergebnis.isLoading()"
         [minQueryLength]="2"
@@ -238,8 +239,20 @@ export class ServerSuche {
     defaultValue: [] as ZComboOption[],
   });
 
+  /**
+   * The list the panel shows. A loading resource falls back to its
+   * `defaultValue`, so binding `ergebnis.value()` straight to the combobox
+   * would empty the panel on every keystroke and there would be nothing left
+   * for the waiting row to stand under. This keeps the last answer until the
+   * next one is there.
+   */
+  protected readonly gezeigt = linkedSignal<ZComboOption[], ZComboOption[]>({
+    source: () => this.ergebnis.value(),
+    computation: (neu, vorher) => (this.ergebnis.isLoading() ? (vorher?.value ?? []) : neu),
+  });
+
   protected merke(wert: string): void {
-    this.gewaehlt.set(this.ergebnis.value().find((n) => n.value === wert) ?? null);
+    this.gewaehlt.set(this.gezeigt().find((n) => n.value === wert) ?? null);
   }
 }
 

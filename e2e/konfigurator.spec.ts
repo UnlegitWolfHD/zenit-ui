@@ -387,7 +387,7 @@ test.describe('Combobox searching on the server', () => {
     await expect(feld).toHaveValue('Beispiel-Nutzer 10');
   });
 
-  test('the waiting row keeps the options it already has', async ({ page }) => {
+  test('the waiting row stands alone while nothing is known yet', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/konfigurator?suchdauer=20000');
     await page.locator('main h1').waitFor();
@@ -395,6 +395,7 @@ test.describe('Combobox searching on the server', () => {
     await feld.scrollIntoViewIfNeeded();
     await feld.focus();
 
+    // First query of the page: there is no earlier answer to keep.
     await page.keyboard.type('zz');
     const liste = page.locator('.z-listbox');
     await expect(liste).toHaveAttribute('aria-busy', 'true');
@@ -404,6 +405,42 @@ test.describe('Combobox searching on the server', () => {
     // The waiting row is no entry, so the keyboard cannot land on it.
     await expect(page.locator('.z-listbox__option')).toHaveCount(0);
     await expect(feld).not.toHaveAttribute('aria-activedescendant', /./);
+  });
+
+  test('the waiting row keeps the options it already has', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    // Long enough that the assertions below land inside the second request,
+    // short enough that the first one is done without a long wait.
+    await page.goto('/konfigurator?suchdauer=3000');
+    await page.locator('main h1').waitFor();
+    const feld = page.locator('#kf-suche');
+    await feld.scrollIntoViewIfNeeded();
+    await feld.focus();
+
+    await page.keyboard.type('Beispiel');
+    await expect(page.locator('.z-listbox__option')).toHaveCount(24);
+
+    // Now a second query runs. The page keeps the last answer while it does,
+    // so the waiting row stands under the options instead of replacing them.
+    await page.keyboard.type('-Nutzer 1');
+    const stand = await page.evaluate(() => {
+      const liste = document.querySelector('.z-listbox');
+      const eingabe = document.querySelector('#kf-suche');
+      const aktiv = eingabe?.getAttribute('aria-activedescendant') ?? null;
+      return {
+        busy: liste?.getAttribute('aria-busy') ?? null,
+        laden: document.querySelectorAll('.z-listbox__loading').length,
+        optionen: document.querySelectorAll('.z-listbox__option').length,
+        aktivGibtEs: !!aktiv && !!document.getElementById(aktiv),
+      };
+    });
+
+    // One snapshot, so the four facts are true at the same moment.
+    expect(stand).toEqual({ busy: 'true', laden: 1, optionen: 24, aktivGibtEs: true });
+
+    // And the answer replaces them once it is there.
+    await expect(page.locator('.z-listbox__option')).toHaveCount(11);
+    await expect(page.locator('.z-listbox__loading')).toHaveCount(0);
   });
 
   for (const schema of ['dark', 'light', 'contrast'] as const) {

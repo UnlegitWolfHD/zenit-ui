@@ -118,6 +118,29 @@ class EigeneHost {
   readonly tag = signal('');
 }
 
+/**
+ * The combination a real admin page runs: the list comes from the server, the
+ * values are ids and not labels, free text is allowed on top, and the caller
+ * hands the label of the chosen entry back.
+ */
+@Component({
+  imports: [ZCombobox],
+  template: `<z-combobox
+    ariaLabel="Nutzer"
+    [options]="treffer()"
+    [filterLocally]="false"
+    allowCustom
+    [selectedLabel]="etikett()"
+    [(value)]="nutzer"
+  />`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class SucheMitEigenemHost {
+  readonly treffer = signal<readonly ZComboOption[]>(NUTZER);
+  readonly etikett = signal('');
+  readonly nutzer = signal('');
+}
+
 /** Free text through a reactive form, starting on a value no entry carries. */
 @Component({
   imports: [ZCombobox, ReactiveFormsModule],
@@ -859,6 +882,37 @@ describe('ZCombobox', () => {
       expect(fixture.componentInstance.modell().tag).toBe('eigener tag');
     });
 
+    it('announces the matches without counting the own row', () => {
+      const fixture = TestBed.createComponent(EigeneHost);
+      fixture.detectChanges();
+      const region: HTMLElement = fixture.nativeElement.querySelector('[role="status"]');
+
+      // One match and the action row: the action is not a hit.
+      tippe(fixture, 'hard');
+      expect(texte()).toEqual(['„hard“ übernehmen', 'hardware']);
+      expect(region.textContent?.trim()).toBe('1 Treffer');
+
+      // Nothing matched, so the action row is what the panel shows and says.
+      tippe(fixture, 'xyz');
+      expect(texte()).toEqual(['„xyz“ übernehmen']);
+      expect(region.textContent?.trim()).toBe('„xyz“ übernehmen');
+    });
+
+    it('treats text that is only space like an empty field', () => {
+      const fixture = TestBed.createComponent(EigeneHost);
+      fixture.detectChanges();
+      tippe(fixture, '   ');
+
+      // The trimmed text is empty, so there is nothing to take over: the whole
+      // list stands and Enter takes the active row, as it does without
+      // allowCustom.
+      expect(texte()).toEqual(['hardware', 'netzwerk']);
+
+      taste(fixture, 'Enter');
+
+      expect(fixture.componentInstance.tag()).toBe('t-hw');
+    });
+
     it('stays as it was without allowCustom', () => {
       const fixture = TestBed.createComponent(ModellHost);
       fixture.detectChanges();
@@ -869,6 +923,68 @@ describe('ZCombobox', () => {
       taste(fixture, 'Enter');
 
       expect(fixture.componentInstance.version()).toBe('1.21.4');
+    });
+  });
+
+  describe('free text over a list from the server', () => {
+    it('shows the committed text, not the selectedLabel of the entry before it', () => {
+      const fixture = TestBed.createComponent(SucheMitEigenemHost);
+      const host = fixture.componentInstance;
+      host.nutzer.set('u-2');
+      host.etikett.set('Beispiel-Nutzer 2');
+      host.treffer.set([]);
+      fixture.detectChanges();
+
+      expect(feld(fixture).value).toBe('Beispiel-Nutzer 2');
+
+      tippe(fixture, 'Externer Gast');
+      taste(fixture, 'Tab');
+
+      // The caller has not changed selectedLabel yet, and the old label would
+      // name a user that is no longer the value.
+      expect(host.nutzer()).toBe('Externer Gast');
+      expect(feld(fixture).value).toBe('Externer Gast');
+
+      // As soon as the caller does name the value, that name wins again.
+      host.etikett.set('Gast, extern');
+      fixture.detectChanges();
+
+      expect(feld(fixture).value).toBe('Gast, extern');
+    });
+
+    it('takes the entry when its value is typed, instead of offering a second row', () => {
+      const fixture = TestBed.createComponent(SucheMitEigenemHost);
+      // What a server answers for this query: the one entry carrying that id.
+      fixture.componentInstance.treffer.set([NUTZER[0]]);
+      fixture.detectChanges();
+      // The value is an id and the label is a name, so the text matches no
+      // label. Without the comparison against the value there would be two
+      // rows here, and both would be tracked by "u-1".
+      tippe(fixture, 'u-1');
+
+      expect(zeilen()).toHaveLength(1);
+      expect(namen()).toEqual(['Beispiel-Nutzer 1']);
+
+      taste(fixture, 'Enter');
+
+      expect(fixture.componentInstance.nutzer()).toBe('u-1');
+      expect(feld(fixture).value).toBe('Beispiel-Nutzer 1');
+    });
+
+    it('matches a value whatever the case, and leaves the rest as free text', () => {
+      const fixture = TestBed.createComponent(SucheMitEigenemHost);
+      fixture.componentInstance.treffer.set([NUTZER[0]]);
+      fixture.detectChanges();
+      tippe(fixture, ' U-1 ');
+
+      expect(zeilen()).toHaveLength(1);
+      expect(namen()).toEqual(['Beispiel-Nutzer 1']);
+
+      // An id the directory does not hold is free text like any other.
+      fixture.componentInstance.treffer.set([]);
+      tippe(fixture, 'u-99');
+
+      expect(texte()).toEqual(['„u-99“ übernehmen']);
     });
   });
 });

@@ -8,6 +8,10 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
  * message (`role="status"` plus that label as `aria-label`), without one it is
  * decorative and carries `aria-hidden="true"`. A button that is working shows
  * its own spinner through `loading` on `zBtn`; lists use `z-skeleton` instead.
+ * The one list that does not is the panel of `z-combobox`: a `role="listbox"`
+ * takes options, and a skeleton row has no accessible name, so the waiting row
+ * there carries a decorative spinner beside its word. That deviation is
+ * written down in `docs/components/combobox.md`.
  *
  * @example
  * ```html

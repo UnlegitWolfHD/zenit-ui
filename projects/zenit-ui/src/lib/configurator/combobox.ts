@@ -52,6 +52,13 @@ interface Eintrag extends Highlightable {
   readonly index: number;
   /** True for the row that commits the typed text; see `allowCustom`. */
   readonly eigen: boolean;
+  /**
+   * Tracking key of the row. An option's `value` is unique among options, but
+   * the own row carries the typed text as its value, and with ids as values
+   * typing an id would collide with the entry that has it. The own row
+   * therefore takes a prefix no value can have.
+   */
+  readonly schluessel: string;
 }
 
 /** A heading with the entries under it; an empty name means no heading. */
@@ -104,9 +111,11 @@ let zaehler = 0;
  *   it is given, {@link queryChange} reports every keystroke, {@link loading}
  *   draws the waiting row and {@link selectedLabel} names a chosen value whose
  *   option is no longer in the list. {@link minQueryLength} holds the list back
- *   until the query is long enough to be worth a request.
- * - **Free text**: {@link allowCustom} lets Enter and leaving the field commit
- *   what was typed, so the value may be a string that is in no option.
+ *   until the query is long enough to be worth a request. A query shorter than
+ *   that is still reported, so the caller decides what to do with it.
+ * - **Free text**: {@link allowCustom} lets Enter, Tab, Shift+Tab and leaving
+ *   the field commit what was typed, so the value may be a string that is in
+ *   no option.
  *
  * @example
  * ```html
@@ -184,7 +193,7 @@ let zaehler = 0;
               @if (gruppe.name) {
                 <div class="z-listbox__group" role="presentation">{{ gruppe.name }}</div>
               }
-              @for (eintrag of gruppe.eintraege; track eintrag.option.value) {
+              @for (eintrag of gruppe.eintraege; track eintrag.schluessel) {
                 <!-- In the activedescendant pattern the option is deliberately not
                      a tab stop and carries no key handler: the focus stays in the
                      input, which owns the whole keyboard (ARIA APG, combobox). -->
@@ -338,9 +347,16 @@ export class ZCombobox implements ControlValueAccessor, FormValueControl<string>
 
   /**
    * Whether text that matches no entry may become the value. Enter without an
-   * active row and leaving the field both commit the typed text, trimmed, and
-   * a row at the top of the panel offers the same thing with the pointer and
-   * the arrow keys. Boolean attribute.
+   * active row, Tab, Shift+Tab and leaving the field with the pointer all
+   * commit the typed text, trimmed, and a row at the top of the panel offers
+   * the same thing with the pointer and the arrow keys. Text that is only
+   * space commits nothing: it trims to the empty string, so the panel holds
+   * the whole list and Enter takes the active row, exactly as it does without
+   * this input. Escape is the one key that gives the text up.
+   *
+   * A value committed this way is its own label until the caller changes
+   * {@link selectedLabel} or the value, so a `selectedLabel` still naming the
+   * entry chosen before it does not resurface.
    *
    * @default false
    */
@@ -415,11 +431,24 @@ export class ZCombobox implements ControlValueAccessor, FormValueControl<string>
   private aufBeruehrt?: () => void;
 
   /**
-   * The label of the chosen value: the entry that carries it, else the
-   * {@link selectedLabel} the caller supplied, else the value itself where
+   * A value the component itself took from the typed text, together with the
+   * {@link selectedLabel} that stood at that moment. Both have to still hold
+   * for the value to be its own label; see {@link gewaehltesLabel}.
+   */
+  private readonly eigenerBestand = signal<{ wert: string; etikett: string } | null>(null);
+
+  /**
+   * The label of the chosen value, in this order: the entry that carries it,
+   * the free text the component itself just committed, the
+   * {@link selectedLabel} the caller supplied, and the value itself where
    * {@link allowCustom} makes a value that is in no entry a legal one. The
    * empty string for an unknown value in the plain case, which is what leaves
    * the field empty.
+   *
+   * The free text comes before `selectedLabel` because that input still names
+   * the entry chosen before it, and showing the old name for a value the
+   * visitor just typed is the worse of the two. It gives way again as soon as
+   * the caller changes `selectedLabel` or the value.
    */
   private readonly gewaehltesLabel = computed(() => {
     const wert = this.value();
@@ -429,6 +458,10 @@ export class ZCombobox implements ControlValueAccessor, FormValueControl<string>
     }
     if (!wert) {
       return '';
+    }
+    const eigen = this.eigenerBestand();
+    if (eigen && eigen.wert === wert && eigen.etikett === this.selectedLabel()) {
+      return wert;
     }
     return this.selectedLabel() || (this.allowCustom() ? wert : '');
   });
@@ -456,10 +489,22 @@ export class ZCombobox implements ControlValueAccessor, FormValueControl<string>
     return this.options().filter((o) => `${o.label} ${o.note ?? ''}`.toLowerCase().includes(suche));
   });
 
-  /** The entry whose label is exactly the typed text, if the list holds one. */
+  /**
+   * The entry whose label **or** value is exactly the typed text, ignoring
+   * case and surrounding space. The value counts too because a list keyed by
+   * ids is searched by id as often as by name, and two ways to one row must
+   * not put two rows in the panel.
+   */
   private readonly genauePassung = computed(() => {
     const text = this.anfrage().toLowerCase();
-    return text ? (this.treffer().find((o) => o.label.toLowerCase() === text) ?? null) : null;
+    if (!text) {
+      return null;
+    }
+    return (
+      this.treffer().find(
+        (o) => o.label.toLowerCase() === text || o.value.toLowerCase() === text,
+      ) ?? null
+    );
   });
 
   /**
@@ -529,6 +574,7 @@ export class ZCombobox implements ControlValueAccessor, FormValueControl<string>
       option,
       index,
       eigen,
+      schluessel: eigen ? `\u0000eigen` : option.value,
       getLabel: () => option.label,
       // The active row is derived from aktiverIndex, so one signal carries the
       // whole state and the counterpart has nothing left to undo. The value
@@ -543,8 +589,13 @@ export class ZCombobox implements ControlValueAccessor, FormValueControl<string>
 
   /**
    * What the live region says while the panel is open: how many entries the
-   * filter left, or the sentence of the empty row. Closed it says nothing, so
-   * nothing is announced twice.
+   * filter left, or the sentence of the row that stands instead of them.
+   * Closed it says nothing, so nothing is announced twice.
+   *
+   * The count is the matches and nothing else. The row of {@link allowCustom}
+   * is an action, not a hit, so it would turn one match into "2 Treffer"; it
+   * gets its own sentence where it stands alone, which is also what the panel
+   * shows then.
    */
   protected readonly ansage = computed(() => {
     if (!this.offen()) {
@@ -556,9 +607,13 @@ export class ZCombobox implements ControlValueAccessor, FormValueControl<string>
     if (this.loading()) {
       return this.etiketten.comboboxLoading;
     }
-    const anzahl = this.eintraege().length;
-    return anzahl
-      ? this.etiketten.comboboxResults(anzahl)
+    const anzahl = this.treffer().length;
+    if (anzahl) {
+      return this.etiketten.comboboxResults(anzahl);
+    }
+    const eigene = this.eigeneOption();
+    return eigene
+      ? this.etiketten.comboboxUseCustom(eigene.label)
       : this.emptyText() || this.etiketten.comboboxEmpty;
   });
 
@@ -753,9 +808,10 @@ export class ZCombobox implements ControlValueAccessor, FormValueControl<string>
       return;
     }
     if (ereignis.key === 'Tab') {
-      // Tab is a way of leaving the field, so it commits what leaving commits.
-      // It has to happen here: the panel closes before the focus moves, and by
-      // the time the blur arrives the typed text is gone.
+      // Tab and Shift+Tab are both ways of leaving the field (the key is `Tab`
+      // either way), so they commit what leaving commits. It has to happen
+      // here: the panel closes before the focus moves, and by the time the
+      // blur arrives the typed text is gone.
       this.uebernimmEigenes();
       this.schliesse();
       return;
@@ -786,6 +842,13 @@ export class ZCombobox implements ControlValueAccessor, FormValueControl<string>
       this.value.set(wert);
       this.melde?.(wert);
     }
+    // Free text is its own label from here on, which is what keeps a stale
+    // selectedLabel from naming the entry that was chosen before it.
+    this.eigenerBestand.set(
+      this.allowCustom() && wert && !this.options().some((o) => o.value === wert)
+        ? { wert, etikett: this.selectedLabel() }
+        : null,
+    );
     this.text.set(this.gewaehltesLabel());
     this.schliesse();
   }

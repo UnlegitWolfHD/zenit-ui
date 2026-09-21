@@ -117,7 +117,7 @@ waits.
   <z-combobox
     inputId="cb-nutzer"
     placeholder="Name oder E-Mail"
-    [options]="ergebnis.value()"
+    [options]="gezeigt()"
     [filterLocally]="false"
     [loading]="ergebnis.isLoading()"
     [minQueryLength]="2"
@@ -135,7 +135,7 @@ the running request through its `abortSignal`, which is what a debounce was stan
 answer that arrives is the answer to the last thing typed, and nothing else is ever shown.
 
 ```ts
-import { resource, signal } from '@angular/core';
+import { linkedSignal, resource, signal } from '@angular/core';
 
 export class NutzerFeld {
   protected readonly anfrage = signal('');
@@ -153,11 +153,28 @@ export class NutzerFeld {
     defaultValue: [] as ZComboOption[],
   });
 
+  // A loading resource has no value: `value()` falls back to `defaultValue`.
+  // Binding it straight to `options` would empty the panel on every keystroke,
+  // and the waiting row would have nothing to stand under.
+  protected readonly gezeigt = linkedSignal<ZComboOption[], ZComboOption[]>({
+    source: () => this.ergebnis.value(),
+    computation: (neu, vorher) => (this.ergebnis.isLoading() ? (vorher?.value ?? []) : neu),
+  });
+
   protected merke(wert: string): void {
-    this.gewaehlt.set(this.ergebnis.value().find((n) => n.value === wert) ?? null);
+    this.gewaehlt.set(this.gezeigt().find((n) => n.value === wert) ?? null);
   }
 }
 ```
+
+**Bind `gezeigt()`, not `ergebnis.value()`.** This is the one line that is easy to get wrong.
+A resource whose `params` changed is in status `loading`, and in that status `value()` is the
+`defaultValue`, not the last answer. Without the `linkedSignal` the list is blank for the length of
+every request, the waiting row stands alone, and "the options stay while it loads" is not true of
+your page however true it is of the component. The Angular guide has the same shape as a reusable
+helper, `withPreviousValue` over `resource.snapshot` and `resourceFromSnapshots`
+([Async reactivity with resources](https://angular.dev/guide/signals/resource)); the four lines
+above are that helper for one list.
 
 `params` returning `undefined` keeps the resource idle, so a query below the threshold sends
 nothing while `minQueryLength` explains the empty panel.
@@ -191,15 +208,19 @@ chosen during the first, so `options` cannot name the value any more. Keep the c
 only its id, and hand its label back. An entry that is in `options` still wins over it, so a list
 that has the entry again shows the fresher label.
 
-**While it loads, the options stay.** The waiting row is appended under whatever is already there
-instead of replacing it: emptying the list for the length of a request and filling it again is a
-flicker under the hand that is typing, and the stale rows are still the best answer known. There is
-no "no match" row while `loading` is set, because nothing is known yet.
+**While it loads, the options stay** — as long as you keep handing them over. The waiting row is
+appended under whatever `options` holds instead of replacing it: emptying the list for the length
+of a request and filling it again is a flicker under the hand that is typing, and the stale rows
+are still the best answer known. There is no "no match" row while `loading` is set, because nothing
+is known yet. The component cannot keep rows it is no longer given, which is why the recipe above
+binds `gezeigt()`.
 
 ### Free text
 
-`allowCustom` lets what was typed become the value: Enter with no active row, Tab, and leaving the
-field all commit it, trimmed. An empty field commits nothing.
+`allowCustom` lets what was typed become the value: Enter with no active row, Tab, Shift+Tab and
+leaving the field with the pointer all commit it, trimmed. Text that is only space commits nothing
+— it trims to the empty string, so the panel holds the whole list and Enter takes the active row,
+exactly as it does without `allowCustom`.
 
 ```html
 <z-field label="Wiki-Tag" for="cb-tag" hint="Ein vorhandener Tag oder ein neuer.">
@@ -216,30 +237,44 @@ field all commit it, trimmed. An empty field commits nothing.
 
 - A row `„<text>“ übernehmen` stands at the top of the panel, above the matches, so the affordance
   is visible and reachable with the pointer and the arrow keys. It is gone as soon as the text is
-  exactly the label of an entry: one row, one value.
+  exactly the **label or the value** of an entry, ignoring case and surrounding space: one row, one
+  value. A list keyed by ids is searched by id as often as by name, so typing `u-1` selects the
+  entry `{ value: 'u-1', label: 'Beispiel-Nutzer 1' }` instead of offering to make a second one.
 - Typing the exact label of an entry and leaving the field takes **that entry's value**, not the
   label. Label and value are not the same thing, and the two ways to the same row must not end in
   two different values.
 - The value may therefore be a string that is in no entry. `writeValue` and `[(value)]` with such a
   string show it as it is — this is the one case where the field shows the raw value, and it needs
   no `selectedLabel`.
+- **A value the field itself committed is its own label.** It beats `selectedLabel`, which still
+  names the entry chosen before it, until you change `selectedLabel` or the value. This matters in
+  the combination above: search on the server, pick a user, then type a name that is not in the
+  directory — the field shows what was typed, not the user picked a moment ago.
+- The action row is not counted as a match. One match plus the action row is announced as
+  `1 Treffer`, and the action row standing alone is announced as itself.
 - Escape still gives the typed text up. It is the one key that does not commit.
 - `minQueryLength` applies: below it nothing is committed either.
 
 ## States
 
-| State     | How it looks                                                                               | How to trigger it                            |
-| --------- | ------------------------------------------------------------------------------------------ | -------------------------------------------- |
-| Rest      | a `z-input` with the chevron of `.z-combo::after`                                          | default                                      |
-| Focus     | 2px ring in `focus` with 2px offset on the field                                           | Tab                                          |
-| Open      | panel in `surface-raised` with `shadow-overlay`                                            | arrow keys, typing, or a click               |
-| Active    | the walked entry gets `surface-hover`                                                      | arrow keys, Home, End, hover                 |
-| Selected  | the chosen entry is bold and carries a check                                               | `[(value)]`                                  |
-| Empty     | one `.z-listbox__empty` row instead of an empty panel                                      | a filter that matches nothing                |
-| Loading   | one `.z-listbox__loading` row with a `z-spinner`, under the options that are already there | `loading`                                    |
-| Too short | one row `Mindestens 2 Zeichen eingeben` instead of the list                                | `minQueryLength` above the typed length      |
-| Custom    | a row `„<text>“ übernehmen` above the matches                                              | `allowCustom` and text that no entry carries |
-| Disabled  | field and chevron at 45 percent, `cursor: not-allowed`                                     | `disabled`, or the form                      |
+| State     | How it looks                                                                               | How to trigger it                       |
+| --------- | ------------------------------------------------------------------------------------------ | --------------------------------------- |
+| Rest      | a `z-input` with the chevron of `.z-combo::after`                                          | default                                 |
+| Focus     | 2px ring in `focus` with 2px offset on the field                                           | Tab                                     |
+| Open      | panel in `surface-raised` with `shadow-overlay`                                            | arrow keys, typing, or a click          |
+| Active    | the walked entry gets `surface-hover`                                                      | arrow keys, Home, End, hover            |
+| Selected  | the chosen entry is bold and carries a check                                               | `[(value)]`                             |
+| Empty     | one `.z-listbox__empty` row instead of an empty panel                                      | a filter that matches nothing           |
+| Loading   | one `.z-listbox__loading` row with a `z-spinner`, under the options that are already there | `loading`                               |
+| Too short | one row `Mindestens 2 Zeichen eingeben` instead of the list                                | `minQueryLength` above the typed length |
+
+Reopening a field that already holds a value shows the "too short" row, not the entry behind that
+value: nothing has been typed yet, so there is no query and nothing has been fetched for it. The
+field keeps showing its label the whole time, and the first two characters replace the row with a
+list. That is deliberate — the alternative is a panel that shows one stale entry and calls it a
+result.
+| Custom | a row `„<text>“ übernehmen` above the matches | `allowCustom` and text that no entry carries |
+| Disabled | field and chevron at 45 percent, `cursor: not-allowed` | `disabled`, or the form |
 
 An error belongs on the surrounding `z-field`.
 
@@ -249,8 +284,8 @@ An error belongs on the surrounding `z-field`.
   `aria-expanded`, `aria-controls`, `aria-autocomplete="list"` and `aria-activedescendant`; the
   panel is the `role="listbox"`, a heading a `role="group"` with its name.
 - **The focus never leaves the input.** Arrow keys, Home and End move the active entry, Enter takes
-  it, Escape closes without clearing the field, Tab closes and moves on. A click on an entry keeps
-  the focus because the component cancels the `mousedown`.
+  it, Escape closes without clearing the field, Tab and Shift+Tab close and move on. A click on an
+  entry keeps the focus because the component cancels the `mousedown`.
 - Leaving the field with text that matches nothing puts the chosen label back, so the field never
   shows a value that is not the value.
 - The component has no visible label of its own. Give it `inputId` inside a `z-field`, or
@@ -313,6 +348,13 @@ for the active entry, `--border` for the frame, `--text-muted` for headings and 
 - Addition to the reference: `.z-listbox__loading` puts the spinner and its word in one flex row.
   It is a modifier beside `.z-listbox__empty` and not a change to that rule, so the no-match row
   keeps wrapping the way it always did.
+- **Deviation from `CLAUDE.md`, "Bewegung".** That rule puts a spinner in a button and skeleton
+  rows in a list, and this is a spinner in a list row. A `role="listbox"` takes options, and a
+  skeleton row is a decorative placeholder with no accessible name: it would be either an option
+  that says nothing or a node that breaks the listbox. There is also no honest row count to draw —
+  the answer is exactly what nobody knows yet. One locked option with a spinner and the word
+  `Lädt`, announced once through the status region, is the only shape that stays announceable.
+  Noted in `_konfigurator.css` and in the JSDoc of `z-spinner` as well.
 - Addition to the reference: while the panel is open the component listens for `scroll` on the
   document in the capture phase. The panel follows the field whenever anything around it scrolls,
   and closes once the field has left the container that moved. The CDK scroll strategies all run
