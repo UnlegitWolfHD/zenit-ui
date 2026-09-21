@@ -15,3 +15,4 @@ export * from './lib/pakete/daten';
 export * from './lib/pakete/rueckmeldung';
 export * from './lib/pakete/overlays';
 export * from './lib/pakete/werkzeuge';
+export * from './lib/pakete/theming';
