@@ -77,6 +77,7 @@ const PLATZHALTER = [1, 2, 3];
     } @else {
       <z-panel
         title="Meine Server"
+        headingLevel="2"
         flush
         [busy]="zustand() === 'skelett'"
         [attr.aria-label]="zustand() === 'skelett' ? 'Server werden geladen' : null"

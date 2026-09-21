@@ -70,7 +70,7 @@ const PREIS_JE_STECKPLATZ = 0.2;
     ZSpecList,
   ],
   template: `
-    <z-app-header navLabel="Hauptnavigation">
+    <z-app-header navLabel="Hauptnavigation" [landmark]="false">
       <span zBrand>Zenit</span>
       @for (link of links; track link) {
         <a zHeaderLink href="#" (click)="$event.preventDefault()">{{ link }}</a>
@@ -87,7 +87,7 @@ const PREIS_JE_STECKPLATZ = 0.2;
         <a zBtn="primary" size="lg" href="#rechner">Server zusammenstellen</a>
       </div>
 
-      <z-panel zHeroAside title="Kundenbereich" flush>
+      <z-panel zHeroAside title="Kundenbereich" headingLevel="2" flush>
         <span zPanelActions class="caption z-subtle">Beispieldaten dieser Vorschau</span>
         <z-rows columns="minmax(0, 1fr) 128px">
           @for (eintrag of vorschau; track eintrag.name) {
@@ -194,7 +194,7 @@ const PREIS_JE_STECKPLATZ = 0.2;
       <a zBtn="primary" size="lg" href="#rechner">Server zusammenstellen</a>
     </section>
 
-    <z-footer>
+    <z-footer [landmark]="false">
       <z-footer-col heading="Hosting">
         <li><a href="#">Minecraft</a></li>
         <li><a href="#">Preise</a></li>

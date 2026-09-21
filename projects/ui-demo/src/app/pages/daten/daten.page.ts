@@ -325,7 +325,7 @@ interface DemoDatei {
               size="sm"
               iconOnly
               type="button"
-              aria-label="Weitere Aktionen"
+              aria-label="Weitere Aktionen für die gewählten Dateien"
               [cdkMenuTriggerFor]="dateiAktionen"
             >
               <z-icon name="more_vert" />
@@ -386,11 +386,13 @@ interface DemoDatei {
         springt. Das Panel meldet aria-busy.
       </p>
       <z-panel title="plugins" flush busy aria-label="Dateien werden geladen">
-        <z-table-container ariaLabel="Dateien, seitlich scrollbar">
+        <z-table-container ariaLabel="Dateien werden geladen, seitlich scrollbar">
           <table zTable>
             <thead>
               <tr>
-                <th class="z-table__check"></th>
+                <th class="z-table__check">
+                  <span class="z-visually-hidden">Auswahl</span>
+                </th>
                 <th>Name</th>
                 <th style="text-align:right">Größe</th>
                 <th style="text-align:right">Geändert</th>
@@ -461,7 +463,12 @@ interface DemoDatei {
             }
           </z-rows>
         </div>
-        <z-pagination [(page)]="seite" [total]="transaktionen.length" itemLabel="Transaktionen" />
+        <z-pagination
+          [(page)]="seite"
+          [total]="transaktionen.length"
+          itemLabel="Transaktionen"
+          ariaLabel="Seiten der Transaktionen"
+        />
       </z-panel>
 
       <p class="demo-cap caption">
@@ -469,11 +476,21 @@ interface DemoDatei {
       </p>
       <z-panel>
         <p class="demo-sub">Erste Seite</p>
-        <z-pagination [(page)]="ersteSeite" [total]="118" itemLabel="Transaktionen" />
+        <z-pagination
+          [(page)]="ersteSeite"
+          [total]="118"
+          itemLabel="Transaktionen"
+          ariaLabel="Seiten der Transaktionen, Anfang der Liste"
+        />
       </z-panel>
       <z-panel>
         <p class="demo-sub">Letzte Seite</p>
-        <z-pagination [(page)]="letzteSeite" [total]="118" itemLabel="Transaktionen" />
+        <z-pagination
+          [(page)]="letzteSeite"
+          [total]="118"
+          itemLabel="Transaktionen"
+          ariaLabel="Seiten der Transaktionen, Ende der Liste"
+        />
       </z-panel>
 
       <p class="demo-cap caption">Text von außen überschrieben</p>
@@ -483,6 +500,7 @@ interface DemoDatei {
           [(page)]="englischeSeite"
           [total]="118"
           itemLabel="transactions"
+          ariaLabel="Seiten der Transaktionen mit eigenem Bereichstext"
           [rangeLabel]="englischerBereich"
         />
       </z-panel>
