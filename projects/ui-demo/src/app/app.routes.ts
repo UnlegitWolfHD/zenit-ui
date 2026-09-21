@@ -33,8 +33,7 @@ export const routes: Routes = [
   },
   {
     path: 'muster/dashboard',
-    loadComponent: () =>
-      import('./pages/muster/dashboard.page').then((m) => m.MusterDashboardPage),
+    loadComponent: () => import('./pages/muster/dashboard.page').then((m) => m.MusterDashboardPage),
   },
   {
     path: 'muster/server-panel',

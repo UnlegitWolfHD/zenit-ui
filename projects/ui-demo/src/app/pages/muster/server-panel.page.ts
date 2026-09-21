@@ -156,12 +156,7 @@ const STATUS: Record<string, { wort: string; badge: ZBadgeStatus }> = {
 
       <div class="demo-panelkopf">
         <div class="z-cluster">
-          <a
-            zBtn="ghost"
-            iconOnly
-            routerLink="/muster/dashboard"
-            aria-label="Zurück zum Dashboard"
-          >
+          <a zBtn="ghost" iconOnly routerLink="/muster/dashboard" aria-label="Zurück zum Dashboard">
             <z-icon name="arrow_back" />
           </a>
           <h1 class="heading-2 demo-flach">{{ servername }}</h1>
@@ -587,10 +582,9 @@ export class MusterServerPanelPage {
       gescheitert();
       return;
     }
-    zwischenablage.writeText(this.adresse).then(
-      () => this.toast.show('Adresse kopiert', { icon: 'content_copy' }),
-      gescheitert,
-    );
+    zwischenablage
+      .writeText(this.adresse)
+      .then(() => this.toast.show('Adresse kopiert', { icon: 'content_copy' }), gescheitert);
   }
 
   protected aufBefehl(text: string): void {

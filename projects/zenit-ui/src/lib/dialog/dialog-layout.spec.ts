@@ -19,7 +19,9 @@ class LayoutHost {
 
 @Component({
   imports: [ZDialogLayout],
-  template: `<z-dialog title="Server umbenennen"><span>Der neue Name gilt sofort.</span></z-dialog>`,
+  template: `<z-dialog title="Server umbenennen"
+    ><span>Der neue Name gilt sofort.</span></z-dialog
+  >`,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 class OhneAktionenHost {}

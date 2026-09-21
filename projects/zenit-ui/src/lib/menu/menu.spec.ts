@@ -167,9 +167,7 @@ describe('ZMenu', () => {
 
     // Without the own typeaheadLabel the CDK would read the textContent, and
     // that starts with the ligature "content_copy" instead of with "Adresse".
-    menue()?.dispatchEvent(
-      new KeyboardEvent('keydown', { key: 'a', keyCode: 65, bubbles: true }),
-    );
+    menue()?.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', keyCode: 65, bubbles: true }));
     await new Promise((fertig) => setTimeout(fertig, 250));
 
     expect(document.activeElement).toBe(kopieren);
