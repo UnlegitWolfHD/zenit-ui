@@ -228,6 +228,79 @@ describe('ZTooltip', () => {
     expect(vi.getTimerCount()).toBe(0);
   });
 
+  /** A scroll somewhere in the document, heard in the capture phase. */
+  function scrolleAn(ziel: EventTarget): void {
+    ziel.dispatchEvent(new Event('scroll'));
+    fixture.detectChanges();
+  }
+
+  /** Puts the trigger into a box of its own, which jsdom does not do. */
+  function liegtBei(top: number, bottom: number): void {
+    ausloeser.getBoundingClientRect = () => ({ top, bottom, left: 10, right: 30 }) as DOMRect;
+  }
+
+  // The reposition strategy builds on ScrollDispatcher, which only hears the
+  // window and containers marked cdkScrollable; the directive therefore listens
+  // on the document in the capture phase.
+  it('takes the panel back when anything around the trigger scrolls', () => {
+    loese('mouseenter');
+
+    scrolleAn(document);
+
+    expect(flaeche()).toBeNull();
+    expect(ausloeser.hasAttribute('aria-describedby')).toBe(false);
+  });
+
+  it('ignores a scroll inside its own panel', () => {
+    loese('mouseenter');
+
+    scrolleAn(pane());
+
+    expect(flaeche()).not.toBeNull();
+  });
+
+  // WCAG 2.1 SC 1.4.13 "Persistent": as long as the trigger holds the focus the
+  // panel stays and follows the scroll.
+  it('keeps the panel on a scroll while the trigger holds the focus', () => {
+    liegtBei(10, 30);
+    ausloeser.focus();
+    loese('focusin');
+
+    scrolleAn(document);
+
+    expect(flaeche()).not.toBeNull();
+  });
+
+  it('closes when the scroll pushes the focused trigger out of the scroller', () => {
+    liegtBei(-80, -60);
+    ausloeser.focus();
+    loese('focusin');
+
+    scrolleAn(document);
+
+    expect(flaeche()).toBeNull();
+  });
+
+  it('listens for scrolling only while the panel stands', () => {
+    const horcher = vi.spyOn(document, 'addEventListener');
+
+    loese('mouseenter');
+    // ScrollDispatcher of the CDK registers one of its own without options, so
+    // the one with the options object is the one of the directive.
+    const optionen = horcher.mock.calls
+      .map(([typ, , optionen]) => (typ === 'scroll' ? optionen : undefined))
+      .find((optionen) => typeof optionen === 'object' && optionen !== null) as
+      AddEventListenerOptions | undefined;
+
+    expect(optionen).toMatchObject({ capture: true, passive: true });
+    expect(optionen?.signal?.aborted).toBe(false);
+
+    loese('mouseleave');
+    warteAb();
+
+    expect(optionen?.signal?.aborted).toBe(true);
+  });
+
   it('clears the pending timer when the directive is destroyed', () => {
     // Tearing an open overlay down schedules timers of the CDK itself. That is
     // the baseline the grace period of the directive has to vanish into, so it

@@ -5,6 +5,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  DOCUMENT,
   ElementRef,
   inject,
   input,
@@ -22,6 +23,12 @@ import { ZIcon } from '../icon';
  * the entries, a click outside and Escape close the menu. The surface is
  * `surface-raised` with `shadow-overlay` and no scrim. The menu is opened from
  * a button carrying `[cdkMenuTriggerFor]`.
+ *
+ * A scroll anywhere under the open menu closes it, the way a menu of the
+ * operating system goes: in the page as well as in an inner container such as
+ * the body of a scrolling dialog. Focus returns to the trigger only when it was
+ * inside the menu, so scrolling with the pointer does not pull it away from
+ * whatever the visitor was typing in.
  *
  * @example
  * ```html
@@ -44,7 +51,37 @@ import { ZIcon } from '../icon';
   hostDirectives: [CdkMenu],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ZMenu {}
+export class ZMenu {
+  constructor() {
+    const menue = inject(CdkMenu);
+    const wirt = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+    const dokument = inject(DOCUMENT);
+    // The component only exists while the menu hangs in its overlay, so the
+    // listener does too. It sits on the document in the CAPTURE phase, because
+    // a scroll event on an inner element does not bubble: the scroll strategy
+    // of the CDK builds on `ScrollDispatcher`, which only ever hears the window
+    // and the containers a caller marked `cdkScrollable`. A menu in the body of
+    // a dialog therefore used to stand still while its trigger moved away.
+    const abbruch = new AbortController();
+    // A scroll that happened before the menu went up must not close it again:
+    // the browser scrolls a trigger into view as it is focused, and that event
+    // only arrives afterwards.
+    const seit = dokument.defaultView?.performance.now() ?? 0;
+    dokument.addEventListener(
+      'scroll',
+      (ereignis) => {
+        const ziel = ereignis.target as Node | null;
+        // A scroll inside the menu itself is not a scroll under it.
+        if (ereignis.timeStamp < seit || (ziel && wirt.contains(ziel))) {
+          return;
+        }
+        menue.menuStack.closeAll({ focusParentTrigger: wirt.contains(dokument.activeElement) });
+      },
+      { capture: true, passive: true, signal: abbruch.signal },
+    );
+    inject(DestroyRef).onDestroy(() => abbruch.abort());
+  }
+}
 
 /**
  * One entry of the menu, an icon plus a verb and its object ("Adresse

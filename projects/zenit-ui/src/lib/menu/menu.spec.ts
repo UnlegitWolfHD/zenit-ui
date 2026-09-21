@@ -162,6 +162,65 @@ describe('ZMenu', () => {
     expect(menue()).toBeNull();
   });
 
+  /** A scroll somewhere in the document, heard in the capture phase. */
+  function scrolleAn(ziel: EventTarget): void {
+    ziel.dispatchEvent(new Event('scroll'));
+    fixture.detectChanges();
+  }
+
+  // The scroll strategy of the CDK builds on ScrollDispatcher, which only hears
+  // the window and containers marked cdkScrollable; the menu therefore listens
+  // on the document in the capture phase.
+  it('closes on a scroll under it and hands the focus back to the trigger', () => {
+    oeffne();
+    eintraege()[0].focus();
+
+    scrolleAn(document);
+
+    expect(menue()).toBeNull();
+    expect(document.activeElement).toBe(ausloeser);
+  });
+
+  it('leaves the focus where it is when it was not inside the menu', () => {
+    oeffne();
+    const feld = document.createElement('input');
+    document.body.append(feld);
+    feld.focus();
+
+    scrolleAn(document);
+
+    expect(menue()).toBeNull();
+    expect(document.activeElement).toBe(feld);
+    feld.remove();
+  });
+
+  it('stays open when the scroll happens inside the menu itself', () => {
+    oeffne();
+
+    scrolleAn(menue()!);
+
+    expect(menue()).not.toBeNull();
+  });
+
+  it('listens for scrolling only while it is open', () => {
+    const horcher = vi.spyOn(document, 'addEventListener');
+
+    oeffne();
+    // ScrollDispatcher of the CDK registers one of its own without options, so
+    // the one with the options object is the one of the menu.
+    const optionen = horcher.mock.calls
+      .map(([typ, , optionen]) => (typ === 'scroll' ? optionen : undefined))
+      .find((optionen) => typeof optionen === 'object' && optionen !== null) as
+      AddEventListenerOptions | undefined;
+
+    expect(optionen).toMatchObject({ capture: true, passive: true });
+    expect(optionen?.signal?.aborted).toBe(false);
+
+    klicke(eintraege()[0]);
+
+    expect(optionen?.signal?.aborted).toBe(true);
+  });
+
   it('keeps the typeahead label free of the icon ligature', async () => {
     oeffne();
     const kopieren = eintraege()[0];

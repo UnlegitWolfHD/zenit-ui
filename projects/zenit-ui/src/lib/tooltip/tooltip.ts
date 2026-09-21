@@ -23,8 +23,11 @@ let zaehler = 0;
 
 /**
  * Short addition to a control. Opens the tooltip panel in a CDK overlay,
- * centered above the trigger with 8px gap, below it as the fallback position,
- * and repositions it on scroll.
+ * centered above the trigger with 8px gap, below it as the fallback position.
+ * A scroll anywhere around the trigger takes the panel back, in the page as
+ * well as in an inner container such as the body of a scrolling dialog; only
+ * while the trigger holds the focus does the panel follow the scroll instead,
+ * until the trigger has left the scroller.
  *
  * Accessibility: the panel appears on pointer and focus. On leaving it does not
  * disappear at once but after 100ms, and entering the panel itself stops that
@@ -87,6 +90,10 @@ export class ZTooltip {
   private timer?: ReturnType<typeof setTimeout>;
   /** Takes the panel listeners with it on destroy. */
   private readonly abbruch = new AbortController();
+  /** Lives only while the panel stands; see {@link horcheAufScrollen}. */
+  private scrollHorcher?: AbortController;
+  /** When the panel went up, on the clock of `Event.timeStamp`. */
+  private seit = 0;
 
   constructor() {
     // The text can change while the panel hangs in the overlay, for example
@@ -109,6 +116,7 @@ export class ZTooltip {
     inject(DestroyRef).onDestroy(() => {
       this.stoppeTimer();
       this.abbruch.abort();
+      this.scrollHorcher?.abort();
       this.overlayRef?.dispose();
     });
   }
@@ -146,6 +154,7 @@ export class ZTooltip {
     this.flaeche.instance.text.set(text);
     this.flaeche.instance.id.set(this.tooltipId);
     this.sichtbar.set(true);
+    this.horcheAufScrollen();
   }
 
   protected verstecke(): void {
@@ -153,10 +162,83 @@ export class ZTooltip {
     if (!this.sichtbar()) {
       return;
     }
+    this.scrollHorcher?.abort();
+    this.scrollHorcher = undefined;
     this.ueberPanel = false;
     this.overlayRef?.detach();
     this.flaeche = undefined;
     this.sichtbar.set(false);
+  }
+
+  /**
+   * While the panel stands, every scroller around the trigger is listened to.
+   * The listener hangs on the document in the CAPTURE phase, because a scroll
+   * event on an inner element does not bubble: the `reposition` strategy of the
+   * overlay builds on `ScrollDispatcher`, which only ever hears the window and
+   * the containers a caller marked `cdkScrollable`. A tooltip inside the body of
+   * a dialog therefore used to stand still while its trigger moved away under
+   * it. Capture hears every scroller without asking any caller to annotate one.
+   */
+  private horcheAufScrollen(): void {
+    this.seit = this.dokument.defaultView?.performance.now() ?? 0;
+    this.scrollHorcher = new AbortController();
+    this.dokument.addEventListener('scroll', (ereignis) => this.aufScrollen(ereignis), {
+      capture: true,
+      passive: true,
+      signal: this.scrollHorcher.signal,
+    });
+  }
+
+  /**
+   * A scroll under the pointer takes the panel back, the way the native `title`
+   * tooltip goes: one that lags behind its trigger is worse than none. The
+   * focus is the exception, because WCAG 2.1 SC 1.4.13 "Hoverable" asks the
+   * content to stand as long as the trigger keeps hover or focus, and the
+   * browser itself scrolls a focused control into view. A focused trigger
+   * therefore keeps its panel, which follows along and only goes once the
+   * trigger has left the scroller. A scroll inside the panel is not a scroll of
+   * the trigger and changes nothing, and neither does one that happened before
+   * the panel went up: a browser scrolls a control into view as it is focused,
+   * and that event only arrives afterwards, so without the timestamp the panel
+   * would close under the very hand that opened it.
+   */
+  private aufScrollen(ereignis: Event): void {
+    const ziel = ereignis.target as Node | null;
+    if (
+      !this.overlayRef ||
+      ereignis.timeStamp < this.seit ||
+      (ziel && this.overlayRef.overlayElement.contains(ziel))
+    ) {
+      return;
+    }
+    if (this.host.nativeElement.contains(this.dokument.activeElement) && !this.verdeckt(ziel)) {
+      this.overlayRef.updatePosition();
+      return;
+    }
+    this.verstecke();
+  }
+
+  /**
+   * Has the trigger left the visible box of the scroller the event came from?
+   * The page reports its scroll on the document, and in some engines on the
+   * root element or the body; all three mean the viewport.
+   */
+  private verdeckt(ziel: Node | null): boolean {
+    const seite =
+      !(ziel instanceof Element) ||
+      ziel === this.dokument.documentElement ||
+      ziel === this.dokument.body;
+    const fenster = this.dokument.defaultView;
+    const rolle = seite
+      ? { top: 0, left: 0, bottom: fenster?.innerHeight ?? 0, right: fenster?.innerWidth ?? 0 }
+      : ziel.getBoundingClientRect();
+    const trigger = this.host.nativeElement.getBoundingClientRect();
+    return (
+      trigger.bottom <= rolle.top ||
+      trigger.top >= rolle.bottom ||
+      trigger.right <= rolle.left ||
+      trigger.left >= rolle.right
+    );
   }
 
   /**
