@@ -1,9 +1,10 @@
 import { CdkMenu, CdkMenuItem } from '@angular/cdk/menu';
 import {
-  afterEveryRender,
+  afterNextRender,
   booleanAttribute,
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   ElementRef,
   inject,
   input,
@@ -55,8 +56,9 @@ export class ZMenu {}
  *
  * Accessibility: role, focus and the `disabled` input come from `CdkMenuItem`
  * as a host directive, which also provides the `(triggered)` output. The CDK
- * typeahead label is set to the text without the icon ligature after every
- * render, because the raw `textContent` would otherwise start with the
+ * typeahead label is set to the text without the icon ligature, once after the
+ * first render and from then on whenever a `MutationObserver` reports a change
+ * in the entry, because the raw `textContent` would otherwise start with the
  * ligature ("content_copyAdresse kopieren") and typing the first letter would
  * not find the entry.
  *
@@ -109,10 +111,21 @@ export class ZMenuItem {
   constructor() {
     const eintrag = inject(CdkMenuItem);
     const wirt = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+    const zerstoerung = inject(DestroyRef);
     // Without this the CDK typeahead takes textContent, which starts with the
     // ligature of the icon ("content_copyAdresse kopieren"). The text can
-    // change at any time, hence after every render.
-    afterEveryRender({ read: () => (eintrag.typeaheadLabel = beschriftung(wirt)) });
+    // change at any time, but only through the DOM, so a MutationObserver
+    // carries the change instead of a callback that reads the entry again after
+    // every render of the application.
+    afterNextRender(() => {
+      const lies = (): void => {
+        eintrag.typeaheadLabel = beschriftung(wirt);
+      };
+      lies();
+      const beobachter = new MutationObserver(lies);
+      beobachter.observe(wirt, { characterData: true, childList: true, subtree: true });
+      zerstoerung.onDestroy(() => beobachter.disconnect());
+    });
   }
 }
 
@@ -155,13 +168,14 @@ function beschriftung(wirt: HTMLElement): string {
 export class ZMenuSeparator {}
 
 /**
- * All menu building blocks at once, for the `imports` of a component. The
- * trigger `CdkMenuTrigger` is not part of it and comes from
- * `@angular/cdk/menu`.
+ * All menu building blocks at once, for the `imports` of a component: the
+ * design system names this constant as the way in ("Import über `Z_MENU`"), so
+ * it stays the documented entry point next to the three classes. The trigger
+ * `CdkMenuTrigger` is not part of it and comes from `@angular/cdk/menu`.
  *
  * @example
  * ```ts
  * imports: [Z_MENU, CdkMenuTrigger];
  * ```
  */
-export const Z_MENU = [ZMenu, ZMenuItem, ZMenuSeparator];
+export const Z_MENU = [ZMenu, ZMenuItem, ZMenuSeparator] as const;

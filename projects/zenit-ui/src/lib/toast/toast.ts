@@ -1,4 +1,4 @@
-import { Injectable, OnDestroy, signal } from '@angular/core';
+import { OnDestroy, Service, signal } from '@angular/core';
 
 /**
  * Status of a toast. `neutral` confirms, `success` reports a completed
@@ -60,7 +60,7 @@ const DAUER_MIT_AKTION = 8000;
  * <button zBtn="secondary" (click)="toast.success('Eigenschaften gespeichert')">Speichern</button>
  * ```
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class ZToast implements OnDestroy {
   private letzteId = 0;
   private readonly timer = new Map<number, ReturnType<typeof setTimeout>>();

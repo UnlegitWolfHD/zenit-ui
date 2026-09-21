@@ -1,6 +1,6 @@
 import { Dialog, DialogConfig, DialogRef } from '@angular/cdk/dialog';
 import { ComponentType } from '@angular/cdk/portal';
-import { inject, Injectable } from '@angular/core';
+import { inject, Service } from '@angular/core';
 import { map, Observable } from 'rxjs';
 import { ZConfirmConfig, ZConfirmDialog } from './confirm-dialog';
 import { naechsteId, Z_DIALOG_TITLE_ID } from './dialog-layout';
@@ -48,7 +48,7 @@ function alsListe(klassen: string | string[] | undefined): string[] {
  * }
  * ```
  */
-@Injectable({ providedIn: 'root' })
+@Service()
 export class ZDialog {
   private readonly cdk = inject(Dialog);
 
