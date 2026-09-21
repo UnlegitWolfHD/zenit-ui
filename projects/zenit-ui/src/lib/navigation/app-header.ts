@@ -9,17 +9,38 @@ import {
 import { ZButton } from '../button';
 import { ZIcon } from '../icon';
 
-/** Laeuft je Kopfzeile einmal hoch, damit aria-controls eindeutig bleibt. */
+/** Counts up once per header so that `aria-controls` stays unique. */
 let laufendeNummer = 0;
 
-/** Marke im Kopf: reine Schrift in `display`, kein Logo. */
+/**
+ * Brand slot of the header: plain text in the `display` face, no logo image.
+ *
+ * Adds the class `z-header__brand` and renders nothing itself, so the caller
+ * decides the element. A link back to the start page is the usual choice.
+ *
+ * @example
+ * ```html
+ * <a zBrand href="/">Zenit</a>
+ * ```
+ */
 @Directive({
   selector: '[zBrand]',
   host: { 'class': 'z-header__brand' },
 })
 export class ZBrand {}
 
-/** Ein Link der Hauptnavigation. Aktiv traegt er `aria-current="page"`. */
+/**
+ * One link of the main navigation, carrying the class `z-header__link`.
+ *
+ * The active link gets `aria-current="page"`, which announces it as the current
+ * page and drives the `accent-subtle` background. The library does not read the
+ * router, so the caller decides which link is active.
+ *
+ * @example
+ * ```html
+ * <a zHeaderLink routerLink="/gameserver" [active]="true">Gameserver</a>
+ * ```
+ */
 @Directive({
   selector: 'a[zHeaderLink]',
   host: {
@@ -28,16 +49,53 @@ export class ZBrand {}
   },
 })
 export class ZHeaderLink {
+  /**
+   * Whether this link points at the page currently shown. Written as a bare
+   * attribute (`active`) it counts as `true`.
+   *
+   * @default false
+   */
   readonly active = input(false, { transform: booleanAttribute });
 }
 
-/** Rechter Teil der Kopfzeile: Guthaben, Avatar oder Buttons. */
+/**
+ * Marks content for the right-hand end of the header: credit, avatar or
+ * buttons. Pure slot marker, it adds no class and no markup.
+ *
+ * @example
+ * ```html
+ * <a zHeaderLink zHeaderEnd class="z-mono" href="/abrechnung">25,00&nbsp;€</a>
+ * <span zHeaderEnd class="z-avatar" aria-hidden="true">K</span>
+ * ```
+ */
 @Directive({ selector: '[zHeaderEnd]' })
 export class ZHeaderEnd {}
 
 /**
- * Kopfzeile fuer den Kundenbereich und fuer oeffentliche Seiten. Unter 900px
- * klappt die Navigation in ein Menue; der rechte Teil bleibt sichtbar.
+ * Header of the customer area and of the public pages. Same component both
+ * times, only the links differ.
+ *
+ * Renders, in order: the `[zBrand]` slot, an icon-only ghost button that
+ * toggles the navigation below 900px, a `<nav class="z-header__nav">` holding
+ * the projected links, and a `<div class="z-header__end">` with the
+ * `[zHeaderEnd]` slot. The host carries `z-header` and, while the navigation is
+ * open, `z-header--open`.
+ *
+ * Accessibility: the toggle is a `<button type="button">` with `aria-label`
+ * from {@link menuLabel}, `aria-expanded` reflecting the open state and
+ * `aria-controls` pointing at the generated id of the `<nav>`. The `<nav>` is a
+ * navigation landmark and takes its name from {@link navLabel}. Above 900px the
+ * links are visible and the end slot stays visible at every width.
+ *
+ * @example
+ * ```html
+ * <z-app-header navLabel="Hauptnavigation">
+ *   <a zBrand href="/">Zenit</a>
+ *   <a zHeaderLink routerLink="/gameserver" [active]="true">Gameserver</a>
+ *   <a zHeaderLink routerLink="/abrechnung">Abrechnung</a>
+ *   <a zBtn="primary" size="sm" zHeaderEnd routerLink="/neu">Server erstellen</a>
+ * </z-app-header>
+ * ```
  */
 @Component({
   selector: 'z-app-header',
@@ -68,8 +126,20 @@ export class ZHeaderEnd {}
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ZAppHeader {
+  /**
+   * Accessible name of the `<nav>` landmark. Empty means no `aria-label` at
+   * all; set it whenever the page has more than one navigation.
+   *
+   * @default ''
+   */
   readonly navLabel = input('');
-  /** aria-label des Menue-Knopfes unter 900px, vom Aufrufer ueberschreibbar. */
+
+  /**
+   * `aria-label` of the menu button shown below 900px. German default, meant to
+   * be overridden by the caller.
+   *
+   * @default 'Menü'
+   */
   readonly menuLabel = input('Menü');
 
   protected readonly offen = signal(false);

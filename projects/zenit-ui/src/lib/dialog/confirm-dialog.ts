@@ -4,23 +4,51 @@ import { ZButton } from '../button';
 import { ZField, ZInput } from '../field';
 import { naechsteId, ZDialogActions, ZDialogLayout } from './dialog-layout';
 
-/** Texte und Verhalten einer Bestaetigung. Alle Texte kommen vom Aufrufer. */
+/**
+ * Texts and behaviour of a confirmation, passed to `ZDialog.confirm()`. Every
+ * text comes from the caller, the library holds none.
+ */
 export interface ZConfirmConfig {
+  /** Heading of the dialog, phrased as a question or a task. */
   title: string;
+  /** The concrete consequences: what is lost, what it costs. */
   body: string;
+  /** Label of the confirming button. It repeats the verb from `title`. */
   confirmLabel: string;
+  /** Label of the cancelling ghost button. */
   cancelLabel: string;
-  /** Bestaetigen als danger statt primary. */
+  /**
+   * Renders the confirming button as `danger` instead of `primary`. Use it for
+   * deleting, cancelling a contract and removing a payment method.
+   *
+   * @default false
+   */
   danger?: boolean;
-  /** Text, der genau so eingetippt werden muss. Fehlt er, gibt es kein Feld. */
+  /**
+   * Text that has to be typed exactly, usually the name of the object being
+   * deleted. It shows up as the placeholder, and the confirming button stays
+   * disabled until the input matches character for character. Without it the
+   * dialog has no input field.
+   */
   requireText?: string;
-  /** Label des Feldes. Fehlt es, traegt das Feld `requireText` als aria-label. */
+  /**
+   * Label of that input field. Without it the field takes `requireText` as its
+   * `aria-label` instead, so it is never unlabelled.
+   */
   requireLabel?: string;
 }
 
 /**
- * Bestaetigung hinter `ZDialog.confirm()`. Kein Teil der dokumentierten API.
- * Das Ergebnis ist `true` nur ueber den Bestaetigen-Button.
+ * The confirmation behind `ZDialog.confirm()`. Built from `z-dialog` with a
+ * cancel and a confirm button and, with `requireText`, an input field whose
+ * value gates the confirm button.
+ *
+ * The result is `true` only through the confirming button; cancel, Escape and a
+ * click on the backdrop leave the dialog without a result, which
+ * `ZDialog.confirm()` maps to `false`.
+ *
+ * @internal Not part of the documented API. Open it through
+ * `ZDialog.confirm()`.
  */
 @Component({
   selector: 'z-confirm-dialog',
@@ -61,7 +89,7 @@ export class ZConfirmDialog {
 
   private readonly eingabe = signal('');
 
-  /** Bestaetigen bleibt gesperrt, bis die Eingabe genau passt. */
+  /** Confirming stays disabled until the input matches exactly. */
   protected readonly gesperrt = computed(
     () => !!this.daten.requireText && this.eingabe() !== this.daten.requireText,
   );
