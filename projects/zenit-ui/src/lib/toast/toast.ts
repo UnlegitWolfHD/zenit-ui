@@ -1,4 +1,4 @@
-import { OnDestroy, Service, signal } from '@angular/core';
+import { DestroyRef, inject, Service, signal } from '@angular/core';
 
 /**
  * Status of a toast. `neutral` confirms, `success` reports a completed
@@ -61,13 +61,19 @@ const DAUER_MIT_AKTION = 8000;
  * ```
  */
 @Service()
-export class ZToast implements OnDestroy {
+export class ZToast {
   private letzteId = 0;
   private readonly timer = new Map<number, ReturnType<typeof setTimeout>>();
   private readonly liste = signal<readonly ZToastItem[]>([]);
 
   /** The visible toasts, oldest first. Read by `z-toast-outlet`. */
   readonly toasts = this.liste.asReadonly();
+
+  constructor() {
+    // Closes all toasts so no timer keeps running when the application is torn
+    // down.
+    inject(DestroyRef).onDestroy(() => this.dismiss());
+  }
 
   /**
    * Shows a toast and returns its id for `dismiss`. While three toasts are
@@ -140,15 +146,5 @@ export class ZToast implements OnDestroy {
       }
     }
     this.liste.update((alt) => (id === undefined ? [] : alt.filter((t) => t.id !== id)));
-  }
-
-  /**
-   * Closes all toasts so no timer keeps running when the application is torn
-   * down.
-   *
-   * @internal Angular lifecycle hook.
-   */
-  ngOnDestroy(): void {
-    this.dismiss();
   }
 }
