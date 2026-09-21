@@ -1,5 +1,7 @@
 import { Clipboard } from '@angular/cdk/clipboard';
-import { Component, computed, effect, inject, input, signal } from '@angular/core';
+import { Component, computed, inject, input, linkedSignal, resource, signal } from '@angular/core';
+import { form, FormField } from '@angular/forms/signals';
+import { firstValueFrom } from 'rxjs';
 import {
   ZButton,
   ZDialog,
@@ -17,6 +19,8 @@ import {
   GameserverData,
   ListenZustand,
   Simulation,
+  SKELETT_MS,
+  warte,
 } from '../../gameserver/gameserver-data';
 import { ServerList } from '../../gameserver/server-list/server-list';
 import { CodeBlock } from '../../shared/code-block/code-block';
@@ -25,13 +29,18 @@ import { DATEI, quelltext } from '../../shared/quelltexte';
 /** The states a reader can call up through `?zustand=`. */
 const SIMULATIONEN: readonly Simulation[] = ['normal', 'laden', 'leer', 'fehler'];
 
+/** The filter that narrows nothing down: no text, "Alle Status". */
+const KEIN_FILTER = { suche: '', status: STATUS_FILTER[0] };
+
 /**
  * Page "Gameserver" of the customer area (10-seitenmuster.md): AppHeader,
  * PageHeader with one fact and one action, then the panels. The page title is
  * the same word as the navigation link.
  *
- * It owns the filter, the feedback and the confirmation; drawing the list is
- * the job of ServerList.
+ * It owns the load, the filter, the feedback and the confirmation; drawing the
+ * list is the job of ServerList. State is signals throughout: the query
+ * parameter is an input, the list a `resource()`, the filter a Signal Form
+ * (docs/signals.md).
  *
  * Every region carries a disclosure with its own source. A native `details` and
  * not `z-faq`, because that component projects into a `<p>` limited to
@@ -45,6 +54,7 @@ const SIMULATIONEN: readonly Simulation[] = ['normal', 'laden', 'leer', 'fehler'
   selector: 'app-gameserver',
   imports: [
     CodeBlock,
+    FormField,
     ServerList,
     ZButton,
     ZField,
@@ -87,19 +97,17 @@ const SIMULATIONEN: readonly Simulation[] = ['normal', 'laden', 'leer', 'fehler'
                 zInput
                 size="sm"
                 id="suche"
-                name="suche"
                 type="search"
                 placeholder="Name oder Adresse"
-                [value]="suche()"
-                (input)="sucheSetzen($event)"
+                [formField]="filter.suche"
               />
             </z-input-group>
           </z-field>
           <z-field label="Status" for="status">
             <z-select size="sm">
-              <select id="status" name="status" (change)="statusSetzen($event)">
+              <select id="status" [formField]="filter.status">
                 @for (option of statusOptionen; track option) {
-                  <option [value]="option" [selected]="option === status()">{{ option }}</option>
+                  <option [value]="option">{{ option }}</option>
                 }
               </select>
             </z-select>
@@ -109,18 +117,25 @@ const SIMULATIONEN: readonly Simulation[] = ['normal', 'laden', 'leer', 'fehler'
 
         <details class="app-code-faq">
           <summary>So ist es eingebunden: Filterzeile</summary>
-          <app-code-block
-            [code]="quellen.filterzeile"
-            datei="pages/gameserver/gameserver.ts"
-            sprache="Template"
-          />
+          <div class="app-code-gruppe">
+            <app-code-block
+              [code]="quellen.filterzeile"
+              datei="pages/gameserver/gameserver.ts"
+              sprache="Template"
+            />
+            <app-code-block
+              [code]="quellen.filter"
+              datei="pages/gameserver/gameserver.ts"
+              sprache="TypeScript"
+            />
+          </div>
         </details>
       }
 
       <!-- #region liste -->
       <app-server-list
         [server]="gefiltert()"
-        [zustand]="listenZustand()"
+        [zustand]="zustandDerListe()"
         (kopieren)="adresseKopieren($event)"
         (neustart)="neustart($event)"
         (loeschen)="loeschen($event)"
@@ -137,6 +152,16 @@ const SIMULATIONEN: readonly Simulation[] = ['normal', 'laden', 'leer', 'fehler'
             [code]="quellen.liste"
             datei="pages/gameserver/gameserver.ts"
             sprache="Template"
+          />
+          <app-code-block
+            [code]="quellen.laden"
+            datei="pages/gameserver/gameserver.ts"
+            sprache="TypeScript"
+          />
+          <app-code-block
+            [code]="quellen.dienst"
+            datei="gameserver/gameserver-data.ts"
+            sprache="TypeScript"
           />
           <app-code-block
             [code]="quellen.zustaende"
@@ -196,8 +221,6 @@ export class Gameserver {
   readonly zustand = input<string>();
 
   protected readonly statusOptionen = STATUS_FILTER;
-  protected readonly suche = signal('');
-  protected readonly status = signal(STATUS_FILTER[0]);
 
   /**
    * The code the disclosures show, read once from the generated copy of the
@@ -207,7 +230,10 @@ export class Gameserver {
   protected readonly quellen = {
     seitenkopf: quelltext(DATEI.seite, 'seitenkopf'),
     filterzeile: quelltext(DATEI.seite, 'filterzeile'),
+    filter: quelltext(DATEI.seite, 'filter'),
     liste: quelltext(DATEI.seite, 'liste'),
+    laden: quelltext(DATEI.seite, 'laden'),
+    dienst: quelltext(DATEI.daten, 'laden'),
     aktionen: quelltext(DATEI.seite, 'aktionen'),
     zustaende: quelltext(DATEI.liste, 'zustaende'),
     zeile: quelltext(DATEI.liste, 'zeile'),
@@ -216,42 +242,86 @@ export class Gameserver {
     themeUmschalter: quelltext(DATEI.themeControl),
   };
 
-  /** Search over name and address, plus the status filter. */
-  protected readonly gefiltert = computed(() =>
-    filtern(this.daten.server(), this.suche(), this.status()),
+  // #region laden
+  /**
+   * What the server answers. It follows the query parameter and stays writable,
+   * which is what `linkedSignal()` is for: "Erneut laden" asks for the normal
+   * answer, so that the simulated error can be left again, and a new parameter
+   * wins over that choice.
+   */
+  private readonly simulation = linkedSignal<Simulation>(
+    () => SIMULATIONEN.find((s) => s === this.zustand()) ?? 'normal',
   );
 
-  /** A loaded list that the filter narrows down to nothing is its own state. */
-  protected readonly listenZustand = computed<ListenZustand>(() => {
-    const zustand = this.daten.zustand();
-    return zustand === 'liste' && this.gefiltert().length === 0 ? 'gefiltert-leer' : zustand;
+  /**
+   * The list is a `resource()`: new params start a load and abort the running
+   * one, a rejected loader is the error state, and no effect or subscription
+   * pushes the answer into a signal. A real page calls `liste.reload()` to
+   * try again.
+   */
+  private readonly liste = resource<readonly BeispielServer[], Simulation>({
+    params: () => this.simulation(),
+    loader: ({ params, abortSignal }) => this.daten.laden(params, abortSignal),
+    defaultValue: [],
   });
 
-  protected readonly filterSichtbar = computed(() => this.daten.server().length > 0);
+  /**
+   * Turns true once a load has taken longer than 300 milliseconds, and only
+   * then does the list draw skeleton rows (15-zustaende.md, "Lädt"). The delay
+   * is a resource as well: it starts with the load, and the end of the load
+   * aborts it and puts it back to `false`.
+   */
+  private readonly dauertLange = resource({
+    params: () => this.liste.isLoading() || undefined,
+    loader: ({ abortSignal }) => warte(SKELETT_MS, abortSignal).then(() => true),
+    defaultValue: false,
+  });
 
-  constructor() {
-    // The query parameter is the only trigger for a load, so opening
-    // /gameserver?zustand=fehler shows exactly that state.
-    effect(() => this.daten.laden(this.simulation()));
-  }
+  /** `value()` of a resource throws in the error state, hence the guard. */
+  private readonly server = computed(() => (this.liste.hasValue() ? this.liste.value() : []));
 
-  private simulation(): Simulation {
-    const wunsch = this.zustand();
-    return SIMULATIONEN.find((s) => s === wunsch) ?? 'normal';
+  protected erneutLaden(): void {
+    this.simulation.set('normal');
   }
+  // #endregion
 
-  protected sucheSetzen(ereignis: Event): void {
-    this.suche.set((ereignis.target as HTMLInputElement).value);
-  }
+  // #region filter
+  /**
+   * The filter is a Signal Form: one signal holds the values, `form()` turns
+   * it into a field tree, and `[formField]` binds a native control to one
+   * field. No handler reads `$event.target`, and the filtered list is a
+   * `computed()` over the same signal.
+   */
+  protected readonly filterWerte = signal(KEIN_FILTER);
+  protected readonly filter = form(this.filterWerte);
 
-  protected statusSetzen(ereignis: Event): void {
-    this.status.set((ereignis.target as HTMLSelectElement).value);
-  }
+  protected readonly gefiltert = computed(() => {
+    const { suche, status } = this.filterWerte();
+    return filtern(this.server(), suche, status);
+  });
 
   protected filterZuruecksetzen(): void {
-    this.suche.set('');
-    this.status.set(STATUS_FILTER[0]);
+    // reset() with a value writes the model and clears touched and dirty.
+    this.filter().reset(KEIN_FILTER);
   }
+  // #endregion
+
+  /** Every state of the list, derived from the two resources and the filter. */
+  protected readonly zustandDerListe = computed<ListenZustand>(() => {
+    if (this.liste.isLoading()) {
+      return this.dauertLange.value() ? 'skelett' : 'start';
+    }
+    if (this.liste.error()) {
+      return 'fehler';
+    }
+    if (this.server().length === 0) {
+      return 'leer';
+    }
+    return this.gefiltert().length === 0 ? 'gefiltert-leer' : 'liste';
+  });
+
+  /** An empty list shows no filters. */
+  protected readonly filterSichtbar = computed(() => this.server().length > 0);
 
   /** The wizard belongs to the real application; here it only says so. */
   protected erstellen(): void {
@@ -284,9 +354,11 @@ export class Gameserver {
     queueMicrotask(() => this.dialogFragen(server));
   }
 
-  private dialogFragen(server: BeispielServer): void {
-    this.dialog
-      .confirm({
+  private async dialogFragen(server: BeispielServer): Promise<void> {
+    // confirm() answers exactly once with an Observable<boolean>. One value is
+    // a promise, so the page awaits it and holds no subscription.
+    const bestaetigt = await firstValueFrom(
+      this.dialog.confirm({
         title: `Server "${server.name}" löschen?`,
         body: 'Alle Welten, Backups und Zugänge gehen verloren. Das lässt sich nicht rückgängig machen.',
         confirmLabel: 'Löschen',
@@ -294,18 +366,14 @@ export class Gameserver {
         danger: true,
         requireText: server.name,
         requireLabel: 'Name des Servers',
-      })
-      .subscribe((bestaetigt) => {
-        if (bestaetigt) {
-          this.daten.entfernen(server.id);
-          this.toast.success(`${server.name} gelöscht`);
-        }
-      });
+      }),
+    );
+    if (bestaetigt) {
+      // Writing to a resource puts it into the state 'local'. Deleting the
+      // last server leaves the list empty.
+      this.liste.update((alt) => alt.filter((eintrag) => eintrag.id !== server.id));
+      this.toast.success(`${server.name} gelöscht`);
+    }
   }
   // #endregion
-
-  /** The retry answers normally, so that the error state can be left again. */
-  protected erneutLaden(): void {
-    this.daten.laden('normal');
-  }
 }

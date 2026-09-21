@@ -1,4 +1,4 @@
-import { OnDestroy, Service, signal } from '@angular/core';
+import { Service } from '@angular/core';
 import { BEISPIEL_SERVER, BeispielServer, STATUS_FILTER } from './beispieldaten';
 
 /**
@@ -31,83 +31,66 @@ export function filtern(
 export type Simulation = 'normal' | 'laden' | 'leer' | 'fehler';
 
 /**
- * What the list shows right now. `start` is the first 300 milliseconds of a
- * load: nothing is drawn yet, because a fast answer must not make placeholders
- * flash (15-zustaende.md, "Lädt").
+ * What the list renders. `start` is the first 300 milliseconds of a load:
+ * nothing is drawn yet, because a fast answer must not make placeholders flash
+ * (15-zustaende.md, "Lädt"). `gefiltert-leer` is a loaded list that the filter
+ * narrows down to nothing.
  */
-export type Ladezustand = 'start' | 'skelett' | 'liste' | 'leer' | 'fehler';
-
-/** Everything the list renders, including the case "filter matches nothing". */
-export type ListenZustand = Ladezustand | 'gefiltert-leer';
+export type ListenZustand = 'start' | 'skelett' | 'liste' | 'leer' | 'fehler' | 'gefiltert-leer';
 
 /** Skeleton rows only after 300 milliseconds (15-zustaende.md, Skeleton README). */
-const SKELETT_MS = 300;
+export const SKELETT_MS = 300;
 
 /** Simulated answer of the server. */
 const ANTWORT_MS = 600;
 
 /**
+ * A timer as a promise that a `resource()` can abort: the abort clears the
+ * timer and rejects, and the resource drops the result of an aborted load.
+ */
+export function warte(ms: number, abbruch: AbortSignal): Promise<void> {
+  return new Promise((fertig, abgebrochen) => {
+    const timer = setTimeout(fertig, ms);
+    abbruch.addEventListener(
+      'abort',
+      () => {
+        clearTimeout(timer);
+        abgebrochen(abbruch.reason);
+      },
+      { once: true },
+    );
+  });
+}
+
+/**
  * Source of the server list. In a real application this service calls the API;
- * here it answers from `beispieldaten.ts` after a timer, so that loading, empty
- * and error are real states of the page and not a switch in the template.
+ * here it answers from `beispieldaten.ts` after a timer. It holds no state:
+ * the page wraps {@link laden} in a `resource()`, and loading, empty and error
+ * are states of that resource instead of a switch in the template.
  *
  * `@Service()` is the short form of `@Injectable({ providedIn: 'root' })` for
  * singletons (Angular 22).
  */
 @Service()
-export class GameserverData implements OnDestroy {
-  private readonly liste = signal<readonly BeispielServer[]>([]);
-  private readonly ladezustand = signal<Ladezustand>('start');
-  private timer: ReturnType<typeof setTimeout>[] = [];
-
-  /** The servers that have arrived. Empty while loading and on error. */
-  readonly server = this.liste.asReadonly();
-
-  /** Which of the states the list is in. */
-  readonly zustand = this.ladezustand.asReadonly();
-
+export class GameserverData {
+  // #region laden
   /**
-   * Starts a load. `laden` keeps the skeleton standing, so that the loading
-   * state can be looked at; every other simulation answers after
-   * {@link ANTWORT_MS}.
+   * One load, shaped like the loader of a `resource()`: a promise that settles
+   * once and stops when `abbruch` fires. With `HttpClient` this method would
+   * be `firstValueFrom(http.get(...))`, or the page would use `httpResource()`.
+   *
+   * @param simulation `fehler` rejects, `leer` answers with no server and
+   *   `laden` never answers, so that the loading state can be looked at.
    */
-  laden(simulation: Simulation = 'normal'): void {
-    this.stoppeTimer();
-    this.liste.set([]);
-    this.ladezustand.set('start');
-    this.timer.push(setTimeout(() => this.ladezustand.set('skelett'), SKELETT_MS));
+  async laden(simulation: Simulation, abbruch: AbortSignal): Promise<readonly BeispielServer[]> {
     if (simulation === 'laden') {
-      return;
+      return new Promise<never>(() => undefined);
     }
-    this.timer.push(
-      setTimeout(() => {
-        if (simulation === 'fehler') {
-          this.ladezustand.set('fehler');
-          return;
-        }
-        this.liste.set(simulation === 'leer' ? [] : BEISPIEL_SERVER);
-        this.ladezustand.set(simulation === 'leer' ? 'leer' : 'liste');
-      }, ANTWORT_MS),
-    );
-  }
-
-  /** Removes a server after the confirmation. The last one leaves the list empty. */
-  entfernen(id: string): void {
-    this.liste.update((alt) => alt.filter((server) => server.id !== id));
-    if (this.liste().length === 0) {
-      this.ladezustand.set('leer');
+    await warte(ANTWORT_MS, abbruch);
+    if (simulation === 'fehler') {
+      throw new Error('Simulated failure of the server list');
     }
+    return simulation === 'leer' ? [] : BEISPIEL_SERVER;
   }
-
-  /** @internal Angular lifecycle hook: no timer survives the application. */
-  ngOnDestroy(): void {
-    this.stoppeTimer();
-  }
-
-  private stoppeTimer(): void {
-    for (const t of this.timer) {
-      clearTimeout(t);
-    }
-    this.timer = [];
-  }
+  // #endregion
 }
