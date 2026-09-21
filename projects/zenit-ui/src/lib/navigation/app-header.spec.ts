@@ -36,6 +36,18 @@ class ZweiwegHost {
   readonly offen = signal(false);
 }
 
+/** A header inside a link: the only `<a>` above the nav content is the outer one. */
+@Component({
+  imports: [ZAppHeader],
+  template: `<a href="#aussen"
+    ><z-app-header [(open)]="offen"><span>Nur Text</span></z-app-header></a
+  >`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class ImLinkHost {
+  readonly offen = signal(false);
+}
+
 @Component({
   imports: [ZAppHeader],
   template: `<z-app-header menuLabel="Bereiche zeigen" />`,
@@ -159,6 +171,38 @@ describe('ZAppHeader', () => {
     expect(fixture.componentInstance.offen()).toBe(false);
     expect(menueKnopf(fixture).getAttribute('aria-expanded')).toBe('false');
     expect(kopf.classList.contains('z-header--open')).toBe(false);
+  });
+
+  it('stays open when the only link above the click sits outside the nav', () => {
+    const fixture = TestBed.createComponent(ImLinkHost);
+    fixture.detectChanges();
+
+    menueKnopf(fixture).click();
+    fixture.detectChanges();
+
+    fixture.nativeElement.querySelector('nav span').click();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.offen()).toBe(true);
+    expect(menueKnopf(fixture).getAttribute('aria-expanded')).toBe('true');
+  });
+
+  it('stays open on a click that opens the link in a new tab', () => {
+    const fixture = TestBed.createComponent(HeaderHost);
+    fixture.detectChanges();
+
+    menueKnopf(fixture).click();
+    fixture.detectChanges();
+
+    const link: HTMLAnchorElement = fixture.nativeElement.querySelector('a[href="#server"]');
+    for (const taste of ['ctrlKey', 'metaKey', 'shiftKey'] as const) {
+      link.dispatchEvent(new MouseEvent('click', { bubbles: true, [taste]: true }));
+      fixture.detectChanges();
+
+      expect(fixture.componentInstance.offen(), `${taste} closed the menu`).toBe(true);
+    }
+
+    expect(fixture.componentInstance.gemeldet).toEqual([true]);
   });
 
   it('stays open when a button inside the nav is clicked', () => {

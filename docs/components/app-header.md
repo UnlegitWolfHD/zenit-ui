@@ -29,9 +29,9 @@ import { ZAppHeader, ZBrand, ZHeaderLink, ZHeaderEnd } from 'zenit-ui';
 | `menuLabel` | `string` | `'Menü'` | `aria-label` of the menu button shown below 900px. German default, meant to be overridden. |
 | `open`      | `boolean` | `false` | Whether the menu below 900px is open. Two-way bindable as `[(open)]`; see "Mobile menu".  |
 
-| Output       | Type      | Description                                                       |
-| ------------ | --------- | ----------------------------------------------------------------- |
-| `openChange` | `boolean` | The new state of the menu, whoever closed or opened it.           |
+| Output       | Payload   | Fires when                                                            |
+| ------------ | --------- | ---------------------------------------------------------------------- |
+| `openChange` | `boolean` | the menu opens or closes, whoever did it (the `model()` companion)     |
 
 Content projection:
 
@@ -106,11 +106,16 @@ The menu closes when
 
 - the burger is pressed again,
 - a link projected into the default slot is clicked. The `<nav>` listens once and looks for an `<a>`
-  above the click target, so it does not matter whether the link is an `href` or a `routerLink`: the
-  library does not import `@angular/router`. A `<button>` inside the nav, a menu trigger for example,
-  leaves the menu open,
+  between the click target and itself, so it does not matter whether the link is an `href` or a
+  `routerLink`: the library does not import `@angular/router`. A `<button>` inside the nav, a menu
+  trigger for example, leaves the menu open, and so does a link that sits above the header, because
+  it belongs to the page and not to the menu,
 - Escape is pressed while the focus is inside the header. The focus then returns to the burger
   button. A closed menu ignores Escape, so a header never swallows the key from a dialog above it.
+
+A click with Ctrl, Meta or Shift keeps the menu open: the link opens in a new tab or window and this
+page stays exactly where it was. The middle mouse button fires `auxclick` instead of `click` and
+never reaches the handler at all.
 
 The menu does not close on a resize, because above 900px the state no longer decides anything: CSS
 shows the links at that width. It also does not close on a click outside, which the design system
@@ -125,6 +130,17 @@ there neither opens nor closes anything.
   <a zHeaderLink routerLink="/user">Dashboard</a>
   <a zHeaderLink routerLink="/user/server">Gameserver</a>
 </z-app-header>
+```
+
+A `z-menu` opened from inside the nav is a special case: the CDK renders its entries in an overlay at
+the end of the document, not inside the `<nav>`, so no click on an entry ever reaches the delegation.
+That is right for the entries that only act, and wrong for one that navigates, the link entry
+`a[zMenuItem]` that comes with the overlay package included: it would leave the header menu standing
+over the new page. An entry that navigates therefore closes it itself through `[(open)]`, with the
+`(triggered)` output every entry has from `CdkMenuItem`:
+
+```html
+<button zMenuItem icon="receipt_long" (triggered)="menueOffen.set(false)">Abrechnung</button>
 ```
 
 ## States

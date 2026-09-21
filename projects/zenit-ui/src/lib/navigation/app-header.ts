@@ -198,9 +198,17 @@ export class ZAppHeader {
    * a listener per link, and the library stays free of `@angular/router`: what
    * counts is the `<a>`, not the directive on it. A button inside the nav, a
    * menu trigger for example, leaves the menu open.
+   *
+   * Two cases stay open on purpose. A link found above the `<nav>` does not
+   * count, because `closest()` walks past the nav into whatever surrounds the
+   * header. And Ctrl, Meta or Shift open the link in a new tab or window while
+   * this page stays where it is, so the menu stays with it. The middle mouse
+   * button needs no check: it fires `auxclick`, not `click`.
    */
-  protected aufNavKlick(ereignis: Event): void {
-    if ((ereignis.target as Element | null)?.closest('a')) this.open.set(false);
+  protected aufNavKlick(ereignis: MouseEvent): void {
+    if (ereignis.ctrlKey || ereignis.metaKey || ereignis.shiftKey) return;
+    const link = (ereignis.target as Element | null)?.closest('a');
+    if (link && (ereignis.currentTarget as Element).contains(link)) this.open.set(false);
   }
 
   /**

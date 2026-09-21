@@ -96,8 +96,7 @@ The customer area, with the bottom row only:
 ## Width
 
 `z-footer` brings no page width of its own. The reference markup is a bare `<footer class="z-footer">`
-(`spec/components/Footer/preview.html`), and the width comes from the `.z-container` around it, the
-same wrapper the header and `<main>` sit in:
+(`spec/components/Footer/preview.html`), and the width comes from the `.z-container` around it:
 
 ```html
 <div class="z-container">
@@ -107,8 +106,11 @@ same wrapper the header and `<main>` sit in:
 </div>
 ```
 
-That is how the example application builds its shell, and it is what makes the line above the footer
-and the link columns start and end where the content of the page does.
+That is how the example application builds its shell: header and footer each sit in such a wrapper
+div, and `<main>` carries `class="z-container"` itself, which it can because it draws no line and
+has no padding of its own that the container padding would sit next to. All three end up on the
+same width, and that is what makes the line above the footer and the link columns start and end
+where the content of the page does.
 
 `class="z-container"` directly on `<z-footer>` is not the same element. Measured in Chromium at 1440
 and at 375: the content box lands in the same place both ways, but the border box of the footer is
