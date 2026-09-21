@@ -308,9 +308,9 @@ test.describe('Toast on /rueckmeldung', () => {
       await zeigen.click();
     }
 
-    await expect(page.getByRole('status')).toHaveCount(3);
+    await expect(page.getByRole('status').locator('.z-toast')).toHaveCount(3);
     await page.getByRole('button', { name: 'Alle schließen' }).click();
-    await expect(page.getByRole('status')).toHaveCount(0);
+    await expect(page.getByRole('status').locator('.z-toast')).toHaveCount(0);
   });
 
   test('the toast action runs and closes its toast', async ({ page }) => {
