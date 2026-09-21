@@ -80,3 +80,16 @@
    ring around the title text alone is turned off so there are not two. */
 .z-root .z-row__link:focus-visible { outline-color: transparent; }
 .z-root .z-row__link:focus-visible::after { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+/* Addition to the reference: the action of a row stays reachable on a phone.
+   The reference hides every cell from the third on below 640px, and the menu
+   button of a row is one of them, so copying, restarting and deleting would be
+   unreachable on a phone while the touch-target check still passed, because a
+   hidden button is never measured. The action keeps its cell and the row gets a
+   third column for it; a row without an action keeps the two columns of the
+   reference. inline-flex is the display an action carries at every other width,
+   because [zRowAction] sits on a button. */
+@media (max-width: 640px) {
+  .z-row > .z-row__action { display: inline-flex; }
+  .z-row:has(> .z-row__action) { grid-template-columns: minmax(0, 1fr) auto auto; }
+}

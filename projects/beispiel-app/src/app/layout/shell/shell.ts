@@ -35,7 +35,7 @@ import { ThemeControl } from '../theme-control/theme-control';
   ],
   template: `
     <!-- First tab stop of the page, visible only while focused. -->
-    <a class="app-skip body-sm" href="#inhalt">Zum Hauptinhalt springen</a>
+    <a class="app-skip body-sm z-visually-hidden" href="#inhalt">Zum Hauptinhalt springen</a>
 
     <!-- Header, content and footer share the same z-container, so brand,
          page title and copyright stand on one line at every width. -->
@@ -62,14 +62,16 @@ import { ThemeControl } from '../theme-control/theme-control';
           }
         }
         <!-- Credit in mono without a red pill, and a link to the billing page
-             (AppHeader README). The label spells out what the number is, because
-             "25,00 €" alone says nothing when read out loud. -->
+             (AppHeader README). The label says what the number is and where the
+             link goes, because "25,00 €" alone says nothing when read out loud;
+             the amount comes from the same value the link shows, so the two
+             cannot drift apart. -->
         <a
           zHeaderLink
           zHeaderEnd
           class="z-mono"
           href="#"
-          aria-label="Guthaben 25,00 Euro, zur Abrechnung"
+          [attr.aria-label]="'Guthaben ' + guthaben + ', zur Abrechnung'"
           (click)="$event.preventDefault()"
           >{{ guthaben }}</a
         >

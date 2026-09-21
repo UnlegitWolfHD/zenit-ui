@@ -48,9 +48,10 @@ each of which is a tab stop of its own.
 
 Content projection:
 
-| Slot          | Where it lands                                                    |
-| ------------- | ----------------------------------------------------------------- |
-| `[zRowTitle]` | in `.z-row__title`, in place of the text of the `title` input |
+| Slot          | Where it lands                                                     |
+| ------------- | ------------------------------------------------------------------ |
+| `[zRowTitle]` | in `.z-row__title`, in place of the text of the `title` input      |
+| `[zRowMeta]`  | under the title, in place of the line the `meta` input would render |
 
 `title` keeps feeding the initial of the thumbnail, so it stays set even when `[zRowTitle]` renders
 the visible title.
@@ -59,6 +60,14 @@ the visible title.
 
 Pure slot marker for the title of a row. It adds no class and no markup, and exists so a link can
 sit in the title. Without it the row falls back to the `title` input.
+
+### `[zRowMeta]`
+
+No inputs, no outputs. Adds `z-row__meta` and takes the place of the `meta` input, for a meta line
+that is more than plain text: an address, a port or a file name inside it carries `z-mono` while the
+rest of the line stays in the body face, as CLAUDE.md asks. Use a block element, because the meta
+line clips with an ellipsis, which an inline element cannot do. Setting both `meta` and `[zRowMeta]`
+renders two lines, so pick one.
 
 ### `a[zRowLink]`
 
@@ -122,13 +131,15 @@ A row that is not a link, with its own actions as separate tab stops:
 
 A row that is both a link and holds its own action. A `<button>` inside an `<a>` is invalid markup,
 so the row stays a `<div>`, the link sits on the title and stretches over the row, and the action
-lies above that overlay:
+lies above that overlay. The meta line comes from `[zRowMeta]` here, so the address can take the
+mono face:
 
 ```html
 <z-rows columns="minmax(0, 2fr) 128px 40px">
   <div zRow>
-    <z-row-main title="Beispiel-Server 1" meta="Minecraft · 203.0.113.10">
+    <z-row-main title="Beispiel-Server 1">
       <a zRowTitle zRowLink routerLink="/user/server/1">Beispiel-Server 1</a>
+      <div zRowMeta>Minecraft · <span class="z-mono">203.0.113.10:25565</span></div>
     </z-row-main>
     <span><z-badge status="success" dot>Online</z-badge></span>
     <button
@@ -145,10 +156,14 @@ lies above that overlay:
 </z-rows>
 ```
 
-The loading state, with skeleton rows in the same grid:
+The loading state, with skeleton rows in the same grid. `busy` sets `aria-busy` on the panel, which
+is silent by itself, and the host of `z-panel` carries no role, so an `aria-label` on it is ignored.
+The sentence that gets announced belongs in a live region that already stands there before the
+load, so put a `role="status"` next to the panel and fill it while loading:
 
 ```html
-<z-panel title="Meine Server" busy aria-label="Server werden geladen" flush>
+<p class="z-visually-hidden" role="status">Server werden geladen</p>
+<z-panel title="Meine Server" busy flush>
   <z-rows columns="minmax(0, 2fr) 128px 40px">
     <div zRow>
       <z-skeleton thumb />
@@ -222,6 +237,10 @@ Below 640px the head is hidden and the grid collapses to two columns: title and 
 column from the third on is hidden, so the rest of the facts move to the detail page. The page
 itself never scrolls sideways.
 
+A `[zRowAction]` is the exception: it keeps its cell and the row gets a third column for it, so the
+row menu and everything in it stay reachable on a phone. Put the actions of a row on
+`[zRowAction]` even in a row without `a[zRowLink]`, otherwise they disappear below 640px.
+
 ## Rendered classes and tokens
 
 | Class          | Applies when        |
@@ -233,7 +252,7 @@ itself never scrolls sideways.
 | `z-row__thumb` | inside `z-row-main` |
 | `z-row__text`  | inside `z-row-main` |
 | `z-row__title` | inside `z-row-main` |
-| `z-row__meta`  | `meta` is not empty |
+| `z-row__meta`  | `meta` is not empty, or on `[zRowMeta]` |
 | `z-row__num`   | on `[zRowNum]`      |
 | `z-row__link`  | on `a[zRowLink]`    |
 | `z-row__action` | on `[zRowAction]`  |
@@ -257,6 +276,10 @@ Tokens: `--space-2` to `--space-4` for padding and gaps, `--border` for the line
   `position: absolute; inset: 0`, and `.z-row__action` takes `position: relative; z-index: 1`. No
   `transform`, no new value outside the tokens. The overlay escapes the `overflow: hidden` of
   `.z-row__title` because its containing block is the row.
+- Addition to the reference: below 640px `.z-row__action` keeps its `display` and a row that holds
+  one gets a third grid column. The reference hides every cell from the third on, which also hides
+  the menu button of a row: on a phone its entries were unreachable, and the touch-target check
+  passed only because a hidden button is never measured.
 - Addition to the reference: `.z-row__link:focus-visible` sets `outline-color: transparent` and the
   2px/2px ring in `focus` is drawn on its `::after` instead, so the one ring matches the hit area
   of the link. `transparent` is not a colour of the palette; it only switches off the duplicate
@@ -268,6 +291,9 @@ Tokens: `--space-2` to `--space-4` for padding and gaps, `--border` for the line
 - Do keep the status in the second column throughout.
 - Do right-align amounts with `zRowNum`.
 - Don't put a fact only in the column head; it disappears below 640px.
+- Do put an address, a port or a file name into `[zRowMeta]` with `z-mono` around it; the `meta`
+  input renders one face for the whole line.
+- Do mark every action of a row with `[zRowAction]`, so it survives below 640px.
 - Do reach for `a[zRowLink]` when a row needs both a target and its own actions; `a[zRow]` cannot
   hold a button.
 - Don't nest a clickable control inside an `a[zRow]` without making it a tab stop of its own.

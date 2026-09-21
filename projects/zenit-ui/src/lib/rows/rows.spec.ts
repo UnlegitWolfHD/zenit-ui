@@ -1,9 +1,19 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { ZRow, ZRowAction, ZRowLink, ZRowMain, ZRowNum, ZRows, ZRowsHead, ZRowTitle } from './rows';
+import {
+  ZRow,
+  ZRowAction,
+  ZRowLink,
+  ZRowMain,
+  ZRowMeta,
+  ZRowNum,
+  ZRows,
+  ZRowsHead,
+  ZRowTitle,
+} from './rows';
 
 @Component({
-  imports: [ZRow, ZRowMain, ZRowNum, ZRows, ZRowsHead],
+  imports: [ZRow, ZRowMain, ZRowMeta, ZRowNum, ZRows, ZRowsHead],
   template: `<z-rows [columns]="spalten()">
     <z-rows-head>
       <span>Server</span>
@@ -15,6 +25,11 @@ import { ZRow, ZRowAction, ZRowLink, ZRowMain, ZRowNum, ZRows, ZRowsHead, ZRowTi
     </a>
     <div zRow>
       <z-row-main title="Zweiter Server" />
+    </div>
+    <div zRow>
+      <z-row-main title="Dritter Server">
+        <div zRowMeta>Valheim · <span class="z-mono">203.0.113.11:2456</span></div>
+      </z-row-main>
     </div>
   </z-rows>`,
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -99,6 +114,19 @@ describe('ZRows', () => {
 
     expect(zweite.querySelector('.z-row__meta')).toBeNull();
     expect(zweite.querySelector('.z-row__title').textContent.trim()).toBe('Zweiter Server');
+  });
+
+  it('projects [zRowMeta] as the meta line, so a part of it can be mono', () => {
+    const fixture = TestBed.createComponent(RowsHost);
+    fixture.detectChanges();
+    const dritte = fixture.nativeElement.querySelectorAll('z-row-main')[2];
+    const meta = dritte.querySelectorAll('.z-row__meta');
+
+    // One meta line only: the slot replaces the input, it does not add to it.
+    expect(meta.length).toBe(1);
+    expect(meta[0].tagName).toBe('DIV');
+    expect(meta[0].textContent.trim()).toBe('Valheim · 203.0.113.11:2456');
+    expect(meta[0].querySelector('.z-mono').textContent).toBe('203.0.113.11:2456');
   });
 
   it('falls back to the first letter of title without image', () => {
