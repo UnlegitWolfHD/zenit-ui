@@ -1,0 +1,11 @@
+/* Zenit UI: Styles der Library zenit-ui. Jeder Wert kommt aus tokens.css.
+   Einbinden: tokens.css, dann @angular/cdk/overlay-prebuilt.css, dann diese Datei.
+   Die Klasse z-root gehoert an <html> und <body>. */
+
+@import "./_grundlage.css";
+@import "./_formulare.css";
+@import "./_navigation.css";
+@import "./_daten.css";
+@import "./_rueckmeldung.css";
+@import "./_overlays.css";
+@import "./_werkzeuge.css";

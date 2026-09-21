@@ -1,0 +1,76 @@
+/* Zenit tokens.css: kompiliert aus tokens.json (Version 1). Einzige Stelle mit Hex- und Pixel-Werten. Nicht von Hand ändern. */
+:root, [data-theme="dark"] {
+  --bg: #060608;
+  --surface: #0e0e11;
+  --surface-raised: #15151a;
+  --surface-hover: #1b1b21;
+  --border: #26262c;
+  --border-control: #62626d;
+  --text: #f2f2f3;
+  --text-muted: #9ca3af;
+  --text-subtle: #7d838f;
+  --accent: #e11d48;
+  --accent-hover: #be123c;
+  --on-accent: #ffffff;
+  --accent-text: #ff2d4f;
+  --accent-subtle: rgba(255, 45, 79, 0.1);
+  --scrim: rgba(0, 0, 0, 0.6);
+  --focus: #ffffff;
+  --success: #4caf50;
+  --success-subtle: rgba(76, 175, 80, 0.12);
+  --warning: #f5a524;
+  --warning-subtle: rgba(245, 165, 36, 0.12);
+  --danger: #ff6b6b;
+  --danger-subtle: rgba(255, 107, 107, 0.12);
+  --info: #6cb6ff;
+  --info-subtle: rgba(108, 182, 255, 0.12);
+  --mc-accent: #5fb84e;
+  --mc-accent-hover: #4ea03f;
+  --on-mc: #06280a;
+  --chart-1: var(--success);
+  --chart-2: var(--danger);
+  --chart-3: var(--warning);
+  --chart-4: var(--info);
+  --shadow-overlay: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+:root {
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+  --space-9: 96px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-full: 9999px;
+  --control-sm: 32px;
+  --control-md: 40px;
+  --control-lg: 48px;
+  --icon: 20px;
+  --container: 1120px;
+  --sidebar: 240px;
+  --header: 56px;
+  --measure: 65ch;
+  --z-header: 100;
+  --z-overlay: 1000;
+  --z-toast: 1100;
+  --font-display: "Space Grotesk", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+.display-xl { font-family: var(--font-display); font-size: 56px; line-height: 60px; font-weight: 700; letter-spacing: -0.02em; }
+.display-lg { font-family: var(--font-display); font-size: 40px; line-height: 44px; font-weight: 700; letter-spacing: -0.02em; }
+.heading-1 { font-family: var(--font-display); font-size: 28px; line-height: 34px; font-weight: 600; letter-spacing: -0.01em; }
+.heading-2 { font-family: var(--font-display); font-size: 20px; line-height: 28px; font-weight: 600; }
+.body-lg { font-family: var(--font-body); font-size: 20px; line-height: 30px; font-weight: 400; }
+.body { font-family: var(--font-body); font-size: 16px; line-height: 24px; font-weight: 400; }
+.body-sm { font-family: var(--font-body); font-size: 14px; line-height: 20px; font-weight: 400; }
+.title-sm { font-family: var(--font-body); font-size: 14px; line-height: 20px; font-weight: 600; }
+.caption { font-family: var(--font-body); font-size: 12px; line-height: 16px; font-weight: 400; }
+.mono-xl { font-family: var(--font-mono); font-size: 28px; line-height: 34px; font-weight: 600; }
+.mono-lg { font-family: var(--font-mono); font-size: 20px; line-height: 28px; font-weight: 600; }
+.mono { font-family: var(--font-mono); font-size: 14px; line-height: 20px; font-weight: 400; }
+.mono-sm { font-family: var(--font-mono); font-size: 12px; line-height: 16px; font-weight: 400; }

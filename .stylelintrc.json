@@ -1,0 +1,16 @@
+{
+  "rules": {
+    "color-no-hex": true,
+    "color-named": "never",
+    "function-disallowed-list": ["linear-gradient", "radial-gradient", "conic-gradient", "rgb", "rgba", "hsl", "hsla"],
+    "property-disallowed-list": ["backdrop-filter", "text-shadow", "filter"],
+    "declaration-property-value-disallowed-list": {
+      "box-shadow": ["/^(?!var\\(--shadow-overlay\\)|none|inset 0 -2px 0 var\\().*/"],
+      "transition": ["/transform|all/"],
+      "font-family": ["/^(?!var\\(--font-(display|body|mono)\\)|inherit).*/"]
+    },
+    "selector-pseudo-element-disallowed-list": ["ng-deep"],
+    "declaration-no-important": true
+  },
+  "overrides": [{ "files": ["**/tokens.css"], "rules": { "color-no-hex": null, "function-disallowed-list": null, "declaration-property-value-disallowed-list": null } }]
+}
