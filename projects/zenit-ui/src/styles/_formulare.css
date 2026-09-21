@@ -1,1 +1,73 @@
-/* Paket formulare: wird in Welle 1 gefuellt. */
+/* Paket formulare: Checkbox, Toggle, Setting, Segment, Slider.
+   Woertlich aus spec/components/bundle.css. */
+
+/* Checkbox, Toggle */
+.z-check { display: inline-flex; align-items: center; gap: var(--space-2); cursor: pointer; }
+.z-check input {
+  appearance: none; -webkit-appearance: none; flex: none; margin: 0;
+  width: 18px; height: 18px; border: 1.5px solid var(--border-control); border-radius: var(--radius-sm);
+  background: var(--surface); cursor: pointer; position: relative;
+}
+.z-check input:hover { border-color: var(--text-muted); }
+.z-check input:checked { background: var(--accent); border-color: var(--accent); }
+.z-check input:checked::after {
+  content: ""; position: absolute; left: 5px; top: 1.5px; width: 4px; height: 9px;
+  border-right: 2px solid var(--on-accent); border-bottom: 2px solid var(--on-accent); transform: rotate(45deg);
+}
+.z-check input:disabled { opacity: 0.45; cursor: not-allowed; }
+.z-toggle {
+  appearance: none; -webkit-appearance: none; flex: none; margin: 0; cursor: pointer; position: relative;
+  width: 36px; height: 20px; border: 1px solid var(--border-control); border-radius: var(--radius-full);
+  background: var(--surface);
+}
+.z-toggle::after {
+  content: ""; position: absolute; left: 2px; top: 2px; width: 14px; height: 14px;
+  border-radius: var(--radius-full); background: var(--text-muted);
+}
+.z-toggle:checked { background: var(--success); border-color: var(--success); }
+.z-toggle:checked::after { left: 18px; background: var(--on-mc); }
+.z-toggle:disabled { opacity: 0.45; cursor: not-allowed; }
+.z-setting { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-3) 0; border-top: 1px solid var(--border); }
+.z-setting:first-child { border-top: 0; }
+.z-setting__text { display: grid; gap: 2px; min-width: 0; }
+.z-setting__title { font-weight: 600; }
+
+/* Segment (aus dem Abschnitt "Tabs, Segment") */
+.z-segment { display: inline-flex; gap: 2px; padding: 2px; border: 1px solid var(--border); border-radius: var(--radius-md); }
+.z-segment button {
+  height: 28px; padding: 0 var(--space-3); border: 0; border-radius: var(--radius-sm); background: none; cursor: pointer;
+  color: var(--text-muted); font-size: 12px; line-height: 16px; font-weight: 500;
+}
+.z-segment button:hover { color: var(--text); }
+.z-segment button[aria-pressed="true"] { background: var(--surface-hover); color: var(--text); }
+
+/* Slider */
+.z-range { display: grid; gap: var(--space-2); }
+.z-range__head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-3); }
+.z-range__value { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 20px; line-height: 28px; font-weight: 600; }
+.z-range input[type="range"] { appearance: none; -webkit-appearance: none; width: 100%; height: 20px; margin: 0; background: none; cursor: pointer; }
+.z-range input[type="range"]::-webkit-slider-runnable-track { height: 4px; border-radius: var(--radius-full); background: var(--border-control); }
+.z-range input[type="range"]::-moz-range-track { height: 4px; border-radius: var(--radius-full); background: var(--border-control); }
+.z-range input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; margin-top: -7px; border: 0; border-radius: var(--radius-full); background: var(--text); }
+.z-range input[type="range"]::-moz-range-thumb { width: 18px; height: 18px; border: 0; border-radius: var(--radius-full); background: var(--text); }
+.z-range__ticks { display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 12px; line-height: 16px; color: var(--text-subtle); }
+
+/* ---------- Angular-Hosts und Ergaenzungen der Library ---------- */
+
+z-checkbox, z-toggle { display: inline-flex; }
+z-slider { display: block; }
+/* Eine Checkbox ohne sichtbaren Text (aria-label, zum Beispiel in einer
+   Tabellenzeile) hat ein leeres span. Ohne diese Regel bliebe die Luecke. */
+.z-check span:empty { display: none; }
+
+/* Klickziele mobil mindestens 40px (Abnahme A9). Die Masse aus den
+   Vorschauen bleiben sichtbar, nur die Trefferflaeche waechst. */
+@media (max-width: 640px) {
+  .z-check { min-height: var(--control-md); }
+  .z-segment button { height: var(--control-md); }
+  .z-range input[type="range"] { height: var(--control-md); }
+  .z-toggle::before {
+    content: ""; position: absolute; left: 0; right: 0; top: 50%;
+    height: var(--control-md); transform: translateY(-50%);
+  }
+}
