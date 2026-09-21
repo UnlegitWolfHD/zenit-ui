@@ -793,14 +793,14 @@ Do not remove `@angular/cdk/overlay-prebuilt.css`. Dialog, menu and tooltip need
 The structure that keeps old pages looking as they did while the shell and the first routes are already on the library:
 
 1. **`z-root` on `<html>` and `<body>`.** Both, as the package README prescribes: overlays hang on `<body>` and need the scope, and `html.z-root` leaves the rem base with the visitor.
-2. **`.z-legacy` on the content host**, the element around the router outlet. Inside it size and line height are back to `1rem` and `normal`, and the base rules of the library for bare `a`, `button`, `input`, `select`, `textarea`, `*` and `:focus-visible` no longer apply. Restate on the same element what your old `body` rule said (family, colour, background, `color-scheme`); the library cannot know it.
+2. **`.z-legacy` on the content host**, the element around the router outlet. Inside it size and line height are back to `1rem` and `normal`, and the base rules of the library for bare `a`, `button`, `input`, `select`, `textarea`, `*` and `:focus-visible` no longer apply. Restate on the same element what your old `body` rule said (family, colour, background); the library cannot know it. A light old page always adds `color-scheme: normal`, or its unstyled links and native fields follow the library's dark scheme. If `mat-typography` sits on `<body>`, move it to this element: on `<body>` it ties with `.z-root` and wins by source order, which restyles the shell.
 3. **`z-root` on the container of every migrated page.** It switches everything back on for that page.
 4. **Remove `.z-legacy` and the inner `z-root` classes** in the commit that migrates the last route.
 
 ```html
 <body class="z-root">
   <app-header />
-  <main id="main-content" class="z-legacy"><router-outlet /></main>
+  <main id="main-content" class="z-legacy mat-typography"><router-outlet /></main>
   <app-footer />
   <z-toast-outlet />
 </body>

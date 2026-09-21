@@ -215,6 +215,10 @@ logo. An `<img>` or `<svg>` inside `[zBrand]` is a block now.
 brand and menu button stay centred on the left and right: two 40px buttons give a bar of 109px, as in
 the last row. The bar itself wraps only as a last resort, when even the widest single item of the end
 slot does not fit next to brand and menu button; nothing runs out of the page at 360px either way.
+Below 360px, which the design system does not support, that last resort is what you get. Measured at
+320px: the image logo with two buttons is still 109px, the 160px skeleton takes a row of its own
+(109px), and a wide text brand ("Zenit-Hosting") with two buttons makes three rows, 161px. Still no
+horizontal scrolling.
 
 **Logo size.** Up to 40px of height costs nothing: below 900px the menu button is 40px tall anyway,
 and from 900px on the bar is 56px. A height of 32 to 40px (`--control-sm` to `--control-md`) is the

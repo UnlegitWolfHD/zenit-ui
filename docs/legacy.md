@@ -53,8 +53,8 @@ which is what a page has without the library. `1rem` is the size the visitor cho
 
 **Family, colour, background and `color-scheme` are not reset.** The library cannot know what your
 old `body` rule said, and text in the shell's family and colour on the shell's ground is the
-readable fallback when you restate nothing. `body.z-root` (0,1,1) beats your old `body { … }`
-(0,0,1), so say it again on the content host:
+readable fallback when you restate nothing. The page rule of the library is `.z-root` (0,1,0). It
+beats an old `body { … }` (0,0,1), so say that again on the content host:
 
 ```css
 /* what the old body rule said */
@@ -66,11 +66,30 @@ readable fallback when you restate nothing. `body.z-root` (0,1,1) beats your old
 }
 ```
 
-Leave out what your old pages never set. There are no custom properties for this: they would be a
-second way to write the same declarations.
+Leave out family, colour and background where your old pages never set them. **`color-scheme` is
+the one declaration a light old page always restates**, whether it ever set one or not: the library
+puts `dark` on `:root`, and everything the old page leaves to the browser follows it. Measured on a
+light host (`#fafafa`) without the line: an unstyled link is `rgb(158, 158, 255)`, 2.29:1, and
+`input` and `select` are white text on `rgb(59, 59, 59)`. With `color-scheme: normal` they are
+the blue link and the black-on-white fields the page had before. A dark old page that sits on the
+shell's ground leaves the line out.
+
+There are no custom properties for any of this: they would be a second way to write the same
+declarations.
+
+**A class on `<body>` is a different case.** `.z-root` does not beat it, it ties with it at (0,1,0),
+and your stylesheet is loaded after `zenit-ui.css`, so your class wins for every property it sets.
+Material's `mat-typography` on `<body>` is the usual one. Measured with a stand-in class that sets
+`font`, `letter-spacing` and `color`: on `<body>` it turned the text of the shell and the face of
+every `button[zBtn]` into the old typography, and the old page still lost its size and line height
+to the `.z-legacy` reset. **Move that class from `<body>` to the content host.** There it does the
+restating for you: the shell computed to the library's Inter 14px/20px again, and the old page to
+exactly the old 15px/22px, because on the host your class ties with `.z-legacy` and comes later.
 
 **Base rules stop at `.z-legacy`.** Every rule of the library that styles an element without a
-library class is exempt inside the subtree:
+library class is exempt for the host element and for everything inside it. The host counts as part
+of the old page: an old `main { width: 600px; padding: 0 24px }` is 648px wide without the library
+and stays 648px.
 
 | Rule in `_grundlage.css`                                         | Sets                       | Inside `.z-legacy` |
 | ---------------------------------------------------------------- | -------------------------- | ------------------ |
@@ -86,13 +105,17 @@ library class is exempt inside the subtree:
 The other partials contain class rules only. The library has no base rules for headings, lists,
 `::selection` or scrollbars.
 
-The exclusion is `:not(:where(.z-legacy :not(.z-legacy .z-root, .z-legacy .z-root *)))` on each of
-those selectors. It weighs (0,0,0), so every specificity documented in the README still holds.
+Each of those rules is written as two selectors, `.z-root X:not(:where(.z-legacy, .z-legacy *))` and
+`:where(.z-legacy) .z-root X`. Both `:where()` weigh (0,0,0), so every specificity documented in the
+README still holds. The price is on the universal rule: a forced full style recalculation of a page
+with 4130 elements takes 4.9ms instead of 4.2ms (+14 to +18 %, production build, median of 40
+rounds); the numbers are in the comment above `.z-legacy` in `_grundlage.css`.
 
 Measured on `/muster/legacy` of the demo (`e2e/legacy.spec.ts`): an old page with its own `h1`, `h2`,
 `h3`, `p`, `a`, `button` and `input` rules at (0,0,1) computes to exactly the same 33 properties per
 element, at rest, hovered and focused, as the same stylesheet and markup in a document without
-`zenit-ui`, in `dark`, `light` and `contrast`. A `z-root` container inside the subtree computes to
+`zenit-ui`, in `dark`, `light` and `contrast`. The host, 18rem wide with 1rem of padding, is the
+same 320px `content-box` in both. A `z-root` container inside the subtree computes to
 the same values as a normally embedded migrated page, element by element, focus ring included.
 
 ### The focus ring
@@ -129,17 +152,20 @@ Without it the component keeps its class rules (layout, surfaces, radii, its own
 size) and loses the base rules. Measured against the same markup on a migrated page:
 
 - `input[zInput]` is `content-box`: 326×42px inside a 300px field instead of 300×40px, and its text
-  is Arial 13.33px instead of Inter 14px.
+  is in the browser's control font at the size the old page gives an `input`, Arial 13.33px by
+  default, instead of Inter 14px.
 - `button[zBtn]` renders in Arial. `a[zBtn]` is 42px tall instead of 40px.
 - A panel is 2px wider and taller. Text inside panel, alert, field and checkbox label is 16px with a
   normal line height instead of 14px/20px.
 - A plain link inside a component takes your old link colour, not `accent-text`.
+- `z-spinner` is 20×20px instead of 16×16px: its 2px border is added to the 16px under
+  `content-box`.
 - The focus ring is the browser's.
 - The tokens are still the shell's. On an old page with its own surface they do not fit: the body of
   a warning alert in the dark scheme is `text-muted` on a tint over your light ground and fails
   4.5:1. The `z-root` wrapper brings `bg` and `text` along.
 
-Badge, icon and spinner showed no visible difference. That is an observation, not a promise.
+Badge and icon showed no visible difference. That is an observation, not a promise.
 
 ## Overlays and toasts
 
@@ -151,41 +177,23 @@ looks the same as well.
 
 ## Limits
 
-- One level of re-entry. A `.z-legacy` inside a `z-root` inside a `.z-legacy` counts as migrated.
+- **Never on `<body>`.** The CDK overlay container hangs on `<body>`; with `.z-legacy` there every
+  dialog, menu and tooltip would be part of the old page. The class belongs on the content host.
+- One level of re-entry. A `.z-legacy` inside a `z-root` inside a `.z-legacy` counts as migrated:
+  the base rules apply there (`border-box`, controls inherit the font), but the inherited values are
+  those of the inner `.z-legacy`, 16px and a normal line height, not the 14px/20px of a page.
   Matching the nearest ancestor needs `@scope`, which Firefox before 146 and Safari before 17.4 do
   not have; both are inside the browser range Angular 22 builds for, and they would drop the base
   rules altogether.
 - Your old global rules still reach migrated pages. `button { background: #fff }` at (0,0,1) loses
   against `.z-btn`, but it does style a `<button>` without a library class inside a `z-root`
   container.
-- `.z-legacy` on the same element as `z-root` is not supported.
+- `.z-legacy` on the same element as `z-root` is not supported. What it does, measured: inside an
+  island such an element behaves like the second level above, base rules on and 16px/normal
+  inherited; outside any island it is a plain `.z-legacy` host in the shell's colours.
 
 ## Keeping an existing theme setting
 
-An application that already stores the visitor's colour scheme can keep doing so and only hand the
-result to the library. Run the theme without a storage of its own, write the attributes with your own
-inline script before the first paint, and call the service from your preference code:
-
-```ts
-provideZenitTheme({ storageKey: null, schemes: ['dark', 'light'], accents: ['rot', 'blau'] });
-```
-
-```html
-<script>
-  // your own storage, your own key
-  var t = localStorage.getItem('app-theme');
-  if (t) document.documentElement.setAttribute('data-theme', t);
-</script>
-```
-
-With `storageKey: null` `ZTheme` never touches `localStorage`, and it starts from the attributes
-that are already on `<html>` (or on the `target`): a registered `data-theme` becomes `scheme()`, a
-registered `data-accent` becomes `accent()`, and nothing is rewritten to the defaults in between, so
-there is no flash. An id that is not registered is replaced by the default. An attribute only ever
-carries a resolved scheme, so one that equals what `defaultScheme` resolves to is not taken as a
-choice: with `defaultScheme: 'system'` and `data-theme="light"` on a light system, `scheme()` stays
-`'system'` and keeps following the operating system. If your stored preference is "system", call
-`setScheme('system')` from your service; it resolves to the same value. With a storage key set, the
-stored choice and the defaults win over a pre-set attribute, as before. On the server nothing
-changes: a fixed `defaultScheme` is written into the document, and the browser keeps it unless your
-script replaced it.
+An application that already stores the visitor's colour scheme keeps its storage and hands the
+result to the library: see ["Keeping your own preference storage"](theming.md#keeping-your-own-preference-storage)
+in `docs/theming.md`.
