@@ -1,5 +1,7 @@
+import { CdkMenuTrigger } from '@angular/cdk/menu';
 import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
 import {
+  Z_MENU,
   ZAlert,
   ZBadge,
   ZBadgeStatus,
@@ -51,10 +53,21 @@ interface DemoServer {
   kosten: string;
 }
 
+/** One row of the FileTable, including whether it is currently selected. */
+interface DemoDatei {
+  name: string;
+  icon: string;
+  groesse: string;
+  geaendert: string;
+  gewaehlt: boolean;
+}
+
 @Component({
   selector: 'demo-daten-page',
   imports: [
+    CdkMenuTrigger,
     EnglischePagination,
+    Z_MENU,
     ZAlert,
     ZBadge,
     ZButton,
@@ -102,7 +115,7 @@ interface DemoServer {
             [percent]="89"
             sub="89&nbsp;% belegt"
           />
-          <z-metric label="Laufzeit" value="2d 21h" sub="TPS 20 · Ping 91 ms" />
+          <z-metric label="Laufzeit" value="2d 21h" sub="TPS 20 · Ping 91&nbsp;ms" />
         </z-metrics>
       </z-panel>
 
@@ -242,15 +255,49 @@ interface DemoServer {
       <h2 class="heading-2">FileTable</h2>
       <p class="demo-cap caption">
         Unter 640px scrollt die Tabelle seitlich in ihrem eigenen Container, die Seite nie. Der
-        Container ist per Tab erreichbar. Die Kästchen sind z-checkbox, beschriftet über ariaLabel.
+        Container ist per Tab erreichbar. Die Kästchen sind z-checkbox, beschriftet über ariaLabel,
+        und sie schalten hier wirklich. Ohne Auswahl steht die Werkzeugleiste über der Tabelle,
+        sobald eine Zeile gewählt ist die Auswahl-Leiste.
       </p>
-      <z-panel title="Dateien" flush>
+      <z-panel title="plugins" flush>
+        <span zPanelActions class="caption z-subtle">{{ dateien().length }} Einträge</span>
+        @if (anzahlGewaehlt()) {
+          <div class="demo-leiste">
+            <span class="demo-leiste__zahl title-sm">{{ anzahlGewaehlt() }} ausgewählt</span>
+            <button zBtn="secondary" size="sm" type="button">
+              <z-icon name="download" size="sm" />Herunterladen
+            </button>
+            <button zBtn="secondary" size="sm" type="button">
+              <z-icon name="drive_file_move" size="sm" />Verschieben
+            </button>
+            <button
+              zBtn="ghost"
+              size="sm"
+              iconOnly
+              type="button"
+              aria-label="Weitere Aktionen"
+              [cdkMenuTriggerFor]="dateiAktionen"
+            >
+              <z-icon name="more_vert" />
+            </button>
+          </div>
+        } @else {
+          <div class="demo-leiste">
+            <button zBtn="secondary" size="sm" type="button">
+              <z-icon name="upload" size="sm" />Hochladen
+            </button>
+          </div>
+        }
         <z-table-container ariaLabel="Dateien, seitlich scrollbar">
           <table zTable>
             <thead>
               <tr>
                 <th class="z-table__check">
-                  <z-checkbox ariaLabel="Alle auswählen" />
+                  <z-checkbox
+                    ariaLabel="Alle auswählen"
+                    [checked]="alleGewaehlt()"
+                    (checkedChange)="alleWaehlen($event)"
+                  />
                 </th>
                 <th>Name</th>
                 <th style="text-align:right">Größe</th>
@@ -258,10 +305,14 @@ interface DemoServer {
               </tr>
             </thead>
             <tbody>
-              @for (datei of dateien; track datei.name) {
+              @for (datei of dateien(); track datei.name) {
                 <tr>
                   <td>
-                    <z-checkbox [ariaLabel]="datei.name" [checked]="datei.gewaehlt" />
+                    <z-checkbox
+                      [ariaLabel]="datei.name"
+                      [checked]="datei.gewaehlt"
+                      (checkedChange)="dateiWaehlen(datei.name, $event)"
+                    />
                   </td>
                   <td>
                     <span zTableName><z-icon [name]="datei.icon" />{{ datei.name }}</span>
@@ -274,29 +325,92 @@ interface DemoServer {
           </table>
         </z-table-container>
       </z-panel>
+      <p class="demo-grund caption">
+        "Löschen" ist unumkehrbar und steht deshalb nach Button/README nicht als danger neben den
+        anderen Aktionen, sondern im Menü "Weitere Aktionen". Das Kästchen im Kopf kennt nur ein und
+        aus; für "teilweise gewählt" fehlt z-checkbox ein indeterminate.
+      </p>
+
+      <p class="demo-cap caption">
+        Lädt: Skelettzeilen im selben Raster wie die Tabelle, damit beim Eintreffen der Daten nichts
+        springt. Das Panel meldet aria-busy.
+      </p>
+      <z-panel title="plugins" flush busy aria-label="Dateien werden geladen">
+        <z-table-container ariaLabel="Dateien, seitlich scrollbar">
+          <table zTable>
+            <thead>
+              <tr>
+                <th class="z-table__check"></th>
+                <th>Name</th>
+                <th style="text-align:right">Größe</th>
+                <th style="text-align:right">Geändert</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (platz of dateiPlatzhalter; track platz.name) {
+                <tr>
+                  <td><z-skeleton width="18px" /></td>
+                  <td><z-skeleton [width]="platz.name" /></td>
+                  <td zNum><z-skeleton width="64px" class="demo-skel-end" /></td>
+                  <td zNum><z-skeleton width="120px" class="demo-skel-end" /></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </z-table-container>
+      </z-panel>
+
+      <p class="demo-cap caption">
+        Leer: ein leerer Ordner zeigt keine Tabelle, keine Werkzeugleiste und keine Pagination, nur
+        den Satz und die eine Aktion.
+      </p>
+      <z-panel title="world/datapacks" flush>
+        <z-empty-state title="Dieser Ordner ist leer">
+          Lade eine Datei hoch oder lege sie per FTP in world/datapacks ab.
+          <button zEmptyAction zBtn="secondary" type="button">
+            <z-icon name="upload" />Hochladen
+          </button>
+        </z-empty-state>
+      </z-panel>
+
+      <ng-template #dateiAktionen>
+        <z-menu>
+          <button zMenuItem icon="content_copy">Kopieren</button>
+          <z-menu-separator />
+          <button zMenuItem icon="delete" danger>Löschen</button>
+        </z-menu>
+      </ng-template>
     </section>
 
     <section class="demo-section">
       <h2 class="heading-2">Pagination</h2>
       <p class="demo-cap caption">
         118 Transaktionen, 25 je Seite. Die Pagination steht als letzte Zeile im Panel und blättert
-        die Liste darüber.
+        die Liste darüber. Eine volle Seite ist hier zu hoch für die Demo, deshalb scrollt die Liste
+        in einem eigenen, benannten Bereich; im Produkt steht sie in voller Höhe.
       </p>
       <z-panel title="Transaktionen" flush>
-        <z-rows columns="minmax(0, 2fr) minmax(0, 1fr) 96px">
-          <z-rows-head>
-            <span>Vorgang</span>
-            <span>Datum</span>
-            <span style="text-align:right">Betrag</span>
-          </z-rows-head>
-          @for (eintrag of seitenInhalt(); track eintrag.nummer) {
-            <div zRow>
-              <span>{{ eintrag.titel }}</span>
-              <span class="z-muted z-mono">{{ eintrag.datum }}</span>
-              <span zRowNum>{{ eintrag.betrag }}&nbsp;€</span>
-            </div>
-          }
-        </z-rows>
+        <div
+          class="demo-scroll"
+          tabindex="0"
+          role="group"
+          aria-label="Transaktionen, senkrecht scrollbar"
+        >
+          <z-rows columns="minmax(0, 2fr) minmax(0, 1fr) 96px">
+            <z-rows-head>
+              <span>Vorgang</span>
+              <span>Datum</span>
+              <span style="text-align:right">Betrag</span>
+            </z-rows-head>
+            @for (eintrag of seitenInhalt(); track eintrag.nummer) {
+              <div zRow>
+                <span>{{ eintrag.titel }}</span>
+                <span class="z-muted z-mono">{{ eintrag.datum }}</span>
+                <span zRowNum>{{ eintrag.betrag }}&nbsp;€</span>
+              </div>
+            }
+          </z-rows>
+        </div>
         <z-pagination [(page)]="seite" [total]="transaktionen.length" itemLabel="Transaktionen" />
       </z-panel>
 
@@ -397,7 +511,7 @@ export class DatenPage {
     { titel: '30%', meta: '50%' },
   ];
 
-  protected readonly dateien = [
+  protected readonly dateien = signal<DemoDatei[]>([
     {
       name: 'plugins',
       icon: 'folder',
@@ -409,18 +523,36 @@ export class DatenPage {
     {
       name: 'server.jar',
       icon: 'description',
-      groesse: '61,25 MB',
+      groesse: '61,25\u00a0MB',
       geaendert: '18.09.2026, 14:45',
       gewaehlt: false,
     },
     {
       name: 'server.properties',
       icon: 'description',
-      groesse: '1,74 KB',
+      groesse: '1,74\u00a0KB',
       geaendert: '18.09.2026, 15:55',
       gewaehlt: true,
     },
-  ];
+  ]);
+
+  /** Widths of the placeholders in the loading state of the table. */
+  protected readonly dateiPlatzhalter = [{ name: '40%' }, { name: '55%' }, { name: '30%' }];
+
+  protected readonly anzahlGewaehlt = computed(
+    () => this.dateien().filter((datei) => datei.gewaehlt).length,
+  );
+  protected readonly alleGewaehlt = computed(() => this.anzahlGewaehlt() === this.dateien().length);
+
+  protected dateiWaehlen(name: string, gewaehlt: boolean): void {
+    this.dateien.update((alt) =>
+      alt.map((datei) => (datei.name === name ? { ...datei, gewaehlt } : datei)),
+    );
+  }
+
+  protected alleWaehlen(gewaehlt: boolean): void {
+    this.dateien.update((alt) => alt.map((datei) => ({ ...datei, gewaehlt })));
+  }
 
   protected readonly transaktionen = Array.from({ length: 118 }, (_, i) => ({
     nummer: i + 1,
