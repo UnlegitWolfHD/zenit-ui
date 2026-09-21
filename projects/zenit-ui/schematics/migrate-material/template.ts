@@ -191,9 +191,13 @@ export function migrateTemplate(source: string, options: TemplateOptions): Templ
 
   let nodes: TmplAstNode[];
   try {
+    // The parser has no switch that skips i18n; these keep it from touching text or spans.
     const parsed = parseTemplate(source, 'template.html', {
       preserveWhitespaces: true,
       preserveLineEndings: true,
+      leadingTriviaChars: [],
+      enableI18nLegacyMessageIdFormat: false,
+      i18nNormalizeLineEndingsInICUs: false,
     });
     if (parsed.errors?.length) {
       const first = parsed.errors[0];
@@ -390,6 +394,8 @@ class Planner extends TmplAstRecursiveVisitor {
           `${this.text(attr)}: z-icon only renders Material Icons ligatures.`,
           'Find a ligature with the same meaning, or keep the SVG as an inline <svg aria-hidden="true">.',
         ]);
+      } else if (key === 'fontIcon' && this.translated(element, key)) {
+        blockers.push(this.translatedBlocker(key));
       } else if (key === 'fontIcon') {
         fontIcon = attr;
       } else if (FIELD_SLOTS.test(key)) {
@@ -628,11 +634,10 @@ class Planner extends TmplAstRecursiveVisitor {
       return;
     }
 
-    const startTag = this.source.slice(offsetOf(element), element.startSourceSpan.end.offset);
     const exported = attrs.find((attr) => attr.kind === 'ref' && attr.value === 'matTooltip');
     const reason = attrs.some((attr) => attr.key === 'zTooltip')
       ? 'The element already carries zTooltip.'
-      : /\si18n-matTooltip/.test(startTag)
+      : this.translated(element, 'matTooltip')
         ? 'The tooltip is translated through i18n-matTooltip, which the template AST does not expose.'
         : exported
           ? `${this.text(exported)} reads the MatTooltip instance (show(), hide(), toggle()).`
@@ -760,10 +765,11 @@ class Planner extends TmplAstRecursiveVisitor {
         : attrs.find(
               (attr) =>
                 (attr.kind === 'ref' && attr.value) ||
+                (attr.key.endsWith('aria-label') && this.translated(element, 'aria-label')) ||
                 (MATERIAL_NAME.test(attr.key) && !attr.key.startsWith('matTooltip')) ||
                 attr.key.endsWith('aria-labelledby'),
             )
-          ? 'The spinner carries an attribute that z-spinner cannot take (template reference to the instance, Material directive or aria-labelledby).'
+          ? 'The spinner carries an attribute that z-spinner cannot take (template reference to the instance, Material directive, aria-labelledby or a translated i18n-* attribute).'
           : '';
     if (blocker) {
       this.manual(
@@ -810,7 +816,7 @@ class Planner extends TmplAstRecursiveVisitor {
         'review',
         'spinner-no-label',
         'The spinner has no accessible label; without one z-spinner is decorative and aria-hidden.',
-        'Add label="Wird geladen" (or what is loading) for a standalone loading state; leave it out only where text next to it says the same.',
+        'Add label="Wird geladen" (or what is loading) for a standalone loading state; leave it out only where text next to it says the same. A list that loads shows z-skeleton rows instead of a spinner.',
       );
     }
 
@@ -989,6 +995,25 @@ class Planner extends TmplAstRecursiveVisitor {
         ? 'Candidate for zBtn="danger": use it only where the action destroys something, and confirm it with a dialog.'
         : COLOUR_FIX,
     );
+  }
+
+  /**
+   * `i18n-<key>` on the element. The i18n pass of the parser removes these
+   * attributes from the AST, so a renamed attribute would silently lose its
+   * translation; the start tag is read as text instead.
+   */
+  private translated(element: TmplAstElement, key: string): boolean {
+    const startTag = this.source.slice(offsetOf(element), element.startSourceSpan.end.offset);
+
+    return startTag.includes(`i18n-${key}`);
+  }
+
+  private translatedBlocker(key: string): [string, string, string] {
+    return [
+      'icon-translated',
+      `The attribute is translated through i18n-${key}, which the template AST does not expose.`,
+      `Rename ${key} and i18n-${key} together by hand.`,
+    ];
   }
 
   /** Renames an element that has no content in zenit-ui and writes it self-closing. */

@@ -154,6 +154,15 @@ describe('icon', () => {
     ]);
   });
 
+  it('does not rename a translated attribute, whose i18n-* twin the AST hides', () => {
+    const source = '<mat-icon fontIcon="home" i18n-fontIcon="@@icon"></mat-icon>';
+    expect(run(source)).toMatchObject({ text: source, codes: ['manual:icon-translated'] });
+    // Translated content is not an attribute and moves along with the element.
+    expect(run('<mat-chip i18n="@@tag">Neu</mat-chip>').text).toBe(
+      '<z-badge i18n="@@tag">Neu</z-badge>',
+    );
+  });
+
   it('maps no size: inline is dropped and reported, an inline style is kept and reported', () => {
     expect(run('<mat-icon inline>home</mat-icon>')).toMatchObject({
       text: '<z-icon name="home" />',
@@ -525,6 +534,7 @@ describe('spinner', () => {
 
   it('reports what z-spinner cannot take', () => {
     for (const source of [
+      '<mat-spinner aria-label="Loading" i18n-aria-label="@@loading"></mat-spinner>',
       '<mat-spinner aria-labelledby="t"></mat-spinner>',
       '<mat-spinner #s="matProgressSpinner"></mat-spinner>',
       '<mat-spinner>text</mat-spinner>',

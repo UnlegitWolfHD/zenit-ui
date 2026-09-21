@@ -305,7 +305,7 @@
           "kind": "review",
           "code": "spinner-no-label",
           "reason": "The spinner has no accessible label; without one z-spinner is decorative and aria-hidden.",
-          "fix": "Add label=\"Wird geladen\" (or what is loading) for a standalone loading state; leave it out only where text next to it says the same."
+          "fix": "Add label=\"Wird geladen\" (or what is loading) for a standalone loading state; leave it out only where text next to it says the same. A list that loads shows z-skeleton rows instead of a spinner."
         },
         {
           "line": 51,
