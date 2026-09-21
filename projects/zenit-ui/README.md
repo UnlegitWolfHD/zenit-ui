@@ -34,14 +34,17 @@ npm i ./zenit-ui-0.1.0.tgz
 
 ### Working against a linked build
 
-While you develop against the library, `npm link` or a junction is faster than repacking. Two
-settings belong to that setup, not to a real install:
+While you develop against the library, `npm link` or a junction is faster than repacking. Three
+settings belong to that setup, not to a real install. In `angular.json`, on the build target and on
+the test target:
 
 ```json
-"preserveSymlinks": true
+"preserveSymlinks": true,
+"runnerConfig": true
 ```
 
-in the build target, and in the runner config of the test target:
+and in the file the second line makes the builder read, `vitest-base.config.ts` in the project or
+workspace root:
 
 ```ts
 test: {
@@ -49,14 +52,16 @@ test: {
 }
 ```
 
-Without the first one the bundler resolves the linked package to its real path and takes
+Without `preserveSymlinks` the bundler resolves the linked package to its real path and takes
 `@angular/core` from the library workspace: two Angular instances, `NG0203: inject() must be called
-from an injection context`. The second one is needed because a package in `node_modules` is external
-to the test bundle, so Vitest lets Node load it, and Node follows the link regardless of what Vite
-is told. Both halves are needed together, and both workspaces should be on the same Angular patch
-version. A tarball or registry install has none of this: the package then lives inside your own
-`node_modules` and resolves `@angular/core` from there. The measurements and the alternative via
-`resolve.dedupe` are in [`docs/ng-add.md`](../../docs/ng-add.md), "Working against a linked build".
+from an injection context`. `server.deps.inline` is needed because a package in `node_modules` is
+external to the test bundle, so Vitest lets Node load it, and Node follows the link regardless of
+what Vite is told. And without `runnerConfig` the config file is not read at all: the option
+defaults to `false`, so the file sits there and changes nothing. All three are needed together, and
+both workspaces should be on the same Angular patch version. A tarball or registry install has none
+of this: the package then lives inside your own `node_modules` and resolves `@angular/core` from
+there. The measured table and the alternative via `resolve.dedupe` are in
+[`docs/ng-add.md`](../../docs/ng-add.md), "Working against a linked build".
 
 ## Setup
 
@@ -85,7 +90,7 @@ Both files can be pulled in via `@import` just as well, if you use your own entr
 
 ### 2. Set `z-root`
 
-The class `z-root` belongs on `<html>` and on `<body>`. It sets background, text color, font, `font: inherit` for controls and the focus ring. Overlays attach to `body` and inherit the same variables. On `<html>` it no longer changes the rem base, and its link rules no longer beat your own classes, so legacy styles keep working while you migrate page by page.
+The class `z-root` belongs on `<html>` and on `<body>`. It sets background, text color, font, `font: inherit` for controls and the focus ring. Overlays attach to `body` and inherit the same variables. On `<html>` it no longer changes the rem base, and its link rules no longer beat your own classes, so legacy styles keep working while you migrate page by page. **Both elements are required**: since `html.z-root` resets `font-size` and `line-height`, the page size comes from `body.z-root` alone, and a setup that sets the class on `<html>` only now renders at 16px/normal instead of 14px/20px.
 
 ```html
 <!doctype html>
@@ -184,6 +189,7 @@ Entries marked "(addition)" are not part of the reference table (`spec/guideline
 | Toggle | `z-toggle` | `[(checked)]`, `disabled`, `ariaLabel`, `ariaLabelledby`; Forms |
 | Setting | `z-setting` | `title`, `key`, `description`, `titleId`; content is the control |
 | Slider | `z-slider` | `label`, `min`, `max`, `step`, `unit`, `ticks`, `hint`, `[(value)]`, `disabled`; Forms; `ariaLabel` (addition) |
+| SkipLink (addition) | `a[zSkipLink]` | none; the caller writes the text and the `href`, the target needs `tabindex="-1"` |
 | Tabs | `nav[zTabs]`, `a[zTab]` | `active` |
 | Segment | `z-segment` | `options: {value, label}[]`, `[(value)]`, `ariaLabel`; Forms; `disabled` (addition) |
 | Stepper | `z-stepper` | `steps: string[]`, `current` |
@@ -196,7 +202,7 @@ Entries marked "(addition)" are not part of the reference table (`spec/guideline
 | EmptyState | `z-empty-state` | `title`; content is the text; slot `[zEmptyAction]` |
 | Skeleton | `z-skeleton` | `width`, `thumb` |
 | Sidebar | `z-sidebar`, `z-sidebar-group`, `[zSidebarItem]` | `ariaLabel`; `label`; `icon`, `active`, `count` |
-| AppHeader | `z-app-header`, `a[zHeaderLink]`, `[zBrand]` | `navLabel`; `active`; slot `[zHeaderEnd]`; `menuLabel` (addition) |
+| AppHeader | `z-app-header`, `a[zHeaderLink]`, `[zBrand]` | `navLabel`; `active`; slot `[zHeaderEnd]`; `menuLabel` (addition); `[(open)]` (addition) |
 | PageHeader | `z-page-header` | `title`, `sub`; content are the actions |
 | Footer | `z-footer`, `z-footer-col` | `heading`; slot `[zFooterBase]` |
 | Dialog | service `ZDialog`, layout `z-dialog` | `open(component, config)`, `confirm({title, body, confirmLabel, cancelLabel, danger, requireText})` returns `Observable<boolean>`; slot `[zDialogActions]`; `requireLabel` and `cancelLabel` as a required field of the config (additions) |
@@ -269,7 +275,10 @@ It registers the stylesheets in `angular.json` in the prescribed order, merges `
 `spec/components/bundle.css` in the repository of the design system is the reference for all styles. These deviations are deliberate:
 
 - The base rule for `font` and `color` on controls uses `:where(button, input, select, textarea)`. The reference selector has a specificity that beats component classes; `:where()` lowers it to the class level, the values are unchanged.
-- The link base rules are `.z-root :where(a)` and `.z-root :where(a):hover`, for the same reason. At the reference specificity (0,1,1) they beat every class an application can put on a link (0,1,0): an application's own skip link came out red on red (1.29:1), and every link on a page that is not migrated yet changed colour and underline the moment `z-root` was set. The values are unchanged, and none of the library's own link rules moves: they all weigh (0,2,1) or more.
+- The link base rules are `.z-root :where(a)` and `.z-root :where(a):hover`, for the same reason. At the reference specificity (0,1,1) they beat every class an application can put on a link (0,1,0): an application's own skip link came out red on red (1.29:1), and every link on a page that is not migrated yet changed colour and underline the moment `z-root` was set. The values are unchanged, and none of the library's own link rules moves: they all weigh (0,2,1) or more. Three things follow for your own stylesheet:
+  - **Your stylesheet has to load after `zenit-ui.css`.** At (0,1,0) your class now *ties* with the base rule, and a tie is decided by source order, not by specificity. The `styles` order above does that. Measured: a rule `.lg { color: … }` before `zenit-ui.css` still loses, after it wins. The hover rule weighs (0,2,0), so changing the hover needs `.lg:hover`, not `.lg`.
+  - **A rule of yours at (0,1,1), such as `.app a`, now also reaches plain links inside library components**: panel, alert, row, table, empty state, the sub line of the page header, header, tabs, sidebar, stepper, toast, the body of a dialog, tooltip and menu. It does not reach the footer lists, nor any link carrying a library class (`a.z-btn`, `a.z-tab`, `a.z-side__item`, `a.z-header__link`, `a.z-row`, `a.z-skip-link`), which all have a counter-rule at (0,2,1) or more.
+  - **The underline for links in running text stays at (0,2,1)** and cannot be switched off from your stylesheet. Its selector ends in `a:not([class*="z-"])`, so any class whose name contains `z-` takes a link out of it, by accident too (`quiz-link`). Do not build on that: a documented `.z-legacy` subtree class for exactly this job is planned as its own package.
 - `html.z-root` resets `font-size` to `100%` and `line-height` to `normal`. The reference rule is written for the page, and the documented setup puts `z-root` on `<html>` as well: its 14px would move `1rem` from 16px to 14px for the whole document and override the size the visitor set in the browser. `body.z-root` carries the class itself and keeps 14px/20px, which is what every component and every overlay inherits. The library itself contains no `rem` at all.
 - Below 640px small controls are 40px high (`.z-btn--sm`, `.z-input--sm`, `.z-select--sm select`, `.z-menu__item`), because touch targets on mobile are at least 40px.
 - Below 640px the alert wraps its action button onto its own line, so that title, text and button stay readable at 360px.

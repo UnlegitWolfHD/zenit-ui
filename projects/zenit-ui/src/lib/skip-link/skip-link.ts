@@ -66,7 +66,19 @@ export class ZSkipLink {
       return;
     }
 
-    const ziel = element.ownerDocument.getElementById(decodeURIComponent(fragment));
+    // decodeURIComponent throws URIError on a broken escape such as "#%", and
+    // this runs inside a focus handler, where an exception would surface as an
+    // unhandled error while the user is only pressing Tab. A fragment that
+    // cannot be decoded is taken as written; the browser does not resolve it
+    // either, so the warning below is the right answer for it.
+    let id = fragment;
+    try {
+      id = decodeURIComponent(fragment);
+    } catch {
+      // Keep the raw fragment.
+    }
+
+    const ziel = element.ownerDocument.getElementById(id);
     if (!ziel) {
       console.warn(`zenit-ui: zSkipLink points at #${fragment}, which is not in the document.`);
       return;

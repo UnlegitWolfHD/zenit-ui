@@ -22,6 +22,10 @@
    font size. body.z-root carries the class itself and therefore keeps 14px/20px
    from the rule above; every component inherits from there, and the CDK overlay
    container hangs on <body> too, so overlays are unaffected.
+   The class therefore has to sit on BOTH elements, as the README prescribes.
+   With z-root on <html> alone the page now renders at 16px/normal instead of
+   14px/20px, because nothing sets the page size any more. That is a behaviour
+   change for a setup that was already wrong before; it used to be hidden.
    100%, not 16px: a visitor who raised the browser font size keeps it. */
 html.z-root { font-size: 100%; line-height: normal; }
 /* Deviation from the reference: bundle.css lists the four elements one by one
@@ -33,14 +37,43 @@ html.z-root { font-size: 100%; line-height: normal; }
    every class an application can put on a link (0,1,0). In the first real
    integration that made the application's own skip link red on red (1.29:1) and
    recoloured every link of the pages not migrated yet, the moment z-root went
-   onto <html>. :where() lowers the two rules to (0,1,0) and (0,2,0), so a later
-   application rule wins on specificity; the values are unchanged. It is the
-   same fix the rule above got for :where(button, input, select, textarea).
-   Nothing in the library changes with it: every link rule here weighs (0,2,1)
-   or more and already won before. They are a.z-btn with its five variants and
-   the Minecraft primary, a.z-skip-link, a.z-tab, a.z-side__item,
-   a.z-header__link, a.z-row, a.z-row__link, .z-footer__list a,
-   .z-footer__base a and the underline for links in running text below. */
+   onto <html>. :where() lowers the two rules to (0,1,0) and (0,2,0); the values
+   are unchanged. It is the same fix the rule above got for
+   :where(button, input, select, textarea).
+
+   What that buys, exactly. At (0,1,0) an application class on a link now TIES
+   with this rule, and a tie is decided by source order, not by specificity: the
+   application stylesheet has to be loaded AFTER zenit-ui.css. The style order
+   the README and ng-add prescribe does that (tokens, cdk, zenit-ui, then
+   src/styles.css). Measured: a rule .lg { color: … } placed before zenit-ui.css
+   still loses and the link stays accent-text with an underline on hover; placed
+   after it, it wins. The hover rule weighs (0,2,0), so an application that wants
+   to change the hover needs .lg:hover, not .lg.
+
+   The price. An application rule at (0,1,1), such as .app a, now also reaches
+   plain links INSIDE library components: panel, alert, row, table, empty state,
+   the sub line of the page header, header, tabs, sidebar, stepper, toast, the
+   body of a dialog, tooltip and menu. It does not reach the footer lists
+   (.z-root .z-footer__list a and .z-footer__base a, both (0,2,1)) and no link
+   that carries a library class, because each of those has an a. counter-rule at
+   (0,2,1) or more: a.z-btn with its five variants and the Minecraft primary,
+   a.z-skip-link, a.z-tab, a.z-side__item, a.z-header__link, a.z-row and
+   a.z-row__link.
+
+   That counter-rule is the pattern to keep. No anchor the library renders today
+   carries a class without one, which is why lowering the base rule changes
+   nothing here (measured: identical computed color, text-decoration-line and
+   text-decoration-color for all 299 anchors of the demo and all 26 of the
+   example application, in dark, light and contrast). A new directive that hosts
+   on an anchor needs the same: its class rule has to be written .z-root a.z-xyz,
+   not .z-xyz, or an application rule at (0,1,1) will beat it.
+
+   The underline for links in running text below stays at (0,2,1) and therefore
+   cannot be switched off from an application stylesheet. Its own escape hatch is
+   a:not([class*="z-"]), so any class whose name contains "z-" opts a link out,
+   including by accident ("quiz-link"). That is a side effect of the selector,
+   not a documented API; a separate package is to add a documented .z-legacy
+   subtree class for that job. */
 .z-root :where(a) { color: var(--accent-text); text-decoration: none; }
 .z-root :where(a):hover { text-decoration: underline; }
 /* Deviation from the reference: bundle.css underlines a link on hover only. A

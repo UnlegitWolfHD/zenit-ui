@@ -75,6 +75,16 @@ describe('ZSkipLink', () => {
     expect(warnungen[0]).toContain('tabindex="-1"');
   });
 
+  it('warns instead of throwing on a fragment that cannot be decoded', () => {
+    const { link, host, warnungen } = baue();
+    host.ziel.set('#%');
+    TestBed.tick();
+
+    expect(() => link.dispatchEvent(new FocusEvent('focus'))).not.toThrow();
+    expect(warnungen.length).toBe(1);
+    expect(warnungen[0]).toContain('not in the document');
+  });
+
   it('warns when the href carries no fragment at all', () => {
     const { link, host, warnungen } = baue();
     host.ziel.set('/inhalt');
