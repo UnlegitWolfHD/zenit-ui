@@ -81,6 +81,12 @@ let zaehler = 0;
  * {@link inputId}, or an accessible name through {@link ariaLabel} or
  * {@link ariaLabelledby}.
  *
+ * The panel hangs in a CDK overlay as wide as the field and belongs to it: it
+ * follows the field when anything around it scrolls, the page as well as an
+ * inner container such as the body of a scrolling dialog, and closes once the
+ * field has left that container. Scrolling inside the list itself does not
+ * move the field and changes nothing.
+ *
  * Implements `ControlValueAccessor`, so `ngModel` and reactive forms work
  * alongside the two-way binding on {@link value}, and has the shape of a
  * Signal Forms `FormValueControl<string>`, so `[formField]` works and feeds
@@ -288,6 +294,8 @@ export class ZCombobox implements ControlValueAccessor, FormValueControl<string>
   private readonly feld = viewChild.required<ElementRef<HTMLInputElement>>('feld');
   private readonly panel = viewChild.required<TemplateRef<unknown>>('panel');
   private overlayRef?: OverlayRef;
+  /** Lives exactly as long as the open panel; see {@link horcheAufScrollen}. */
+  private scrollHorcher?: AbortController;
 
   private melde?: (wert: string) => void;
   private aufBeruehrt?: () => void;
@@ -394,6 +402,7 @@ export class ZCombobox implements ControlValueAccessor, FormValueControl<string>
 
     inject(DestroyRef).onDestroy(() => {
       abbruch.abort();
+      this.scrollHorcher?.abort();
       this.tasten.destroy();
       this.overlayRef?.dispose();
     });
@@ -408,17 +417,89 @@ export class ZCombobox implements ControlValueAccessor, FormValueControl<string>
     this.overlayRef.attach(new TemplatePortal(this.panel(), this.ansicht));
     this.offen.set(true);
     this.setzeAktiv();
+    this.horcheAufScrollen();
   }
 
   protected schliesse(): void {
     if (!this.offen()) {
       return;
     }
+    this.scrollHorcher?.abort();
+    this.scrollHorcher = undefined;
     this.overlayRef?.detach();
     this.offen.set(false);
     this.aktiverIndex.set(-1);
     this.suche.set(null);
     this.text.set(this.gewaehltesLabel());
+  }
+
+  /**
+   * While the panel is open, every scroller around the field is listened to.
+   * The listener hangs on the document in the CAPTURE phase, because a scroll
+   * event on an inner element does not bubble: `ScrollDispatcher` of the CDK
+   * listens without capture and therefore only ever hears the page and the
+   * containers a caller marked `cdkScrollable`. No container of this library is
+   * marked and `.z-dialog` scrolls, so a combobox in a dialog used to keep a
+   * panel hanging where the field no longer was. Capture hears every scroller
+   * without asking any caller to annotate its container.
+   */
+  private horcheAufScrollen(): void {
+    this.scrollHorcher = new AbortController();
+    this.dokument.addEventListener('scroll', (ereignis) => this.aufScrollen(ereignis), {
+      capture: true,
+      passive: true,
+      signal: this.scrollHorcher.signal,
+    });
+  }
+
+  /**
+   * The panel belongs to the field: it follows the field as long as the field
+   * can be seen in the container that moved, and goes once the field has left
+   * it. Following instead of closing at the first pixel is what the package
+   * already did for the page, and it is what a scroll that is still running
+   * needs: a panel opened while the browser is still scrolling a field into
+   * view would otherwise close under the hand that opened it. A scroll inside
+   * the list is not a scroll of the field and changes nothing.
+   */
+  private aufScrollen(ereignis: Event): void {
+    const ziel = ereignis.target as Node | null;
+    if (!this.overlayRef || (ziel && this.overlayRef.overlayElement.contains(ziel))) {
+      return;
+    }
+    this.overlayRef.updatePosition();
+    const feld = this.feld().nativeElement.getBoundingClientRect();
+    const rolle = this.kasten(ziel);
+    if (
+      feld.bottom <= rolle.top ||
+      feld.top >= rolle.bottom ||
+      feld.right <= rolle.left ||
+      feld.left >= rolle.right
+    ) {
+      this.schliesse();
+    }
+  }
+
+  /**
+   * The visible box of the scroller the event came from. The page reports its
+   * scroll on the document, and in some engines on the root element or the
+   * body; all three mean the viewport.
+   */
+  private kasten(ziel: Node | null): { top: number; bottom: number; left: number; right: number } {
+    const seite =
+      !ziel ||
+      ziel === this.dokument ||
+      ziel === this.dokument.documentElement ||
+      ziel === this.dokument.body;
+    if (!seite && ziel instanceof Element) {
+      return ziel.getBoundingClientRect();
+    }
+    const fenster = this.dokument.defaultView;
+    return {
+      top: 0,
+      left: 0,
+      bottom: fenster?.innerHeight ?? 0,
+      right: fenster?.innerWidth ?? 0,
+    };
   }
 
   protected aufEingabe(ereignis: Event): void {
@@ -508,17 +589,13 @@ export class ZCombobox implements ControlValueAccessor, FormValueControl<string>
           { originX: 'start', originY: 'top', overlayX: 'start', overlayY: 'bottom' },
         ])
         // Without this the strategy pushes the panel back into the viewport
-        // when the field leaves it, and autoClose, which measures the overlay,
-        // then never sees anything clipped: the list would stand in the page
-        // far from the field it belongs to.
+        // when the field leaves it: the list would stand in the page far from
+        // the field it belongs to.
         .withPush(false),
-      scrollStrategy: this.overlay.scrollStrategies.reposition({ autoClose: true }),
-    });
-    // The panel belongs to the field. Once the field is out of sight, so is it.
-    position.positionChanges.subscribe((aenderung) => {
-      if (aenderung.scrollableViewProperties.isOriginClipped) {
-        this.schliesse();
-      }
+      // Scrolling is answered in one place, by the capture listener of
+      // horcheAufScrollen(): every CDK strategy runs on ScrollDispatcher, which
+      // does not hear an unannotated inner scroller at all.
+      scrollStrategy: this.overlay.scrollStrategies.noop(),
     });
     // A pointer on the field itself is not "outside": it opens the panel and
     // would otherwise close it again within the same event.
@@ -527,9 +604,12 @@ export class ZCombobox implements ControlValueAccessor, FormValueControl<string>
         this.schliesse();
       }
     });
-    // The scroll strategy detaches without asking, so the component learns of
-    // it here instead of keeping a state the DOM no longer has.
+    // An overlay can be detached from outside (dispose on destroy), so the
+    // component learns of it here instead of keeping a state the DOM no longer
+    // has.
     ref.detachments().subscribe(() => {
+      this.scrollHorcher?.abort();
+      this.scrollHorcher = undefined;
       if (this.offen()) {
         this.offen.set(false);
         this.aktiverIndex.set(-1);

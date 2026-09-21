@@ -18,6 +18,9 @@ import {
  */
 const ROUTEN = ['konfigurator', 'muster/server-erstellen', 'muster/preisrechner'] as const;
 
+/** Geschütztes Leerzeichen, wie es die Seite vor Einheit und Währung setzt. */
+const NB = '\u00a0';
+
 /** Screenshot-Name: der Pfad ohne Schrägstrich, z. B. muster-preisrechner. */
 const bildname = (route: string) => route.replace(/\//g, '-');
 
@@ -77,7 +80,9 @@ for (const route of ROUTEN) {
 
 /** axe mit den WCAG-Tags auf der offenen Seite, ohne sie neu zu laden. */
 async function axeHier(page: Page, name: string) {
-  const ergebnis = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze();
+  const ergebnis = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
+    .analyze();
   expect(
     ergebnis.violations.map((v) => `${v.id} (${v.impact}): ${v.help}`),
     `axe-Verstöße ${name}`,
@@ -157,7 +162,7 @@ test.describe('Fokus wird nirgends verdeckt', () => {
         // Ein verstecktes Radio steht für seine Karte.
         const sichtbar =
           el.tagName === 'INPUT' && (el as HTMLInputElement).type === 'radio'
-            ? (el.closest('label') as HTMLElement) ?? el
+            ? ((el.closest('label') as HTMLElement) ?? el)
             : el;
         const kasten = sichtbar.getBoundingClientRect();
         const name = (sichtbar.textContent || el.getAttribute('aria-label') || el.tagName)
@@ -179,8 +184,7 @@ test.describe('Fokus wird nirgends verdeckt', () => {
         return {
           schluessel,
           name,
-          verdeckt:
-            trifftLeiste(kasten.top + kasten.height / 2) || trifftLeiste(kasten.bottom - 2),
+          verdeckt: trifftLeiste(kasten.top + kasten.height / 2) || trifftLeiste(kasten.bottom - 2),
         };
       });
       if (!fund) break;
@@ -246,11 +250,32 @@ test.describe('OptionCard mit der Tastatur', () => {
     // Ein Tab verlässt die ganze Gruppe, statt zur nächsten Karte zu gehen.
     await page.keyboard.press('Tab');
     const inGruppe = await page.evaluate(() =>
-      document
-        .querySelector('z-option-group')
-        ?.contains(document.activeElement as Node | null),
+      document.querySelector('z-option-group')?.contains(document.activeElement as Node | null),
     );
     expect(inGruppe).toBe(false);
+  });
+
+  test('der Text einer Karte liegt über dem Radio, der Klick wählt trotzdem', async ({ page }) => {
+    await seiteOeffnen(page, 'konfigurator', 1440);
+    const karte = page.locator('label.z-option').filter({ hasText: 'Plugins' }).first();
+    const titel = karte.locator('.z-option__title');
+
+    // Das unsichtbare Radio liegt über der ganzen Karte. Ohne eigene
+    // Positionierung der Texte fängt es jeden Zeiger ab, und in einer
+    // freigeschalteten Karte lässt sich kein Wort mehr mit der Maus markieren.
+    const obenauf = await titel.evaluate((el) => {
+      const kasten = el.getBoundingClientRect();
+      return (
+        document.elementFromPoint(
+          kasten.left + kasten.width / 2,
+          kasten.top + kasten.height / 2,
+        ) === el
+      );
+    });
+    expect(obenauf).toBe(true);
+
+    await titel.click();
+    await expect(karte.locator('input')).toBeChecked();
   });
 
   test('eine zu kleine Stufe ist gesperrt und nennt den Grund', async ({ page }) => {
@@ -328,6 +353,48 @@ test.describe('Combobox beim Scrollen', () => {
     await page.waitForTimeout(150);
 
     // Weder offen noch irgendwo allein in der Seite stehend.
+    await expect(page.locator('.z-listbox')).toHaveCount(0);
+    await expect(feld).toHaveAttribute('aria-expanded', 'false');
+  });
+});
+
+test.describe('Combobox im Dialog', () => {
+  test('die Liste folgt dem Feld und schließt, wenn es aus dem Dialog scrollt', async ({
+    page,
+  }) => {
+    await seiteOeffnen(page, 'konfigurator', 375, 600);
+    await page.getByRole('button', { name: 'Server anpassen', exact: true }).click();
+    const dialog = page.locator('.z-dialog');
+    await expect(dialog).toBeVisible();
+
+    // Ohne wirklich scrollbaren Dialog prüft der Test nichts.
+    expect(await dialog.evaluate((el) => el.scrollHeight - el.clientHeight)).toBeGreaterThan(20);
+
+    const feld = page.locator('#kd-version');
+    await feld.focus();
+    await page.keyboard.press('ArrowDown');
+    await expect(page.locator('.z-listbox')).toBeVisible();
+
+    // Ein innerer Container: der ScrollDispatcher des CDK hört ihn nicht,
+    // der Capture-Horcher der Combobox schon. Ein Stück gescrollt, bleibt das
+    // Feld im Dialog: die Liste geht mit, statt stehen zu bleiben.
+    const obenVorher = await page.locator('.z-listbox').evaluate((el) => {
+      return el.getBoundingClientRect().top;
+    });
+    await dialog.evaluate((el) => {
+      el.scrollTop = 60;
+    });
+    await expect
+      .poll(() => page.locator('.z-listbox').evaluate((el) => el.getBoundingClientRect().top))
+      .toBeLessThan(obenVorher - 40);
+    await expect(page.locator('.z-listbox')).toBeVisible();
+
+    // Bis ans Ende gescrollt, ist das Feld aus dem Dialog heraus: jetzt gibt es
+    // nichts mehr, worauf die Liste zeigen könnte.
+    await dialog.evaluate((el) => {
+      el.scrollTop = el.scrollHeight;
+    });
+
     await expect(page.locator('.z-listbox')).toHaveCount(0);
     await expect(feld).toHaveAttribute('aria-expanded', 'false');
   });
@@ -455,7 +522,10 @@ test.describe('Server erstellen', () => {
 
     await expect(page.locator('[aria-current="step"] .z-wstep__title')).toHaveText('Größe');
     await expect(
-      page.locator('z-option-group').filter({ hasText: 'Leistungsklasse' }).locator('input:checked'),
+      page
+        .locator('z-option-group')
+        .filter({ hasText: 'Leistungsklasse' })
+        .locator('input:checked'),
     ).toHaveValue('budget');
   });
 
@@ -572,19 +642,93 @@ test.describe('Server erstellen', () => {
 
     const zahlen = await page.evaluate(() => {
       const betrag = (text: string) =>
-        Number(text.replace(/[^\d,.-]/g, '').replace('\u2212', '-').replace(',', '.'));
+        Number(
+          text
+            .replace(/[^\d,.-]/g, '')
+            .replace('\u2212', '-')
+            .replace(',', '.'),
+        );
       const zeilen = Array.from(document.querySelectorAll('.z-summary__line'));
       const posten = zeilen
         .map((z) => z.querySelector('dd')?.textContent?.trim() ?? '')
         .filter((t) => t.includes('\u20ac'));
-      const summe = document
-        .querySelector('.z-summary__total dd')
-        ?.textContent?.trim();
+      const summe = document.querySelector('.z-summary__total dd')?.textContent?.trim();
       return { posten: posten.map(betrag), summe: betrag(summe ?? '0') };
     });
 
     const [preis, rabatt, gutschein] = zahlen.posten;
     expect(Math.round((preis - rabatt - gutschein) * 100) / 100).toBe(zahlen.summe);
+  });
+
+  test('Flex sperrt Laufzeit und Gutschein und sagt jeweils warum', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/muster/server-erstellen?schritt=3&bezahlung=paypal&abrechnung=flex');
+    await page.locator('main h1').waitFor();
+
+    const laufzeit = page
+      .locator('z-option-group')
+      .filter({ has: page.locator('legend', { hasText: 'Laufzeit' }) });
+    await expect(laufzeit.locator('.z-options__legend small')).toHaveText(
+      'Flex wird nach Stunden abgerechnet, es gibt keine Laufzeit.',
+    );
+    await expect(laufzeit.locator('input')).toHaveCount(3);
+    await expect(laufzeit.locator('input:disabled')).toHaveCount(3);
+    // Kein Preis auf einer Karte, die nichts kostet.
+    await expect(laufzeit.locator('.z-option__price')).toHaveCount(0);
+
+    const gutschein = page.locator('z-input-action');
+    await expect(gutschein.locator('input')).toBeDisabled();
+    await expect(gutschein.locator('.z-field__error')).toHaveText(
+      'Für Flex gilt kein Gutschein. Wechsle zu Monatspreis, um den Code einzulösen.',
+    );
+  });
+
+  test('ein eingelöster Gutschein verschwindet mit dem Wechsel zu Flex', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/muster/server-erstellen?schritt=3&bezahlung=paypal');
+    await page.locator('main h1').waitFor();
+    await page.locator('.z-input-action .z-input').fill('ZENIT10');
+    await page.locator('.z-input-action button').click();
+    await expect(page.locator('.z-field__success')).toContainText('ZENIT10');
+    await expect(page.locator('.z-summary')).toContainText('Gutschein ZENIT10');
+
+    await waehleKarte(page, 'Abrechnung', 'flex');
+
+    // Weder der Satz am Feld noch die Zeile in der Zusammenfassung dürfen
+    // einen Rabatt behaupten, den der Preis nicht mehr hat.
+    await expect(page.locator('.z-field__success')).toHaveText('');
+    await expect(page.locator('.z-summary')).not.toContainText('Gutschein');
+  });
+
+  test('die Leiste nennt Flex und den Zeitraum, aus demselben Stand wie die Summe', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 800 });
+    await page.goto('/muster/server-erstellen?schritt=3&bezahlung=paypal');
+    await page.locator('main h1').waitFor();
+    const leiste = page.locator('z-sticky-bar');
+
+    await expect(leiste.locator('small')).toHaveText(
+      `Minecraft, 4${NB}GB, Normal, alle 30${NB}Tage`,
+    );
+
+    await waehleKarte(page, 'Abrechnung', 'flex');
+
+    // Während der Neuberechnung gehören Preis und Text weiter zusammen:
+    // beide zeigen den alten Stand, nicht den neuen Text zum alten Preis.
+    await expect(page.locator('.z-summary__price--pending')).toBeVisible();
+    await expect(leiste).toContainText(`7,74${NB}€`);
+    await expect(leiste.locator('small')).toHaveText(
+      `Minecraft, 4${NB}GB, Normal, alle 30${NB}Tage`,
+    );
+
+    await expect(page.locator('.z-summary__price--pending')).toHaveCount(0);
+    await expect(leiste).toContainText(`10,32${NB}€`);
+    await expect(leiste.locator('small')).toHaveText(
+      `Minecraft, 4${NB}GB, Normal, Flex, höchstens je 30${NB}Tage`,
+    );
+    // Dieselbe Aussage wie im Kopf der Zusammenfassung.
+    await expect(page.locator('.z-summary__price small')).toHaveText(`höchstens je 30${NB}Tage`);
   });
 
   test('StickyBar nur unter 900px', async ({ page }) => {
@@ -690,7 +834,10 @@ test.describe('Preisrechner', () => {
     await page.locator('main h1').waitFor();
 
     await expect(
-      page.locator('z-option-group').filter({ hasText: 'Arbeitsspeicher' }).locator('input:checked'),
+      page
+        .locator('z-option-group')
+        .filter({ hasText: 'Arbeitsspeicher' })
+        .locator('input:checked'),
     ).toHaveValue('8');
   });
 

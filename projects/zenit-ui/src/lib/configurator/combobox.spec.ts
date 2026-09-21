@@ -32,6 +32,21 @@ class ModellHost {
   readonly gesperrt = signal(false);
 }
 
+/** A field inside a scrolling container, which is what a dialog body is. */
+@Component({
+  imports: [ZCombobox],
+  template: `<div class="roller" style="height: 80px; overflow: auto">
+    <div style="height: 400px">
+      <z-combobox ariaLabel="Version" [options]="versionen" [(value)]="version" />
+    </div>
+  </div>`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class RollerHost {
+  readonly versionen = VERSIONEN;
+  readonly version = signal('1.21.4');
+}
+
 @Component({
   imports: [ZCombobox, ReactiveFormsModule],
   template: `<z-combobox ariaLabel="Version" [options]="versionen" [formControl]="steuerung" />`,
@@ -413,6 +428,62 @@ describe('ZCombobox', () => {
     taste(fixture, 'Enter');
 
     expect(fixture.componentInstance.modell().version).toBe('25w14a');
+  });
+
+  it('follows the field in a scrolling container and closes once it has left it', () => {
+    const fixture = TestBed.createComponent(RollerHost);
+    fixture.detectChanges();
+    oeffne(fixture);
+    const roller: HTMLElement = fixture.nativeElement.querySelector('.roller');
+    const eingabe = feld(fixture);
+    // jsdom has no layout, so the two boxes that decide this are given.
+    const kasten = (oben: number, unten: number) => () =>
+      ({ top: oben, bottom: unten, left: 0, right: 200 }) as DOMRect;
+    roller.getBoundingClientRect = kasten(0, 80);
+    eingabe.getBoundingClientRect = kasten(10, 40);
+
+    // Scrolling inside the list moves no field: the panel stays either way.
+    (panel() as HTMLElement).dispatchEvent(new Event('scroll'));
+    fixture.detectChanges();
+
+    expect(panel()).not.toBeNull();
+
+    // The container scrolls a little, the field is still in it: the panel
+    // follows it instead of leaving the visitor without a list.
+    roller.dispatchEvent(new Event('scroll'));
+    fixture.detectChanges();
+
+    expect(panel()).not.toBeNull();
+
+    // Now the field has left the container. The wrapper is neither the window
+    // nor a cdkScrollable, so nothing but the capture listener hears it.
+    eingabe.getBoundingClientRect = kasten(-60, -30);
+    roller.dispatchEvent(new Event('scroll'));
+    fixture.detectChanges();
+
+    expect(panel()).toBeNull();
+    expect(eingabe.getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('closes when the page has scrolled the field out of the viewport', () => {
+    const fixture = TestBed.createComponent(ModellHost);
+    fixture.detectChanges();
+    oeffne(fixture);
+    const eingabe = feld(fixture);
+    eingabe.getBoundingClientRect = () => ({ top: 20, bottom: 56, left: 0, right: 200 }) as DOMRect;
+
+    document.dispatchEvent(new Event('scroll'));
+    fixture.detectChanges();
+
+    expect(panel()).not.toBeNull();
+
+    eingabe.getBoundingClientRect = () =>
+      ({ top: -80, bottom: -44, left: 0, right: 200 }) as DOMRect;
+    document.dispatchEvent(new Event('scroll'));
+    fixture.detectChanges();
+
+    expect(panel()).toBeNull();
+    expect(eingabe.getAttribute('aria-expanded')).toBe('false');
   });
 
   it('takes its overlay with it when it is destroyed', () => {

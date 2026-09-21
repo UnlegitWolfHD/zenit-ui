@@ -54,6 +54,38 @@ describe('ZStickyBar', () => {
     expect(leiste.classList.contains('z-stickybar--mobile')).toBe(false);
   });
 
+  it('keeps scroll room only while it really sticks to the bottom edge', () => {
+    const fixture = TestBed.createComponent(LeisteHost);
+    fixture.detectChanges();
+    const leiste: HTMLElement = fixture.nativeElement.querySelector('z-sticky-bar');
+    const wurzel = document.documentElement;
+    const kasten = (hoehe: number, unten: number) => () =>
+      ({ height: hoehe, bottom: unten }) as DOMRect;
+
+    // At the bottom edge of the viewport: it covers what is behind it, so the
+    // page keeps its height clear (WCAG 2.4.11).
+    leiste.getBoundingClientRect = kasten(64, window.innerHeight);
+    window.dispatchEvent(new Event('scroll'));
+
+    expect(leiste.hasAttribute('data-stuck')).toBe(true);
+    expect(wurzel.style.getPropertyValue('--z-stickybar')).toBe('64px');
+
+    // The same bar standing in the page, as in a framed demo: it covers
+    // nothing and costs the page nothing.
+    leiste.getBoundingClientRect = kasten(64, 100);
+    window.dispatchEvent(new Event('scroll'));
+
+    expect(leiste.hasAttribute('data-stuck')).toBe(false);
+    expect(wurzel.style.getPropertyValue('--z-stickybar')).toBe('');
+
+    // Hidden (a mobileOnly bar from 900px on) measures 0 everywhere.
+    leiste.getBoundingClientRect = kasten(0, 0);
+    window.dispatchEvent(new Event('scroll'));
+
+    expect(leiste.hasAttribute('data-stuck')).toBe(false);
+    expect(wurzel.style.getPropertyValue('--z-stickybar')).toBe('');
+  });
+
   it('leaves the summary out when it is empty', () => {
     const fixture = TestBed.createComponent(LeisteHost);
     fixture.detectChanges();

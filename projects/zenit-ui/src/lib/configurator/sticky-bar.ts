@@ -10,16 +10,32 @@ import {
   input,
 } from '@angular/core';
 
-/** Every bar on the page, so the tallest visible one sets the room to keep clear. */
+/** Every bar on the page, so the tallest stuck one sets the room to keep clear. */
 const lebende = new Set<HTMLElement>();
 
-/** Writes the height of the tallest visible bar, or removes the property. */
-function schreibe(dokument: Document): void {
-  const wurzel = dokument.documentElement;
+/** The one scroll and resize listener all bars share, as long as one lives. */
+let horcher: AbortController | undefined;
+
+/**
+ * Marks every bar that really lies at the bottom edge of the viewport with
+ * `data-stuck` and writes the height of the tallest of them, or removes the
+ * property. A bar that stands in the page instead covers nothing: a framed demo
+ * bar, a bar above the fold, and a `mobileOnly` bar from 900px on, which is
+ * `display: none` and measures 0 everywhere.
+ */
+function miss(dokument: Document): void {
+  const fenster = dokument.defaultView;
   let hoechste = 0;
   for (const bar of lebende) {
-    hoechste = Math.max(hoechste, bar.getBoundingClientRect().height);
+    const kasten = bar.getBoundingClientRect();
+    const klebt =
+      !!fenster && kasten.height > 0 && Math.abs(kasten.bottom - fenster.innerHeight) <= 1;
+    bar.toggleAttribute('data-stuck', klebt);
+    if (klebt) {
+      hoechste = Math.max(hoechste, kasten.height);
+    }
   }
+  const wurzel = dokument.documentElement;
   if (hoechste > 0) {
     wurzel.style.setProperty('--z-stickybar', `${Math.round(hoechste)}px`);
   } else {
@@ -36,7 +52,9 @@ function schreibe(dokument: Document): void {
  * the projected button beside it. `mobileOnly` adds `z-stickybar--mobile`,
  * which hides the bar from 900px on, where the summary sticks next to the form
  * instead. It sticks at `bottom: 0` on `surface-raised` with a 1px line above,
- * and casts no shadow.
+ * and casts no shadow. While it really lies at the bottom edge of the viewport
+ * it carries the attribute `data-stuck`, which is what the stylesheet keeps
+ * scroll room for.
  *
  * The button is the "Weiter" of the current step, "Kostenpflichtig bestellen"
  * in the last one; it triggers the same thing as its twin in the summary. The
@@ -71,29 +89,48 @@ export class ZStickyBar {
   private readonly dokument = inject(DOCUMENT);
 
   constructor() {
-    // The bar covers the bottom of the viewport, so a control focused behind it
-    // would be invisible (WCAG 2.4.11). Its height is not a literal anywhere:
-    // every bar measures itself, the tallest visible one lands in
-    // --z-stickybar, and the stylesheet turns that into scroll-padding. A bar
-    // that is hidden (a mobileOnly bar from 900px on) measures 0 and drops out
-    // of the maximum by itself. ResizeObserver is missing on the server, where
-    // there is no layout to keep clear either.
+    // A bar at the bottom edge of the viewport covers what is behind it, so a
+    // control focused there would be invisible (WCAG 2.4.11). Neither the
+    // height nor the fact that it sticks is a literal anywhere: every bar
+    // measures both, marks itself with data-stuck while it sticks, and the
+    // tallest stuck one lands in --z-stickybar, which the stylesheet turns into
+    // scroll-padding. Whether a bar sticks changes with scrolling and with the
+    // height of the page, so one passive listener per document watches scroll
+    // (in the capture phase, so an inner scroller counts too) and resize, and a
+    // ResizeObserver watches the bar and the document. ResizeObserver is
+    // missing on the server, where there is no layout to keep clear either.
     const element = this.host.nativeElement;
     lebende.add(element);
+    const fenster = this.dokument.defaultView;
     const beobachter =
       typeof ResizeObserver === 'undefined'
         ? undefined
-        : new ResizeObserver(() => schreibe(this.dokument));
+        : new ResizeObserver(() => miss(this.dokument));
 
     afterRenderEffect(() => {
       beobachter?.observe(element);
-      schreibe(this.dokument);
+      beobachter?.observe(this.dokument.documentElement);
+      if (fenster && !horcher) {
+        horcher = new AbortController();
+        for (const art of ['scroll', 'resize'] as const) {
+          fenster.addEventListener(art, () => miss(this.dokument), {
+            capture: true,
+            passive: true,
+            signal: horcher.signal,
+          });
+        }
+      }
+      miss(this.dokument);
     });
 
     inject(DestroyRef).onDestroy(() => {
       beobachter?.disconnect();
       lebende.delete(element);
-      schreibe(this.dokument);
+      if (!lebende.size) {
+        horcher?.abort();
+        horcher = undefined;
+      }
+      miss(this.dokument);
     });
   }
 

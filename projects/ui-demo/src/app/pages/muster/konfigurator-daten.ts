@@ -305,24 +305,60 @@ export function ramOptionen(wert: string): ZOption<number>[] {
 
 /**
  * The terms as compact option cards, with the discount as a badge and the real
- * price of the term.
+ * price of the term. Under Flex the cards carry neither: nothing is paid per
+ * term there, and a price that is not paid is a wrong fact on the page.
  *
  * @param klasse Value of a performance class.
  * @param ramGb Chosen RAM in GB.
+ * @param grundbetrag Base amount of the game per 30 days.
+ * @param abrechnung Value of an `ABRECHNUNGEN` entry.
  * @returns The cards in ascending order.
  */
 export function laufzeitOptionen(
   klasse: string,
   ramGb: number,
   grundbetrag = MINECRAFT_GRUNDBETRAG,
+  abrechnung = 'monat',
 ): ZOption<number>[] {
+  const flex = !!laufzeitGrund(abrechnung);
   return LAUFZEITEN.map(({ tage, rabatt }) => ({
     value: tage,
     title: `${tage}\u00a0Tage`,
-    price: euro(rechnung({ ...VORGABE, klasse, ramGb, tage, grundbetrag }).summe),
-    badge: rabatt ? `−${Math.round(rabatt * 100)}\u00a0%` : undefined,
+    price: flex
+      ? undefined
+      : euro(rechnung({ ...VORGABE, klasse, ramGb, tage, grundbetrag }).summe),
+    badge: !flex && rabatt ? `−${Math.round(rabatt * 100)}\u00a0%` : undefined,
     badgeStatus: 'success' as const,
   }));
+}
+
+/**
+ * Why the term cannot be chosen, to stand at the group that is locked. Empty
+ * means the group is usable. The sentence stands once, at the legend, instead
+ * of three times in three identical cards.
+ *
+ * @param abrechnung Value of an `ABRECHNUNGEN` entry.
+ * @returns The reason, or the empty string.
+ */
+export function laufzeitGrund(abrechnung: string): string {
+  return abrechnung === 'flex' ? 'Flex wird nach Stunden abgerechnet, es gibt keine Laufzeit.' : '';
+}
+
+/**
+ * Why a voucher cannot be redeemed at all, whatever the code says. Empty means
+ * the code is judged on its own.
+ *
+ * Flex pays hours up to a cap, so a share off one period has nothing to attach
+ * to; taking it off the cap instead would leave base amount, hourly price and
+ * cap no longer adding up, in the chart as well as in the summary.
+ *
+ * @param abrechnung Value of an `ABRECHNUNGEN` entry.
+ * @returns The reason with the next step, or the empty string.
+ */
+export function gutscheinSperre(abrechnung: string): string {
+  return abrechnung === 'flex'
+    ? 'Für Flex gilt kein Gutschein. Wechsle zu Monatspreis, um den Code einzulösen.'
+    : '';
 }
 
 /**

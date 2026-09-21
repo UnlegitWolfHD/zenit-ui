@@ -7,7 +7,7 @@ import {
   signal,
   untracked,
 } from '@angular/core';
-import { form, FormField } from '@angular/forms/signals';
+import { disabled, form, FormField } from '@angular/forms/signals';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import {
   ZButton,
@@ -32,6 +32,7 @@ import {
   flexDeckel,
   flexStundenpreis,
   KLASSEN,
+  laufzeitGrund,
   laufzeitOptionen,
   minusEuro,
   proZeitraum,
@@ -115,6 +116,7 @@ const RAM_OPTIONEN: ZOption<number>[] = RAM_STUFEN.map((stufe) => ({
           <z-option-group
             legend="Laufzeit"
             compact
+            [hint]="laufzeitSperrgrund()"
             [options]="laufzeiten()"
             [formField]="rechner.tage"
           />
@@ -188,7 +190,14 @@ export class MusterPreisrechnerPage {
     tage: VORGABE.tage,
     abrechnung: 'monat',
   });
-  protected readonly rechner = form(this.werte);
+  protected readonly rechner = form(this.werte, (pfad) => {
+    // Flex bills hours up to a cap: there is no term to choose, so the cards are
+    // locked and the legend says why, instead of staying clickable to no effect.
+    disabled(pfad.tage, ({ valueOf }) => !!laufzeitGrund(valueOf(pfad.abrechnung)));
+  });
+
+  /** Why the term group is locked, and the sentence at its legend. */
+  protected readonly laufzeitSperrgrund = computed(() => laufzeitGrund(this.werte().abrechnung));
 
   private readonly grundbetrag = computed(
     () =>
@@ -201,7 +210,12 @@ export class MusterPreisrechnerPage {
   );
 
   protected readonly laufzeiten = computed(() =>
-    laufzeitOptionen(this.werte().klasse, this.werte().ramGb, this.grundbetrag()),
+    laufzeitOptionen(
+      this.werte().klasse,
+      this.werte().ramGb,
+      this.grundbetrag(),
+      this.werte().abrechnung,
+    ),
   );
 
   protected readonly stundenpreis = computed(() => flexStundenpreis(this.werte().ramGb));
