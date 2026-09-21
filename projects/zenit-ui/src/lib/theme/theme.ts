@@ -119,7 +119,9 @@ export function provideZenitTheme(config: ZThemeConfig = {}): EnvironmentProvide
  * What it does on the browser: it writes `data-theme` and `data-accent` onto
  * the target element, keeps the choice in `localStorage`, follows a change made
  * in another tab (`storage` event), and while the scheme is `'system'` it
- * follows `prefers-color-scheme` and `prefers-contrast` live. On the server
+ * follows `prefers-color-scheme` and `prefers-contrast` live. With
+ * `storageKey: null` it never touches `localStorage` and starts from the
+ * attributes that are already on the target, if they name registered ids. On the server
  * `window`, `matchMedia` and `localStorage` are never touched, so the service
  * is safe to inject during SSR and reports the defaults. The one thing it does
  * there: a `defaultScheme` other than `'system'` is written as `data-theme`
@@ -189,8 +191,9 @@ export class ZTheme {
    * `'contrast'` is one of `schemes`, otherwise to `'dark'` or `'light'` after
    * `prefers-color-scheme`. Both follow a change without a reload.
    */
-  readonly resolvedScheme = computed(() => {
-    const gewaehlt = this.gewaehltesSchema();
+  readonly resolvedScheme = computed(() => this.aufgeloest(this.gewaehltesSchema()));
+
+  private aufgeloest(gewaehlt: string): string {
     if (gewaehlt !== SCHEMA_SYSTEM) {
       return gewaehlt;
     }
@@ -198,7 +201,7 @@ export class ZTheme {
       return SCHEMA_KONTRAST;
     }
     return this.systemDunkel() ? SCHEMA_DUNKEL : SCHEMA_HELL;
-  });
+  }
 
   constructor() {
     GENUTZTE_CONFIG.set(this, this.config);
@@ -301,7 +304,7 @@ export class ZTheme {
 
   /** Takes the stored choice, the defaults where nothing valid is stored, and applies it. */
   private uebernehmen(): void {
-    const gespeichert = this.lesen();
+    const gespeichert = this.einst.storageKey ? this.lesen() : this.vomZiel();
     const schema = gespeichert?.scheme;
     const akzent = gespeichert?.accent;
     this.gewaehltesSchema.set(
@@ -313,6 +316,27 @@ export class ZTheme {
         : this.einst.defaultAccent,
     );
     this.anwenden();
+  }
+
+  /**
+   * Without a storage key the attributes already on the target are the stored
+   * choice: an application that keeps its own preference storage writes them
+   * with its own inline script before the first paint, and overwriting them
+   * with the defaults would flash the default scheme until that application
+   * calls `setScheme()`.
+   *
+   * An attribute only carries a resolved scheme. One that equals what the
+   * default resolves to is therefore no choice at all: it is what the init
+   * script or the server wrote, and `system` has to stay `system` to keep
+   * following the operating system.
+   */
+  private vomZiel(): { scheme?: unknown; accent?: unknown } {
+    const ziel = this.einst.target ? this.einst.target() : this.dok.documentElement;
+    const schema = ziel.getAttribute(ATTRIBUT_SCHEMA);
+    return {
+      scheme: schema === this.aufgeloest(this.einst.defaultScheme) ? null : schema,
+      accent: ziel.getAttribute(ATTRIBUT_AKZENT),
+    };
   }
 
   /**
