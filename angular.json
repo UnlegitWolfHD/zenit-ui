@@ -133,6 +133,82 @@
           }
         }
       }
+    },
+    "beispiel-app": {
+      "projectType": "application",
+      "schematics": {},
+      "root": "projects/beispiel-app",
+      "sourceRoot": "projects/beispiel-app/src",
+      "prefix": "app",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:application",
+          "options": {
+            "browser": "projects/beispiel-app/src/main.ts",
+            "tsConfig": "projects/beispiel-app/tsconfig.app.json",
+            "assets": [
+              {
+                "glob": "**/*",
+                "input": "projects/beispiel-app/public"
+              }
+            ],
+            "styles": [
+              "dist/zenit-ui/styles/tokens.css",
+              "@angular/cdk/overlay-prebuilt.css",
+              "dist/zenit-ui/styles/zenit-ui.css",
+              "projects/beispiel-app/src/styles.css"
+            ]
+          },
+          "configurations": {
+            "production": {
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "500kB",
+                  "maximumError": "1MB"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "4kB",
+                  "maximumError": "8kB"
+                }
+              ],
+              "outputHashing": "all"
+            },
+            "development": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve": {
+          "builder": "@angular/build:dev-server",
+          "configurations": {
+            "production": {
+              "buildTarget": "beispiel-app:build:production"
+            },
+            "development": {
+              "buildTarget": "beispiel-app:build:development"
+            }
+          },
+          "defaultConfiguration": "development"
+        },
+        "test": {
+          "builder": "@angular/build:unit-test"
+        },
+        "lint": {
+          "builder": "@angular-eslint/builder:lint",
+          "options": {
+            "lintFilePatterns": [
+              "projects/beispiel-app/**/*.ts",
+              "projects/beispiel-app/**/*.html"
+            ],
+            "eslintConfig": "projects/beispiel-app/eslint.config.js"
+          }
+        }
+      }
     }
   }
 }

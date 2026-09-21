@@ -1,0 +1,78 @@
+/* Fonts, self-hosted, exactly as step 3 of the package README describes them:
+   Material Icons for z-icon, Inter 400/500/600 as body, Space Grotesk 600/700
+   as display, JetBrains Mono 400/600 as mono. No request to Google.
+   The cascade layer is required: material-icons sets its own font-size on
+   .material-icons and is loaded after zenit-ui.css, so without the layer the
+   icon would be 24px inside a 20px box. */
+@import 'material-icons/iconfont/filled.css' layer(schriften);
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/500.css';
+@import '@fontsource/inter/600.css';
+@import '@fontsource/space-grotesk/600.css';
+@import '@fontsource/space-grotesk/700.css';
+@import '@fontsource/jetbrains-mono/400.css';
+@import '@fontsource/jetbrains-mono/600.css';
+
+/* Everything below is the whole stylesheet of this application: five rules.
+   The building blocks bring their own classes, so an application only spaces
+   the regions of the page. Values come from tokens.css only, no hex, no pixel
+   literals, no radius of its own. */
+
+/* Skip link: visually hidden until it takes focus, then a real 40px target
+   above the header (15-zustaende.md, "Tastatur"). */
+.app-skip {
+  position: absolute;
+  left: var(--space-4);
+  top: var(--space-4);
+  z-index: var(--z-header);
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.app-skip:focus {
+  display: inline-flex;
+  align-items: center;
+  width: auto;
+  height: auto;
+  min-height: var(--control-md);
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+  clip-path: none;
+}
+
+/* The content area between header and footer. */
+.app-main {
+  display: block;
+  padding-block: var(--space-6) var(--space-9);
+}
+
+/* Customer area (CLAUDE.md, "Abstand und Layout"): PageHeader, then space-6,
+   then the panels, which keep space-5 between them through .z-stack. */
+.app-page {
+  display: grid;
+  gap: var(--space-6);
+}
+
+/* Filter row: search and status select in one line, from 640px on, with the
+   select at sidebar width (Select README). Below that they stack, so nothing
+   scrolls sideways at 360px. */
+.app-filter {
+  display: grid;
+  gap: var(--space-3);
+  align-items: end;
+  grid-template-columns: minmax(0, 1fr);
+}
+@media (min-width: 640px) {
+  .app-filter {
+    grid-template-columns: minmax(0, 1fr) var(--sidebar);
+  }
+}
+
+/* Column head above the amounts. The cells themselves get their alignment and
+   the mono face from [zRowNum]; the head keeps the caption style of the row
+   head and only moves to the right. */
+.app-rechts {
+  text-align: right;
+}

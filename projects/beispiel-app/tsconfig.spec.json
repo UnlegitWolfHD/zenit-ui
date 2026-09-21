@@ -1,0 +1,14 @@
+/* To learn more about Typescript configuration file: https://www.typescriptlang.org/docs/handbook/tsconfig-json.html. */
+/* To learn more about Angular compiler options: https://angular.dev/reference/configs/angular-compiler-options. */
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "types": ["vitest/globals"],
+    /* Same override as tsconfig.app.json: the unit tests run against the built
+       package, not against the library sources. */
+    "paths": {
+      "zenit-ui": ["../../dist/zenit-ui"]
+    }
+  },
+  "include": ["src/**/*.d.ts", "src/**/*.spec.ts"]
+}

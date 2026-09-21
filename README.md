@@ -8,6 +8,7 @@ Angular workspace for the Zenit design system. It holds the library `zenit-ui` w
 | --- | --- |
 | `projects/zenit-ui` | the library: building blocks in `src/lib`, tokens and styles in `src/styles` |
 | `projects/ui-demo` | demo application, one page per package, each building block in all states |
+| `projects/beispiel-app` | example application: one complete page, built against the package in `dist/zenit-ui` |
 | `e2e/` | Playwright: screenshots at 1440px and 375px, axe checks per demo page |
 | `spec/` | the design system as the specification: tokens, component READMEs, previews, guidelines |
 | `docs/pakete.md` | cut of the work packages, decisions and acceptance points |
@@ -25,9 +26,15 @@ npm run lint          # ESLint over library and demo
 npm run lint:css      # Stylelint over projects/**/*.css
 npm run e2e           # Playwright with axe over the demo pages
 npm run docs:api      # TypeDoc reference into docs/api
-npm run check         # lint, lint:css, both builds and the unit tests in one run
+npm run check         # lint, lint:css, all builds and the unit tests in one run
 ng serve ui-demo      # demo app at http://localhost:4200/
+npm run start:beispiel # example app, library build included
+npm run e2e:beispiel  # Playwright over the example app
 ```
+
+## Example application
+
+`projects/beispiel-app` is the page to copy from: the Gameserver list of the customer area with every state it can have, consuming `zenit-ui` from the built package in `dist/zenit-ui` exactly as the package README describes. It is at the same time the proof that the shipped package works. How to run it, how each region of the page maps to a rule of the design system and what to replace in a real application is in `projects/beispiel-app/README.md`.
 
 ## Package zenit-ui
 

@@ -7,7 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Nothing yet.
+### Added
+
+- **Example application `beispiel-app`.** One complete page, "Gameserver" of the customer area, as the template for real pages: shell with skip link, AppHeader, Footer and toast outlet; PageHeader with one fact and one primary; filter row; panel "Meine Server" with ServerList, row menu and Pagination; every state from `spec/guidelines/15-zustaende.md` reachable through `?zustand=laden|leer|fehler`, plus the filtered-to-nothing case; toast after a restart and a confirmation with the server name before deleting. It consumes the library from the built package in `dist/zenit-ui` through a `paths` override in its tsconfigs, following the setup steps of the package README, and thereby proves that the package works. Scripts `build:beispiel`, `start:beispiel` and `e2e:beispiel`; `check` and the CI workflow build and test it as well. Documentation in `projects/beispiel-app/README.md`.
+- **Shared Playwright checks.** The page checks (axe, no horizontal scrolling, computed-style rules, focus ring, touch targets) moved from `e2e/demo.spec.ts` into `e2e/pruefungen.ts`, unchanged, and are used by `e2e/beispiel.spec.ts` as well.
+
+### Fixed
+
+- Nothing in the library. Two findings from building against the package are documented instead: `Z_MENU` loses its element types in the emitted `.d.ts` (`(typeof ZMenu)[]`), so consumers have to import `ZMenu`, `ZMenuItem` and `ZMenuSeparator` one by one, and `ZDialog.confirm()` offers no way to say which element should get the focus back.
 
 ## [0.1.0] - 2026-09-21
 

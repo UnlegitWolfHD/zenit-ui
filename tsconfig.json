@@ -32,6 +32,12 @@
     },
     {
       "path": "./projects/ui-demo/tsconfig.app.json"
+    },
+    {
+      "path": "./projects/beispiel-app/tsconfig.app.json"
+    },
+    {
+      "path": "./projects/beispiel-app/tsconfig.spec.json"
     }
   ]
 }

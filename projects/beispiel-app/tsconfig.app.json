@@ -1,0 +1,18 @@
+/* To learn more about Typescript configuration file: https://www.typescriptlang.org/docs/handbook/tsconfig-json.html. */
+/* To learn more about Angular compiler options: https://angular.dev/reference/configs/angular-compiler-options. */
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "types": [],
+    /* The workspace root maps `zenit-ui` to the library sources, which is what
+       library development needs. This application is the proof that the built
+       package works, so it resolves the same specifier to `dist/zenit-ui`, the
+       folder `ng build zenit-ui` writes and `npm pack` would ship. Paths
+       without `baseUrl` are relative to this file. */
+    "paths": {
+      "zenit-ui": ["../../dist/zenit-ui"]
+    }
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["src/**/*.spec.ts"]
+}

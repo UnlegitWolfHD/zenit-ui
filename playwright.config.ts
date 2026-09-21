@@ -11,6 +11,9 @@ const BASE_URL = `http://localhost:${PORT}`;
 
 export default defineConfig({
   testDir: 'e2e',
+  // beispiel.spec.ts prueft die Beispiel-App auf einem eigenen Port und mit
+  // eigenen Routen; sie laeuft ueber playwright.beispiel.config.ts.
+  testIgnore: 'beispiel.spec.ts',
   // Bilder liegen als e2e/screenshots/<route>-<breite>.png. Ohne {platform}:
   // geprueft wird nur unter Windows.
   snapshotPathTemplate: 'e2e/screenshots/{arg}{ext}',
