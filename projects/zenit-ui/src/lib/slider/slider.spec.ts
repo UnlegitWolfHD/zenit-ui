@@ -58,10 +58,10 @@ class FormControlHost {
   readonly steuerung = new FormControl(8);
 }
 
-/** Geschuetztes Leerzeichen zwischen Wert und Einheit, als Zeichen statt als Escape. */
+/** Non-breaking space between value and unit, as a character instead of an escape. */
 const NBSP = String.fromCharCode(0xa0);
 
-/** Bewegt die Schiene so, wie ein Nutzer sie bewegt. */
+/** Moves the track the way a user moves it. */
 function schiebe(schiene: HTMLInputElement, auf: number): void {
   schiene.value = String(auf);
   schiene.dispatchEvent(new Event('input'));
@@ -77,10 +77,10 @@ class SkalaHost {
 }
 
 describe('ZSlider', () => {
-  // min, max und step setzt der Baustein zusammen mit dem Wert direkt am
-  // Element. Kaemen sie als Bindung, begrenzte der Browser den Wert beim
-  // ersten Aufbau auf die Standardskala 0 bis 100.
-  it('haelt den Wert auf einer Skala ausserhalb von 0 bis 100', () => {
+  // The component sets min, max and step straight onto the element together
+  // with the value. If they came as bindings, the browser would clamp the value
+  // to the default scale 0 to 100 on the first build.
+  it('keeps the value on a scale outside 0 to 100', () => {
     const fixture = TestBed.createComponent(SkalaHost);
     fixture.detectChanges();
     const schiene: HTMLInputElement = fixture.nativeElement.querySelector('input');
@@ -89,7 +89,7 @@ describe('ZSlider', () => {
     expect(fixture.componentInstance.menge()).toBe(500);
   });
 
-  it('setzt min, max und step am nativen input[type=range]', () => {
+  it('sets min, max and step on the native input[type=range]', () => {
     const fixture = TestBed.createComponent(ModellHost);
     fixture.detectChanges();
     const schiene: HTMLInputElement = fixture.nativeElement.querySelector('input');
@@ -103,7 +103,7 @@ describe('ZSlider', () => {
     );
   });
 
-  it('verbindet Label und Schiene ueber for und id', () => {
+  it('ties label and track together through for and id', () => {
     const fixture = TestBed.createComponent(ModellHost);
     fixture.detectChanges();
     const label: HTMLLabelElement = fixture.nativeElement.querySelector('label.z-field__label');
@@ -115,7 +115,7 @@ describe('ZSlider', () => {
     expect(schiene.hasAttribute('aria-label')).toBe(false);
   });
 
-  it('rendert ohne label kein <label> und nimmt stattdessen ariaLabel', () => {
+  it('renders no <label> without label and takes ariaLabel instead', () => {
     const fixture = TestBed.createComponent(ModellHost);
     fixture.componentInstance.beschriftung.set('');
     fixture.componentInstance.marke.set('Arbeitsspeicher');
@@ -127,7 +127,7 @@ describe('ZSlider', () => {
     );
   });
 
-  it('zeigt den Wert mit Einheit und geschuetztem Leerzeichen, auch als aria-valuetext', () => {
+  it('shows the value with unit and a non-breaking space, as aria-valuetext too', () => {
     const fixture = TestBed.createComponent(ModellHost);
     fixture.detectChanges();
     const anzeige: HTMLElement = fixture.nativeElement.querySelector('.z-range__value');
@@ -138,7 +138,7 @@ describe('ZSlider', () => {
     );
   });
 
-  it('rendert ticks fuer das Auge und den hint mit aria-describedby', () => {
+  it('renders ticks for the eye and the hint with aria-describedby', () => {
     const fixture = TestBed.createComponent(ModellHost);
     fixture.detectChanges();
     const marken: HTMLElement = fixture.nativeElement.querySelector('.z-range__ticks');
@@ -156,7 +156,7 @@ describe('ZSlider', () => {
     expect(schiene.getAttribute('aria-describedby')).toBe(hinweis.id);
   });
 
-  it('laesst ticks und hint weg, wenn sie leer sind', () => {
+  it('leaves ticks and hint out when they are empty', () => {
     const fixture = TestBed.createComponent(ModellHost);
     fixture.componentInstance.marken.set([]);
     fixture.componentInstance.hinweis.set('');
@@ -169,7 +169,7 @@ describe('ZSlider', () => {
     );
   });
 
-  it('arbeitet mit model() in beide Richtungen und liefert eine Zahl', async () => {
+  it('works with model() in both directions and delivers a number', async () => {
     const fixture = TestBed.createComponent(ModellHost);
     fixture.detectChanges();
     const schiene: HTMLInputElement = fixture.nativeElement.querySelector('input');
@@ -189,11 +189,11 @@ describe('ZSlider', () => {
     expect(fixture.nativeElement.querySelector('.z-range__value').textContent).toBe(`4${NBSP}GB`);
   });
 
-  it('arbeitet mit ngModel in beide Richtungen', async () => {
+  it('works with ngModel in both directions', async () => {
     const fixture = TestBed.createComponent(NgModelHost);
     fixture.detectChanges();
     await fixture.whenStable();
-    // ngModel setzt den Startwert erst in einem Microtask.
+    // ngModel sets the initial value only in a microtask.
     fixture.detectChanges();
     const schiene: HTMLInputElement = fixture.nativeElement.querySelector('input');
 
@@ -210,7 +210,7 @@ describe('ZSlider', () => {
     expect(schiene.value).toBe('2');
   });
 
-  it('arbeitet mit formControl in beide Richtungen und liefert eine Zahl', () => {
+  it('works with formControl in both directions and delivers a number', () => {
     const fixture = TestBed.createComponent(FormControlHost);
     fixture.detectChanges();
     const schiene: HTMLInputElement = fixture.nativeElement.querySelector('input');
@@ -229,7 +229,7 @@ describe('ZSlider', () => {
     expect(typeof steuerung.value).toBe('number');
   });
 
-  it('bricht bei writeValue(null) nicht und faellt auf min zurueck', () => {
+  it('does not break on writeValue(null) and falls back to min', () => {
     const fixture = TestBed.createComponent(FormControlHost);
     fixture.detectChanges();
     const schiene: HTMLInputElement = fixture.nativeElement.querySelector('input');
@@ -241,7 +241,7 @@ describe('ZSlider', () => {
     expect(fixture.nativeElement.querySelector('.z-range__value').textContent).toBe(`1${NBSP}GB`);
   });
 
-  it('meldet nur die Nutzereingabe, nicht das Schreiben aus den Forms', () => {
+  it('reports only the user input, not the write coming from forms', () => {
     const fixture = TestBed.createComponent(FormControlHost);
     fixture.detectChanges();
     const schiene: HTMLInputElement = fixture.nativeElement.querySelector('input');
@@ -258,10 +258,10 @@ describe('ZSlider', () => {
     expect(steuerung.value).toBe(3);
   });
 
-  // Die Zeigereingabe setzt den Wert am Element selbst. Nimmt eine Steuerung
-  // sie zurueck, bevor eine Change Detection gelaufen ist, muss die Schiene
-  // ihr trotzdem folgen.
-  it('folgt der Steuerung, wenn setValue die Eingabe sofort zuruecknimmt', async () => {
+  // The pointer input sets the value on the element itself. If a control
+  // reverts it before a change detection has run, the track still has to follow
+  // it.
+  it('follows the control when setValue reverts the input right away', async () => {
     const fixture = TestBed.createComponent(FormControlHost);
     fixture.detectChanges();
     const schiene: HTMLInputElement = fixture.nativeElement.querySelector('input');
@@ -275,7 +275,7 @@ describe('ZSlider', () => {
     expect(schiene.value).toBe('8');
   });
 
-  it('meldet touched nach dem blur', () => {
+  it('reports touched after the blur', () => {
     const fixture = TestBed.createComponent(FormControlHost);
     fixture.detectChanges();
     const steuerung = fixture.componentInstance.steuerung;
@@ -287,7 +287,7 @@ describe('ZSlider', () => {
     expect(steuerung.touched).toBe(true);
   });
 
-  it('wird ueber die Forms gesperrt und wieder freigegeben', () => {
+  it('is locked and released again through forms', () => {
     const fixture = TestBed.createComponent(FormControlHost);
     fixture.detectChanges();
     const schiene: HTMLInputElement = fixture.nativeElement.querySelector('input');
@@ -305,13 +305,13 @@ describe('ZSlider', () => {
     expect(schiene.disabled).toBe(false);
   });
 
-  it('sperrt ueber den Input disabled', () => {
+  it('locks through the disabled input', () => {
     const fixture = TestBed.createComponent(ModellHost);
     fixture.componentInstance.gesperrt.set(true);
     fixture.detectChanges();
     const schiene: HTMLInputElement = fixture.nativeElement.querySelector('input');
 
-    // Eine gesperrte Schiene nimmt keine Zeigereingabe an, der Wert bleibt.
+    // A locked track takes no pointer input, so the value stays.
     expect(schiene.disabled).toBe(true);
 
     schiene.click();

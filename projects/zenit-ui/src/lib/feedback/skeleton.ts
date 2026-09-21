@@ -24,7 +24,7 @@ import { booleanAttribute, ChangeDetectionStrategy, Component, input } from '@an
   selector: 'z-skeleton',
   template: ``,
   host: {
-    'class': 'z-skel',
+    class: 'z-skel',
     '[class.z-skel--thumb]': `thumb()`,
     '[style.width]': `width() || null`,
     'aria-hidden': 'true',

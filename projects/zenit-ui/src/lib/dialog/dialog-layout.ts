@@ -88,7 +88,7 @@ export class ZDialogActions {}
     }
   `,
   host: {
-    'class': 'z-dialog',
+    class: 'z-dialog',
     '[attr.title]': `null`,
   },
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -102,7 +102,7 @@ export class ZDialogLayout {
 
   /**
    * id of the `<h2>` that the container's `aria-labelledby` points at. Taken
-   * from {@link Z_DIALOG_TITLE_ID} when `ZDialog.open()` opened this dialog,
+   * from `Z_DIALOG_TITLE_ID` when `ZDialog.open()` opened this dialog,
    * otherwise generated, so the layout also works standalone.
    */
   readonly titleId = inject(Z_DIALOG_TITLE_ID, { optional: true }) ?? naechsteId('z-dialog-title');

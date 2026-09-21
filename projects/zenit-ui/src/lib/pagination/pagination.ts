@@ -109,9 +109,9 @@ export class ZPagination {
    *
    * @default (von, bis, total, label) => `${von} bis ${bis} von ${total} ${label}`
    */
-  readonly rangeLabel = input<(von: number, bis: number, total: number, itemLabel: string) => string>(
-    (von, bis, total, label) => `${von} bis ${bis} von ${total} ${label}`,
-  );
+  readonly rangeLabel = input<
+    (von: number, bis: number, total: number, itemLabel: string) => string
+  >((von, bis, total, label) => `${von} bis ${bis} von ${total} ${label}`);
 
   /**
    * `aria-label` of the back button. German default, overridable.

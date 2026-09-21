@@ -5,12 +5,9 @@ import { ZInput } from './input';
 
 @Component({
   imports: [ZField, ZInput],
-  template: `<z-field
-    [label]="beschriftung()"
-    [for]="fuer()"
-    [hint]="hinweis()"
-    [error]="fehler()"
-  ><input zInput [attr.id]="fuer() || null" /></z-field>`,
+  template: `<z-field [label]="beschriftung()" [for]="fuer()" [hint]="hinweis()" [error]="fehler()"
+    ><input zInput [attr.id]="fuer() || null"
+  /></z-field>`,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 class FieldHost {
@@ -21,7 +18,7 @@ class FieldHost {
 }
 
 describe('ZField', () => {
-  it('verbindet Label und Feld ueber for und id', () => {
+  it('ties label and field together through for and id', () => {
     const fixture = TestBed.createComponent(FieldHost);
     fixture.detectChanges();
 
@@ -33,7 +30,7 @@ describe('ZField', () => {
     expect(feld.getAttribute('id')).toBe('name');
   });
 
-  it('zeigt ohne hint und error keinen Begleittext', () => {
+  it('shows no accompanying text without hint and error', () => {
     const fixture = TestBed.createComponent(FieldHost);
     fixture.detectChanges();
 
@@ -44,7 +41,7 @@ describe('ZField', () => {
     );
   });
 
-  it('vergibt ohne for weder for-Attribut noch ids', () => {
+  it('assigns neither a for attribute nor ids without for', () => {
     const fixture = TestBed.createComponent(FieldHost);
     fixture.componentInstance.fuer.set('');
     fixture.componentInstance.hinweis.set('Nur Buchstaben und Ziffern');
@@ -60,7 +57,7 @@ describe('ZField', () => {
     );
   });
 
-  it('rendert den Hinweis mit der id <for>-hint', () => {
+  it('renders the hint with the id <for>-hint', () => {
     const fixture = TestBed.createComponent(FieldHost);
     fixture.componentInstance.hinweis.set('Nur Buchstaben und Ziffern');
     fixture.detectChanges();
@@ -74,7 +71,7 @@ describe('ZField', () => {
     );
   });
 
-  it('verdraengt den Hinweis durch den Fehler mit der id <for>-error', () => {
+  it('replaces the hint with the error carrying the id <for>-error', () => {
     const fixture = TestBed.createComponent(FieldHost);
     fixture.componentInstance.hinweis.set('Nur Buchstaben und Ziffern');
     fixture.componentInstance.fehler.set('Der Name ist schon vergeben.');
@@ -90,7 +87,7 @@ describe('ZField', () => {
     );
   });
 
-  it('wechselt Text und Verknuepfung, wenn error zur Laufzeit kommt und geht', () => {
+  it('swaps text and reference when error appears and disappears at runtime', () => {
     const fixture = TestBed.createComponent(FieldHost);
     fixture.componentInstance.hinweis.set('Nur Buchstaben und Ziffern');
     fixture.detectChanges();

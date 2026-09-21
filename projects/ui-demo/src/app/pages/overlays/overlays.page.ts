@@ -13,7 +13,7 @@ import {
   ZPanel,
 } from 'zenit-ui';
 
-/** Eigener Dialog über ZDialog.open(): ein kurzes Formular mit einem Feld. */
+/** Custom dialog through ZDialog.open(): a short form with one field. */
 @Component({
   selector: 'demo-notiz-dialog',
   imports: [ZButton, ZDialogActions, ZDialogLayout, ZField, ZInput],
@@ -47,9 +47,9 @@ export class NotizDialog {
     <section class="demo-section">
       <h2 class="heading-2">Dialog</h2>
       <p class="demo-cap caption">
-        Drei Fälle: die destruktive Bestätigung mit Tippfeld, eine kurze Bestätigung und ein
-        eigener Dialog über open(). Escape und ein Klick neben den Dialog brechen ab, danach steht
-        der Fokus wieder auf dem Button.
+        Drei Fälle: die destruktive Bestätigung mit Tippfeld, eine kurze Bestätigung und ein eigener
+        Dialog über open(). Escape und ein Klick neben den Dialog brechen ab, danach steht der Fokus
+        wieder auf dem Button.
       </p>
 
       <div class="demo-row">

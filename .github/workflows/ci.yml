@@ -27,6 +27,8 @@ jobs:
 
       - run: npm run lint:css
 
+      - run: npm run format:check
+
       - run: npx ng build zenit-ui
 
       - run: npx ng build ui-demo

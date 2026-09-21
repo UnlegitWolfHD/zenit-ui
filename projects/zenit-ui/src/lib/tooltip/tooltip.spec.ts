@@ -37,7 +37,7 @@ describe('ZTooltip', () => {
     behaelter.ngOnDestroy();
   });
 
-  it('zeigt die Flaeche bei mouseenter und nimmt sie bei mouseleave zurueck', () => {
+  it('shows the panel on mouseenter and takes it back on mouseleave', () => {
     loese('mouseenter');
 
     expect(flaeche()?.textContent?.trim()).toBe('Server neu starten');
@@ -47,7 +47,7 @@ describe('ZTooltip', () => {
     expect(flaeche()).toBeNull();
   });
 
-  it('zeigt die Flaeche bei focusin und nimmt sie bei focusout zurueck', () => {
+  it('shows the panel on focusin and takes it back on focusout', () => {
     loese('focusin');
 
     expect(flaeche()).not.toBeNull();
@@ -57,7 +57,7 @@ describe('ZTooltip', () => {
     expect(flaeche()).toBeNull();
   });
 
-  it('gibt der Flaeche role tooltip und eine id und verweist mit aria-describedby darauf', () => {
+  it('gives the panel role tooltip and an id and points at it with aria-describedby', () => {
     expect(ausloeser.hasAttribute('aria-describedby')).toBe(false);
 
     loese('mouseenter');
@@ -72,7 +72,7 @@ describe('ZTooltip', () => {
     expect(ausloeser.hasAttribute('aria-describedby')).toBe(false);
   });
 
-  it('schliesst die Flaeche mit Escape', () => {
+  it('closes the panel with Escape', () => {
     loese('mouseenter');
 
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
@@ -82,7 +82,7 @@ describe('ZTooltip', () => {
     expect(ausloeser.hasAttribute('aria-describedby')).toBe(false);
   });
 
-  it('zeigt ohne Text nichts', () => {
+  it('shows nothing without text', () => {
     fixture.componentInstance.text.set('');
     fixture.detectChanges();
 
@@ -93,7 +93,7 @@ describe('ZTooltip', () => {
     expect(ausloeser.hasAttribute('aria-describedby')).toBe(false);
   });
 
-  it('haelt nie mehr als eine Flaeche', () => {
+  it('never holds more than one panel', () => {
     loese('mouseenter');
     loese('focusin');
     loese('mouseenter');
@@ -106,7 +106,7 @@ describe('ZTooltip', () => {
     expect(behaelter.getContainerElement().querySelectorAll('.z-tooltip')).toHaveLength(1);
   });
 
-  it('nimmt die Flaeche mit, wenn die Direktive zerstoert wird', () => {
+  it('takes the panel with it when the directive is destroyed', () => {
     loese('mouseenter');
 
     expect(flaeche()).not.toBeNull();

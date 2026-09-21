@@ -9,10 +9,12 @@
     "test": "ng test",
     "lint": "ng lint",
     "lint:css": "stylelint \"projects/**/*.css\"",
+    "format": "prettier --write \"projects/**/*.{ts,css,html}\"",
+    "format:check": "prettier --check \"projects/**/*.{ts,css,html}\"",
     "e2e": "playwright test",
     "e2e:update": "playwright test --update-snapshots",
     "docs:api": "typedoc",
-    "check": "npm run lint && npm run lint:css && ng build zenit-ui && ng build ui-demo && ng test zenit-ui --watch=false"
+    "check": "npm run lint && npm run lint:css && ng build zenit-ui && ng build ui-demo && ng test zenit-ui --watch=false && npm run format:check"
   },
   "private": true,
   "packageManager": "npm@11.11.0",

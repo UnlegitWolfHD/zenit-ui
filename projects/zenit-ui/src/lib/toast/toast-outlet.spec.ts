@@ -21,7 +21,7 @@ describe('ZToastOutlet', () => {
   let fixture: ComponentFixture<OutletHost>;
   let dienst: ZToast;
 
-  /** Zeigt die Toasts des Service an und rendert sie. */
+  /** Shows the toasts of the service and renders them. */
   function zeige(aufruf: () => void): void {
     aufruf();
     fixture.detectChanges();
@@ -37,14 +37,14 @@ describe('ZToastOutlet', () => {
     fixture.detectChanges();
   });
 
-  it('haengt die Klasse z-toast-outlet an den Host und bleibt ohne Toast leer', () => {
+  it('puts the class z-toast-outlet on the host and stays empty without a toast', () => {
     const outlet = fixture.nativeElement.querySelector('z-toast-outlet');
 
     expect(outlet.classList.contains('z-toast-outlet')).toBe(true);
     expect(toasts()).toHaveLength(0);
   });
 
-  it('rendert einen neutralen Toast mit role status und ohne Modifier', () => {
+  it('renders a neutral toast with role status and no modifier', () => {
     zeige(() => dienst.show('Adresse kopiert'));
     const toast = toasts()[0];
 
@@ -55,7 +55,7 @@ describe('ZToastOutlet', () => {
     expect(toast.textContent).toContain('Adresse kopiert');
   });
 
-  it('rendert success mit z-toast--success und role status', () => {
+  it('renders success with z-toast--success and role status', () => {
     zeige(() => dienst.success('Eigenschaften gespeichert'));
     const toast = toasts()[0];
 
@@ -64,7 +64,7 @@ describe('ZToastOutlet', () => {
     expect(toast.getAttribute('role')).toBe('status');
   });
 
-  it('rendert einen Fehler mit z-toast--danger und role alert', () => {
+  it('renders an error with z-toast--danger and role alert', () => {
     zeige(() => dienst.error('Backup fehlgeschlagen: Speicher voll'));
     const toast = toasts()[0];
 
@@ -73,7 +73,7 @@ describe('ZToastOutlet', () => {
     expect(toast.getAttribute('role')).toBe('alert');
   });
 
-  it('zeigt das Icon aus icon und ohne icon keines', () => {
+  it('shows the icon from icon and none without icon', () => {
     zeige(() => dienst.show('Adresse kopiert', { icon: 'content_copy' }));
     const icon = toasts()[0].querySelector(':scope > z-icon');
 
@@ -85,7 +85,7 @@ describe('ZToastOutlet', () => {
     expect(toasts()[0].querySelector(':scope > z-icon')).toBeNull();
   });
 
-  it('zeigt die Aktion als Button mit actionLabel und ohne actionLabel keinen', () => {
+  it('shows the action as a button with actionLabel and none without actionLabel', () => {
     zeige(() => dienst.show('Eigenschaften gespeichert', { actionLabel: 'Rückgängig' }));
 
     expect(toasts()[0].querySelector('.z-toast__action')?.textContent?.trim()).toBe('Rückgängig');
@@ -96,9 +96,11 @@ describe('ZToastOutlet', () => {
     expect(toasts()[0].querySelector('.z-toast__action')).toBeNull();
   });
 
-  it('ruft beim Klick auf die Aktion den Callback und schliesst den Toast', () => {
+  it('calls the callback on a click on the action and closes the toast', () => {
     const aktion = vi.fn();
-    zeige(() => dienst.show('Eigenschaften gespeichert', { actionLabel: 'Rückgängig', action: aktion }));
+    zeige(() =>
+      dienst.show('Eigenschaften gespeichert', { actionLabel: 'Rückgängig', action: aktion }),
+    );
 
     const button = toasts()[0].querySelector<HTMLButtonElement>('.z-toast__action');
     button?.click();
@@ -109,7 +111,7 @@ describe('ZToastOutlet', () => {
     expect(toasts()).toHaveLength(0);
   });
 
-  it('schliesst den Toast auch ohne hinterlegten Callback', () => {
+  it('closes the toast even without a registered callback', () => {
     zeige(() => dienst.show('Eigenschaften gespeichert', { actionLabel: 'Rückgängig' }));
 
     toasts()[0].querySelector<HTMLButtonElement>('.z-toast__action')?.click();
@@ -118,7 +120,7 @@ describe('ZToastOutlet', () => {
     expect(toasts()).toHaveLength(0);
   });
 
-  it('gibt dem Schliessen-Button Schließen als aria-label', () => {
+  it('gives the close button Schließen as its aria-label', () => {
     zeige(() => dienst.show('Adresse kopiert'));
     const schliessen = toasts()[0].querySelector('.z-toast__close');
 
@@ -126,18 +128,18 @@ describe('ZToastOutlet', () => {
     expect(schliessen?.querySelector('z-icon')?.textContent?.trim()).toBe('close');
   });
 
-  it('laesst closeLabel das aria-label ueberschreiben', () => {
+  it('lets closeLabel override the aria-label', () => {
     const eigenes = TestBed.createComponent(EigenesLabelHost);
     eigenes.detectChanges();
     TestBed.inject(ZToast).show('Adresse kopiert');
     eigenes.detectChanges();
 
-    expect(
-      eigenes.nativeElement.querySelector('.z-toast__close').getAttribute('aria-label'),
-    ).toBe('Meldung schließen');
+    expect(eigenes.nativeElement.querySelector('.z-toast__close').getAttribute('aria-label')).toBe(
+      'Meldung schließen',
+    );
   });
 
-  it('entfernt den Toast beim Klick auf Schliessen', () => {
+  it('removes the toast on a click on close', () => {
     zeige(() => {
       dienst.show('Adresse kopiert');
       dienst.success('Eigenschaften gespeichert');
@@ -150,7 +152,7 @@ describe('ZToastOutlet', () => {
     expect(toasts()[0].textContent).toContain('Eigenschaften gespeichert');
   });
 
-  it('rendert hoechstens drei Toasts, den neuesten unten', () => {
+  it('renders at most three toasts, the newest at the bottom', () => {
     zeige(() => {
       dienst.show('Eins');
       dienst.show('Zwei');

@@ -21,7 +21,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
   selector: 'z-icon',
   template: `{{ name() }}`,
   host: {
-    'class': 'material-icons z-icon',
+    class: 'material-icons z-icon',
     '[class.z-icon--sm]': `size() === 'sm'`,
     'aria-hidden': 'true',
   },

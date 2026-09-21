@@ -27,7 +27,7 @@ function meter(fixture: { nativeElement: HTMLElement }): HTMLElement | null {
   return fixture.nativeElement.querySelector('.z-meter');
 }
 
-/** Geschuetztes Leerzeichen U+00A0, als Name statt als unsichtbares Zeichen. */
+/** Non-breaking space U+00A0, as a name instead of an invisible character. */
 const NBSP = String.fromCharCode(160);
 
 describe('ZMetric', () => {

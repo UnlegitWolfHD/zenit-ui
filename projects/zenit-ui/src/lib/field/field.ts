@@ -38,7 +38,7 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
       <span class="z-field__hint" [attr.id]="hinweisId()">{{ hint() }}</span>
     }
   `,
-  host: { 'class': 'z-field' },
+  host: { class: 'z-field' },
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ZField {

@@ -200,7 +200,9 @@ interface DemoServer {
         </z-rows>
       </z-panel>
 
-      <p class="demo-cap caption">Leer: ein Satz und eine Aktion, keine Filter und keine Pagination.</p>
+      <p class="demo-cap caption">
+        Leer: ein Satz und eine Aktion, keine Filter und keine Pagination.
+      </p>
       <z-panel title="Meine Server" flush>
         <z-empty-state title="Noch kein Server">
           Der erste steht in etwa 60 Sekunden bereit.
@@ -360,14 +362,20 @@ export class DatenPage {
     },
   ];
 
-  /** Breiten der Platzhalter wie in spec/components/Skeleton/preview.html. */
+  /** Widths of the placeholders as in spec/components/Skeleton/preview.html. */
   protected readonly platzhalter = [
     { titel: '40%', meta: '60%' },
     { titel: '30%', meta: '50%' },
   ];
 
   protected readonly dateien = [
-    { name: 'plugins', icon: 'folder', groesse: '', geaendert: '04.09.2026, 05:53', gewaehlt: false },
+    {
+      name: 'plugins',
+      icon: 'folder',
+      groesse: '',
+      geaendert: '04.09.2026, 05:53',
+      gewaehlt: false,
+    },
     { name: 'world', icon: 'folder', groesse: '', geaendert: '21.09.2026, 13:55', gewaehlt: false },
     {
       name: 'server.jar',
@@ -398,12 +406,8 @@ export class DatenPage {
   protected readonly leereSeite = signal(1);
   protected readonly englischeSeite = signal(1);
 
-  protected readonly englischerBereich = (
-    von: number,
-    bis: number,
-    total: number,
-    label: string,
-  ) => `${von} to ${bis} of ${total} ${label}`;
+  protected readonly englischerBereich = (von: number, bis: number, total: number, label: string) =>
+    `${von} to ${bis} of ${total} ${label}`;
 
   protected readonly seitenInhalt = computed(() => {
     const start = (this.seite() - 1) * 25;

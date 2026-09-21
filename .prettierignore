@@ -1,0 +1,24 @@
+# Reference material of the design system.
+spec/
+
+# The library stylesheets are copied verbatim from spec/components/bundle.css
+# and tokens.css has to stay byte identical to spec/tokens.css. Prettier keeps
+# every selector and declaration intact here, but it rewrites the quotes of
+# attribute selectors and content strings ("page" to 'page'), which would break
+# a plain diff against the reference. So the whole folder stays unformatted.
+projects/zenit-ui/src/styles/
+projects/zenit-ui/src/styles/tokens.css
+
+# The value of a metric and its unit must not be separated by a text node: the
+# template glues "{{ value() }}" to the @if block so the only gap is the
+# non-breaking space inside the <small>. Prettier breaks that line and Angular
+# then collapses the indentation into a real space ("3,2  GB").
+projects/zenit-ui/src/lib/metric/metric.ts
+
+# Build output and generated documentation.
+dist/
+docs/api/
+
+# Worktrees of parallel branches and the binary screenshot baselines.
+.worktrees/
+e2e/screenshots/

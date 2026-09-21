@@ -60,8 +60,8 @@ export interface ZSegmentOption {
     }
   `,
   host: {
-    'class': 'z-segment',
-    'role': 'group',
+    class: 'z-segment',
+    role: 'group',
     '[attr.aria-label]': `ariaLabel() || null`,
   },
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => ZSegment), multi: true }],

@@ -1,7 +1,7 @@
-/* Paket overlays: Dialog und Menu.
-   Die Abschnitte Dialog, Menu und CDK-Overlays stehen woertlich wie in
-   spec/components/bundle.css. `.z-scrim` bekommt sein display schon hier aus
-   dem Abschnitt Dialog und steht deshalb in keiner zweiten Host-Regel. */
+/* Package overlays: Dialog and Menu.
+   The sections Dialog, Menu and CDK overlays stand verbatim as in
+   spec/components/bundle.css. `.z-scrim` already gets its display here from
+   the Dialog section and therefore appears in no second host rule. */
 
 /* Dialog */
 .z-scrim { display: grid; place-items: center; padding: var(--space-5); background: var(--scrim); }
@@ -20,7 +20,7 @@
 .z-menu__key { margin-left: auto; font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); }
 .z-menu__sep { height: 1px; margin: var(--space-1) 0; background: var(--border); }
 
-/* CDK-Overlays */
+/* CDK overlays */
 .z-backdrop { background: var(--scrim); }
 .z-dialog-panel { width: min(480px, calc(100vw - 2 * var(--space-4))); max-height: calc(100vh - 2 * var(--space-5)); }
 .z-dialog-panel .z-dialog { width: 100%; max-height: inherit; overflow: auto; }
@@ -32,15 +32,15 @@
 .z-menu__item:disabled, .z-menu__item[aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; }
 .z-menu__item:focus-visible { background: var(--surface-hover); }
 
-/* Angular-Hosts */
-/* Ergänzung zur Referenz: CDK-Backdrop ohne Einblenden (CLAUDE.md, Bewegung). */
+/* Angular hosts */
+/* Addition to the reference: CDK backdrop without a fade in (CLAUDE.md, Bewegung). */
 .z-backdrop.cdk-overlay-backdrop { transition: none; }
-/* Die Trennlinie ist ein eigenes Element und deshalb sonst inline. */
+/* The separator is an element of its own and therefore inline otherwise. */
 z-menu-separator { display: block; }
-/* Der Koerper des Dialogs faerbt seinen Text text-muted, das Label eines
-   Feldes bleibt text (in der Vorschau als style am Label). */
+/* The body of the dialog colours its text text-muted, the label of a field
+   stays text (in the preview as a style on the label). */
 .z-dialog__body .z-field__label { color: var(--text); }
-/* Klickziel mobil mindestens 40px, der Eintrag misst sonst 36px. */
+/* Click target at least 40px on mobile, the entry measures 36px otherwise. */
 @media (max-width: 640px) {
   .z-menu__item { height: var(--control-md); }
 }

@@ -28,7 +28,7 @@ import { ChangeDetectionStrategy, Component, computed, Directive, input } from '
   selector: 'z-rows',
   template: `<ng-content />`,
   host: {
-    'class': 'z-rows',
+    class: 'z-rows',
     '[style.--z-cols]': `columns() || null`,
   },
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -61,7 +61,7 @@ export class ZRows {
 @Component({
   selector: 'z-rows-head',
   template: `<ng-content />`,
-  host: { 'class': 'z-rows__head' },
+  host: { class: 'z-rows__head' },
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ZRowsHead {}
@@ -81,7 +81,7 @@ export class ZRowsHead {}
  */
 @Directive({
   selector: 'a[zRow], div[zRow]',
-  host: { 'class': 'z-row' },
+  host: { class: 'z-row' },
 })
 export class ZRow {}
 
@@ -118,7 +118,7 @@ export class ZRow {}
     </div>
   `,
   host: {
-    'class': 'z-row__main',
+    class: 'z-row__main',
     '[attr.title]': `null`,
   },
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -161,6 +161,6 @@ export class ZRowMain {
  */
 @Directive({
   selector: '[zRowNum]',
-  host: { 'class': 'z-row__num' },
+  host: { class: 'z-row__num' },
 })
 export class ZRowNum {}

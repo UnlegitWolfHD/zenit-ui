@@ -72,7 +72,9 @@ const STARTZEILEN: ZConsoleLine[] = [
 
       <div class="demo-row">
         <button zBtn="ghost" size="sm"><z-icon name="content_copy" size="sm" />Log kopieren</button>
-        <button zBtn="ghost" size="sm"><z-icon name="download" size="sm" />Log herunterladen</button>
+        <button zBtn="ghost" size="sm">
+          <z-icon name="download" size="sm" />Log herunterladen
+        </button>
         <button zBtn="ghost" size="sm" (click)="leeren()">
           <z-icon name="delete" size="sm" />Leeren
         </button>
@@ -103,9 +105,7 @@ const STARTZEILEN: ZConsoleLine[] = [
       <z-console disabled placeholder="Befehl eingeben, Enter sendet">
         <z-empty-state title="Server ist gestoppt">
           Starte Beispiel-Server 1, dann nimmt die Konsole wieder Befehle an.
-          <button zEmptyAction zBtn="secondary">
-            <z-icon name="play_arrow" />Server starten
-          </button>
+          <button zEmptyAction zBtn="secondary"><z-icon name="play_arrow" />Server starten</button>
         </z-empty-state>
       </z-console>
     </section>
@@ -215,7 +215,7 @@ export class WerkzeugePage {
   protected readonly zeilen = signal<ZConsoleLine[]>([...STARTZEILEN]);
   protected readonly gewaehlt = signal('Terraria');
 
-  /** Sekunden seit Mitternacht, weiter ab der letzten Zeile der Vorschau. */
+  /** Seconds since midnight, continuing from the last line of the preview. */
   private uhr = 12 * 3600 + 7 * 60 + 15;
 
   protected readonly guenstigste = [
@@ -268,7 +268,7 @@ export class WerkzeugePage {
     this.zeilen.set([]);
   }
 
-  /** Zeitstempel wie in der Vorschau, eine Sekunde je Zeile. */
+  /** Timestamps as in the preview, one second per line. */
   private zeit(): string {
     this.uhr += 1;
     const zwei = (n: number) => String(n).padStart(2, '0');

@@ -35,7 +35,7 @@ class FormControlHost {
 }
 
 describe('ZCheckbox', () => {
-  it('rendert ein natives input[type=checkbox] im label.z-check und den Text im span', () => {
+  it('renders a native input[type=checkbox] in the label.z-check and the text in the span', () => {
     const fixture = TestBed.createComponent(ModellHost);
     fixture.detectChanges();
     const label: HTMLLabelElement = fixture.nativeElement.querySelector('label.z-check');
@@ -45,7 +45,7 @@ describe('ZCheckbox', () => {
     expect(label.querySelector('span')?.textContent?.trim()).toBe('Backups behalten');
   });
 
-  it('traegt ariaLabel als aria-label und laesst das Attribut sonst weg', () => {
+  it('puts ariaLabel on as aria-label and leaves the attribute out otherwise', () => {
     const fixture = TestBed.createComponent(ModellHost);
     fixture.detectChanges();
     const feld: HTMLInputElement = fixture.nativeElement.querySelector('input');
@@ -58,7 +58,7 @@ describe('ZCheckbox', () => {
     expect(feld.getAttribute('aria-label')).toBe('Backups behalten');
   });
 
-  it('arbeitet mit model() in beide Richtungen', async () => {
+  it('works with model() in both directions', async () => {
     const fixture = TestBed.createComponent(ModellHost);
     fixture.detectChanges();
     const feld: HTMLInputElement = fixture.nativeElement.querySelector('input');
@@ -76,12 +76,12 @@ describe('ZCheckbox', () => {
     expect(feld.checked).toBe(false);
   });
 
-  it('arbeitet mit ngModel in beide Richtungen', async () => {
+  it('works with ngModel in both directions', async () => {
     const fixture = TestBed.createComponent(NgModelHost);
     fixture.detectChanges();
     await fixture.whenStable();
-    // ngModel setzt den Startwert erst in einem Microtask, das Feld braucht
-    // danach noch einen Durchlauf.
+    // ngModel sets the initial value only in a microtask, and the field needs
+    // one more run after that.
     fixture.detectChanges();
     const feld: HTMLInputElement = fixture.nativeElement.querySelector('input');
 
@@ -98,7 +98,7 @@ describe('ZCheckbox', () => {
     expect(feld.checked).toBe(true);
   });
 
-  it('arbeitet mit formControl in beide Richtungen', () => {
+  it('works with formControl in both directions', () => {
     const fixture = TestBed.createComponent(FormControlHost);
     fixture.detectChanges();
     const feld: HTMLInputElement = fixture.nativeElement.querySelector('input');
@@ -116,7 +116,7 @@ describe('ZCheckbox', () => {
     expect(steuerung.value).toBe(false);
   });
 
-  it('bricht bei writeValue(null) nicht', () => {
+  it('does not break on writeValue(null)', () => {
     const fixture = TestBed.createComponent(FormControlHost);
     fixture.detectChanges();
     const feld: HTMLInputElement = fixture.nativeElement.querySelector('input');
@@ -127,10 +127,10 @@ describe('ZCheckbox', () => {
     expect(feld.checked).toBe(false);
   });
 
-  // Der Aufruf von registerOnChange hinterlaesst genau eine Spur an der
-  // Steuerung: sie wird dirty. Bleibt sie nach setValue pristine, hat der
-  // Baustein nichts zurueckgemeldet.
-  it('meldet nur die Nutzereingabe, nicht das Schreiben aus den Forms', () => {
+  // Calling registerOnChange leaves exactly one trace on the control: it turns
+  // dirty. If it stays pristine after setValue, the component reported nothing
+  // back.
+  it('reports only the user input, not the write coming from forms', () => {
     const fixture = TestBed.createComponent(FormControlHost);
     fixture.detectChanges();
     const feld: HTMLInputElement = fixture.nativeElement.querySelector('input');
@@ -147,7 +147,7 @@ describe('ZCheckbox', () => {
     expect(steuerung.value).toBe(false);
   });
 
-  it('meldet touched nach dem blur', () => {
+  it('reports touched after the blur', () => {
     const fixture = TestBed.createComponent(FormControlHost);
     fixture.detectChanges();
     const steuerung = fixture.componentInstance.steuerung;
@@ -159,7 +159,7 @@ describe('ZCheckbox', () => {
     expect(steuerung.touched).toBe(true);
   });
 
-  it('wird ueber die Forms gesperrt und wieder freigegeben', () => {
+  it('is locked and released again through forms', () => {
     const fixture = TestBed.createComponent(FormControlHost);
     fixture.detectChanges();
     const feld: HTMLInputElement = fixture.nativeElement.querySelector('input');
@@ -177,11 +177,11 @@ describe('ZCheckbox', () => {
     expect(feld.disabled).toBe(false);
   });
 
-  // Der Klick setzt die Checkedness am Element selbst. Nimmt eine Steuerung
-  // die Eingabe zurueck, bevor eine Change Detection gelaufen ist, muss der
-  // Haken ihr trotzdem folgen: der Baustein schreibt den Haken direkt auf das
-  // Element und nicht ueber eine Bindung [checked].
-  it('folgt der Steuerung, wenn setValue die Eingabe sofort zuruecknimmt', async () => {
+  // The click sets the checkedness on the element itself. If a control reverts
+  // the input before a change detection has run, the check mark still has to
+  // follow it: the component writes the check mark straight onto the element
+  // and not through a [checked] binding.
+  it('follows the control when setValue reverts the input right away', async () => {
     const fixture = TestBed.createComponent(FormControlHost);
     fixture.detectChanges();
     const feld: HTMLInputElement = fixture.nativeElement.querySelector('input');
@@ -195,7 +195,7 @@ describe('ZCheckbox', () => {
     expect(feld.checked).toBe(false);
   });
 
-  it('sperrt ueber den Input disabled und laesst den Klick dann wirkungslos', () => {
+  it('locks through the disabled input and then leaves the click without effect', () => {
     const fixture = TestBed.createComponent(ModellHost);
     fixture.componentInstance.gesperrt.set(true);
     fixture.detectChanges();

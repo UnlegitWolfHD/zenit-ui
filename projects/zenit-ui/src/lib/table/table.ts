@@ -29,9 +29,9 @@ import { ChangeDetectionStrategy, Component, Directive, input } from '@angular/c
   selector: 'z-table-container',
   template: `<ng-content />`,
   host: {
-    'class': 'z-table-wrap',
-    'role': 'region',
-    'tabindex': '0',
+    class: 'z-table-wrap',
+    role: 'region',
+    tabindex: '0',
     '[attr.aria-label]': `ariaLabel()`,
   },
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -62,7 +62,7 @@ export class ZTableContainer {
  */
 @Directive({
   selector: 'table[zTable]',
-  host: { 'class': 'z-table' },
+  host: { class: 'z-table' },
 })
 export class ZTable {}
 
@@ -77,7 +77,7 @@ export class ZTable {}
  */
 @Directive({
   selector: '[zNum]',
-  host: { 'class': 'z-table__num' },
+  host: { class: 'z-table__num' },
 })
 export class ZNum {}
 
@@ -93,6 +93,6 @@ export class ZNum {}
  */
 @Directive({
   selector: '[zTableName]',
-  host: { 'class': 'z-table__name' },
+  host: { class: 'z-table__name' },
 })
 export class ZTableName {}

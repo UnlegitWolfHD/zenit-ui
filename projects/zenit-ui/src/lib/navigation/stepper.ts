@@ -25,7 +25,8 @@ import { ChangeDetectionStrategy, Component, input, numberAttribute } from '@ang
           [class.z-step--done]="$index < current()"
           [attr.aria-current]="$index === current() ? 'step' : null"
         >
-          <span class="z-step__num">{{ $index + 1 }}</span>{{ schritt }}
+          <span class="z-step__num">{{ $index + 1 }}</span
+          >{{ schritt }}
         </li>
       }
     </ol>

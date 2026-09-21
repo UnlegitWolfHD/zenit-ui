@@ -18,8 +18,8 @@ import { ZCheckbox, ZPanel, ZSegment, ZSegmentOption, ZSetting, ZSlider, ZToggle
     <h1 class="heading-1 demo-title">Formulare</h1>
     <p class="demo-lead">
       Checkbox, Toggle mit Setting, Slider und Segment in allen Zuständen. Jeder Baustein steht
-      einmal mit model()-Bindung, einmal mit ngModel und einmal mit formControl da.
-      Beispieldaten: Beispiel-Server 1 auf 203.0.113.10, Tarif Flex.
+      einmal mit model()-Bindung, einmal mit ngModel und einmal mit formControl da. Beispieldaten:
+      Beispiel-Server 1 auf 203.0.113.10, Tarif Flex.
     </p>
 
     <section class="demo-section">
@@ -35,7 +35,8 @@ import { ZCheckbox, ZPanel, ZSegment, ZSegmentOption, ZSetting, ZSlider, ZToggle
         <z-checkbox [(checked)]="whitelistJson">whitelist.json</z-checkbox>
         <z-checkbox disabled>server.jar</z-checkbox>
         <span class="z-muted">
-          server.properties <span class="z-mono">{{ serverProperties() }}</span>, whitelist.json
+          server.properties <span class="z-mono">{{ serverProperties() }}</span
+          >, whitelist.json
           <span class="z-mono">{{ whitelistJson() }}</span>
         </span>
         <p class="demo-cap caption">
@@ -55,19 +56,25 @@ import { ZCheckbox, ZPanel, ZSegment, ZSegmentOption, ZSetting, ZSlider, ZToggle
         </p>
         <z-checkbox ariaLabel="Beispiel-Server 1 auswählen" [(checked)]="zeile" />
         <span class="z-muted">Beispiel-Server 1, 203.0.113.10:25565</span>
-        <span class="z-muted">Gewählt: <span class="z-mono">{{ zeile() }}</span></span>
+        <span class="z-muted"
+          >Gewählt: <span class="z-mono">{{ zeile() }}</span></span
+        >
       </div>
 
       <div class="demo-row">
         <p class="demo-cap caption">ngModel</p>
         <z-checkbox [(ngModel)]="autoNeustart">Neustart jede Nacht um 05:00</z-checkbox>
-        <span class="z-muted">Wert <span class="z-mono">{{ autoNeustart }}</span></span>
+        <span class="z-muted"
+          >Wert <span class="z-mono">{{ autoNeustart }}</span></span
+        >
       </div>
 
       <div class="demo-row">
         <p class="demo-cap caption">formControl, dazu ein per Forms deaktiviertes</p>
         <z-checkbox [formControl]="backupVorUpdate">Backup vor dem Update</z-checkbox>
-        <span class="z-muted">Wert <span class="z-mono">{{ backupVorUpdate.value }}</span></span>
+        <span class="z-muted"
+          >Wert <span class="z-mono">{{ backupVorUpdate.value }}</span></span
+        >
         <z-checkbox [formControl]="rconFreigabe">RCON für Mitverwalter freigeben</z-checkbox>
         <p class="demo-cap caption">
           RCON ist gesperrt, solange Beispiel-Server 1 startet. Der Wert bleibt
@@ -81,8 +88,8 @@ import { ZCheckbox, ZPanel, ZSegment, ZSegmentOption, ZSetting, ZSlider, ZToggle
       <h2 class="heading-2">Toggle und Setting</h2>
       <p class="demo-cap caption">
         Toggle schaltet eine Einstellung, die ohne Speichern-Button wirkt. Titel, Schlüssel und
-        Wirkung stehen links in der z-setting-Zeile, der Toggle rechts und zeigt per
-        ariaLabelledby auf den Titel.
+        Wirkung stehen links in der z-setting-Zeile, der Toggle rechts und zeigt per ariaLabelledby
+        auf den Titel.
       </p>
 
       <z-panel>
@@ -130,8 +137,8 @@ import { ZCheckbox, ZPanel, ZSegment, ZSegmentOption, ZSetting, ZSlider, ZToggle
       <p class="demo-cap caption">
         PvP <span class="z-mono">{{ pvp() }}</span> über model(), Hardcore
         <span class="z-mono">{{ hardcore }}</span> über ngModel, Backup
-        <span class="z-mono">{{ nachtBackup.value }}</span> über formControl. Whitelist ist über
-        den Input deaktiviert, solange PaperMC installiert wird. Die Fernsteuerung ist über Forms
+        <span class="z-mono">{{ nachtBackup.value }}</span> über formControl. Whitelist ist über den
+        Input deaktiviert, solange PaperMC installiert wird. Die Fernsteuerung ist über Forms
         deaktiviert, weil der Tarif Flex sie nicht enthält.
       </p>
 
@@ -218,20 +225,24 @@ import { ZCheckbox, ZPanel, ZSegment, ZSegmentOption, ZSetting, ZSlider, ZToggle
     <section class="demo-section">
       <h2 class="heading-2">Segment</h2>
       <p class="demo-cap caption">
-        Segment wechselt die Sicht auf dieselben Daten, höchstens vier Optionen. Für Unterseiten
-        mit eigener URL sind Tabs da.
+        Segment wechselt die Sicht auf dieselben Daten, höchstens vier Optionen. Für Unterseiten mit
+        eigener URL sind Tabs da.
       </p>
 
       <div class="demo-row">
         <p class="demo-cap caption">Drei Optionen, model()-Bindung</p>
         <z-segment [options]="zeitraeume" [(value)]="zeitraum" ariaLabel="Zeitraum" />
-        <span class="z-muted">Zeitraum <span class="z-mono">{{ zeitraum() }}</span> Monate</span>
+        <span class="z-muted"
+          >Zeitraum <span class="z-mono">{{ zeitraum() }}</span> Monate</span
+        >
       </div>
 
       <div class="demo-row">
         <p class="demo-cap caption">Zwei Optionen, ngModel</p>
         <z-segment [options]="ticketStatus" [(ngModel)]="status" ariaLabel="Ticketstatus" />
-        <span class="z-muted">Status <span class="z-mono">{{ status }}</span></span>
+        <span class="z-muted"
+          >Status <span class="z-mono">{{ status }}</span></span
+        >
       </div>
 
       <div class="demo-row">

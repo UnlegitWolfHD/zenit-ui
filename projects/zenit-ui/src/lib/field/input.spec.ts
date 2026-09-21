@@ -45,9 +45,9 @@ class GruppeHost {}
 
 @Component({
   imports: [ZField, ZInput],
-  template: `<z-field label="Notiz" for="notiz" hint="Optional"
-    ><textarea zInput id="notiz"></textarea
-  ></z-field>`,
+  template: `<z-field label="Notiz" for="notiz" hint="Optional">
+    <textarea zInput id="notiz"></textarea>
+  </z-field>`,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 class TextareaHost {}
@@ -71,14 +71,14 @@ class FormControlHost {
 }
 
 describe('ZInput', () => {
-  it('traegt die Klasse z-input', () => {
+  it('carries the class z-input', () => {
     const fixture = TestBed.createComponent(InputHost);
     fixture.detectChanges();
 
     expect(fixture.nativeElement.querySelector('input').classList.contains('z-input')).toBe(true);
   });
 
-  it('setzt bei size="sm" die Klasse und laesst kein natives size-Attribut stehen', () => {
+  it('sets the class for size="sm" and keeps no native size attribute', () => {
     const fixture = TestBed.createComponent(KleinHost);
     fixture.detectChanges();
     const feld = fixture.nativeElement.querySelector('input');
@@ -87,7 +87,7 @@ describe('ZInput', () => {
     expect(feld.hasAttribute('size')).toBe(false);
   });
 
-  it('setzt bei mono die Klasse z-input--mono', () => {
+  it('sets the class z-input--mono for mono', () => {
     const fixture = TestBed.createComponent(InputHost);
     fixture.detectChanges();
     const feld = fixture.nativeElement.querySelector('input');
@@ -100,10 +100,10 @@ describe('ZInput', () => {
     expect(feld.classList.contains('z-input--mono')).toBe(true);
   });
 
-  // Fund: invalid setzt nur aria-invalid, eine eigene Fehlerklasse gibt es nicht.
-  // Der Rahmen in danger haengt in _grundlage.css am Selektor
-  // .z-input[aria-invalid="true"], deshalb prueft der Test das Attribut.
-  it('meldet den Fehlerzustand als aria-invalid="true"', () => {
+  // Finding: invalid only sets aria-invalid, there is no error class of its own.
+  // The border in danger hangs off the selector .z-input[aria-invalid="true"]
+  // in _grundlage.css, which is why this test checks the attribute.
+  it('reports the error state as aria-invalid="true"', () => {
     const fixture = TestBed.createComponent(InputHost);
     fixture.detectChanges();
     const feld = fixture.nativeElement.querySelector('input');
@@ -116,7 +116,7 @@ describe('ZInput', () => {
     expect(feld.getAttribute('aria-invalid')).toBe('true');
   });
 
-  it('zeigt mit aria-describedby auf Hinweis und Fehler des umgebenden z-field', () => {
+  it('points with aria-describedby at hint and error of the surrounding z-field', () => {
     const fixture = TestBed.createComponent(FeldHost);
     fixture.detectChanges();
     const feld = fixture.nativeElement.querySelector('input');
@@ -129,7 +129,7 @@ describe('ZInput', () => {
     expect(feld.getAttribute('aria-describedby')).toBe('name-error');
   });
 
-  it('findet das z-field auch durch eine z-input-group hindurch', () => {
+  it('finds the z-field through a z-input-group as well', () => {
     const fixture = TestBed.createComponent(GruppeHost);
     fixture.detectChanges();
 
@@ -138,7 +138,7 @@ describe('ZInput', () => {
     );
   });
 
-  it('rendert in der z-input-group das Icon', () => {
+  it('renders the icon inside the z-input-group', () => {
     const fixture = TestBed.createComponent(GruppeHost);
     fixture.detectChanges();
     const icon = fixture.nativeElement.querySelector('z-input-group z-icon');
@@ -147,7 +147,7 @@ describe('ZInput', () => {
     expect(icon.textContent.trim()).toBe('search');
   });
 
-  it('setzt ausserhalb eines z-field kein aria-describedby', () => {
+  it('sets no aria-describedby outside a z-field', () => {
     const fixture = TestBed.createComponent(InputHost);
     fixture.detectChanges();
 
@@ -156,7 +156,7 @@ describe('ZInput', () => {
     );
   });
 
-  it('arbeitet mit ngModel in beide Richtungen', async () => {
+  it('works with ngModel in both directions', async () => {
     const fixture = TestBed.createComponent(NgModelHost);
     fixture.detectChanges();
     await fixture.whenStable();
@@ -177,7 +177,7 @@ describe('ZInput', () => {
     expect(feld.value).toBe('Beispiel-Zwei');
   });
 
-  it('arbeitet mit formControl in beide Richtungen', () => {
+  it('works with formControl in both directions', () => {
     const fixture = TestBed.createComponent(FormControlHost);
     fixture.detectChanges();
     const feld = fixture.nativeElement.querySelector('input');
@@ -196,7 +196,7 @@ describe('ZInput', () => {
     expect(feld.value).toBe('Beispiel-Zwei');
   });
 
-  it('wird ueber die Forms deaktiviert', () => {
+  it('is disabled through forms', () => {
     const fixture = TestBed.createComponent(FormControlHost);
     fixture.detectChanges();
     const feld = fixture.nativeElement.querySelector('input');
@@ -209,7 +209,7 @@ describe('ZInput', () => {
     expect(feld.disabled).toBe(true);
   });
 
-  it('gilt genauso fuer textarea[zInput]', () => {
+  it('applies to textarea[zInput] in the same way', () => {
     const fixture = TestBed.createComponent(TextareaHost);
     fixture.detectChanges();
     const feld = fixture.nativeElement.querySelector('textarea');

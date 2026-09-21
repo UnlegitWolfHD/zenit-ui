@@ -18,7 +18,10 @@ class AlertHost {
 @Component({
   imports: [ZAlert, ZAlertAction],
   template: `<z-alert status="danger" title="Backup fehlgeschlagen" icon="error"
-    >Der Speicher ist voll. Lösche alte Backups und starte erneut.<button zAlertAction type="button">
+    >Der Speicher ist voll. Lösche alte Backups und starte erneut.<button
+      zAlertAction
+      type="button"
+    >
       Speicher ansehen
     </button></z-alert
   >`,
@@ -27,7 +30,7 @@ class AlertHost {
 class AktionHost {}
 
 describe('ZAlert', () => {
-  it('traegt z-alert und fuer neutral keinen Modifier', () => {
+  it('carries z-alert and no modifier for neutral', () => {
     const fixture = TestBed.createComponent(AlertHost);
     fixture.detectChanges();
     const alert = fixture.nativeElement.querySelector('z-alert');
@@ -36,7 +39,7 @@ describe('ZAlert', () => {
     expect(alert.className).toBe('z-alert');
   });
 
-  it('setzt je Status die eigene Klasse und keine zweite', () => {
+  it('sets its own class per status and no second one', () => {
     const fixture = TestBed.createComponent(AlertHost);
     fixture.detectChanges();
     const alert = fixture.nativeElement.querySelector('z-alert');
@@ -58,7 +61,7 @@ describe('ZAlert', () => {
     expect(alert.className).toBe('z-alert');
   });
 
-  it('zeigt den projizierten Text und ohne title keinen Titel', () => {
+  it('shows the projected text and no title without title', () => {
     const fixture = TestBed.createComponent(AlertHost);
     fixture.detectChanges();
 
@@ -68,7 +71,7 @@ describe('ZAlert', () => {
     );
   });
 
-  it('zeigt den Titel aus title vor dem Text', () => {
+  it('shows the title from title in front of the text', () => {
     const fixture = TestBed.createComponent(AlertHost);
     fixture.componentInstance.titel.set('Speicher wird knapp');
     fixture.detectChanges();
@@ -78,7 +81,7 @@ describe('ZAlert', () => {
     expect(text.firstElementChild.classList.contains('z-alert__title')).toBe(true);
   });
 
-  it('zeigt das Icon aus icon und ohne icon keines', () => {
+  it('shows the icon from icon and none without icon', () => {
     const fixture = TestBed.createComponent(AlertHost);
     fixture.detectChanges();
 
@@ -90,7 +93,7 @@ describe('ZAlert', () => {
     expect(fixture.nativeElement.querySelector('z-icon').textContent.trim()).toBe('warning');
   });
 
-  it('traegt kein role am Host', () => {
+  it('carries no role on the host', () => {
     const fixture = TestBed.createComponent(AlertHost);
     fixture.componentInstance.status.set('danger');
     fixture.detectChanges();
@@ -98,7 +101,7 @@ describe('ZAlert', () => {
     expect(fixture.nativeElement.querySelector('z-alert').hasAttribute('role')).toBe(false);
   });
 
-  it('traegt trotz title kein natives title-Attribut am Host', () => {
+  it('keeps no native title attribute on the host despite title', () => {
     const fixture = TestBed.createComponent(AlertHost);
     fixture.componentInstance.titel.set('Speicher wird knapp');
     fixture.detectChanges();
@@ -106,7 +109,7 @@ describe('ZAlert', () => {
     expect(fixture.nativeElement.querySelector('z-alert').hasAttribute('title')).toBe(false);
   });
 
-  it('projiziert den Slot zAlertAction neben den Text, nicht hinein', () => {
+  it('projects the zAlertAction slot next to the text, not into it', () => {
     const fixture = TestBed.createComponent(AktionHost);
     fixture.detectChanges();
     const alert = fixture.nativeElement.querySelector('z-alert');

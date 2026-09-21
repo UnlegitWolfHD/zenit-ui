@@ -49,7 +49,9 @@ export interface ZPriceLine {
         @if (label()) {
           <div class="z-summary__label">{{ label() }}</div>
         }
-        <div class="z-summary__price">{{ price() }} <small>{{ period() }}</small></div>
+        <div class="z-summary__price">
+          {{ price() }} <small>{{ period() }}</small>
+        </div>
       </div>
       <dl class="z-summary__lines">
         @for (zeile of lines(); track $index) {

@@ -22,7 +22,7 @@ class SettingHost {
 }
 
 describe('ZSetting', () => {
-  it('traegt die Klasse z-setting und rendert den Titel mit titleId', () => {
+  it('carries the class z-setting and renders the title with titleId', () => {
     const fixture = TestBed.createComponent(SettingHost);
     fixture.detectChanges();
     const zeile: HTMLElement = fixture.nativeElement.querySelector('z-setting');
@@ -33,16 +33,16 @@ describe('ZSetting', () => {
     expect(titel?.getAttribute('id')).toBe('neustart-titel');
   });
 
-  // Der Browser haengt an ein statisches title="…" seinen eigenen Tooltip.
-  // Weil title zugleich ein Input ist, raeumt der Baustein das Attribut ab.
-  it('laesst kein natives title-Attribut am Host stehen', () => {
+  // The browser hangs its own tooltip on a static title="…". Because title is
+  // an input at the same time, the component clears the attribute away.
+  it('keeps no native title attribute on the host', () => {
     const fixture = TestBed.createComponent(SettingHost);
     fixture.detectChanges();
 
     expect(fixture.nativeElement.querySelector('z-setting').hasAttribute('title')).toBe(false);
   });
 
-  it('rendert den Schluessel in mono und die Wirkung als Beschreibung', () => {
+  it('renders the key in mono and the effect as the description', () => {
     const fixture = TestBed.createComponent(SettingHost);
     fixture.detectChanges();
     const zeile: HTMLElement = fixture.nativeElement.querySelector('z-setting');
@@ -55,7 +55,7 @@ describe('ZSetting', () => {
     );
   });
 
-  it('laesst Schluessel und Beschreibung weg, wenn sie leer sind', () => {
+  it('leaves key and description out when they are empty', () => {
     const fixture = TestBed.createComponent(SettingHost);
     fixture.componentInstance.schluessel.set('');
     fixture.componentInstance.wirkung.set('');
@@ -66,7 +66,7 @@ describe('ZSetting', () => {
     expect(zeile.querySelector('.z-muted')).toBeNull();
   });
 
-  it('projiziert das Bedienelement und laesst dessen ariaLabelledby auf den Titel zeigen', () => {
+  it('projects the control and lets its ariaLabelledby point at the title', () => {
     const fixture = TestBed.createComponent(SettingHost);
     fixture.detectChanges();
     const zeile: HTMLElement = fixture.nativeElement.querySelector('z-setting');

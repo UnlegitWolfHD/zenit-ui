@@ -63,7 +63,7 @@ export class ZAlertAction {}
     <ng-content select="[zAlertAction]" />
   `,
   host: {
-    'class': 'z-alert',
+    class: 'z-alert',
     '[class.z-alert--info]': `status() === 'info'`,
     '[class.z-alert--success]': `status() === 'success'`,
     '[class.z-alert--warning]': `status() === 'warning'`,

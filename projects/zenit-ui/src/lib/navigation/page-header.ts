@@ -32,7 +32,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
     <div class="z-pagehead__actions"><ng-content /></div>
   `,
   host: {
-    'class': 'z-pagehead',
+    class: 'z-pagehead',
     '[attr.title]': `null`,
   },
   changeDetection: ChangeDetectionStrategy.OnPush,
