@@ -30,6 +30,7 @@ parameters.
 | `paginationNext` | `z-pagination`, `aria-label` of the forward button | `Nächste Seite` | `Next page` |
 | `paginationNav` | `z-pagination`, accessible name of the `<nav>` around the pager | `Seitennavigation` | `Pagination` |
 | `paginationRange` | `z-pagination`, the sentence in front of the buttons | `` `${from} bis ${to} von ${total} ${itemLabel}` `` | `` `${from} to ${to} of ${total} ${itemLabel}` `` |
+| `paginationPageSize` | `z-pagination`, visible label of the page size select | `Einträge pro Seite` | `Items per page` |
 | `consoleLog` | `z-console`, `aria-label` of the log region | `Serverlog` | `Server log` |
 | `consoleInput` | `z-console`, `aria-label` of the command input | `Befehl` | `Command` |
 | `consoleJumpToEnd` | `z-console`, caption of the jump-to-end button | `Zum Ende` | `Jump to end` |
@@ -119,8 +120,8 @@ over the registry. Unset, it falls back to the registry value.
 <z-pagination [(page)]="seite" [total]="118" itemLabel="Rechnungen" ariaLabelNext="Eine Seite weiter" />
 ```
 
-The inputs per component: `ariaLabel`, `ariaLabelPrev`, `ariaLabelNext` and
-`rangeLabel` on `z-pagination`, `logLabel`, `inputLabel` and `endLabel` on `z-console`,
+The inputs per component: `ariaLabel`, `ariaLabelPrev`, `ariaLabelNext`,
+`rangeLabel` and `pageSizeLabel` on `z-pagination`, `logLabel`, `inputLabel` and `endLabel` on `z-console`,
 `menuLabel` on `z-app-header`, `closeLabel` on `z-toast-outlet`, `ariaLabel`
 on `z-table-container`, `editLabel` on `z-wizard-step`, `emptyText` on `z-combobox` and
 `retryLabel` on `z-price-summary`. `z-cost-chart` has no such input: everything it says visibly

@@ -322,7 +322,25 @@ The bigger change is where panels are used at all: per `CLAUDE.md`, "Rahmen nur 
 </z-table-container>
 ```
 
-`table[zTable]` is a plain HTML table with classes; the semantics, the header cells and the keyboard behaviour stay the browser's. `zNum` right-aligns a column and sets the mono font, `zTableName` is the name cell with its icon. There is no `DataSource` and no sorting built in. `30-angular.md` allows `@angular/cdk/table` where a data source and sorting are genuinely needed, but that is a decision per route, not a default.
+`table[zTable]` is a plain HTML table with classes; the semantics, the header cells and the keyboard behaviour stay the browser's. `zNum` right-aligns a column and sets the mono font, `zTableName` is the name cell with its icon. There is no `DataSource`.
+
+Sorting is split in two: `mat-sort-header` becomes `zSortHeader="<key>"` on the `<th>`, `matSort` becomes `[(sort)]` on the table, and the ordering itself stays yours.
+
+```html
+<!-- before -->
+<table mat-table matSort (matSortChange)="sortiere($event)">
+  <th mat-header-cell mat-sort-header="groesse" matSortStart="desc">Größe</th>
+</table>
+```
+
+```html
+<!-- after -->
+<table zTable [(sort)]="sortierung">
+  <th zNum zSortHeader="groesse" sortStart="desc">Größe</th>
+</table>
+```
+
+`Sort { active, direction }` becomes `ZSort { key, direction }`, `matSortDisabled` becomes `disabled`, and the unsorted third state is `sort === null` instead of `direction === ''`. The header renders a real button with `aria-sort` on the cell; `MatTableDataSource` sorted the rows for you, here a `computed()` does, which is where the knowledge of the values belongs. `30-angular.md` allows `@angular/cdk/table` where a data source is genuinely needed, but that is a decision per route, not a default.
 
 `z-table-container` is the horizontally scrolling region. It carries `role="region"`, `tabindex="0"` and `aria-label`, so the scroll area is reachable by keyboard — pass a real `ariaLabel` instead of leaving the German default.
 
@@ -342,6 +360,20 @@ The bigger change is where panels are used at all: per `CLAUDE.md`, "Rahmen nur 
 ```html
 <!-- after -->
 <z-pagination [total]="total()" [pageSize]="25" itemLabel="Rechnungen" [(page)]="seite" />
+```
+
+With a page size selector, and without touching the 0-based handler you already have:
+
+```html
+<z-pagination
+  [page]="pageIndex() + 1"
+  (pageChange)="lade($event - 1, pageSize())"
+  [pageSize]="pageSize()"
+  (pageSizeChange)="lade(0, $event)"
+  [pageSizeOptions]="[10, 25, 50]"
+  [total]="total()"
+  itemLabel="Rechnungen"
+/>
 ```
 
 See section 4.5: 1-based, two-way bound, no event object.
@@ -599,7 +631,9 @@ These are the places where a one-to-one template swap changes what the page actu
 - `mat-paginator` is 0-based (`pageIndex`) and pushes a `PageEvent`. `z-pagination` uses `[(page)]`, **1-based**, with `page` defaulting to 1. An off-by-one here shows the wrong page silently.
 - There is no `(page)` event object. React to the model: `[(page)]="seite"` plus an `effect`, or `[page]="seite()" (pageChange)="lade($event)"`.
 - The component clamps: a page below 1 or beyond the last is written back corrected, which also happens when `total` or `pageSize` change. Your handler can therefore be called with a value it did not ask for.
-- No page-size selector. `pageSize` is an input, 25 by default, and the user cannot change it.
+- **The page-size selector is opt-in.** `pageSizeOptions` is empty by default and the pager then renders as it always did. Set it and `pageSize` becomes two-way as well: `[(pageSize)]`, or `[pageSize]` plus `(pageSizeChange)`. There is no `hidePageSize`; leaving the options out is how you hide it.
+- Picking a size keeps the first entry of the current page in view, so the pager writes `page` too. The selector stays visible while the list is longer than the smallest option, even when the current size fits everything on one page — otherwise there would be no way back to a smaller size.
+- `MatPaginatorIntl` has no counterpart: the texts come from the label registry (`paginationPageSize` and the rest, see `docs/labels.md`) or from the inputs on the element.
 - It renders nothing at all when there is only one page.
 - `itemLabel` names the things being counted ("Rechnungen") for the range text.
 
