@@ -41,6 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Form controls write to the DOM**: `writeValue()` and `model()` reach checkbox, toggle and slider.
 - **Published types are clean**: `@Service()` for the root singletons, `stripInternal` so internal types stay out of the `.d.ts`, and a cheaper label sync.
 - **Error frame for the native `<select>`**: `aria-invalid="true"` colours the border of a select the same way it colours the border of an input.
+- **The mobile header menu closes itself.** Below 900px `z-app-header` kept the open menu standing over the page a projected link had just loaded, and the state was private. `open` is now a `model(false)`, bound as `[(open)]`; a click on a link inside the `<nav>` closes the menu (delegation over `<a>`, so no `@angular/router` in the library, and a button inside the nav leaves it open), and Escape inside the header closes it and returns the focus to the burger button.
 
 ## [0.1.0] - 2026-09-21
 
