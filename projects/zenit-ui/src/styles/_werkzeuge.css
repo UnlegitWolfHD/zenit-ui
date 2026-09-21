@@ -1,1 +1,83 @@
-/* Paket werkzeuge: wird in Welle 1 gefuellt. */
+/* Paket werkzeuge: Console, Hero, GameTile, PriceSummary, SpecList, Faq.
+   Woertlich aus spec/components/bundle.css. */
+
+/* GameTile */
+.z-games { display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: var(--space-4); }
+.z-game { display: grid; gap: var(--space-2); padding: 0; border: 0; background: none; text-align: left; cursor: pointer; min-width: 0; }
+.z-game__cover {
+  aspect-ratio: 3 / 4; width: 100%; border-radius: var(--radius-md); overflow: hidden;
+  background: var(--surface-raised); outline: 1px solid var(--border); outline-offset: -1px;
+  display: grid; place-items: center; padding: var(--space-3); text-align: center;
+  font-family: var(--font-display); font-weight: 700; font-size: 16px; line-height: 20px; color: var(--text-muted);
+}
+.z-game__cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.z-game:hover .z-game__cover { outline-color: var(--border-control); }
+.z-game[aria-pressed="true"] .z-game__cover { outline: 2px solid var(--accent-text); outline-offset: -2px; }
+.z-game__title { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.z-game__price { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 12px; line-height: 16px; color: var(--text-muted); }
+
+/* SpecList */
+.z-spec { display: grid; grid-template-columns: minmax(120px, 200px) minmax(0, 1fr); margin: 0; }
+.z-spec dt, .z-spec dd { margin: 0; padding: var(--space-3) 0; border-top: 1px solid var(--border); }
+.z-spec dt { color: var(--text-muted); }
+.z-spec dt:first-of-type, .z-spec dt:first-of-type + dd { border-top: 0; }
+.z-spec dd small { font-size: 12px; color: var(--text-subtle); margin-left: var(--space-2); }
+@media (max-width: 480px) {
+  .z-spec { grid-template-columns: 1fr; }
+  .z-spec dd { border-top: 0; padding-top: 0; }
+}
+
+/* Hero */
+.z-hero { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: var(--space-7); align-items: center; padding-block: var(--space-9); }
+.z-hero__title { margin: 0; font-family: var(--font-display); font-size: 56px; line-height: 60px; font-weight: 700; letter-spacing: -0.02em; text-wrap: balance; }
+.z-hero__lead { margin: var(--space-5) 0 0; max-width: 52ch; font-size: 20px; line-height: 30px; color: var(--text-muted); }
+.z-hero__actions { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-6); }
+.z-hero__note { margin: var(--space-4) 0 0; font-size: 12px; line-height: 16px; color: var(--text-subtle); }
+@media (max-width: 900px) { .z-hero { grid-template-columns: minmax(0, 1fr); padding-block: var(--space-8); } }
+@media (max-width: 640px) { .z-hero__title { font-size: 40px; line-height: 44px; } .z-hero__lead { font-size: 16px; line-height: 24px; } }
+
+/* PriceSummary */
+.z-summary { display: grid; gap: var(--space-4); padding: var(--space-5); border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); }
+.z-summary__label { font-size: 12px; line-height: 16px; color: var(--text-muted); }
+.z-summary__price { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 28px; line-height: 34px; font-weight: 600; }
+.z-summary__price small { font-size: 12px; font-weight: 400; color: var(--text-subtle); }
+.z-summary__lines { display: grid; margin: 0; }
+.z-summary__line { display: flex; justify-content: space-between; gap: var(--space-4); padding: var(--space-2) 0; border-top: 1px solid var(--border); color: var(--text-muted); }
+.z-summary__line dd { margin: 0; color: var(--text); font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.z-summary__note { font-size: 12px; line-height: 16px; color: var(--text-subtle); }
+
+/* Console */
+.z-console { border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg); overflow: hidden; }
+.z-console__log { max-height: 240px; margin: 0; padding: var(--space-3) var(--space-4); overflow: auto; font-family: var(--font-mono); font-size: 12px; line-height: 20px; color: var(--text-muted); white-space: pre-wrap; overflow-wrap: anywhere; }
+.z-log__time { color: var(--text-subtle); }
+.z-log--warn { color: var(--warning); }
+.z-log--error { color: var(--danger); }
+.z-log--cmd { color: var(--text); }
+.z-console__input { display: flex; align-items: center; gap: var(--space-2); padding: 0 var(--space-4); border-top: 1px solid var(--border); background: var(--surface); font-family: var(--font-mono); font-size: 12px; color: var(--text-subtle); }
+.z-console__input input { flex: 1; min-width: 0; height: var(--control-md); border: 0; background: none; font-family: var(--font-mono); font-size: 12px; color: var(--text); }
+.z-console__input input::placeholder { color: var(--text-subtle); }
+
+/* Faq */
+.z-faq { border-top: 1px solid var(--border); }
+.z-faq:last-of-type { border-bottom: 1px solid var(--border); }
+.z-faq summary { display: flex; justify-content: space-between; gap: var(--space-4); padding: var(--space-4) 0; font-size: 16px; line-height: 24px; font-weight: 600; cursor: pointer; list-style: none; }
+.z-faq summary::-webkit-details-marker { display: none; }
+.z-faq summary::after { content: "+"; font-family: var(--font-mono); color: var(--text-muted); }
+.z-faq[open] summary::after { content: "\2212"; }
+.z-faq__body { max-width: var(--measure); margin: 0; padding: 0 0 var(--space-5); font-size: 16px; line-height: 24px; color: var(--text-muted); }
+
+/* ---------- Angular-Hosts und Ergaenzungen der Library ---------- */
+
+.z-console, z-faq, z-spec-list, z-price-summary { display: block; }
+
+/* Jede Frage steht in einem eigenen z-faq. Damit ist jedes details das
+   :last-of-type seines Hosts und bekaeme eine zweite Linie. Nur die letzte
+   Frage behaelt sie, sonst stuenden zwischen den Fragen 2px. */
+z-faq:not(:last-of-type) .z-faq { border-bottom: 0; }
+
+/* Der Button "Zum Ende" kommt in der Vorschau nicht vor, weil sie nicht
+   scrollt. Er sitzt zwischen Log und Eingabe. Nur Tokens. */
+.z-console__end { display: flex; justify-content: center; padding: var(--space-2); border-top: 1px solid var(--border); }
+
+/* Deaktivierte Eingabe wie .z-btn:disabled: 45 % und not-allowed. */
+.z-console__input input:disabled { opacity: 0.45; cursor: not-allowed; }
