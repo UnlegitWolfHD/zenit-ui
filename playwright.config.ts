@@ -1,7 +1,12 @@
 import { defineConfig, devices } from '@playwright/test';
 
-/** Demo-App auf einem eigenen Port, damit ein laufendes `ng serve` nicht stoert. */
-const PORT = 4310;
+/**
+ * Demo-App auf einem eigenen Port, damit ein laufendes `ng serve` nicht stoert.
+ * `E2E_PORT` legt einen abweichenden Port fest; dann startet der Lauf immer
+ * einen eigenen Server, statt einen fremden mitzubenutzen.
+ */
+const EIGENER_PORT = process.env['E2E_PORT'];
+const PORT = Number(EIGENER_PORT ?? 4310);
 const BASE_URL = `http://localhost:${PORT}`;
 
 export default defineConfig({
@@ -24,7 +29,7 @@ export default defineConfig({
   webServer: {
     command: `npx ng serve ui-demo --port ${PORT}`,
     url: BASE_URL,
-    reuseExistingServer: !process.env['CI'],
+    reuseExistingServer: !process.env['CI'] && !EIGENER_PORT,
     timeout: 300_000,
   },
 });

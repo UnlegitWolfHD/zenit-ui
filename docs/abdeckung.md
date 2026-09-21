@@ -43,3 +43,16 @@ Gedrückt zeigen sich beim Bedienen und stehen deshalb nicht je Zeile.
 | PriceSummary | Werkzeuge | Preis mit Zeitraum, Posten, Notiz, Button in voller Breite |
 | SpecList | Werkzeuge | Begriff mit Wert, Werte in mono, Zusatz in small |
 | Faq | Werkzeuge | erste Frage offen, weitere geschlossen (natives `details`/`summary`) |
+
+## Beispielseiten
+
+Die drei Seiten unter `/muster` zeigen keine einzelnen Bausteine, sondern die
+Seitentypen aus `spec/guidelines/10-seitenmuster.md`: jede Seite setzt die
+Bausteine so zusammen, wie sie im Produkt stehen. Eine Demo-Steuerung ganz oben
+schaltet die Zustände, die sonst vom Server kämen.
+
+| Seite | Verwendete Bausteine |
+| --- | --- |
+| Dashboard (`/muster/dashboard`, Kundenbereich) | AppHeader mit Guthaben und Avatar, PageHeader mit einem Fakt und zwei Aktionen, Alert (info als Hinweis, danger als Fehler der Liste), Panel, ServerList mit Badge, Icon und Pagination, Skeleton für den Ladezustand, EmptyState für die leere Liste, Metric für die Auslastung, Segment und Button in der Demo-Steuerung |
+| Server-Panel (`/muster/server-panel`) | AppHeader, Panel-Kopf mit Button, Icon, Badge, Tooltip und Menu, Alert bei "Fehlgeschlagen", Sidebar mit vier Bereichen, Metric, ServerList für die Spieler, SpecList für die Einstellungen, Console mit Log und Eingabe, FileTable mit Checkbox in Panel und TableContainer, Tabs, Setting mit Toggle, Select und Input, EmptyState für fehlende Datapacks, Dialog für "Hart beenden", Toast als Rückmeldung, Select in der Demo-Steuerung |
+| Startseite (`/muster/startseite`, öffentlich) | AppHeader öffentlich mit Button, Hero mit Lead, Notiz und einer Aktion, GameTile im GameGrid, Slider für Arbeitsspeicher und Steckplätze, Segment für die Laufzeit, PriceSummary mit Posten und Button in voller Breite, SpecList für Hardware und Plattform, Faq, Button als zentrierter Abschluss-CTA, Footer mit drei Spalten und Basiszeile |

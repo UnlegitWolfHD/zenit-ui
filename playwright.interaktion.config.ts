@@ -6,7 +6,7 @@ import { defineConfig, devices } from '@playwright/test';
  * nur relative Adressen ueber `baseURL` und laufen deshalb auch mit, wenn die
  * Standard-Konfiguration sie einsammelt.
  */
-const PORT = 4320;
+const PORT = Number(process.env['E2E_PORT'] ?? 4320);
 const BASE_URL = `http://localhost:${PORT}`;
 
 export default defineConfig({
