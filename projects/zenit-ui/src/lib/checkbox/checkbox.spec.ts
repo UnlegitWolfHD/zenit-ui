@@ -210,3 +210,87 @@ describe('ZCheckbox', () => {
     expect(fixture.componentInstance.gewaehlt()).toBe(false);
   });
 });
+
+@Component({
+  imports: [ZCheckbox],
+  template: `<z-checkbox
+    [(checked)]="alle"
+    [(indeterminate)]="teilweise"
+    [invalid]="fehlerhaft()"
+    [ariaDescribedby]="beschreibung()"
+    ariaLabel="Alle auswählen"
+  />`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class AlleAuswaehlenHost {
+  readonly alle = signal(false);
+  readonly teilweise = signal(true);
+  readonly fehlerhaft = signal(false);
+  readonly beschreibung = signal('');
+}
+
+describe('ZCheckbox indeterminate, invalid and ariaDescribedby', () => {
+  function erzeuge() {
+    const fixture = TestBed.createComponent(AlleAuswaehlenHost);
+    fixture.detectChanges();
+    const feld: HTMLInputElement = fixture.nativeElement.querySelector('input');
+    return { fixture, feld, host: fixture.componentInstance };
+  }
+
+  it('mirrors indeterminate onto the native property, which reads as mixed', async () => {
+    const { fixture, feld, host } = erzeuge();
+
+    expect(feld.indeterminate).toBe(true);
+    expect(feld.matches(':indeterminate')).toBe(true);
+    expect(feld.hasAttribute('aria-checked')).toBe(false);
+
+    host.teilweise.set(false);
+    await fixture.whenStable();
+
+    expect(feld.indeterminate).toBe(false);
+  });
+
+  it('clears indeterminate on a user interaction and reports the new checked state', async () => {
+    const { fixture, feld, host } = erzeuge();
+
+    feld.click();
+    await fixture.whenStable();
+
+    expect(host.teilweise()).toBe(false);
+    expect(feld.indeterminate).toBe(false);
+    expect(host.alle()).toBe(true);
+    expect(feld.checked).toBe(true);
+  });
+
+  it('keeps indeterminate apart from checked: setting one leaves the other', async () => {
+    const { fixture, feld, host } = erzeuge();
+
+    host.alle.set(true);
+    await fixture.whenStable();
+
+    expect(feld.checked).toBe(true);
+    expect(feld.indeterminate).toBe(true);
+  });
+
+  it('writes aria-invalid only while invalid, without Signal Forms touched defaults to true', async () => {
+    const { fixture, feld, host } = erzeuge();
+
+    expect(feld.hasAttribute('aria-invalid')).toBe(false);
+
+    host.fehlerhaft.set(true);
+    await fixture.whenStable();
+
+    expect(feld.getAttribute('aria-invalid')).toBe('true');
+  });
+
+  it('writes ariaDescribedby as aria-describedby and leaves the attribute out when empty', async () => {
+    const { fixture, feld, host } = erzeuge();
+
+    expect(feld.hasAttribute('aria-describedby')).toBe(false);
+
+    host.beschreibung.set('agb-fehler agb-hinweis');
+    await fixture.whenStable();
+
+    expect(feld.getAttribute('aria-describedby')).toBe('agb-fehler agb-hinweis');
+  });
+});

@@ -9,6 +9,7 @@ import {
   signal,
 } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
+import type { FormValueControl } from '@angular/forms/signals';
 
 /** One view in a segment. */
 export interface ZSegmentOption {
@@ -33,7 +34,10 @@ export interface ZSegmentOption {
  * out of the tab order.
  *
  * Implements `ControlValueAccessor`, so `ngModel` and reactive forms work
- * alongside the two-way binding on {@link value}.
+ * alongside the two-way binding on {@link value}, and has the shape of a
+ * Signal Forms `FormValueControl<string>`, so `[formField]` works and feeds
+ * {@link disabled} from the field state. A segment picks a view and has no
+ * invalid state: `role="group"` does not take `aria-invalid`.
  *
  * @example
  * ```html
@@ -67,7 +71,7 @@ export interface ZSegmentOption {
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => ZSegment), multi: true }],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ZSegment implements ControlValueAccessor {
+export class ZSegment implements ControlValueAccessor, FormValueControl<string> {
   /**
    * The options in display order, at most four. Tracked by `value`, so those
    * have to be unique.

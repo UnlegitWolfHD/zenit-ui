@@ -59,6 +59,15 @@ z-slider { display: block; }
 /* A checkbox without visible text (aria-label, for example in a table row)
    has an empty span. Without this rule the gap would remain. */
 .z-check span:empty { display: none; }
+/* Addition to the reference: bundle.css has no mixed state for "select all".
+   A bar in on-accent on accent, with the stroke (2px) and the length (9px) of
+   the check mark, centred in the same box. It wins over :checked, the way the
+   native indeterminate property does. */
+.z-check input:indeterminate { background: var(--accent); border-color: var(--accent); }
+.z-check input:indeterminate::after {
+  content: ""; position: absolute; inset: 0; margin: auto; width: 9px; height: 2px;
+  border: 0; background: var(--on-accent); transform: none;
+}
 /* Disabled like checkbox, toggle and button in bundle.css. The hover holds
    its colour, and the chosen view keeps its text along with it. */
 .z-segment button:disabled { opacity: 0.45; cursor: not-allowed; }
