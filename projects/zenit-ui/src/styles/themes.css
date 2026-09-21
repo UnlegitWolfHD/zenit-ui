@@ -1,0 +1,21 @@
+/* Zenit themes: every colour scheme and every accent of the library in one
+   file. Opt in, never part of zenit-ui.css, because a product that only ships
+   the dark scheme should not pay for the rest.
+
+   Include order: tokens.css, then this file, then zenit-ui.css. tokens.css has
+   to come first: :root and [data-theme="light"] have the same specificity
+   (0,1,0), so the later rule wins, not the more specific one.
+
+   From a package:   @import "zenit-ui/styles/themes.css";
+   Single schemes:   @import "zenit-ui/styles/themes/base.css";
+                     @import "zenit-ui/styles/themes/light.css";
+   The order inside this file is fixed: base sets color-scheme for dark, light
+   and contrast override it, accents override the accent tokens of all three.
+
+   Checked by tools/check-theme-contrast.mjs, which reads this file to learn
+   the include order. */
+
+@import "./themes/base.css";
+@import "./themes/light.css";
+@import "./themes/contrast.css";
+@import "./themes/accents.css";

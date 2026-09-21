@@ -1,0 +1,67 @@
+/* Zenit themes / light.
+
+   Every token name and role of tokens.css stays as it is; only the values
+   change. The dark scheme is not touched. These values are derived, not
+   specified: spec/tokens.json knows one colour scheme (dark). The derivation:
+
+   1. Surfaces. Dark steps up from the page ground (#060608) to the active row
+      (#1b1b21) in four values. Light mirrors that and steps DOWN from white, in
+      slightly larger absolute steps because the eye separates light greys less
+      well: #ffffff, #f4f4f6, #eaeaee, #dfdfe5. The faint blue cast of the dark
+      ramp (blue channel a few points above red and green) is kept.
+   2. Text. Three levels, measured against bg, surface AND surface-raised; the
+      darkest of the three (surface-raised) is the worst case for dark type.
+      text >= 12:1, text-muted >= 7:1, text-subtle >= 4.5:1.
+   3. Borders. border is decorative and stays low contrast. border-control
+      carries meaning and keeps >= 3:1 on surface.
+   4. Accent. Rot stays the brand. The fill (accent, accent-hover) is deepened
+      until white as on-accent clears 4.5:1 on both, and accent-text is deepened
+      further until it clears 4.5:1 on bg and on surface.
+   5. Status. On a light ground a status colour has to be dark, so success,
+      warning, danger and info are the deep variants of the dark hues. The
+      -subtle fills are NOT the same colour at 10 % opacity: on a light ground
+      that darkens the badge and eats the contrast the word inside it needs.
+      They are opaque light tints of the same hue instead, lighter than
+      surface-raised, which keeps the status word above 4.5:1 on its own badge.
+   6. danger stays visibly apart from accent-text (CLAUDE.md, "Farbe"): it is
+      the more orange and the lighter of the two, measured as >= 1.25:1 between
+      the two colours.
+   7. focus is near black here, the counterpart of white in the dark scheme. It
+      keeps >= 3:1 against all four surfaces and against accent.
+   8. scrim and shadow-overlay stay black based but lose weight; a light page
+      does not need a 50 % shadow to lift a dialog.
+   9. Minecraft subtheme: mc-accent is deepened so the primary button carries on
+      a white ground, and on-mc becomes white instead of the dark green.
+
+   All values are verified by tools/check-theme-contrast.mjs. */
+[data-theme="light"] {
+  color-scheme: light;
+  --bg: #ffffff;
+  --surface: #f4f4f6;
+  --surface-raised: #eaeaee;
+  --surface-hover: #dfdfe5;
+  --border: #dcdce2;
+  --border-control: #85858f;
+  --text: #18181b;
+  --text-muted: #4a4a54;
+  --text-subtle: #66666f;
+  --accent: #c2123f;
+  --accent-hover: #9d0e33;
+  --on-accent: #ffffff;
+  --accent-text: #a11039;
+  --accent-subtle: #fbe7ec;
+  --scrim: rgba(9, 9, 11, 0.5);
+  --focus: #09090b;
+  --success: #166534;
+  --success-subtle: #e4f3e7;
+  --warning: #8a5300;
+  --warning-subtle: #fdf0dc;
+  --danger: #b8340f;
+  --danger-subtle: #fdece7;
+  --info: #17548f;
+  --info-subtle: #e4eefa;
+  --mc-accent: #2f7d32;
+  --mc-accent-hover: #276b2a;
+  --on-mc: #ffffff;
+  --shadow-overlay: 0 8px 24px rgba(9, 9, 11, 0.18);
+}

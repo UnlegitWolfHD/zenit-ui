@@ -1,0 +1,17 @@
+/* Zenit themes / base.
+
+   What belongs here: the declarations every scheme needs that tokens.css must
+   not carry. tokens.css is compiled from spec/tokens.json and has to stay byte
+   identical to spec/tokens.css, so nothing may be added there by hand.
+
+   color-scheme is the one such declaration today. It tells the engine which
+   palette to use for the parts a page cannot style itself: the drop-down of a
+   native <select>, scrollbars, the text caret, spin buttons, the default
+   background of a form control and the focus ring the platform draws before
+   CSS takes over. Without it a dark page opens a white drop-down list.
+
+   The value follows the chosen scheme, never the operating system: `dark` is
+   the default of the design system, and [data-theme="light"] overrides it in
+   light.css. Because :root and [data-theme=...] have the same specificity
+   (0,1,0), this file has to be imported BEFORE light.css and contrast.css. */
+:root, [data-theme="dark"] { color-scheme: dark; }

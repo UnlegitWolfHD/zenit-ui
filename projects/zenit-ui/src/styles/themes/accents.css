@@ -1,0 +1,88 @@
+/* Zenit themes / accents.
+
+   An accent replaces the five tokens that carry "you can click this" or "this
+   is active": accent, accent-hover, on-accent, accent-text, accent-subtle.
+   Nothing else moves. Surfaces, text, borders, status and the Minecraft
+   subtheme stay exactly where the scheme put them.
+
+   rot is the default of the design system and has no block here: it comes from
+   tokens.css for dark, from light.css and from contrast.css. The theme service
+   therefore removes data-accent entirely for rot instead of writing it out.
+
+   Two blocks per accent, because accent-text has to reach 4.5:1 on the bg AND
+   the surface of the scheme it is read on:
+   - [data-accent="X"] holds the values for the dark grounds (dark, contrast).
+     accent-text is a light tint there, the fill is a deep saturated colour.
+   - [data-theme="light"][data-accent="X"] replaces all five for the light
+     ground: accent-text becomes a deep colour, accent-subtle an opaque light
+     tint, matching how light.css handles rot and the status colours.
+   The second block has specificity (0,2,0) and wins over the first (0,1,0)
+   regardless of order; the first wins over [data-theme="light"] (0,1,0) only
+   because this file is imported after light.css. That is why themes.css fixes
+   the order base -> light -> contrast -> accents.
+
+   Derivation, per accent and per scheme:
+   1. The fill is deepened until white as on-accent clears 4.5:1 on accent AND
+      on accent-hover; accent-hover is one step deeper than accent, as in the
+      dark scheme.
+   2. The fill also has to keep 3:1 against focus, which is white on the dark
+      grounds and near black on the light one. That is the binding limit on the
+      light ground and it is why the light fills are not deeper still.
+   3. accent-text is pushed away from the ground until it clears 4.5:1 on bg
+      and on surface of that scheme.
+   4. accent-subtle follows accent-text: 12 % of it on the dark grounds, an
+      opaque light tint of the same hue on the light ground.
+
+   Known overlap: with gruen, accent-text sits close to --success, and with
+   blau close to --info. The design system answers that itself, because a
+   status is always written out as a word as well (CLAUDE.md, "Farbe").
+
+   All values are verified by tools/check-theme-contrast.mjs. */
+
+/* Blau */
+[data-accent="blau"] {
+  --accent: #1d4ed8;
+  --accent-hover: #1a44ba;
+  --on-accent: #ffffff;
+  --accent-text: #7ab0ff;
+  --accent-subtle: rgba(122, 176, 255, 0.12);
+}
+[data-theme="light"][data-accent="blau"] {
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --on-accent: #ffffff;
+  --accent-text: #1d4ed8;
+  --accent-subtle: #e6edfd;
+}
+
+/* Gruen */
+[data-accent="gruen"] {
+  --accent: #15803d;
+  --accent-hover: #116a32;
+  --on-accent: #ffffff;
+  --accent-text: #5fd07a;
+  --accent-subtle: rgba(95, 208, 122, 0.12);
+}
+[data-theme="light"][data-accent="gruen"] {
+  --accent: #15803d;
+  --accent-hover: #116a32;
+  --on-accent: #ffffff;
+  --accent-text: #116a32;
+  --accent-subtle: #e3f3e9;
+}
+
+/* Violett */
+[data-accent="violett"] {
+  --accent: #7e22ce;
+  --accent-hover: #6b1fae;
+  --on-accent: #ffffff;
+  --accent-text: #c795f5;
+  --accent-subtle: rgba(199, 149, 245, 0.12);
+}
+[data-theme="light"][data-accent="violett"] {
+  --accent: #8b2ade;
+  --accent-hover: #7420bd;
+  --on-accent: #ffffff;
+  --accent-text: #6b1fae;
+  --accent-subtle: #f0e4fb;
+}

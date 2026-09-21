@@ -12,5 +12,5 @@
     "selector-pseudo-element-disallowed-list": ["ng-deep"],
     "declaration-no-important": true
   },
-  "overrides": [{ "files": ["**/tokens.css"], "rules": { "color-no-hex": null, "function-disallowed-list": null, "declaration-property-value-disallowed-list": null } }]
+  "overrides": [{ "files": ["**/tokens.css", "**/styles/themes/*.css"], "rules": { "color-no-hex": null, "function-disallowed-list": null, "declaration-property-value-disallowed-list": null } }]
 }
