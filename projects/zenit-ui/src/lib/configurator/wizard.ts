@@ -3,6 +3,7 @@ import {
   Component,
   computed,
   contentChildren,
+  Directive,
   inject,
   input,
   output,
@@ -11,6 +12,21 @@ import { injectZLabels } from '../labels';
 
 /** State of one step of a `z-wizard`. */
 export type ZWizardState = 'done' | 'current' | 'locked';
+
+/**
+ * Marks an action of the current step, which goes into the row at the bottom of
+ * the step body: "Zurück" as a ghost button on the left, "Weiter" as a
+ * secondary one on the right. The caller owns those buttons, because only the
+ * caller knows what the next step is called and when it may be reached.
+ *
+ * @example
+ * ```html
+ * <button zWizardActions zBtn="ghost" type="button">Zurück</button>
+ * <button zWizardActions zBtn="secondary" type="button">Weiter zu Bezahlen</button>
+ * ```
+ */
+@Directive({ selector: '[zWizardActions]' })
+export class ZWizardActions {}
 
 /**
  * The steps of an order, one below the other, with the summary next to it in a

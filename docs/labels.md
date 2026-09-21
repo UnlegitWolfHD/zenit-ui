@@ -36,10 +36,33 @@ parameters.
 | `headerMenu` | `z-app-header`, `aria-label` of the menu button below 900px | `Menü` | `Menu` |
 | `toastClose` | `z-toast-outlet`, `aria-label` of the close button | `Schließen` | `Close` |
 | `tableRegion` | `z-table-container`, accessible name of the scrollable region | `Tabelle, seitlich scrollbar` | `Table, scrollable horizontally` |
+| `wizardEdit` | `z-wizard-step`, caption of the button on a finished step | `Ändern` | `Change` |
+| `wizardEditFor` | `z-wizard-step`, accessible name of that button | `` `${title} ändern` `` | `` `Change ${title}` `` |
+| `comboboxEmpty` | `z-combobox`, the row shown when nothing matches, if `emptyText` is empty | `Kein Treffer` | `No match` |
+| `summaryRetry` | `z-price-summary`, caption of the retry button, if `retryLabel` is empty | `Erneut versuchen` | `Try again` |
+| `chartTitle` | `z-cost-chart`, the SVG `<title>` and the name of the plot | `Monatliche Kosten nach gespielten Stunden` | `Monthly cost by hours played` |
+| `chartDesc` | `z-cost-chart`, the SVG `<desc>` | `` `Start bei … plus … ab … Stunden gedeckelt bei ….` `` | `` `Starts at … plus … capped at … from … hours on.` `` |
+| `chartPerHour` | `z-cost-chart`, label of the first figure | `Pro Stunde` | `Per hour` |
+| `chartCapPerMonth` | `z-cost-chart`, label of the second figure | `Höchstens im Monat` | `At most per month` |
+| `chartMoney` | `z-cost-chart`, an amount in full | `` `5,90 €` `` | `` `€5.90` `` |
+| `chartAxisMoney` | `z-cost-chart`, an amount on the value axis | `` `10 €` `` | `` `€10` `` |
+| `chartAxisHours` | `z-cost-chart`, an hour on the time axis | `` `100 h` `` | `` `100 h` `` |
+| `chartBaseLabel` | `z-cost-chart`, the direct label at the start of the line | `` `1,50 € Grundbetrag` `` | `` `€1.50 base` `` |
+| `chartCapLabel` | `z-cost-chart`, the direct label at the cap point | `` `ab 100 h gedeckelt` `` | `` `capped from 100 h` `` |
+| `chartPlayed` | `z-cost-chart`, the hours in tooltip and `aria-valuetext` | `` `50 h gespielt` `` | `` `50 h played` `` |
+| `chartTable` | `z-cost-chart`, caption of the table disclosure | `Als Tabelle` | `As a table` |
+| `chartTableHours` | `z-cost-chart`, header of the hours column | `Gespielte Stunden` | `Hours played` |
+| `chartTableCost` | `z-cost-chart`, header of the cost column | `Kosten im Monat` | `Cost per month` |
+| `chartTableCapRow` | `z-cost-chart`, the last row of that table | `` `100 und mehr` `` | `` `100 and more` `` |
 
-`paginationRange` is the only function. Its signature is
-`(from: number, to: number, total: number, itemLabel: string) => string`, where
-`from` and `to` are the entry numbers of the current page, 1-based.
+The keys that take parameters are functions: `paginationRange`
+(`(from, to, total, itemLabel) => string`, where `from` and `to` are the entry numbers of the
+current page, 1-based), `wizardEditFor` (`(title) => string`), `chartDesc`
+(`(base, rate, cap, capHours) => string`) and the number formats of `z-cost-chart`
+(`chartMoney`, `chartAxisMoney`, `chartAxisHours`, `chartBaseLabel`, `chartCapLabel`,
+`chartPlayed` and `chartTableCapRow`, each `(n: number) => string`). The German formats write a
+comma as the decimal mark and a non-breaking space before the currency; the English ones put the
+currency in front with a point.
 
 ## Application-wide
 
@@ -95,8 +118,11 @@ over the registry. Unset, it falls back to the registry value.
 
 The inputs per component: `ariaLabel`, `ariaLabelPrev`, `ariaLabelNext` and
 `rangeLabel` on `z-pagination`, `logLabel`, `inputLabel` and `endLabel` on `z-console`,
-`menuLabel` on `z-app-header`, `closeLabel` on `z-toast-outlet` and `ariaLabel`
-on `z-table-container`.
+`menuLabel` on `z-app-header`, `closeLabel` on `z-toast-outlet`, `ariaLabel`
+on `z-table-container`, `editLabel` on `z-wizard-step`, `emptyText` on `z-combobox` and
+`retryLabel` on `z-price-summary`. `z-cost-chart` has no such input: everything it says visibly
+is a registry key, because a chart carries a dozen little texts and a dozen inputs for them would
+be worse than one provider.
 
 ## One subtree
 
