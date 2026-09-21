@@ -56,3 +56,11 @@
   .z-toast .z-btn, .z-toast__action { flex: none; }
   .z-toast__action { display: inline-flex; align-items: center; min-height: var(--control-md); }
 }
+
+/* Addition to the reference: the outlet keeps two live regions, one polite and
+   one assertive, so a screen reader announces a toast that appears inside them.
+   display: contents removes the two boxes again, so the toasts themselves stay
+   the grid items of .z-toast-outlet and keep gap, alignment and the mobile
+   rules; the order set per toast restores the order of the list across both
+   regions. */
+.z-toast-outlet__live { display: contents; }

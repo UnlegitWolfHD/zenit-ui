@@ -40,6 +40,11 @@ describe('ZToastOutlet', () => {
     return Array.from(fixture.nativeElement.querySelectorAll('.z-toast'));
   }
 
+  /** The two permanent live regions, polite first. */
+  function bereiche(): HTMLElement[] {
+    return Array.from(fixture.nativeElement.querySelectorAll('.z-toast-outlet__live'));
+  }
+
   beforeEach(() => {
     fixture = TestBed.createComponent(OutletHost);
     dienst = TestBed.inject(ZToast);
@@ -53,33 +58,63 @@ describe('ZToastOutlet', () => {
     expect(toasts()).toHaveLength(0);
   });
 
-  it('renders a neutral toast with role status and no modifier', () => {
+  it('keeps an empty polite and an empty assertive live region without any toast', () => {
+    const [hoeflich, dringend] = bereiche();
+
+    expect(hoeflich.getAttribute('role')).toBe('status');
+    expect(hoeflich.getAttribute('aria-live')).toBe('polite');
+    expect(dringend.getAttribute('role')).toBe('alert');
+    expect(dringend.getAttribute('aria-live')).toBe('assertive');
+    expect(hoeflich.children).toHaveLength(0);
+    expect(dringend.children).toHaveLength(0);
+  });
+
+  it('sets aria-atomic=false on both regions so only the new toast is read out', () => {
+    expect(bereiche().map((bereich) => bereich.getAttribute('aria-atomic'))).toEqual([
+      'false',
+      'false',
+    ]);
+  });
+
+  it('renders a neutral toast without a role of its own into the polite region', () => {
     zeige(() => dienst.show('Adresse kopiert'));
     const toast = toasts()[0];
 
     expect(toast.classList.contains('z-toast')).toBe(true);
     expect(toast.classList.contains('z-toast--success')).toBe(false);
     expect(toast.classList.contains('z-toast--danger')).toBe(false);
-    expect(toast.getAttribute('role')).toBe('status');
+    // A live region inside a live region is announced twice.
+    expect(toast.getAttribute('role')).toBeNull();
+    expect(toast.parentElement).toBe(bereiche()[0]);
     expect(toast.textContent).toContain('Adresse kopiert');
   });
 
-  it('renders success with z-toast--success and role status', () => {
+  it('renders success with z-toast--success into the polite region', () => {
     zeige(() => dienst.success('Eigenschaften gespeichert'));
     const toast = toasts()[0];
 
     expect(toast.classList.contains('z-toast--success')).toBe(true);
     expect(toast.classList.contains('z-toast--danger')).toBe(false);
-    expect(toast.getAttribute('role')).toBe('status');
+    expect(toast.getAttribute('role')).toBeNull();
+    expect(toast.parentElement).toBe(bereiche()[0]);
   });
 
-  it('renders an error with z-toast--danger and role alert', () => {
+  it('renders an error with z-toast--danger into the assertive region', () => {
     zeige(() => dienst.error('Backup fehlgeschlagen: Speicher voll'));
     const toast = toasts()[0];
 
     expect(toast.classList.contains('z-toast--danger')).toBe(true);
     expect(toast.classList.contains('z-toast--success')).toBe(false);
-    expect(toast.getAttribute('role')).toBe('alert');
+    expect(toast.getAttribute('role')).toBeNull();
+    expect(toast.parentElement).toBe(bereiche()[1]);
+  });
+
+  it('keeps both regions in the dom once every toast is gone', () => {
+    zeige(() => dienst.error('Backup fehlgeschlagen: Speicher voll'));
+    zeige(() => dienst.dismiss());
+
+    expect(bereiche()).toHaveLength(2);
+    expect(toasts()).toHaveLength(0);
   });
 
   it('shows the icon from icon and none without icon', () => {
@@ -186,6 +221,27 @@ describe('ZToastOutlet', () => {
       'Zwei',
       'Drei',
       'Vier',
+    ]);
+  });
+
+  it('restores the order of the list across the two regions with style.order', () => {
+    zeige(() => {
+      dienst.show('Eins');
+      dienst.error('Zwei');
+      dienst.show('Drei');
+    });
+
+    // Two regions mean the danger toast comes last in the dom; order puts it
+    // back between the other two on screen.
+    const nachDom = toasts().map((toast) => ({
+      text: toast.querySelector('span')?.textContent?.trim(),
+      order: Number(toast.style.order),
+    }));
+
+    expect(nachDom).toEqual([
+      { text: 'Eins', order: 0 },
+      { text: 'Drei', order: 2 },
+      { text: 'Zwei', order: 1 },
     ]);
   });
 });
