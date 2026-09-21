@@ -1,8 +1,8 @@
 /**
- * Compiles the `ng add` schematic of zenit-ui into the package.
+ * Compiles the schematics of zenit-ui (`ng add`, `migrate-material`) into the package.
  *
  * ng-packagr never sees the `schematics` folder (tsconfig.lib.json only
- * includes `src/**`), so the schematic is built separately with plain
+ * includes `src/**`), so the schematics are built separately with plain
  * TypeScript and the JSON files are copied next to the emitted JavaScript.
  *
  *   node tools/build-schematics.mjs      # run after `ng build zenit-ui`
@@ -29,7 +29,9 @@ if (build.status !== 0) {
 mkdirSync(target, { recursive: true });
 cpSync(source, target, {
   recursive: true,
-  filter: (path) => !path.endsWith('.ts') || path.endsWith('.d.ts'),
+  // Test fixtures are neither code nor schema and stay out of the package.
+  filter: (path) =>
+    (!path.endsWith('.ts') || path.endsWith('.d.ts')) && !/[\\/]fixtures([\\/]|$)/.test(path),
 });
 
 // ng-packagr writes `"type": "module"` into dist/zenit-ui/package.json, which
