@@ -782,11 +782,36 @@ Do not remove `@angular/cdk/overlay-prebuilt.css`. Dialog, menu and tooltip need
 `40-bibliothek.md` explicitly allows old and new components to coexist route by route. What makes that work:
 
 - **The styles do not collide.** Every library class is prefixed `z-`, and nothing in `zenit-ui.css` targets a bare `mat-*` selector. Material's own theme keeps styling Material components until it is removed.
-- **One exception to watch: `z-root` is global.** It sets `font: inherit` and `color: inherit` on `button`, `input`, `select` and `textarea`, and a background and text colour on the page. Material components on a not-yet-migrated route will change appearance the moment `z-root` goes on `<body>` — mostly for the better (Arial disappears), but it will be visible. Expect a round of screenshot churn on day one and migrate the shell first so that the churn is deliberate.
+- **One exception to watch: `z-root` is global.** It sets `font: inherit` and `color: inherit` on `button`, `input`, `select` and `textarea`, a link colour, a focus ring, `border-box` on everything, and `14px/20px` plus a background and text colour on the page. All of that reaches a not-yet-migrated route the moment `z-root` goes on `<body>`, and the absolute line height breaks old headings. `.z-legacy` on the content host keeps it out, see "Migrating route by route" below.
 - **Both theme systems can be loaded at once.** `tokens.css` defines `--…` names, Material defines `--mat-sys-*`; they do not overlap. Keeping both until the end is fine and costs a few kilobytes.
 - **Per route, not per component.** Migrating half a template leaves a `mat-form-field` next to a `z-field` on the same screen, where the differing heights and label positions look like a bug. Finish a route before moving on.
 - **Order.** Public pages first, per phase 5. They are the ones with the worst measurements in `20-bestandsaufnahme.md` (`/minecraft`: 32 gradients, 35 `backdrop-filter`, 35 font sizes) and they have the least logic behind them, so the templates-only constraint bites least there.
 - **A route is done when it passes the acceptance checklist below**, not when it merely compiles.
+
+### Migrating route by route
+
+The structure that keeps old pages looking as they did while the shell and the first routes are already on the library:
+
+1. **`z-root` on `<html>` and `<body>`.** Both, as the package README prescribes: overlays hang on `<body>` and need the scope, and `html.z-root` leaves the rem base with the visitor.
+2. **`.z-legacy` on the content host**, the element around the router outlet. Inside it size and line height are back to `1rem` and `normal`, and the base rules of the library for bare `a`, `button`, `input`, `select`, `textarea`, `*` and `:focus-visible` no longer apply. Restate on the same element what your old `body` rule said (family, colour, background); the library cannot know it. A light old page always adds `color-scheme: normal`, or its unstyled links and native fields follow the library's dark scheme. If `mat-typography` sits on `<body>`, move it to this element: on `<body>` it ties with `.z-root` and wins by source order, which restyles the shell.
+3. **`z-root` on the container of every migrated page.** It switches everything back on for that page.
+4. **Remove `.z-legacy` and the inner `z-root` classes** in the commit that migrates the last route.
+
+```html
+<body class="z-root">
+  <app-header />
+  <main id="main-content" class="z-legacy mat-typography"><router-outlet /></main>
+  <app-footer />
+  <z-toast-outlet />
+</body>
+```
+
+```html
+<!-- a migrated route -->
+<div class="z-root">…</div>
+```
+
+Stylesheet order does not change: `tokens.css`, the CDK overlay stylesheet, `zenit-ui.css`, then your own. What application rules such as `.app a` do to links inside library components is described in the package README under ["Documented deviations from the reference styles"](../projects/zenit-ui/README.md#documented-deviations-from-the-reference-styles). Dialogs, menus, tooltips and toasts opened from an old page render outside `.z-legacy` and look as they do everywhere else. A single library component dropped into an old page needs a `z-root` wrapper of its own. The measurements, the list of exempt rules and the limits are in [`docs/legacy.md`](legacy.md).
 
 ## 7. Stylelint from warning to error
 
@@ -816,7 +841,7 @@ Straight from `00-auftrag.md`, "Abnahme je Route". Check every one of these befo
 
 Plus, from `40-bibliothek.md`, "Prüfung": Playwright screenshots at 1440px and 375px, and `@axe-core/playwright` with no violations.
 
-Two of these deserve a warning. **Click targets at least 40px** is not satisfied by the reference styles alone — `bundle.css` gives several controls 32px, 36px or less, and the library corrects this below 640px for small buttons, small inputs, small selects and menu items only. Header links, sidebar entries, segment buttons, footer links and the toast action are still below 40px. See item 2 in `docs/design-system-feedback.md`; do not report a route as accepted on the assumption that the library handles it.
+Two of these deserve a note. **Click targets at least 40px** is not satisfied by the reference styles alone: `bundle.css` gives several controls 32px, 36px or less. The library corrects that for its own controls. Measured at 360px in the demo: the menu button of the header, the header links in the open menu and in the end slot, footer links in the columns and in the base row, tabs, the sidebar (a 40px select below 900px), segment buttons, menu entries, the toast action and the toast close button are all 40px tall, and `e2e/demo.spec.ts` holds every demo route to that at 375px. What is left to the route is what the library does not render: your own links and buttons, and anything sized with an inline style. A link inside running text is as tall as its line and is not a click target in that sense. See item 2 in `docs/design-system-feedback.md` for the history.
 
 **Empty, loading and error states** are the caller's job for most components. `z-skeleton` draws a placeholder row but does not know about the 300 ms delay or the 10 s timeout that the Skeleton README asks for; that logic lives in the page.
 

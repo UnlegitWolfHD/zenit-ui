@@ -43,9 +43,10 @@ Content projection:
 
 ### `[zBrand]`
 
-Brand slot: plain text in the `display` face, no logo image. It adds the class `z-header__brand` and
-renders nothing itself, so the caller picks the element. A link back to the start page is the usual
-choice.
+Brand slot. It adds the class `z-header__brand` and renders nothing itself, so the caller picks the
+element. A link back to the start page is the usual choice. The design system ships no logo file, so
+its previews show the name as plain text in the `display` face; an application puts its own image
+inside the link, see "Brand and end slot on small screens".
 
 ### `a[zHeaderLink]`
 
@@ -121,6 +122,12 @@ The menu does not close on a resize, because above 900px the state no longer dec
 shows the links at that width. It also does not close on a click outside, which the design system
 does not ask for; the bar keeps credit and avatar reachable while the menu is open.
 
+The open menu does **not** lock page scroll. It is a panel below the bar, not an overlay: there is no
+scrim, the page behind it stays visible and operable, and on a short window the page scrolls to reach
+the last link. An application that wants a lock sets it itself from `(openChange)`, for example a
+class on `<body>` that sets `overflow: hidden`, and takes it off again when the event reports
+`false`.
+
 Content in `[zHeaderEnd]` is not part of the menu. It stays in the bar at every width, so a link
 there neither opens nor closes anything.
 
@@ -174,9 +181,56 @@ There is no disabled, loading, error or empty state.
 ## Responsive
 
 Above 900px the links are visible and the menu button is hidden. Below 900px the links fold into a
-menu that sits as a surface below the bar, the bar may wrap so two buttons do not run off the page
-at 360px, and every header link grows to 40px tall. The end slot with credit and avatar stays
+menu that sits as a surface below the bar, the bar is one row of brand, end slot and menu button
+with a defined fallback when the end slot does not fit (see "Brand and end slot on small screens"),
+and every header link grows to 40px tall. The end slot with credit and avatar stays
 visible at every width. What opens and closes that menu is in "Mobile menu".
+
+## Brand and end slot on small screens
+
+Below 900px the bar is one row: brand, end slot, menu button. The DOM order stays brand, menu button,
+`<nav>`, end slot, so Tab goes from the button straight into the links it has just opened.
+
+Between the two 24px paddings the row holds the brand, the end slot, the 40px menu button and two
+12px gaps. What is left for brand plus end slot is the window width minus 112px: **248px at 360px**,
+263px at 375px, 300px at 412px.
+
+Measured on `/muster/kopfzeile` of the demo with a 60×40px image in the brand (natural 320×213px,
+`height: var(--control-md); width: auto`), bar height in px:
+
+| End slot                                                    | Needs | 360 | 375 | 412 | 899 | before, 360/375 |
+| ----------------------------------------------------------- | ----- | --- | --- | --- | --- | --------------- |
+| `a[zBtn="ghost"]` "Login" + `a[zBtn="primary"]` "Registrieren", `sm` | 182px | 57  | 57  | 57  | 57  | 126             |
+| `a[zBtn="secondary"]` "Zum Dashboard", `sm`                | 133px | 57  | 57  | 57  | 57  | 62              |
+| balance link in `z-mono` "12,34 €" + icon button            | 135px | 57  | 57  | 57  | 57  | 62              |
+| `z-skeleton width="160px"`                                  | 160px | 57  | 57  | 57  | 57  | 62              |
+| "Anmelden" + "Server erstellen", `sm`                       | 238px | 109 | 109 | 57  | 57  | 126, also at 412 |
+
+57px is one row: 8px padding above and below, a 40px control, the 1px line. Before the change every
+bar with an image measured 62px, because an inline image sits on the baseline of its line and made
+the brand 45px tall, and the first row wrapped to 126px with the menu button left behind next to the
+logo. An `<img>` or `<svg>` inside `[zBrand]` is a block now.
+
+**When the end slot does not fit**, its own items wrap inside it, right aligned, 12px apart, and
+brand and menu button stay centred on the left and right: two 40px buttons give a bar of 109px, as in
+the last row. The bar itself wraps only as a last resort, when even the widest single item of the end
+slot does not fit next to brand and menu button; nothing runs out of the page at 360px either way.
+Below 360px, which the design system does not support, that last resort is what you get. Measured at
+320px: the image logo with two buttons is still 109px, the 160px skeleton takes a row of its own
+(109px), and a wide text brand ("Zenit-Hosting") with two buttons makes three rows, 161px. Still no
+horizontal scrolling.
+
+**Logo size.** Up to 40px of height costs nothing: below 900px the menu button is 40px tall anyway,
+and from 900px on the bar is 56px. A height of 32 to 40px (`--control-sm` to `--control-md`) is the
+recommendation; 24px is not necessary. What matters is the **width**: at 360px brand and end slot
+share 248px. With "Login" and "Registrieren" (182px) the logo may be up to 66px wide, which a 3:2
+logo at 40px height (60px) just meets; with one button or with balance and avatar there is room for
+about 110px. Two buttons with longer labels do not fit next to any logo at 360px and stack, as
+above. Set the height and let the width follow:
+
+```html
+<a zBrand href="/"><img src="logo.svg" alt="Zenit" style="height: var(--control-md); width: auto" /></a>
+```
 
 ## Rendered classes and tokens
 
@@ -203,8 +257,13 @@ New, because the reference stylesheet does not cover it:
 
 - Below 900px the navigation folds into a menu while the balance stays visible. The menu sits as a
   surface below the bar, so the bar keeps its height.
-- Below 900px the bar may wrap: on public pages two buttons stand on the right, which would
-  otherwise run off the page horizontally at 360px. The header height stays as the minimum height.
+- Below 900px the bar is one row of brand, end slot and menu button: the gap is `space-3`, the menu
+  button carries `order: 1`, and the end slot takes the room that is left and wraps its own items
+  when they do not fit. The bar itself may still wrap as the last resort, so nothing runs off the
+  page horizontally at 360px. The header height stays as the minimum height. Numbers in "Brand and
+  end slot on small screens".
+- An `<img>` or `<svg>` inside `[zBrand]` is `display: block`, so a 40px logo makes a 40px brand
+  instead of a 45px one.
 - Below 900px the header links are as tall as a control, because click targets are at least 40px
   tall on mobile.
 

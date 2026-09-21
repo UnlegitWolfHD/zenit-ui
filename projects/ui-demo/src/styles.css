@@ -344,3 +344,25 @@
 .demo-diagramm {
   max-width: var(--measure);
 }
+
+/* Page "Legacy": room around the migrated page inside the old one. The old
+   page itself, its host included, takes everything from its own stylesheet. */
+.demo-legacy-seite {
+  padding: var(--space-4);
+}
+
+/* Page "Kopfzeile": a header spans the window, so the measuring page undoes
+   the inline padding of .z-container around it.
+   min-width 0: the wrapper is an item of the .demo-section grid, and its
+   automatic minimum is the min-content width of the header, six links in one
+   row from 900px on. Between 900 and 959px that pushed the page to 959px. With
+   0 the header gets the width of the window and its nav scrolls, as built. */
+.demo-randlos {
+  min-width: 0;
+  margin-inline: calc(var(--space-4) * -1);
+}
+@media (min-width: 640px) {
+  .demo-randlos {
+    margin-inline: calc(var(--space-5) * -1);
+  }
+}

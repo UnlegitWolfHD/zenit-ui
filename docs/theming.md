@@ -101,7 +101,7 @@ export const appConfig: ApplicationConfig = {
 | `accents`       | `['rot', 'blau', 'gruen', 'violett']`| Ids written as `data-accent`. Own ids allowed.                             |
 | `defaultScheme` | `'dark'`                             | One of `schemes`, or `'system'` to follow the operating system.            |
 | `defaultAccent` | `'rot'`                              | One of `accents`. Carries no attribute.                                    |
-| `storageKey`    | `'zenit-theme'`                      | `localStorage` key. `null` turns persistence off.                          |
+| `storageKey`    | `'zenit-theme'`                      | `localStorage` key. `null`: no storage, start from the attributes present. |
 | `target`        | `() => document.documentElement`     | Getter for the element that carries both attributes. Keep it stable.       |
 
 The provider applies the stored or default choice when the application starts,
@@ -226,6 +226,56 @@ critical CSS inlining exists only in an optimised build.
 If neither step is an option, a static `<html data-theme="light">` in
 `index.html` fixes the scheme for everyone until the service starts; that fits
 an application with a fixed scheme and no switch.
+
+## Keeping your own preference storage
+
+An application that already stores the visitor's colour scheme keeps its storage and hands the
+result to the library. Three parts:
+
+```ts
+// 1. no storage of the library's own
+provideZenitTheme({ storageKey: null, schemes: ['dark', 'light'], accents: ['rot', 'blau'] });
+```
+
+```html
+<!-- 2. your own inline script, before the first paint: your storage, your key -->
+<script>
+  var t = localStorage.getItem('app-theme');
+  if (t) document.documentElement.setAttribute('data-theme', t);
+</script>
+```
+
+```ts
+// 3. once at start-up, and whenever the visitor changes the setting
+inject(ZTheme).setScheme(stored); // 'dark', 'light', … or 'system'
+```
+
+With `storageKey: null` `ZTheme` never touches `localStorage`, and it starts from the attributes
+that are already on `<html>` (or on the `target`): a registered `data-theme` becomes `scheme()`, a
+registered `data-accent` becomes `accent()`, and nothing is rewritten to the defaults in between.
+Before this the service wrote `data-theme="dark"` and removed `data-accent` at bootstrap, which
+flashed the default scheme. An id that is not registered is replaced by the default. With a storage
+key set nothing changes: the stored choice and the defaults win over a pre-set attribute. On the
+server a fixed `defaultScheme` is still written into the document, and the browser keeps it unless
+your script replaced it.
+
+Two things to get right:
+
+- **The attribute only prevents the flash; `setScheme(stored)` states the choice. Always call it
+  once at start-up.** An attribute carries a resolved scheme, never `'system'`, so one that equals
+  what `defaultScheme` resolves to cannot be told from the default and is not taken as a choice.
+  That keeps `'system'` alive when it was only resolved. It also means: with
+  `defaultScheme: 'system'`, a dark operating system and a visitor who explicitly stored `dark`,
+  `scheme()` reports `'system'`, and the page turns light when the operating system does, until
+  your code has called `setScheme('dark')`. The call resolves to the value that is already on the
+  page, so it changes nothing visible.
+- **Do not run `zenitThemeInitScript` after your own script.** `ng add zenit-ui --themes` installs
+  it, and it does not look at what is on `<html>`: it writes the default `data-theme` over yours, so
+  a pre-set `light` ends as `dark`. Remove the library's script, or put yours behind it. (It leaves
+  a pre-set `data-accent` alone while the accent is the default one. Do not build on that.)
+
+All of it is pinned by unit tests in `lib/theme/theme.spec.ts`, "with storageKey null and attributes
+set before bootstrap".
 
 ## The `ZTheme` API
 

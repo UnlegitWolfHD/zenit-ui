@@ -64,4 +64,18 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./pages/muster/preisrechner.page').then((m) => m.MusterPreisrechnerPage),
   },
+  // The two routes below stay out of the demo navigation and out of the generic
+  // route lists of the e2e suites (decision of the master): a link in the
+  // navigation would change every full-page screenshot, and both pages break
+  // the style rules those suites check, on purpose. Each has a suite of its own.
+  // A measuring page for the header at small widths, e2e/kopfzeile.spec.ts.
+  {
+    path: 'muster/kopfzeile',
+    loadComponent: () => import('./pages/muster/kopfzeile.page').then((m) => m.KopfzeilePage),
+  },
+  // A page with an old stylesheet of its own, e2e/legacy.spec.ts.
+  {
+    path: 'muster/legacy',
+    loadComponent: () => import('./pages/muster/legacy.page').then((m) => m.LegacyPage),
+  },
 ];
