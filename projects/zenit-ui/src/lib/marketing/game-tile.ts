@@ -15,9 +15,7 @@ export class ZGameGrid {}
  */
 @Component({
   // Die API-Tabelle schreibt button[zGameTile] vor: eine Komponente mit
-  // Attribut-Selektor wie Button. Die Regel prueft hier den Elementnamen
-  // "button" gegen den Praefix z und schlaegt deshalb fehl.
-  // eslint-disable-next-line @angular-eslint/component-selector
+  // Attribut-Selektor wie Button.
   selector: 'button[zGameTile]',
   template: `<span class="z-game__cover">
       @if (cover()) {
