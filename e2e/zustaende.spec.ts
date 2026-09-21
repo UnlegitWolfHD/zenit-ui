@@ -114,6 +114,8 @@ interface Baustein {
   ohneDruck?: boolean;
   /** Focus without Tab, because Tab closes the CDK menu. */
   fokussieren?: (page: Page, ziel: Locator) => Promise<void>;
+  /** Viewport for this component, when its states only exist at one width. */
+  sicht?: { width: number; height: number };
 }
 
 /** Opens the menu of the overlays page by keyboard, so the items are reachable. */
@@ -274,7 +276,8 @@ const BAUSTEINE: Baustein[] = [
     hoverFarbe: true,
   },
 
-  // Daten: row link, the table container (tab stop) and the pagination.
+  // Daten: row link, the table container (tab stop only while it scrolls) and
+  // the pagination.
   {
     name: 'row-link',
     route: 'daten',
@@ -282,9 +285,14 @@ const BAUSTEINE: Baustein[] = [
     hoverFarbe: true,
   },
   {
+    // The wrapper only becomes a region with a tab stop while the table is
+    // really wider than it is; at the default 1280px the demo table fits. Its
+    // states are therefore measured at 375px, where it scrolls. The counter
+    // check for the wide viewport is the test below the loop.
     name: 'table-container',
     route: 'daten',
-    ziel: (p) => p.getByRole('region', { name: 'Dateien, seitlich scrollbar' }),
+    sicht: { width: 375, height: 720 },
+    ziel: (p) => p.locator('z-table-container').first(),
     hoverFarbe: false,
   },
   {
@@ -435,6 +443,23 @@ async function tastaturFokus(page: Page, baustein: Baustein): Promise<Locator> {
   return ziel;
 }
 
+/**
+ * Scrolls until the 6px of air fit into the viewport. `focus()` scrolls only as
+ * far as it has to, so the element ends up flush against an edge and the ring
+ * would be recorded cut off. Only the page moves, the element keeps its place
+ * on it, so the cut-out shows the same thing as before.
+ */
+async function luftSchaffen(page: Page, ziel: Locator): Promise<void> {
+  const sicht = page.viewportSize() ?? { width: 1280, height: 720 };
+  const box = await kasten(ziel);
+  const fehltOben = box.y - LUFT;
+  const fehltUnten = box.y + box.height + LUFT - sicht.height;
+  const versatz = fehltOben < 0 ? fehltOben : Math.max(0, fehltUnten);
+  if (versatz !== 0) {
+    await page.evaluate((wert) => window.scrollBy(0, wert), versatz);
+  }
+}
+
 /** Bounding box plus 6px, clamped to the viewport. */
 async function fokusAusschnitt(page: Page, ziel: Locator): Promise<Kasten> {
   const box = await kasten(ziel);
@@ -452,6 +477,10 @@ const ohneUebergang = (u: Record<string, string>) =>
 
 for (const baustein of BAUSTEINE) {
   test.describe(baustein.name, () => {
+    if (baustein.sicht) {
+      test.use({ viewport: baustein.sicht });
+    }
+
     test.beforeEach(async ({ page }) => {
       await seiteOeffnen(page, baustein.route);
       await baustein.vorbereiten?.(page);
@@ -514,6 +543,7 @@ for (const baustein of BAUSTEINE) {
       expect(ring.outlineOffset, `${baustein.name}: outline-offset`).toBe('2px');
       expect(ring.outlineColor, `${baustein.name}: Ringfarbe ist nicht --focus`).toBe(fokus);
 
+      await luftSchaffen(page, ziel);
       await expect(page).toHaveScreenshot(`zustaende-${baustein.name}-focus.png`, {
         clip: await fokusAusschnitt(page, ziel),
       });
@@ -527,6 +557,34 @@ for (const baustein of BAUSTEINE) {
     });
   });
 }
+
+/**
+ * A scrollable area is the container's only reason to be a tab stop, so role,
+ * tabindex and the accessible name appear exactly while the table overflows.
+ * That is also why the states above are measured at 375px.
+ */
+test.describe('table-container: Rolle und Tab-Stopp nur bei Überlauf', () => {
+  const huelle = (page: Page) => page.locator('z-table-container').first();
+
+  test('375px: Region mit Namen, per Tab erreichbar', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 720 });
+    await seiteOeffnen(page, 'daten');
+
+    await expect(huelle(page)).toHaveAttribute('role', 'region');
+    await expect(huelle(page)).toHaveAttribute('tabindex', '0');
+    await expect(huelle(page)).toHaveAttribute('aria-label', 'Dateien, seitlich scrollbar');
+  });
+
+  test('1440px: keine Rolle, kein Name, kein Tab-Stopp', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await seiteOeffnen(page, 'daten');
+
+    // Nothing to scroll, so a tab stop here would do nothing.
+    await expect(huelle(page)).not.toHaveAttribute('role', /.*/);
+    await expect(huelle(page)).not.toHaveAttribute('tabindex', /.*/);
+    await expect(huelle(page)).not.toHaveAttribute('aria-label', /.*/);
+  });
+});
 
 test.describe('Übergänge bei prefers-reduced-motion: no-preference', () => {
   test.use({ reducedMotion: 'no-preference' });
@@ -833,8 +891,13 @@ const GESPERRT: Gesperrt[] = [
         .getAttribute('aria-pressed')) ?? '',
   },
   {
+    // aria-disabled instead of the native disabled: a native disabled on the
+    // arrow that was just used would throw the focus back to <body>, so the
+    // arrow keeps its tab stop, is announced as disabled and swallows the
+    // click. Its look is the .z-btn[aria-disabled="true"] of the reference.
     name: 'pagination-disabled',
     route: 'daten',
+    tabErreichbar: true,
     ziel: (p) =>
       p
         .locator('.z-panel')
