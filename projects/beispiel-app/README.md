@@ -27,12 +27,12 @@ npm run e2e:beispiel     # Playwright: screenshots, axe, style rules, interactio
 | Step of the package README  | Where it is done here                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Install the package         | `projects/beispiel-app/tsconfig.app.json` and `tsconfig.spec.json` override `compilerOptions.paths` so that `zenit-ui` points at `../../dist/zenit-ui`. In a real application `npm i ./zenit-ui-0.1.0.tgz` puts the same package into `node_modules` and no override is needed. The workspace root maps `zenit-ui` to the library sources instead, which is what library development needs; this project deliberately does not use that. |
-| 1. Styles in `angular.json` | `styles` of the build target, in this order: `dist/zenit-ui/styles/tokens.css`, `@angular/cdk/overlay-prebuilt.css`, `dist/zenit-ui/styles/themes.css`, `dist/zenit-ui/styles/zenit-ui.css`, `projects/beispiel-app/src/styles.css`.                                                                                                                                                                                              |
+| 1. Styles in `angular.json` | `styles` of the build target, in this order: `dist/zenit-ui/styles/tokens.css`, `@angular/cdk/overlay-prebuilt.css`, `dist/zenit-ui/styles/themes.css`, `dist/zenit-ui/styles/zenit-ui.css`, `projects/beispiel-app/src/styles.css`.                                                                                                                                                                                                     |
 | 2. `z-root`                 | `src/index.html` carries `class="z-root"` on `<html>` and on `<body>`, plus `lang="de"` and the page title.                                                                                                                                                                                                                                                                                                                              |
 | 3. Self-hosted fonts        | Top of `src/styles.css`: Material Icons in the cascade layer `schriften`, Inter 400/500/600, Space Grotesk 600/700, JetBrains Mono 400/600. No request to Google.                                                                                                                                                                                                                                                                        |
 | 4. Toast outlet             | `<z-toast-outlet />` once, at the end of `layout/shell`.                                                                                                                                                                                                                                                                                                                                                                                 |
 | 5. Minecraft subtheme       | Not used on these pages.                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| Themes                      | `provideZenitTheme({ defaultScheme: 'system' })` in `app.config.ts`, the switch in `layout/theme-control`. Scheme and accent land in `localStorage`, so the choice survives a reload.                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| Themes                      | `provideZenitTheme({ defaultScheme: 'system' })` in `app.config.ts`, the switch in `layout/theme-control`. Scheme and accent land in `localStorage`, so the choice survives a reload.                                                                                                                                                                                                                                                    |
 
 To check that the application really compiles against `dist` and not against
 the library sources, rename `dist/zenit-ui` and build: the build fails with
@@ -50,11 +50,12 @@ src/
     app.routes.ts                "" -> /gameserver, the page is lazy
     layout/shell/shell.ts        skip link, AppHeader, main, Footer, toast outlet
     layout/theme-control/        scheme and accent, two menus in the header
-    pages/gameserver/gameserver.ts   the page: PageHeader, filters, actions, feedback
+    pages/gameserver/gameserver.ts   the page: PageHeader, filter form, resource, actions
+    pages/gameserver/gameserver.spec.ts   the states and the filter on a fake clock
     pages/einbindung/einbindung.ts   the setup, step by step, with the real files
     gameserver/
       beispieldaten.ts           the sample data, the only file to throw away
-      gameserver-data.ts         service: simulated loading, filter function
+      gameserver-data.ts         service: one simulated load as a promise, filter function
       server-list/server-list.ts the list in all of its states
       server-list/server-list.spec.ts
     shared/code-block/           one block of code with caption and copy button
@@ -82,7 +83,8 @@ npx ng generate component pages/einbindung --project beispiel-app --inline-templ
 `--inline-template --inline-style` keeps one file per component, as in
 `projects/ui-demo`; the application itself needs almost no CSS, so no component
 carries a stylesheet. `--skip-tests` everywhere except the list, which is the
-component with the states worth testing. `--skip-install` because the workspace
+component with the states worth testing; `gameserver.spec.ts` was added by hand
+when the page took over the loading states. `--skip-install` because the workspace
 already has every dependency. The generated `app.html`, `app.css` and
 `app.spec.ts` of the root component were deleted: the root only renders the
 shell.
@@ -107,6 +109,26 @@ deleting the last server leads to the empty state.
 The two icon buttons in the header switch the colour scheme (Dunkel, Hell,
 Kontrast, System) and the accent (Rot, Blau, Grün, Violett). Both are stored,
 so a reload keeps them; "System" follows the operating system live.
+
+## Signals, Signal Forms and resource()
+
+The page is the reference for the conventions in `docs/signals.md`, so it holds
+no subscription, no effect and no event handler that reads `$event.target`.
+
+| Concern               | How it is done                                                                                                                                                                                                                 |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `?zustand=`           | `withComponentInputBinding()` hands the query parameter to `zustand = input<string>()`. A `linkedSignal()` derives the simulation from it and stays writable, which is how "Erneut laden" leaves the simulated error.          |
+| Loading, empty, error | `resource({ params, loader })` around `GameserverData.laden()`. `isLoading()`, `error()` and `value()` are the states; a new parameter aborts the running load through the `AbortSignal`. A real retry is `liste.reload()`.    |
+| Skeleton after 300ms  | A second resource whose params are `liste.isLoading() \|\| undefined` and whose loader waits 300ms. It is `false` while idle, so a fast answer never flashes placeholders, and no timer has to be cleared by hand.             |
+| Deleting a server     | `liste.update(...)`: a resource is writable, the local change is its state `'local'`.                                                                                                                                          |
+| Filter row            | Signal Forms from `@angular/forms/signals`: `filter = form(signal({ suche, status }))`, `[formField]="filter.suche"` on `input[zInput]` and on the native `select` inside `z-select`. The filtered list is a `computed()`.     |
+| "Filter zurücksetzen" | `filter().reset(KEIN_FILTER)` writes the model and clears touched and dirty.                                                                                                                                                   |
+| Confirmation          | `ZDialog.confirm()` returns `Observable<boolean>` (API table). It emits once, so the page awaits `firstValueFrom()`. The field that asks for the server name belongs to the library's confirm dialog, not to this application. |
+
+`[formField]` owns `name`, `disabled`, `required`, `readonly`, `min` and `max`
+of the element it sits on, so these come from the schema of the form and are not
+written into the template; the compiler rejects a `[min]` binding next to
+`[formField]` with NG8022.
 
 ## The code on the page
 
@@ -154,7 +176,8 @@ tried, not assumed.
 ## What to replace in a real application
 
 `gameserver/beispieldaten.ts` and the timer in `gameserver/gameserver-data.ts`:
-put your HTTP calls there and keep the signals. The code display
+put your HTTP call into `laden()` (or swap the resource of the page for
+`httpResource()`), drop the `simulation` and keep the rest of the signals. The code display
 (`shared/code-block`, `shared/quelltexte*`, the page "Einbindung" and the
 disclosures) exists to explain this example and comes out with it. Everything
 else stays. The row of the list would then link to the detail page of a server,

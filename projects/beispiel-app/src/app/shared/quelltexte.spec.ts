@@ -54,7 +54,10 @@ describe('quelltext', () => {
   const GEZEIGT: readonly [string, string | undefined][] = [
     [DATEI.seite, 'seitenkopf'],
     [DATEI.seite, 'filterzeile'],
+    [DATEI.seite, 'filter'],
     [DATEI.seite, 'liste'],
+    [DATEI.seite, 'laden'],
+    [DATEI.daten, 'laden'],
     [DATEI.seite, 'aktionen'],
     [DATEI.liste, 'zustaende'],
     [DATEI.liste, 'zeile'],

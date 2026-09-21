@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
+import { form, FormField, max, min } from '@angular/forms/signals';
 import {
   ZAppHeader,
   ZBadge,
@@ -44,6 +45,7 @@ const PREIS_JE_STECKPLATZ = 0.2;
 @Component({
   selector: 'demo-muster-startseite-page',
   imports: [
+    FormField,
     ZAppHeader,
     ZBadge,
     ZBrand,
@@ -117,8 +119,8 @@ const PREIS_JE_STECKPLATZ = 0.2;
               type="button"
               [title]="eintrag.titel"
               [price]="eintrag.preis"
-              [selected]="spiel() === eintrag.titel"
-              (click)="spiel.set(eintrag.titel)"
+              [selected]="werte().spiel === eintrag.titel"
+              (click)="rechner.spiel().value.set(eintrag.titel)"
             ></button>
           }
         </z-game-grid>
@@ -128,31 +130,31 @@ const PREIS_JE_STECKPLATZ = 0.2;
             <z-slider
               label="Arbeitsspeicher"
               unit="GB"
-              [min]="2"
-              [max]="16"
               [step]="2"
               [ticks]="arbeitsspeicherStufen"
               hint="Empfohlen für Valheim mit bis zu 10 Spielern: 6&nbsp;GB."
-              [(value)]="arbeitsspeicher"
+              [formField]="rechner.arbeitsspeicher"
             />
             <z-slider
               label="Steckplätze"
               unit="Spieler"
-              [min]="2"
-              [max]="20"
               [step]="2"
               [ticks]="steckplatzStufen"
               hint="Jeder Steckplatz kostet 0,20&nbsp;€ im Monat."
-              [(value)]="steckplaetze"
+              [formField]="rechner.steckplaetze"
             />
             <div class="z-stack">
               <span class="title-sm">Laufzeit</span>
-              <z-segment [options]="laufzeiten" [(value)]="laufzeit" ariaLabel="Laufzeit" />
+              <z-segment
+                [options]="laufzeiten"
+                [formField]="rechner.laufzeit"
+                ariaLabel="Laufzeit"
+              />
             </div>
           </div>
 
           <z-price-summary
-            [label]="spiel() + ', monatlich'"
+            [label]="werte().spiel + ', monatlich'"
             [price]="preisText()"
             period="/ Monat"
             [lines]="posten()"
@@ -234,28 +236,45 @@ export class MusterStartseitePage {
     { value: '12', label: '12 Monate' },
   ];
 
-  protected readonly spiel = signal('Valheim');
-  protected readonly arbeitsspeicher = signal(6);
-  protected readonly steckplaetze = signal(10);
-  protected readonly laufzeit = signal('6');
+  /**
+   * The calculator is one Signal Form: the order is a single value, and the
+   * price is a `computed()` over it. The limits of the two sliders stand in the
+   * schema, because `[formField]` owns `min` and `max` of its control and
+   * hands them to `z-slider`. The game tiles are buttons, not a form control,
+   * so a click writes the field directly.
+   */
+  protected readonly werte = signal({
+    spiel: 'Valheim',
+    arbeitsspeicher: 6,
+    steckplaetze: 10,
+    laufzeit: '6',
+  });
+  protected readonly rechner = form(this.werte, (pfad) => {
+    min(pfad.arbeitsspeicher, 2);
+    max(pfad.arbeitsspeicher, 16);
+    min(pfad.steckplaetze, 2);
+    max(pfad.steckplaetze, 20);
+  });
 
   private readonly monatspreis = computed(() => {
-    const gewaehlt = SPIELE.find((eintrag) => eintrag.titel === this.spiel()) ?? SPIELE[0];
+    const { spiel, arbeitsspeicher, steckplaetze } = this.werte();
+    const gewaehlt = SPIELE.find((eintrag) => eintrag.titel === spiel) ?? SPIELE[0];
     return (
       gewaehlt.grundpreis +
-      (this.arbeitsspeicher() - 2) * PREIS_JE_GB +
-      (this.steckplaetze() - 2) * PREIS_JE_STECKPLATZ
+      (arbeitsspeicher - 2) * PREIS_JE_GB +
+      (steckplaetze - 2) * PREIS_JE_STECKPLATZ
     );
   });
 
   protected readonly preisText = computed(() => euro(this.monatspreis()));
 
   protected readonly posten = computed<ZPriceLine[]>(() => {
-    const monate = Number(this.laufzeit());
+    const { arbeitsspeicher, steckplaetze, laufzeit } = this.werte();
+    const monate = Number(laufzeit);
     const zeitraum = monate === 1 ? '1\u00a0Monat' : `${monate}\u00a0Monate`;
     return [
-      { label: 'Arbeitsspeicher', value: `${this.arbeitsspeicher()}\u00a0GB` },
-      { label: 'Steckplätze', value: `${this.steckplaetze()}\u00a0Spieler` },
+      { label: 'Arbeitsspeicher', value: `${arbeitsspeicher}\u00a0GB` },
+      { label: 'Steckplätze', value: `${steckplaetze}\u00a0Spieler` },
       { label: 'Einrichtung', value: euro(0) },
       { label: `Summe für ${zeitraum}`, value: euro(this.monatspreis() * monate) },
     ];

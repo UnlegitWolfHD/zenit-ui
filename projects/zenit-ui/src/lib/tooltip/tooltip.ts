@@ -2,13 +2,13 @@ import { Overlay, OverlayRef } from '@angular/cdk/overlay';
 import { ComponentPortal } from '@angular/cdk/portal';
 import {
   ComponentRef,
+  DestroyRef,
   Directive,
   DOCUMENT,
   effect,
   ElementRef,
   inject,
   input,
-  OnDestroy,
   signal,
 } from '@angular/core';
 import { ZTooltipPanel } from './tooltip-panel';
@@ -62,7 +62,7 @@ let zaehler = 0;
     '[attr.aria-describedby]': `sichtbar() ? tooltipId : null`,
   },
 })
-export class ZTooltip implements OnDestroy {
+export class ZTooltip {
   /**
    * The tooltip text, given as the value of the attribute. A change while the
    * panel is open reaches the panel. Empty means no tooltip: the panel is not
@@ -102,6 +102,14 @@ export class ZTooltip implements OnDestroy {
       } else {
         this.verstecke();
       }
+    });
+
+    // The overlay goes together with the trigger and takes the pending timer
+    // and the panel listeners with it.
+    inject(DestroyRef).onDestroy(() => {
+      this.stoppeTimer();
+      this.abbruch.abort();
+      this.overlayRef?.dispose();
     });
   }
 
@@ -149,18 +157,6 @@ export class ZTooltip implements OnDestroy {
     this.overlayRef?.detach();
     this.flaeche = undefined;
     this.sichtbar.set(false);
-  }
-
-  /**
-   * Disposes the overlay together with the trigger and takes the pending timer
-   * and the panel listeners with it.
-   *
-   * @internal Angular lifecycle hook.
-   */
-  ngOnDestroy(): void {
-    this.stoppeTimer();
-    this.abbruch.abort();
-    this.overlayRef?.dispose();
   }
 
   /**
