@@ -20,6 +20,12 @@
   "exports": {
     "./styles/*": {
       "default": "./styles/*"
+    },
+    "./llms.txt": {
+      "default": "./llms.txt"
+    },
+    "./llms-full.txt": {
+      "default": "./llms-full.txt"
     }
   }
 }
