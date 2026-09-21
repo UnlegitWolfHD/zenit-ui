@@ -87,8 +87,9 @@ export class ZHeaderEnd {}
  * Accessibility: the toggle is a `<button type="button">` with `aria-label`
  * from {@link menuLabel}, `aria-expanded` reflecting the open state and
  * `aria-controls` pointing at the generated id of the `<nav>`. The `<nav>` is a
- * navigation landmark and takes its name from {@link navLabel}. Above 900px the
- * links are visible and the end slot stays visible at every width.
+ * navigation landmark and takes its name from {@link navLabel}, and the host is
+ * the `banner` landmark of the page unless {@link landmark} is off. Above 900px
+ * the links are visible and the end slot stays visible at every width.
  *
  * @example
  * ```html
@@ -125,6 +126,7 @@ export class ZHeaderEnd {}
   host: {
     class: 'z-header',
     '[class.z-header--open]': `offen()`,
+    '[attr.role]': `landmark() ? "banner" : null`,
   },
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -136,6 +138,16 @@ export class ZAppHeader {
    * @default ''
    */
   readonly navLabel = input('');
+
+  /**
+   * Whether the host is the `banner` landmark of the page. The reference markup
+   * is a `<header>` at page level, so this is on. Switch it off with
+   * `[landmark]="false"` wherever the header is not the page header but a
+   * preview inside `<main>`: a banner must not sit inside the main content.
+   *
+   * @default true
+   */
+  readonly landmark = input(true, { transform: booleanAttribute });
 
   /**
    * `aria-label` of the menu button shown below 900px. Unset, the component

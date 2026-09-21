@@ -30,7 +30,8 @@ export class ZPanelActions {}
  * panel.
  *
  * Renders a host with the class `z-panel`. If there is a title or a
- * `[zPanelActions]` element, a `div.z-panel__header` with `h3.z-panel__title`
+ * `[zPanelActions]` element, a `div.z-panel__header` with `.z-panel__title` in
+ * the tag {@link headingLevel} names (`h3` by default)
  * comes first, then `div.z-panel__body` (plus `z-panel__body--flush` for lists
  * and tables) with the projected content, and finally a projected
  * `z-pagination` after the body.
@@ -54,7 +55,17 @@ export class ZPanelActions {}
     @if (title() || aktionen()) {
       <div class="z-panel__header">
         @if (title()) {
-          <h3 class="z-panel__title">{{ title() }}</h3>
+          @switch (headingLevel()) {
+            @case (2) {
+              <h2 class="z-panel__title">{{ title() }}</h2>
+            }
+            @case (4) {
+              <h4 class="z-panel__title">{{ title() }}</h4>
+            }
+            @default {
+              <h3 class="z-panel__title">{{ title() }}</h3>
+            }
+          }
         }
         <ng-content select="[zPanelActions]" />
       </div>
@@ -79,6 +90,18 @@ export class ZPanel {
    * @default ''
    */
   readonly title = input('');
+
+  /**
+   * Tag of the title: `2`, `3` or `4`. The reference markup has `h3`, which
+   * fits a panel below a section heading. Raise it to `2` where the panel sits
+   * directly under the page `<h1>` and is a section of its own, as the panels
+   * of a customer-area page are. The visual size never changes with it.
+   *
+   * @default 3
+   */
+  readonly headingLevel = input<2 | 3 | 4, 2 | 3 | 4 | '2' | '3' | '4'>(3, {
+    transform: (wert) => Number(wert) as 2 | 3 | 4,
+  });
 
   /**
    * Removes the padding of the body so lists and tables can reach the border.

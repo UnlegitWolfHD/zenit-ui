@@ -16,6 +16,16 @@ class PanelHost {
 }
 
 @Component({
+  imports: [ZPanel],
+  template: `<z-panel [title]="titel()" [headingLevel]="stufe()"><p>Zeile</p></z-panel>`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class StufenHost {
+  readonly titel = signal('Meine Server');
+  readonly stufe = signal<2 | 3 | 4>(2);
+}
+
+@Component({
   imports: [ZPanel, ZPanelActions],
   template: `<z-panel>
     <button type="button" zPanelActions>Neustart</button>
@@ -45,6 +55,22 @@ describe('ZPanel', () => {
 
     expect(titel.textContent.trim()).toBe('Server-Konsole');
     expect(panel.hasAttribute('title')).toBe(false);
+  });
+
+  it('renders the title in the tag headingLevel names, with the same class', () => {
+    const fixture = TestBed.createComponent(StufenHost);
+    fixture.detectChanges();
+    const panel = fixture.nativeElement.querySelector('z-panel');
+
+    expect(panel.querySelector('.z-panel__title').tagName.toLowerCase()).toBe('h2');
+    expect(panel.querySelector('h3')).toBeNull();
+
+    fixture.componentInstance.stufe.set(4);
+    fixture.detectChanges();
+
+    const titel = panel.querySelector('.z-panel__title');
+    expect(titel.tagName.toLowerCase()).toBe('h4');
+    expect(titel.textContent.trim()).toBe('Meine Server');
   });
 
   it('shows the header without an empty h3 when there are actions but no title', () => {
