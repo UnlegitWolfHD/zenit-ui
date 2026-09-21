@@ -3,6 +3,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   ElementRef,
   HostAttributeToken,
   inject,
@@ -67,7 +68,6 @@ export type ZButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
     '[class.z-btn--block]': `block()`,
     '[attr.disabled]': `istLink || !gesperrt() ? null : ""`,
     '[attr.aria-disabled]': `ariaGesperrt || (istLink && gesperrt()) ? "true" : null`,
-    '[attr.tabindex]': `istLink && gesperrt() ? "-1" : null`,
     '[attr.aria-busy]': `loading() ? "true" : null`,
     '(click)': `aufKlick($event)`,
   },
@@ -117,7 +117,8 @@ export class ZButton {
   /**
    * Locks the button. On a `<button>` this is the native `disabled` attribute,
    * on an `<a>` it is `aria-disabled="true"` with `tabindex="-1"` and a
-   * swallowed click. Boolean attribute.
+   * swallowed click; a `tabindex` of the caller's own comes back when the lock
+   * goes. Boolean attribute.
    *
    * @default false
    */
@@ -135,6 +136,35 @@ export class ZButton {
     inject(new HostAttributeToken('aria-disabled'), { optional: true }) === 'true';
   protected readonly variante = computed<ZButtonVariant>(() => this.zBtn() || 'secondary');
   protected readonly gesperrt = computed(() => this.disabled() || this.loading());
+
+  constructor() {
+    const wirt = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+    let geliehen: string | null = null;
+    let gesetzt = false;
+    // A locked link is taken out of the tab order, and only then is `tabindex`
+    // touched at all: a host binding would write on every change and thereby
+    // delete a `tabindex` the caller wrote, static or bound. The lock borrows
+    // the attribute and gives back what stood there.
+    effect(() => {
+      if (this.istLink && this.gesperrt()) {
+        if (!gesetzt) {
+          geliehen = wirt.getAttribute('tabindex');
+          gesetzt = true;
+        }
+        wirt.setAttribute('tabindex', '-1');
+        return;
+      }
+      if (!gesetzt) {
+        return;
+      }
+      gesetzt = false;
+      if (geliehen === null) {
+        wirt.removeAttribute('tabindex');
+      } else {
+        wirt.setAttribute('tabindex', geliehen);
+      }
+    });
+  }
 
   /**
    * An `<a>` and a `<button aria-disabled="true">` stay clickable. The click is
