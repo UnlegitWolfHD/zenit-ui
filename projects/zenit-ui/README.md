@@ -1,18 +1,18 @@
 # zenit-ui
 
-`zenit-ui` ist die Angular-Library des Zenit Design Systems. Sie liefert 30 Bausteine für die öffentliche Website, den Kundenbereich und die Server-Panels von Zenit-Hosting, dazu Icon, Spinner und Tooltip. Die Bausteine sind Standalone Components und Direktiven mit `OnPush` und Signal-Inputs. Sie bringen keine eigenen Styles mit: alle Klassen stehen in den mitgelieferten CSS-Dateien und nutzen ausschließlich die Tokens aus `tokens.css`. Angular Material wird nicht verwendet, Overlays und Fokusfallen kommen aus `@angular/cdk`, Formularfelder sind native Elemente. Geschäftslogik, Services und Texte bleiben in deiner App.
+`zenit-ui` is the Angular library of the Zenit design system. It provides 30 building blocks for the public website, the customer area and the server panels of Zenit-Hosting, plus Icon, Spinner and Tooltip. The building blocks are standalone components and directives with `OnPush` and signal inputs. They ship no styles of their own: every class lives in the bundled CSS files and uses only the tokens from `tokens.css`. Angular Material is not used; overlays and focus traps come from `@angular/cdk`, form fields are native elements. Business logic, services and copy stay in your application.
 
-## Voraussetzungen
+## Requirements
 
 - Angular 22 (`@angular/core`, `@angular/common`, `@angular/forms`)
-- `@angular/cdk` 22 für Dialog, Menü, Tooltip und Overlays
+- `@angular/cdk` 22 for dialog, menu, tooltip and overlays
 - `rxjs` 7.8
 
-Alle fünf stehen als peerDependencies und werden von der Library nicht mitgeliefert. Die einzige eigene Abhängigkeit ist `tslib`.
+All five are peer dependencies and are not bundled with the library. Its only own dependency is `tslib`.
 
 ## Installation
 
-Die Library ist nicht auf npm veröffentlicht. Du baust sie und installierst das Paket lokal:
+The library is not published to npm. You build it and install the package locally:
 
 ```bash
 ng build zenit-ui
@@ -20,17 +20,17 @@ cd dist/zenit-ui
 npm pack
 ```
 
-Das erzeugt `zenit-ui-0.1.0.tgz`. In deiner App:
+This produces `zenit-ui-0.1.0.tgz`. In your application:
 
 ```bash
 npm i ./zenit-ui-0.1.0.tgz
 ```
 
-## Einbindung
+## Setup
 
-### 1. Styles in `angular.json` eintragen
+### 1. Register the styles in `angular.json`
 
-Die Reihenfolge ist verbindlich: erst die Tokens, dann das Positionierungs-CSS des CDK, dann die Styles der Library, dann deine App.
+The order is binding: tokens first, then the CDK positioning CSS, then the library styles, then your application.
 
 ```json
 "styles": [
@@ -41,7 +41,7 @@ Die Reihenfolge ist verbindlich: erst die Tokens, dann das Positionierungs-CSS d
 ]
 ```
 
-Beide Dateien lassen sich genauso per `@import` holen, falls du eine eigene Einstiegsdatei nutzt:
+Both files can be pulled in via `@import` just as well, if you use your own entry stylesheet:
 
 ```css
 @import "zenit-ui/styles/tokens.css";
@@ -49,11 +49,11 @@ Beide Dateien lassen sich genauso per `@import` holen, falls du eine eigene Eins
 @import "zenit-ui/styles/zenit-ui.css";
 ```
 
-`zenit-ui.css` importiert die Teil-Dateien `styles/_*.css`. Die liegen im Paket daneben und brauchen keinen eigenen Eintrag.
+`zenit-ui.css` imports the partials `styles/_*.css`. They sit next to it in the package and need no entry of their own.
 
-### 2. `z-root` setzen
+### 2. Set `z-root`
 
-Die Klasse `z-root` gehört an `<html>` und an `<body>`. Sie setzt Hintergrund, Textfarbe, Schrift, `font: inherit` für Bedienelemente und den Fokus-Ring. Overlays hängen am `body` und erben dieselben Variablen.
+The class `z-root` belongs on `<html>` and on `<body>`. It sets background, text color, font, `font: inherit` for controls and the focus ring. Overlays attach to `body` and inherit the same variables.
 
 ```html
 <!doctype html>
@@ -68,14 +68,14 @@ Die Klasse `z-root` gehört an `<html>` und an `<body>`. Sie setzt Hintergrund, 
 </html>
 ```
 
-### 3. Schriften selbst hosten
+### 3. Self-host the fonts
 
-Die Library lädt keine Schrift. Deine App bringt vier mit, alle selbst gehostet, damit kein Aufruf an Google nötig ist:
+The library loads no font. Your application brings four, all self-hosted, so that no request to Google is needed:
 
-- Material Icons (die Ligaturen-Schrift für `z-icon`)
-- Inter in 400, 500 und 600 (`body`)
-- Space Grotesk in 600 und 700 (`display`)
-- JetBrains Mono in 400 und 600 (`mono`)
+- Material Icons (the ligature font for `z-icon`)
+- Inter in 400, 500 and 600 (`body`)
+- Space Grotesk in 600 and 700 (`display`)
+- JetBrains Mono in 400 and 600 (`mono`)
 
 ```css
 @import "material-icons/iconfont/filled.css" layer(schriften);
@@ -88,11 +88,11 @@ Die Library lädt keine Schrift. Deine App bringt vier mit, alle selbst gehostet
 @import "@fontsource/jetbrains-mono/600.css";
 ```
 
-Das `layer(schriften)` ist nötig: `material-icons` setzt in `.material-icons` eine eigene `font-size` und wird nach `zenit-ui.css` geladen. Die Ebene sorgt dafür, dass `.z-icon` aus der Library gewinnt. Ohne sie wäre das Icon 24px groß in einer 20px-Box. Ein vollständiges Beispiel steht in `projects/ui-demo/src/styles.css`.
+The `layer(schriften)` is required: `material-icons` sets its own `font-size` on `.material-icons` and is loaded after `zenit-ui.css`. The layer makes sure `.z-icon` from the library wins. Without it the icon would be 24px inside a 20px box. A complete example is in `projects/ui-demo/src/styles.css`.
 
-### 4. Toast-Ausgabe einhängen
+### 4. Mount the toast outlet
 
-`<z-toast-outlet />` steht einmal in der Shell deiner App, am besten am Ende des Layouts. Der Service `ZToast` schreibt dorthin.
+`<z-toast-outlet />` goes once into your application shell, best at the end of the layout. The service `ZToast` writes to it.
 
 ```html
 <app-header />
@@ -101,9 +101,9 @@ Das `layer(schriften)` ist nötig: `material-icons` setzt in `.material-icons` e
 <z-toast-outlet />
 ```
 
-### 5. Minecraft-Subtheme
+### 5. Minecraft subtheme
 
-Auf `/minecraft` und im Minecraft-Panel setzt du `z-theme-mc` an den Seitencontainer. Dann wird der primäre Button `mc-accent` mit `on-mc`, und aktive Icons werden grün. Alles andere bleibt gleich: Flächen, Radien, Schrift, Abstände, Statusfarben.
+On `/minecraft` and in the Minecraft panel you put `z-theme-mc` on the page container. The primary button then becomes `mc-accent` with `on-mc`, and active icons turn green. Everything else stays the same: surfaces, radii, typography, spacing, status colors.
 
 ```html
 <div class="z-theme-mc">
@@ -111,7 +111,7 @@ Auf `/minecraft` und im Minecraft-Panel setzt du `z-theme-mc` an den Seitenconta
 </div>
 ```
 
-## Beispiel
+## Example
 
 ```ts
 import { Component } from '@angular/core';
@@ -133,56 +133,70 @@ import { ZButton, ZField, ZInput, ZPanel, ZPanelActions } from 'zenit-ui';
 export class ServerName {}
 ```
 
-## API der Bausteine
+## Component API
 
-Selektoren und Eingaben sind verbindlich, damit Seiten und Bausteine parallel entstehen können. Inputs sind Signals. Zwei-Wege-Bindung über `model()`.
+Selectors and inputs are binding, so that pages and building blocks can be built in parallel. Inputs are signals. Two-way binding via `model()`.
 
-| Baustein | Selektor | Eingaben, Ausgaben, Slots |
+Entries marked "(addition)" are not part of the reference table in `spec/guidelines/40-bibliothek.md`. They exist in the code today, mostly to keep ARIA labels overridable from the application.
+
+| Component | Selector | Inputs, outputs, slots |
 | --- | --- | --- |
 | Icon | `z-icon` | `name`, `size: 'sm' \| 'md'` |
 | Spinner | `z-spinner` | `label` |
-| Button | `button[zBtn]`, `a[zBtn]` | `zBtn: 'primary' \| 'secondary' \| 'ghost' \| 'danger'` (Standard secondary), `size: 'sm' \| 'md' \| 'lg'`, `block`, `iconOnly`, `loading`, `disabled` |
+| Button | `button[zBtn]`, `a[zBtn]` | `zBtn: 'primary' \| 'secondary' \| 'ghost' \| 'danger'` (default secondary), `size: 'sm' \| 'md' \| 'lg'`, `block`, `iconOnly`, `loading`, `disabled` |
 | Badge | `z-badge` | `status: 'neutral' \| 'success' \| 'warning' \| 'danger' \| 'info'`, `dot` |
 | Field | `z-field` | `label`, `for`, `hint`, `error` |
-| Input | `input[zInput]`, `textarea[zInput]` | `size`, `mono`, `invalid`; Suche über `z-input-group` mit `icon` |
-| Select | `z-select` | `size`; Inhalt ist ein natives `<select>` |
+| Input | `input[zInput]`, `textarea[zInput]` | `size`, `mono`, `invalid`; search via `z-input-group` with `icon` |
+| Select | `z-select` | `size`; content is a native `<select>` |
 | Checkbox | `z-checkbox` | `[(checked)]`, `disabled`, `ariaLabel`; Forms |
 | Toggle | `z-toggle` | `[(checked)]`, `disabled`, `ariaLabel`, `ariaLabelledby`; Forms |
-| Setting | `z-setting` | `title`, `key`, `description`, `titleId`; Inhalt ist das Bedienelement |
-| Slider | `z-slider` | `label`, `min`, `max`, `step`, `unit`, `ticks`, `hint`, `[(value)]`, `disabled`; Forms |
+| Setting | `z-setting` | `title`, `key`, `description`, `titleId`; content is the control |
+| Slider | `z-slider` | `label`, `min`, `max`, `step`, `unit`, `ticks`, `hint`, `[(value)]`, `disabled`; Forms; `ariaLabel` (addition) |
 | Tabs | `nav[zTabs]`, `a[zTab]` | `active` |
-| Segment | `z-segment` | `options: {value, label}[]`, `[(value)]`, `ariaLabel`; Forms |
+| Segment | `z-segment` | `options: {value, label}[]`, `[(value)]`, `ariaLabel`; Forms; `disabled` (addition) |
 | Stepper | `z-stepper` | `steps: string[]`, `current` |
-| Panel | `z-panel` | `title`, `flush`, `busy`; Slot `[zPanelActions]`, `z-pagination` wird ans Ende gesetzt |
-| Metric | `z-metrics`, `z-metric` | `label`, `value`, `unit`, `sub`, `percent` (ab 80 Warnung, ab 95 Fehler) |
-| ServerList | `z-rows`, `z-rows-head`, `a[zRow]`, `div[zRow]`, `z-row-main`, `[zRowNum]` | `columns` (Grid-Spalten) an `z-rows`; `title`, `meta`, `image` an `z-row-main` |
-| FileTable | `z-table-container`, `table[zTable]`, `[zNum]`, `[zTableName]` | keine |
-| Pagination | `z-pagination` | `[(page)]`, `pageSize` (25), `total`, `itemLabel` |
-| Alert | `z-alert` | `status`, `title`, `icon`; Inhalt ist der Text; Slot `[zAlertAction]` |
-| EmptyState | `z-empty-state` | `title`; Inhalt ist der Text; Slot `[zEmptyAction]` |
+| Panel | `z-panel` | `title`, `flush`, `busy`; slot `[zPanelActions]`, `z-pagination` is moved to the end |
+| Metric | `z-metrics`, `z-metric` | `label`, `value`, `unit`, `sub`, `percent` (warning from 80, error from 95) |
+| ServerList | `z-rows`, `z-rows-head`, `a[zRow]`, `div[zRow]`, `z-row-main`, `[zRowNum]` | `columns` (grid columns) on `z-rows`; `title`, `meta`, `image` on `z-row-main` |
+| FileTable | `z-table-container`, `table[zTable]`, `[zNum]`, `[zTableName]` | none; `ariaLabel` on `z-table-container` (addition) |
+| Pagination | `z-pagination` | `[(page)]`, `pageSize` (25), `total`, `itemLabel`; `rangeLabel`, `ariaLabelPrev`, `ariaLabelNext` (additions) |
+| Alert | `z-alert` | `status`, `title`, `icon`; content is the text; slot `[zAlertAction]` |
+| EmptyState | `z-empty-state` | `title`; content is the text; slot `[zEmptyAction]` |
 | Skeleton | `z-skeleton` | `width`, `thumb` |
 | Sidebar | `z-sidebar`, `z-sidebar-group`, `[zSidebarItem]` | `ariaLabel`; `label`; `icon`, `active`, `count` |
-| AppHeader | `z-app-header`, `a[zHeaderLink]`, `[zBrand]` | `navLabel`; `active`; Slot `[zHeaderEnd]` |
-| PageHeader | `z-page-header` | `title`, `sub`; Inhalt sind die Aktionen |
-| Footer | `z-footer`, `z-footer-col` | `heading`; Slot `[zFooterBase]` |
-| Dialog | Service `ZDialog`, Layout `z-dialog` | `open(component, config)`, `confirm({title, body, confirmLabel, cancelLabel, danger, requireText})` liefert `Observable<boolean>`; Slot `[zDialogActions]` |
-| Menu | `z-menu`, `button[zMenuItem]`, `z-menu-separator` | `icon`, `danger`, `disabled`, `(triggered)`; Auslöser `[cdkMenuTriggerFor]` |
-| Toast | Service `ZToast`, `z-toast-outlet` | `show`, `success`, `error`, `dismiss`; Optionen `status`, `icon`, `actionLabel`, `action`, `duration` |
-| Tooltip | `[zTooltip]` | Text als Wert |
-| Console | `z-console` | `lines: {time, text, level}[]`, `disabled`, `placeholder`; `(command)` |
-| Hero | `z-hero` | `title`, `lead`, `note`; Slots `[zHeroActions]`, `[zHeroAside]` |
+| AppHeader | `z-app-header`, `a[zHeaderLink]`, `[zBrand]` | `navLabel`; `active`; slot `[zHeaderEnd]`; `menuLabel` (addition) |
+| PageHeader | `z-page-header` | `title`, `sub`; content are the actions |
+| Footer | `z-footer`, `z-footer-col` | `heading`; slot `[zFooterBase]` |
+| Dialog | service `ZDialog`, layout `z-dialog` | `open(component, config)`, `confirm({title, body, confirmLabel, cancelLabel, danger, requireText})` returns `Observable<boolean>`; slot `[zDialogActions]`; `requireLabel` and `cancelLabel` as a required field of the config (additions) |
+| Menu | `z-menu`, `button[zMenuItem]`, `z-menu-separator` | `icon`, `danger`, `disabled`, `(triggered)`; trigger `[cdkMenuTriggerFor]` |
+| Toast | service `ZToast`, `z-toast-outlet` | `show`, `success`, `error`, `dismiss`; options `status`, `icon`, `actionLabel`, `action`, `duration`; `closeLabel` on `z-toast-outlet` (addition) |
+| Tooltip | `[zTooltip]` | text as the value |
+| Console | `z-console` | `lines: {time, text, level}[]`, `disabled`, `placeholder`; `(command)`; `logLabel`, `inputLabel`, `endLabel` (additions) |
+| Hero | `z-hero` | `title`, `lead`, `note`; slots `[zHeroActions]`, `[zHeroAside]` |
 | GameTile | `z-game-grid`, `button[zGameTile]` | `title`, `price`, `cover`, `selected` |
-| PriceSummary | `z-price-summary` | `label`, `price`, `period`, `lines: {label, value}[]`, `note`; Inhalt ist der Button |
+| PriceSummary | `z-price-summary` | `label`, `price`, `period`, `lines: {label, value}[]`, `note`; content is the button |
 | SpecList | `z-spec-list` | `items: {term, value, note, mono}[]` |
-| Faq | `z-faq` | `question`, `open`; Inhalt ist die Antwort |
+| Faq | `z-faq` | `question`, `open`; content is the answer |
 
-## Regeln
+The generated reference with every signature, type and default is produced by `npm run docs:api` into `docs/api/`.
 
-Farbe, Abstand, Radius, Schrift und Schatten kommen nur aus `tokens.css`. `tokens.css` ist die einzige Stelle mit Hex- und Pixel-Werten. Eigene Styles greifen auf `var(--…)` zu und setzen keine eigenen Werte.
+## Documented deviations from the reference styles
 
-Nicht erlaubt sind `@angular/material`, `linear-gradient`, `radial-gradient`, `backdrop-filter`, `text-shadow`, farbige `box-shadow`, Raster-Hintergründe, Pill-Badges über Überschriften, Versal-Labels, Icon-Flächen, Karten mit farbigem Rand, Kennzahlen-Kacheln für Marketing-Zahlen sowie Hex- oder Pixel-Werte außerhalb der Tokens. Die vollständige Liste steht im Abschnitt "Verboten" der Übersicht (`CLAUDE.md`).
+`spec/components/bundle.css` is the reference for all styles. Five deviations are deliberate:
 
-Stylelint hält die Regeln automatisch ein. Ohne diese Schicht driftet generierter Code wieder ab. Übernimm die Konfiguration in deine App:
+- The base rule for `font` and `color` on controls uses `:where(button, input, select, textarea)`. The reference selector has a specificity that beats component classes; `:where()` lowers it to the class level, the values are unchanged.
+- Below 640px small controls are 40px high (`.z-btn--sm`, `.z-input--sm`, `.z-select--sm select`, `.z-menu__item`), because touch targets on mobile are at least 40px.
+- Below 640px the alert wraps its action button onto its own line, so that title, text and button stay readable at 360px.
+- `div[zRow]` resets `cursor` to `auto`. A row is only clickable as `a[zRow]`; the non-interactive variant must not look clickable.
+- The CDK backdrop runs without a fade (`transition: none`). Transitions are limited to `color`, `background-color` and `border-color`.
+
+## Rules
+
+Color, spacing, radius, typography and shadow come only from `tokens.css`. `tokens.css` is the single place with hex and pixel values. Your own styles reference `var(--…)` and set no literal values of their own.
+
+Not allowed are `@angular/material`, `linear-gradient`, `radial-gradient`, `backdrop-filter`, `text-shadow`, colored `box-shadow`, grid backgrounds, pill badges above headings, all-caps labels, icon backplates, cards with a colored border, metric tiles for marketing numbers, and hex or pixel values outside the tokens. The complete list is in the section "Verboten" of the system overview (`CLAUDE.md`).
+
+Stylelint enforces the rules automatically. Without that layer, generated code drifts again. Copy the configuration into your application:
 
 ```json
 {
@@ -203,7 +217,7 @@ Stylelint hält die Regeln automatisch ein. Ohne diese Schicht driftet generiert
 }
 ```
 
-Dazu ein ESLint-Eintrag `no-restricted-imports` für das Muster `@angular/material*`, damit Material nicht wieder hereinkommt:
+Plus an ESLint entry `no-restricted-imports` for the pattern `@angular/material*`, so that Material cannot come back in:
 
 ```js
 'no-restricted-imports': [
@@ -219,17 +233,19 @@ Dazu ein ESLint-Eintrag `no-restricted-imports` für das Muster `@angular/materi
 ],
 ```
 
-## Entwicklung
+## Development
 
-Im Workspace `zenit-ui-workspace`:
+Inside the workspace `zenit-ui-workspace`:
 
 ```bash
-ng build zenit-ui     # Library bauen, Ergebnis in dist/zenit-ui
-ng test zenit-ui      # Unit-Tests der Library
-npm run lint          # ESLint über Library und Demo
-npm run lint:css      # Stylelint über projects/**/*.css
-npm run e2e           # Playwright mit axe über die Demo-Seiten
-ng serve ui-demo      # Demo-App mit jedem Baustein in allen Zuständen
+ng build zenit-ui     # build the library, output in dist/zenit-ui
+ng test zenit-ui      # unit tests of the library
+npm run lint          # ESLint over library and demo
+npm run lint:css      # Stylelint over projects/**/*.css
+npm run e2e           # Playwright with axe over the demo pages
+npm run docs:api      # TypeDoc reference into docs/api
+npm run check         # lint, lint:css, both builds and the unit tests in one run
+ng serve ui-demo      # demo app with every building block in all states
 ```
 
-Die Demo-App `ui-demo` zeigt jeden Baustein in den Zuständen Ruhe, Hover, Fokus, aktiv, deaktiviert, lädt, Fehler, leer und Erfolg. Sie ist die Referenz für Markup und Klassen.
+The demo app `ui-demo` shows every building block in the states idle, hover, focus, active, disabled, loading, error, empty and success. It is the reference for markup and classes.
