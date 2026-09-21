@@ -15,9 +15,20 @@ export type ZDialogConfig<D, R> = DialogConfig<D, R> & {
    * the dialog opened, which is the CDK default. Set it when the trigger is
    * gone by then. A dialog opened from a menu item needs nothing: the service
    * finds the menu trigger by itself.
+   *
+   * A template reference on a component host, `<button zBtn #trigger>` for
+   * example, yields the component instance: read it as an `ElementRef`
+   * (`viewChild('trigger', { read: ElementRef })`), otherwise there is nothing
+   * to focus. Something without `focus()` is dropped with a warning in the
+   * development build, and focus returns the way it would have without it.
    */
   restoreFocusTo?: ZRestoreFocusTarget;
 };
+
+declare const ngDevMode: boolean | undefined;
+
+/** The warning about an unusable `restoreFocusTo` is worth saying once. */
+let gewarnt = false;
 
 /** Caller classes as a list, so the library's own ones keep coming first. */
 function alsListe(klassen: string | string[] | undefined): string[] {
@@ -27,9 +38,31 @@ function alsListe(klassen: string | string[] | undefined): string[] {
   return Array.isArray(klassen) ? klassen : [klassen];
 }
 
-/** `restoreFocusTo` as the `boolean | string | HTMLElement` the CDK takes. */
+/**
+ * `restoreFocusTo` as the `boolean | string | HTMLElement` the CDK takes.
+ *
+ * Anything that cannot take the focus is dropped, and the CDK default applies
+ * instead. The usual way to get here is `viewChild('trigger')` on a component
+ * host such as `<button zBtn #trigger>`: that yields the `ZButton` instance,
+ * not its element, and the CDK would silently focus nothing at all.
+ */
 function fokusZiel(ziel: ZRestoreFocusTarget | undefined): HTMLElement | string | undefined {
-  return ziel instanceof ElementRef ? ziel.nativeElement : ziel;
+  const element = ziel instanceof ElementRef ? ziel.nativeElement : ziel;
+  if (element === undefined || typeof element === 'string') {
+    return element;
+  }
+  if (typeof element.focus === 'function') {
+    return element;
+  }
+  if (!gewarnt && (typeof ngDevMode === 'undefined' || ngDevMode)) {
+    gewarnt = true;
+    console.warn(
+      'zenit-ui: restoreFocusTo takes an element, an ElementRef or a CSS selector, and got ' +
+        'something without focus(). A template reference on a component host needs ' +
+        "viewChild('trigger', { read: ElementRef }). Focus returns to where it was instead.",
+    );
+  }
+  return undefined;
 }
 
 /**
@@ -117,9 +150,18 @@ export class ZDialog {
    *
    * @example
    * ```ts
+   * import { ElementRef, inject, viewChild } from '@angular/core';
+   * import { ZDialog } from 'zenit-ui';
+   *
+   * // `read: ElementRef` is the point: on `<button zBtn #werkzeuge>` the
+   * // reference would otherwise yield the ZButton instance, which has no
+   * // focus(), and the focus would silently land on <body>.
+   * const werkzeuge = viewChild.required('werkzeuge', { read: ElementRef });
+   * const dialog = inject(ZDialog);
+   *
    * // The row that carried the trigger is gone once the dialog confirms the
    * // deletion, so focus goes to the toolbar above the list instead.
-   * this.dialog.open(NotizDialog, { restoreFocusTo: this.werkzeugleiste() });
+   * dialog.open(NotizDialog, { restoreFocusTo: werkzeuge() });
    * ```
    */
   open<R = unknown, D = unknown, C = unknown>(

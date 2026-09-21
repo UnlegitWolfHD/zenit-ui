@@ -388,6 +388,23 @@ describe('ZDialog', () => {
       ziel.removeAttribute('aria-controls');
     });
 
+    // The trap of the blind test: `viewChild('trigger')` on `<button zBtn>`
+    // yields the ZButton instance, which has no focus(), and the CDK would
+    // quietly leave the focus on <body>.
+    it('ignores a target that cannot take the focus and warns in dev', async () => {
+      const warnung = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+      ausloeser.focus();
+
+      bestaetige({ restoreFocusTo: { name: 'ZButton' } as unknown as HTMLElement });
+      klicke(fussButtons()[0]);
+      await geschlossen();
+
+      expect(document.activeElement).toBe(ausloeser);
+      expect(warnung).toHaveBeenCalledTimes(1);
+      expect(warnung.mock.calls[0][0]).toContain('read: ElementRef');
+      warnung.mockRestore();
+    });
+
     it('takes an ElementRef and a CSS selector as well', async () => {
       ausloeser.focus();
       dienst.open(UmbenennenDialog, { restoreFocusTo: new ElementRef(ziel) });

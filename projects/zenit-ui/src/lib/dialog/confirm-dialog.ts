@@ -61,12 +61,17 @@ export interface ZConfirmConfig {
    * confirmed action deletes. A dialog opened from a menu item needs nothing:
    * `ZDialog` returns focus to the menu trigger by itself.
    *
+   * A template reference on a component host, `<button zBtn #werkzeuge>` for
+   * example, yields the component instance and not its element, so read it as
+   * an `ElementRef`. Something without `focus()` is dropped with a warning in
+   * the development build.
+   *
    * @example
    * ```html
    * <div #werkzeuge class="z-cluster">…</div>
    * ```
    * ```ts
-   * readonly werkzeuge = viewChild.required<ElementRef<HTMLElement>>('werkzeuge');
+   * readonly werkzeuge = viewChild.required('werkzeuge', { read: ElementRef });
    *
    * loeschen(): void {
    *   this.dialog

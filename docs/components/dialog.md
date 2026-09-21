@@ -47,6 +47,12 @@ onto the CDK's `restoreFocus`. Left out, focus goes back to whatever was focused
 opened, which is the CDK default and right in almost every case. Set it when the trigger is gone by
 then, for example a row that the confirmed action deletes.
 
+It takes an `HTMLElement`, an `ElementRef<HTMLElement>` or a CSS selector. A template reference on
+a component host (`<button zBtn #trigger>`) yields the component instance, so read it as an
+`ElementRef`: `viewChild('trigger', { read: ElementRef })`. Something without `focus()` is dropped
+with a warning in the development build, and focus returns the way it would have without the
+parameter.
+
 One case needs nothing: a dialog opened from a menu item. The CDK menu closes with the click and
 takes the focused item with it, so `open()` looks for the menu around the focused element and
 returns focus to its trigger, found through the `aria-controls` that `CdkMenuTrigger` sets.
@@ -158,7 +164,10 @@ import { ElementRef, inject, viewChild } from '@angular/core';
 import { ZDialog } from 'zenit-ui';
 
 const dialog = inject(ZDialog);
-const werkzeuge = viewChild.required<ElementRef<HTMLElement>>('werkzeuge');
+// `read: ElementRef` is the point: on a component host such as
+// `<button zBtn #werkzeuge>` the reference would yield the ZButton instance,
+// which has no focus(), and the focus would silently land on <body>.
+const werkzeuge = viewChild.required('werkzeuge', { read: ElementRef });
 
 function loeschen(): void {
   dialog
