@@ -26,6 +26,7 @@ class PagerHost {
     [total]="118"
     itemLabel="Transaktionen"
     [rangeLabel]="eigenerText"
+    ariaLabel="Seiten der Transaktionen"
     ariaLabelPrev="Eine Seite zurueck"
     ariaLabelNext="Eine Seite weiter"
   />`,
@@ -83,20 +84,92 @@ describe('ZPagination', () => {
     );
   });
 
+  // Was written against the native `disabled`, which drops the focus of the
+  // button that was just used; the lock is aria-disabled now.
   it('locks back on the first page and forward on the last one', async () => {
     const fixture = TestBed.createComponent(PagerHost);
     fixture.detectChanges();
     const [zurueck, weiter] = nav(fixture);
 
-    expect(zurueck.disabled).toBe(true);
-    expect(weiter.disabled).toBe(false);
+    expect(zurueck.getAttribute('aria-disabled')).toBe('true');
+    expect(weiter.getAttribute('aria-disabled')).toBeNull();
 
     fixture.componentInstance.seite.set(5);
     fixture.detectChanges();
     await fixture.whenStable();
 
+    expect(zurueck.getAttribute('aria-disabled')).toBeNull();
+    expect(weiter.getAttribute('aria-disabled')).toBe('true');
+  });
+
+  it('keeps the locked arrow focusable and swallows its click', async () => {
+    const fixture = TestBed.createComponent(PagerHost);
+    fixture.detectChanges();
+    const [zurueck, weiter] = nav(fixture);
+
     expect(zurueck.disabled).toBe(false);
-    expect(weiter.disabled).toBe(true);
+    zurueck.focus();
+    zurueck.click();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.seite()).toBe(1);
+    expect(document.activeElement).toBe(zurueck);
+
+    fixture.componentInstance.seite.set(5);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    weiter.focus();
+    weiter.click();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.seite()).toBe(5);
+    expect(document.activeElement).toBe(weiter);
+  });
+
+  it('wraps the pager in a nav landmark named by the registry or by ariaLabel', () => {
+    const fixture = TestBed.createComponent(PagerHost);
+    fixture.detectChanges();
+    const landmarke: HTMLElement = fixture.nativeElement.querySelector('nav');
+
+    expect(landmarke.getAttribute('aria-label')).toBe('Seitennavigation');
+    expect(landmarke.querySelector('.z-pager')).not.toBeNull();
+
+    const eigenes = TestBed.createComponent(EigenerTextHost);
+    eigenes.detectChanges();
+
+    expect(eigenes.nativeElement.querySelector('nav').getAttribute('aria-label')).toBe(
+      'Seiten der Transaktionen',
+    );
+  });
+
+  it('announces the page change through the range sentence', () => {
+    const fixture = TestBed.createComponent(PagerHost);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.z-pager > span').getAttribute('aria-live')).toBe(
+      'polite',
+    );
+  });
+
+  it('treats a pageSize below 1 or not a number as 1 in the range as well', () => {
+    const fixture = TestBed.createComponent(PagerHost);
+    fixture.componentInstance.proSeite.set(0);
+    fixture.detectChanges();
+
+    expect(bereich(fixture)).toBe('1 bis 1 von 118 Transaktionen');
+    expect(fixture.nativeElement.querySelector('.z-pager__nav .z-mono').textContent.trim()).toBe(
+      '1 / 118',
+    );
+
+    fixture.componentInstance.proSeite.set(-10);
+    fixture.detectChanges();
+
+    expect(bereich(fixture)).toBe('1 bis 1 von 118 Transaktionen');
+
+    fixture.componentInstance.proSeite.set(Number.NaN);
+    fixture.detectChanges();
+
+    expect(bereich(fixture)).toBe('1 bis 1 von 118 Transaktionen');
   });
 
   it('pages on click and reports the page back', async () => {

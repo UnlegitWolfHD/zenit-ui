@@ -27,6 +27,7 @@ parameters.
 | --- | --- | --- | --- |
 | `paginationPrev` | `z-pagination`, `aria-label` of the back button | `Vorherige Seite` | `Previous page` |
 | `paginationNext` | `z-pagination`, `aria-label` of the forward button | `Nächste Seite` | `Next page` |
+| `paginationNav` | `z-pagination`, accessible name of the `<nav>` around the pager | `Seitennavigation` | `Pagination` |
 | `paginationRange` | `z-pagination`, the sentence in front of the buttons | `` `${from} bis ${to} von ${total} ${itemLabel}` `` | `` `${from} to ${to} of ${total} ${itemLabel}` `` |
 | `consoleLog` | `z-console`, `aria-label` of the log region | `Serverlog` | `Server log` |
 | `consoleInput` | `z-console`, `aria-label` of the command input | `Befehl` | `Command` |
