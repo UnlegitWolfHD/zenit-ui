@@ -65,10 +65,10 @@ const STATUS: Record<string, { wort: string; badge: ZBadgeStatus }> = {
 };
 
 /**
- * Server-Panel nach 10-seitenmuster.md: AppHeader, klebender Panel-Kopf mit
- * Name, Status und Aktionen, darunter Sidebar und Inhalt in `z-panel-shell`.
- * Die Hauptaktion im Kopf haengt am Status (15-zustaende.md), deshalb laesst
- * eine Demo-Steuerung den Status von Hand wechseln.
+ * Server panel after 10-seitenmuster.md: AppHeader, sticky panel head with
+ * name, status and actions, below it sidebar and content in `z-panel-shell`.
+ * The main action in the head follows the status (15-zustaende.md), so a demo
+ * control switches the status by hand.
  */
 @Component({
   selector: 'demo-muster-server-panel-page',
@@ -114,21 +114,19 @@ const STATUS: Record<string, { wort: string; badge: ZBadgeStatus }> = {
   ],
   template: `
     <div class="z-stack">
-      <z-panel>
-        <div class="z-cluster">
-          <span class="title-sm">Demo-Steuerung</span>
-          <span class="z-muted" id="muster-status-label">Serverstatus</span>
-          <z-select size="sm">
-            <select aria-labelledby="muster-status-label" (change)="setzeStatus($event)">
-              @for (eintrag of statusListe; track eintrag.wert) {
-                <option [value]="eintrag.wert" [selected]="eintrag.wert === status()">
-                  {{ eintrag.wort }}
-                </option>
-              }
-            </select>
-          </z-select>
-        </div>
-      </z-panel>
+      <div class="demo-steuerung">
+        <span class="title-sm">Demo-Steuerung</span>
+        <span class="z-muted" id="muster-status-label">Serverstatus</span>
+        <z-select size="sm">
+          <select aria-labelledby="muster-status-label" (change)="setzeStatus($event)">
+            @for (eintrag of statusListe; track eintrag.wert) {
+              <option [value]="eintrag.wert" [selected]="eintrag.wert === status()">
+                {{ eintrag.wort }}
+              </option>
+            }
+          </select>
+        </z-select>
+      </div>
 
       <z-app-header navLabel="Hauptnavigation">
         <span zBrand>Zenit</span>
@@ -273,7 +271,7 @@ const STATUS: Record<string, { wort: string; badge: ZBadgeStatus }> = {
                 Das Log ist leer. Neue Ausgaben erscheinen hier.
               </z-console>
               @if (status() !== 'online') {
-                <p class="caption z-subtle demo-flach">
+                <p class="demo-grund caption">
                   Die Eingabe ist gesperrt: Befehle nimmt Beispiel-Server 1 nur im Status Online an.
                 </p>
               }
@@ -421,11 +419,11 @@ const STATUS: Record<string, { wort: string; badge: ZBadgeStatus }> = {
                     [percent]="89"
                     sub="89&nbsp;% belegt"
                   />
-                  <z-metric label="Laufzeit" value="2d 21h" sub="TPS 20 · Ping 91 ms" />
+                  <z-metric label="Laufzeit" value="2d 21h" sub="TPS 20 · Ping 91&nbsp;ms" />
                 </z-metrics>
               </z-panel>
 
-              <div class="demo-grid">
+              <div class="demo-grid demo-grid--start">
                 <z-panel title="Spieler" flush>
                   <span zPanelActions class="caption z-subtle z-mono">2 / 20</span>
                   <z-rows columns="minmax(0, 1fr) 96px">
@@ -515,7 +513,7 @@ export class MusterServerPanelPage {
 
   protected readonly aktuell = computed(() => STATUS[this.status()] ?? STATUS['online']);
 
-  /** Sekunden seit Mitternacht, weiter ab der letzten Zeile der Vorschau. */
+  /** Seconds since midnight, continuing from the last line of the preview. */
   private uhr = 12 * 3600 + 7 * 60 + 15;
 
   protected setzeStatus(ereignis: Event): void {
@@ -570,7 +568,7 @@ export class MusterServerPanelPage {
       });
   }
 
-  /** Nur die Zwischenablage des Browsers, kein Dienst und kein Netz. */
+  /** Only the browser clipboard, no service and no network. */
   protected adresseKopieren(): void {
     const zwischenablage = navigator.clipboard;
     const gescheitert = () =>
@@ -595,7 +593,7 @@ export class MusterServerPanelPage {
     this.zeilen.set([]);
   }
 
-  /** Zeitstempel wie in der Vorschau, eine Sekunde je Zeile. */
+  /** Timestamps as in the preview, one second per line. */
   private zeit(): string {
     this.uhr += 1;
     const zwei = (n: number) => String(n).padStart(2, '0');

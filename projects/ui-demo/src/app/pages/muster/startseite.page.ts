@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
 import {
   ZAppHeader,
+  ZBadge,
   ZBrand,
   ZButton,
   ZFaq,
@@ -13,14 +14,20 @@ import {
   ZHeaderLink,
   ZHero,
   ZHeroActions,
+  ZHeroAside,
+  ZPanel,
+  ZPanelActions,
   ZPriceLine,
   ZPriceSummary,
+  ZRow,
+  ZRowMain,
+  ZRows,
   ZSegment,
   ZSegmentOption,
   ZSlider,
   ZSpecList,
 } from 'zenit-ui';
-import { euro, OEFFENTLICHE_LINKS, SPIELE, TECHNIK } from './beispieldaten';
+import { euro, OEFFENTLICHE_LINKS, SERVER, SPIELE, TECHNIK } from './beispieldaten';
 
 /*
  * Example calculation for this preview only. The rates are made up for the
@@ -31,13 +38,14 @@ const PREIS_JE_GB = 0.45;
 const PREIS_JE_STECKPLATZ = 0.2;
 
 /**
- * Oeffentliche Seite nach 10-seitenmuster.md: Kopf, dann das Werkzeug der
- * Seite, dann Fakten, FAQ und der einzige zentrierte Block, der Abschluss-CTA.
+ * Public page after 10-seitenmuster.md: head, then the tool of the page, then
+ * facts, FAQ and the one centred block, the closing CTA.
  */
 @Component({
   selector: 'demo-muster-startseite-page',
   imports: [
     ZAppHeader,
+    ZBadge,
     ZBrand,
     ZButton,
     ZFaq,
@@ -50,7 +58,13 @@ const PREIS_JE_STECKPLATZ = 0.2;
     ZHeaderLink,
     ZHero,
     ZHeroActions,
+    ZHeroAside,
+    ZPanel,
+    ZPanelActions,
     ZPriceSummary,
+    ZRow,
+    ZRowMain,
+    ZRows,
     ZSegment,
     ZSlider,
     ZSpecList,
@@ -61,9 +75,7 @@ const PREIS_JE_STECKPLATZ = 0.2;
       @for (link of links; track link) {
         <a zHeaderLink href="#" (click)="$event.preventDefault()">{{ link }}</a>
       }
-      <a zBtn="secondary" size="sm" zHeaderEnd href="#" (click)="$event.preventDefault()"
-        >Zum Dashboard</a
-      >
+      <a zBtn="ghost" size="sm" zHeaderEnd href="#" (click)="$event.preventDefault()">Anmelden</a>
     </z-app-header>
 
     <z-hero
@@ -72,8 +84,22 @@ const PREIS_JE_STECKPLATZ = 0.2;
       note="Keine Kreditkarte nötig · DDoS-Schutz inklusive · Keine Einrichtungsgebühr"
     >
       <div zHeroActions>
-        <a zBtn="secondary" size="lg" href="#rechner">Server zusammenstellen</a>
+        <a zBtn="primary" size="lg" href="#rechner">Server zusammenstellen</a>
       </div>
+
+      <z-panel zHeroAside title="Kundenbereich" flush>
+        <span zPanelActions class="caption z-subtle">Beispieldaten dieser Vorschau</span>
+        <z-rows columns="minmax(0, 1fr) 128px">
+          @for (eintrag of vorschau; track eintrag.name) {
+            <div zRow>
+              <z-row-main [title]="eintrag.name" [meta]="eintrag.meta" />
+              <span>
+                <z-badge [status]="eintrag.status" dot>{{ eintrag.statusText }}</z-badge>
+              </span>
+            </div>
+          }
+        </z-rows>
+      </z-panel>
     </z-hero>
 
     <section id="rechner" class="z-section">
@@ -106,7 +132,7 @@ const PREIS_JE_STECKPLATZ = 0.2;
               [max]="16"
               [step]="2"
               [ticks]="arbeitsspeicherStufen"
-              hint="Empfohlen für Valheim mit bis zu 10 Spielern: 6 GB."
+              hint="Empfohlen für Valheim mit bis zu 10 Spielern: 6&nbsp;GB."
               [(value)]="arbeitsspeicher"
             />
             <z-slider
@@ -116,16 +142,12 @@ const PREIS_JE_STECKPLATZ = 0.2;
               [max]="20"
               [step]="2"
               [ticks]="steckplatzStufen"
-              hint="Jeder Steckplatz kostet 0,20 € im Monat."
+              hint="Jeder Steckplatz kostet 0,20&nbsp;€ im Monat."
               [(value)]="steckplaetze"
             />
             <div class="z-stack">
-              <span class="z-field__label" id="muster-laufzeit">Laufzeit</span>
-              <z-segment
-                [options]="laufzeiten"
-                [(value)]="laufzeit"
-                ariaLabel="Laufzeit in Monaten"
-              />
+              <span class="title-sm">Laufzeit</span>
+              <z-segment [options]="laufzeiten" [(value)]="laufzeit" ariaLabel="Laufzeit" />
             </div>
           </div>
 
@@ -134,7 +156,7 @@ const PREIS_JE_STECKPLATZ = 0.2;
             [price]="preisText()"
             period="/ Monat"
             [lines]="posten()"
-            note="Beispielrechnung dieser Vorschau: Grundpreis des Spiels, dazu 0,45 € je GB über 2 GB und 0,20 € je Steckplatz über 2. Keine gültigen Preise."
+            note="Beispielrechnung dieser Vorschau: Grundpreis des Spiels, dazu 0,45&nbsp;€ je GB über 2&nbsp;GB und 0,20&nbsp;€ je Steckplatz über 2. Keine gültigen Preise."
           >
             <button zBtn="primary" block type="button">Server erstellen</button>
           </z-price-summary>
@@ -168,7 +190,7 @@ const PREIS_JE_STECKPLATZ = 0.2;
     </section>
 
     <section class="z-section demo-cta">
-      <h2 class="display-lg demo-flach">Server erstellen</h2>
+      <h2 class="display-lg demo-flach">Server zusammenstellen</h2>
       <a zBtn="primary" size="lg" href="#rechner">Server zusammenstellen</a>
     </section>
 
@@ -199,6 +221,8 @@ export class MusterStartseitePage {
   protected readonly links = OEFFENTLICHE_LINKS;
   protected readonly spiele = SPIELE;
   protected readonly technik = TECHNIK;
+  /** Right half of the hero: a real piece of the product, no illustration. */
+  protected readonly vorschau = SERVER.slice(0, 3);
 
   protected readonly arbeitsspeicherStufen = [2, 4, 6, 8, 10, 12, 14, 16];
   protected readonly steckplatzStufen = [2, 8, 14, 20];

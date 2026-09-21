@@ -6,7 +6,7 @@
  */
 import { ZBadgeStatus, ZConsoleLine, ZSpecItem } from 'zenit-ui';
 
-/** Eine Zeile der Serverliste im Dashboard. */
+/** One row of the server list on the dashboard. */
 export interface BeispielServer {
   name: string;
   meta: string;
@@ -15,7 +15,7 @@ export interface BeispielServer {
   kosten: string;
 }
 
-/** Eine Zeile der FileTable im Server-Panel. */
+/** One row of the FileTable in the server panel. */
 export interface BeispielDatei {
   name: string;
   icon: string;
@@ -23,11 +23,11 @@ export interface BeispielDatei {
   geaendert: string;
 }
 
-/** Eine Spielkachel des Rechners auf der Startseite. */
+/** One game tile of the calculator on the landing page. */
 export interface BeispielSpiel {
   titel: string;
   preis: string;
-  /** Monatlicher Grundpreis in Euro, wie er auf der Kachel steht. */
+  /** Monthly base price in euro, exactly as printed on the tile. */
   grundpreis: number;
 }
 
@@ -47,7 +47,7 @@ export const KUNDEN_LINKS = [
 
 export const OEFFENTLICHE_LINKS = ['Minecraft', 'Preise', 'Hardware', 'Wiki', 'Vorschläge'];
 
-/** Alle sechs Status aus 15-zustaende.md, je einmal. */
+/** All six states of 15-zustaende.md, once each. */
 export const SERVER: BeispielServer[] = [
   {
     name: 'Beispiel-Server 1',
@@ -114,33 +114,43 @@ export const LOGZEILEN: ZConsoleLine[] = [
 export const DATEIEN: BeispielDatei[] = [
   { name: 'plugins', icon: 'folder', groesse: '', geaendert: '04.09.2026, 05:53' },
   { name: 'world', icon: 'folder', groesse: '', geaendert: '21.09.2026, 13:55' },
-  { name: 'server.jar', icon: 'description', groesse: '61,25 MB', geaendert: '18.09.2026, 14:45' },
+  {
+    name: 'server.jar',
+    icon: 'description',
+    groesse: '61,25\u00a0MB',
+    geaendert: '18.09.2026, 14:45',
+  },
   {
     name: 'server.properties',
     icon: 'description',
-    groesse: '1,74 KB',
+    groesse: '1,74\u00a0KB',
     geaendert: '18.09.2026, 15:55',
   },
 ];
 
-/** Werte von /hardware, Node Normal. */
+/** Values of /hardware, node "Normal". */
 export const TECHNIK: ZSpecItem[] = [
   { term: 'Standort', value: 'Nürnberg, Deutschland', note: 'DSGVO-konform' },
-  { term: 'Prozessor', value: 'AMD Ryzen 9 5950X', note: '16C / 32T, 4,9 GHz', mono: true },
-  { term: 'Arbeitsspeicher', value: 'DDR4 ECC', note: '3600 MHz', mono: true },
+  { term: 'Prozessor', value: 'AMD Ryzen 9 5950X', note: '16C / 32T, 4,9\u00a0GHz', mono: true },
+  { term: 'Arbeitsspeicher', value: 'DDR4 ECC', note: '3600\u00a0MHz', mono: true },
   { term: 'Speicher', value: 'NVMe SSD PCIe 4.0', note: 'RAID-Z1', mono: true },
-  { term: 'Anbindung', value: '1 Gbit/s', note: 'DDoS-Schutz auf Layer 3/4 inklusive', mono: true },
+  {
+    term: 'Anbindung',
+    value: '1\u00a0Gbit/s',
+    note: 'DDoS-Schutz auf Layer 3/4 inklusive',
+    mono: true,
+  },
   { term: 'Abrechnung', value: 'Nach Stunden, monatlich gedeckelt' },
 ];
 
 export const SPIELE: BeispielSpiel[] = [
-  { titel: 'Terraria', preis: 'ab 1,98 € / Monat', grundpreis: 1.98 },
-  { titel: 'Valheim', preis: 'ab 2,70 € / Monat', grundpreis: 2.7 },
-  { titel: '7 Days to Die', preis: 'ab 3,95 € / Monat', grundpreis: 3.95 },
-  { titel: 'Rust Dedicated Server', preis: 'ab 9,43 € / Monat', grundpreis: 9.43 },
+  { titel: 'Terraria', preis: 'ab 1,98\u00a0€ / Monat', grundpreis: 1.98 },
+  { titel: 'Valheim', preis: 'ab 2,70\u00a0€ / Monat', grundpreis: 2.7 },
+  { titel: '7 Days to Die', preis: 'ab 3,95\u00a0€ / Monat', grundpreis: 3.95 },
+  { titel: 'Rust Dedicated Server', preis: 'ab 9,43\u00a0€ / Monat', grundpreis: 9.43 },
 ];
 
-/** Komma als Dezimalzeichen, geschütztes Leerzeichen vor der Währung. */
+/** Comma as the decimal mark, non-breaking space before the currency. */
 export function euro(betrag: number): string {
   return `${betrag.toFixed(2).replace('.', ',')}\u00a0€`;
 }

@@ -9,8 +9,13 @@ import {
   ZHeaderEnd,
   ZHeaderLink,
   ZIcon,
+  ZMetric,
+  ZMetrics,
   ZPageHeader,
   ZPanel,
+  ZRow,
+  ZRowMain,
+  ZRows,
   ZSidebar,
   ZSidebarGroup,
   ZSidebarItem,
@@ -37,8 +42,13 @@ interface SeitenEintrag {
     ZHeaderEnd,
     ZHeaderLink,
     ZIcon,
+    ZMetric,
+    ZMetrics,
     ZPageHeader,
     ZPanel,
+    ZRow,
+    ZRowMain,
+    ZRows,
     ZSidebar,
     ZSidebarGroup,
     ZSidebarItem,
@@ -67,7 +77,7 @@ interface SeitenEintrag {
           }}</a>
         }
       </nav>
-      <p class="demo-cap caption">Aktiv: {{ aktiverTab() }}</p>
+      <p class="demo-grund caption">Aktiv: {{ aktiverTab() }}</p>
     </section>
 
     <section class="demo-section">
@@ -107,12 +117,31 @@ interface SeitenEintrag {
             </z-sidebar-group>
           }
         </z-sidebar>
-        <z-panel [title]="bereich()">
-          <p class="demo-sub">
-            Beispiel-Server 1, PaperMC, 203.0.113.10:25565. Der Inhalt wechselt mit dem gewählten
-            Bereich.
-          </p>
-        </z-panel>
+        <div class="z-stack">
+          <z-panel [title]="bereich()">
+            <p class="demo-sub">
+              Beispiel-Server 1, PaperMC, 203.0.113.10:25565. Der Inhalt wechselt mit dem gewählten
+              Bereich.
+            </p>
+          </z-panel>
+          <z-panel flush>
+            <z-metrics>
+              <z-metric label="CPU" value="0,2" unit="%" [percent]="0.2" />
+              <z-metric label="RAM" value="1,16" unit="/ 8,4&nbsp;GB" [percent]="14" />
+              <z-metric label="Spieler" value="2" unit="/ 20" [percent]="10" />
+            </z-metrics>
+          </z-panel>
+          <z-panel title="Spieler" flush>
+            <z-rows columns="minmax(0, 1fr) 96px">
+              @for (eintrag of spieler; track eintrag.name) {
+                <div zRow>
+                  <z-row-main [title]="eintrag.name" [meta]="eintrag.meta" />
+                  <span class="z-muted">{{ eintrag.rolle }}</span>
+                </div>
+              }
+            </z-rows>
+          </z-panel>
+        </div>
       </div>
     </section>
 
@@ -150,7 +179,8 @@ interface SeitenEintrag {
 
       <p class="demo-cap caption">
         Öffentlich: dieselbe Leiste mit anderen Links, rechts Anmelden als ghost und Server
-        erstellen als primary in sm.
+        erstellen als primary in sm. Zustandsübersicht: hier stehen mehrere primäre Buttons
+        nebeneinander, auf einer echten Seite ist es höchstens einer je Bildschirmhöhe.
       </p>
       <z-panel flush>
         <z-app-header navLabel="Hauptnavigation">
@@ -174,7 +204,9 @@ interface SeitenEintrag {
       <h2 class="heading-2">PageHeader</h2>
       <p class="demo-cap caption">
         Titel in heading-1, ein Fakt darunter, höchstens zwei Aktionen. Der Titel heißt wie der Link
-        in der Navigation. Unter 640px stehen die Aktionen unter dem Titel.
+        in der Navigation. Unter 640px stehen die Aktionen unter dem Titel. Zustandsübersicht: hier
+        stehen mehrere primäre Buttons nebeneinander, auf einer echten Seite ist es höchstens einer
+        je Bildschirmhöhe.
       </p>
       <z-page-header title="Gameserver" sub="3 Server, 2 online">
         <button zBtn="secondary" type="button">Bestellungen</button>
@@ -182,7 +214,7 @@ interface SeitenEintrag {
       </z-page-header>
       <z-page-header title="Abrechnung" sub="Guthaben 25,00&nbsp;€">
         <button zBtn="secondary" type="button">Gutschein einlösen</button>
-        <button zBtn="primary" type="button">Aufladen</button>
+        <button zBtn="secondary" type="button">Aufladen</button>
       </z-page-header>
       <p class="demo-cap caption">Ohne Aktionen und ohne Unterzeile:</p>
       <z-page-header title="Dashboard" />
@@ -194,7 +226,7 @@ interface SeitenEintrag {
         Öffentlich mit drei Spalten und der unteren Zeile. Links in text-muted, beim Hover text,
         kein Rot. Auch der Fuß steht hier zur Ansicht in einem Panel.
       </p>
-      <z-panel>
+      <z-panel flush>
         <z-footer>
           <z-footer-col heading="Hosting">
             <li><a href="#">Minecraft</a></li>
@@ -220,7 +252,7 @@ interface SeitenEintrag {
       <p class="demo-cap caption">
         Kundenbereich: nur die untere Zeile, Copyright links und die rechtlichen Links rechts.
       </p>
-      <z-panel>
+      <z-panel flush>
         <z-footer>
           <span zFooterBase>© 2026 Zenit-Hosting</span>
           <span zFooterBase class="z-cluster">
@@ -281,6 +313,11 @@ export class NavigationPage {
         { icon: 'upgrade', text: 'Upgrade' },
       ],
     },
+  ];
+
+  protected readonly spieler = [
+    { name: 'Steve', meta: 'seit 41 Minuten · 203.0.113.20', rolle: 'Operator' },
+    { name: 'Alex', meta: 'seit 12 Minuten · 203.0.113.21', rolle: 'Spieler' },
   ];
 
   protected readonly aktiverTab = signal(this.tabs[0]);

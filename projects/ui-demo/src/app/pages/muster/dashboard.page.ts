@@ -36,9 +36,9 @@ import { GUTHABEN, KUNDEN_LINKS, NUTZER, SERVER } from './beispieldaten';
 const PRO_SEITE = 4;
 
 /**
- * Seite im Kundenbereich nach 10-seitenmuster.md: AppHeader, PageHeader mit
- * einem Fakt und hoechstens zwei Aktionen, hoechstens ein Alert, danach Panels
- * mit `space-5` Luecke. Das wichtigste Panel ist "Meine Server".
+ * Page in the customer area after 10-seitenmuster.md: AppHeader, PageHeader
+ * with one fact and at most two actions, at most one alert, then panels with a
+ * `space-5` gap. The most important panel is "Meine Server".
  */
 @Component({
   selector: 'demo-muster-dashboard-page',
@@ -70,17 +70,11 @@ const PRO_SEITE = 4;
   ],
   template: `
     <div class="z-stack">
-      <z-panel>
-        <div class="z-cluster">
-          <span class="title-sm">Demo-Steuerung</span>
-          <span class="z-muted">Zustand der Serverliste</span>
-          <z-segment
-            [options]="zustaende"
-            [(value)]="zustand"
-            ariaLabel="Zustand der Serverliste"
-          />
-        </div>
-      </z-panel>
+      <div class="demo-steuerung">
+        <span class="title-sm">Demo-Steuerung</span>
+        <span class="z-muted">Zustand der Serverliste</span>
+        <z-segment [options]="zustaende" [(value)]="zustand" ariaLabel="Zustand der Serverliste" />
+      </div>
 
       <z-app-header navLabel="Hauptnavigation">
         <span zBrand>Zenit</span>

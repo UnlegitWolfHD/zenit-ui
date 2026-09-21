@@ -1,7 +1,7 @@
-/* Schriften selbst gehostet, kein Aufruf an Google.
-   material-icons setzt in .material-icons eine eigene font-size und wird nach
-   zenit-ui.css geladen. Die Ebene schriften sorgt dafuer, dass .z-icon aus der
-   Library gewinnt; ohne sie waere das Icon 24px gross in einer 20px-Box. */
+/* Fonts are self-hosted, nothing is fetched from Google.
+   material-icons sets its own font-size on .material-icons and is loaded after
+   zenit-ui.css. The layer "schriften" makes .z-icon from the library win;
+   without it the icon would be 24px inside a 20px box. */
 @import 'material-icons/iconfont/filled.css' layer(schriften);
 @import '@fontsource/inter/400.css';
 @import '@fontsource/inter/500.css';
@@ -11,15 +11,15 @@
 @import '@fontsource/jetbrains-mono/400.css';
 @import '@fontsource/jetbrains-mono/600.css';
 
-/* Farbschemata und Akzente der Library. So bindet sie auch ein Produkt ein:
-   nach tokens.css, ungeschichtet. angular.json laedt tokens.css als erstes
-   Stilblatt, styles.css als letztes, also gewinnen diese Bloecke. Das ist
-   noetig, weil :root und [data-theme="light"] dieselbe Spezifitaet (0,1,0)
-   haben und deshalb die Reihenfolge entscheidet, nicht die Spezifitaet.
-   Im Paket heisst der Pfad zenit-ui/styles/themes.css. */
+/* Colour schemes and accents of the library. A product embeds them the same
+   way: after tokens.css, unlayered. angular.json loads tokens.css as the first
+   stylesheet and styles.css as the last, so these blocks win. That is needed
+   because :root and [data-theme="light"] share the same specificity (0,1,0),
+   which makes the order decide, not the specificity.
+   Inside the package the path reads zenit-ui/styles/themes.css. */
 @import '../../zenit-ui/src/styles/themes.css';
 
-/* Demo-Layout. Nur Tokens, nur was die Seiten tragen. */
+/* Demo layout. Tokens only, and only what the pages actually need. */
 
 .demo-skip {
   position: absolute;
@@ -79,8 +79,8 @@
   background: var(--surface-hover);
 }
 
-/* Theme-Steuerung im Kopf: zwei schmale Selects, rechts. Bei 360px rutscht der
-   Block unter die Navigation, die Felder liegen dann nebeneinander. */
+/* Theme controls in the header: two narrow selects on the right. At 360px the
+   block moves below the navigation and the fields stand next to each other. */
 .demo-theme {
   display: flex;
   flex-wrap: wrap;
@@ -95,7 +95,7 @@
   line-height: 16px;
 }
 
-/* Seite Themes. */
+/* Page "Themes". */
 .demo-swatches {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -174,30 +174,48 @@
 }
 .demo-sub {
   margin: 0;
+  max-width: var(--measure);
 }
 
-/* Wie .demo in den Vorschauen: eine Zeile mit 12px Luecke. */
+/* Like .demo in the previews: one row with a 12px gap. */
 .demo-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-3);
 }
-/* Wie .grid in Input/preview.html. */
+/* Each demo-row is a state of its own. The grid gap of the section (space-4)
+   plus this one make space-6 between two neighbouring rows. */
+.demo-row + .demo-row {
+  margin-block-start: var(--space-4);
+}
+/* Like .grid in Input/preview.html. */
 .demo-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: var(--space-4);
 }
-/* Wie die Breite 180px in Select/preview.html. */
+/* Like the 180px width in Select/preview.html. */
 .demo-grid--narrow {
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
 }
-/* Wie .cap in den Vorschauen. */
+/* Panels of equal rank keep their own height instead of stretching. */
+.demo-grid--start {
+  align-items: start;
+}
+/* Like .cap in the previews: introduces the block below it. */
 .demo-cap {
   width: 100%;
   margin: 0;
+  max-width: var(--measure);
   color: var(--text-subtle);
+}
+/* The reason belonging to one single element, written right next to it in
+   text-muted so it never reads like the caption of the next block. */
+.demo-grund {
+  margin: 0;
+  max-width: var(--measure);
+  color: var(--text-muted);
 }
 
 .demo-list {
@@ -240,8 +258,16 @@
   max-width: var(--sidebar);
 }
 
-/* Skelettzeile wie in Skeleton/preview.html: zwei Zeilen im Textblock, der
-   letzte Platzhalter rechtsbuendig. Ersetzt die Inline-Styles der Vorschau. */
+/* A full page of 25 entries is right for the pagination demo but very tall.
+   Eight control heights are enough to read the pattern, the rest scrolls
+   inside its own named region. */
+.demo-scroll {
+  max-height: calc(var(--control-md) * 8);
+  overflow-y: auto;
+}
+
+/* Skeleton row as in Skeleton/preview.html: two lines in the text block, the
+   last placeholder flush right. Replaces the inline styles of the preview. */
 .demo-skel-lines {
   display: grid;
   flex: 1;
@@ -251,14 +277,15 @@
   justify-self: end;
 }
 
-/* Seitenmuster (10-seitenmuster.md). Nur Tokens, nur was die Bausteine nicht schon tragen. */
+/* Page patterns (10-seitenmuster.md). Tokens only, and only what the building
+   blocks do not already carry. */
 
-/* Kundenbereich: PageHeader, dann space-6, dann die Panels mit space-5 Luecke. */
+/* Customer area: PageHeader, then space-6, then the panels with a space-5 gap. */
 .demo-kundenbereich {
   display: grid;
   gap: var(--space-6);
 }
-/* Panel-Kopf des Server-Panels: links Name, Status und Adresse, rechts die Aktionen. */
+/* Head of the server panel: name, status and address left, actions right. */
 .demo-panelkopf {
   display: flex;
   flex-wrap: wrap;
@@ -268,14 +295,47 @@
   padding-bottom: var(--space-4);
   border-bottom: 1px solid var(--border);
 }
-/* Abschluss-CTA oeffentlicher Seiten, der einzige zentrierte Block. */
+/* Closing CTA of public pages, the only centred block. */
 .demo-cta {
   display: grid;
   justify-items: center;
   gap: var(--space-5);
   text-align: center;
 }
-/* Ueberschriften und Saetze der Musterseiten: der Abstand kommt aus dem Raster. */
+/* Headings and sentences of the pattern pages: the spacing comes from the grid. */
 .demo-flach {
   margin: 0;
+}
+
+/* The demo control of the pattern pages is scaffolding, not product surface.
+   A dashed 1px frame in border-control sets it apart from every panel. */
+.demo-steuerung {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px dashed var(--border-control);
+  border-radius: var(--radius-md);
+}
+
+/* Toolbar or selection bar above a table inside a flush panel: same padding as
+   a table row, separated by the same 1px line. */
+.demo-leiste {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  border-bottom: 1px solid var(--border);
+}
+.demo-leiste__zahl {
+  margin-inline-end: auto;
+}
+
+/* A control with the sentence that belongs to it, laid out like .z-field. */
+.demo-feld {
+  display: grid;
+  gap: var(--space-1);
+  justify-items: start;
 }

@@ -1,12 +1,22 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { ZCheckbox, ZPanel, ZSegment, ZSegmentOption, ZSetting, ZSlider, ZToggle } from 'zenit-ui';
+import {
+  ZButton,
+  ZCheckbox,
+  ZPanel,
+  ZSegment,
+  ZSegmentOption,
+  ZSetting,
+  ZSlider,
+  ZToggle,
+} from 'zenit-ui';
 
 @Component({
   selector: 'demo-formulare-page',
   imports: [
     FormsModule,
     ReactiveFormsModule,
+    ZButton,
     ZCheckbox,
     ZPanel,
     ZSegment,
@@ -39,7 +49,7 @@ import { ZCheckbox, ZPanel, ZSegment, ZSegmentOption, ZSetting, ZSlider, ZToggle
           >, whitelist.json
           <span class="z-mono">{{ whitelistJson() }}</span>
         </span>
-        <p class="demo-cap caption">
+        <p class="demo-grund caption">
           server.jar gehört zum Loader von PaperMC und lässt sich nicht auswählen.
         </p>
       </div>
@@ -47,6 +57,27 @@ import { ZCheckbox, ZPanel, ZSegment, ZSegmentOption, ZSetting, ZSlider, ZToggle
       <div class="demo-row">
         <p class="demo-cap caption">Mit Link im Text</p>
         <z-checkbox [(checked)]="agb">Ich habe die <a href="#">AGB</a> gelesen.</z-checkbox>
+      </div>
+
+      <div class="demo-row">
+        <p class="demo-cap caption">
+          Fehler nach dem Absenden: "Weiter" ohne Haken zeigt den Satz, das Setzen des Hakens nimmt
+          ihn wieder weg.
+        </p>
+        <div class="demo-feld">
+          <z-checkbox [(checked)]="agbBestellung">
+            Ich habe die <a href="#">AGB</a> gelesen.
+          </z-checkbox>
+          @if (agbFehler()) {
+            <span class="z-field__error" role="alert">Bestätige die AGB, um fortzufahren.</span>
+          }
+        </div>
+        <button zBtn="secondary" type="button" (click)="bestellen()">Weiter</button>
+        <p class="demo-grund caption">
+          z-checkbox bringt ihr eigenes label mit und kennt kein aria-describedby, deshalb steht der
+          Fehlersatz hier nicht in einem z-field, sondern als role="alert" direkt unter der
+          Checkbox.
+        </p>
       </div>
 
       <div class="demo-row">
@@ -76,7 +107,7 @@ import { ZCheckbox, ZPanel, ZSegment, ZSegmentOption, ZSetting, ZSlider, ZToggle
           >Wert <span class="z-mono">{{ backupVorUpdate.value }}</span></span
         >
         <z-checkbox [formControl]="rconFreigabe">RCON für Mitverwalter freigeben</z-checkbox>
-        <p class="demo-cap caption">
+        <p class="demo-grund caption">
           RCON ist gesperrt, solange Beispiel-Server 1 startet. Der Wert bleibt
           <span class="z-mono">{{ rconFreigabe.value }}</span
           >.
@@ -134,7 +165,7 @@ import { ZCheckbox, ZPanel, ZSegment, ZSegmentOption, ZSetting, ZSlider, ZToggle
         </z-setting>
       </z-panel>
 
-      <p class="demo-cap caption">
+      <p class="demo-grund caption">
         PvP <span class="z-mono">{{ pvp() }}</span> über model(), Hardcore
         <span class="z-mono">{{ hardcore }}</span> über ngModel, Backup
         <span class="z-mono">{{ nachtBackup.value }}</span> über formControl. Whitelist ist über den
@@ -168,7 +199,7 @@ import { ZCheckbox, ZPanel, ZSegment, ZSegmentOption, ZSetting, ZSlider, ZToggle
           [max]="16"
           [step]="2"
           [ticks]="arbeitsspeicherStufen"
-          hint="Empfohlen für Valheim mit bis zu 10 Spielern: 6 GB."
+          hint="Empfohlen für Valheim mit bis zu 10 Spielern: 6&nbsp;GB."
           [(value)]="arbeitsspeicher"
         />
         <z-slider
@@ -178,7 +209,7 @@ import { ZCheckbox, ZPanel, ZSegment, ZSegmentOption, ZSetting, ZSlider, ZToggle
           [max]="20"
           [step]="2"
           [ticks]="steckplatzStufen"
-          hint="Jeder Steckplatz kostet 0,20 € im Monat."
+          hint="Jeder Steckplatz kostet 0,20&nbsp;€ im Monat."
           [(ngModel)]="steckplaetze"
         />
         <z-slider
@@ -198,7 +229,7 @@ import { ZCheckbox, ZPanel, ZSegment, ZSegmentOption, ZSetting, ZSlider, ZToggle
           [max]="8"
           [step]="1"
           [ticks]="kernStufen"
-          hint="Der Tarif Flex gibt 4 Kerne fest vor."
+          hint="Der Tarif Flex gibt 4&nbsp;Kerne fest vor."
           [value]="4"
           disabled
         />
@@ -214,7 +245,7 @@ import { ZCheckbox, ZPanel, ZSegment, ZSegmentOption, ZSetting, ZSlider, ZToggle
         />
       </div>
 
-      <p class="demo-cap caption">
+      <p class="demo-grund caption">
         Arbeitsspeicher <span class="z-mono">{{ arbeitsspeicher() }}&nbsp;GB</span> über model(),
         Steckplätze <span class="z-mono">{{ steckplaetze }}&nbsp;Spieler</span> über ngModel,
         Speicher <span class="z-mono">{{ speicher.value }}&nbsp;GB</span> über formControl.
@@ -270,7 +301,7 @@ import { ZCheckbox, ZPanel, ZSegment, ZSegmentOption, ZSetting, ZSlider, ZToggle
           [formControl]="abrechnungszeitraum"
           ariaLabel="Zeitraum der laufenden Abrechnung"
         />
-        <p class="demo-cap caption">
+        <p class="demo-grund caption">
           Im Archiv sind alle Tickets geschlossen. Der Zeitraum der Abrechnung steht bis zum
           01.10.2026 fest.
         </p>
@@ -284,6 +315,10 @@ export class FormularePage {
   protected readonly serverProperties = signal(true);
   protected readonly whitelistJson = signal(false);
   protected readonly agb = signal(false);
+  protected readonly agbBestellung = signal(false);
+  private readonly abgeschickt = signal(false);
+  /** The error only stands after a submit and disappears as soon as the box is ticked. */
+  protected readonly agbFehler = computed(() => this.abgeschickt() && !this.agbBestellung());
   protected readonly zeile = signal(false);
   protected autoNeustart = true;
   protected readonly backupVorUpdate = new FormControl(true, { nonNullable: true });
@@ -333,4 +368,8 @@ export class FormularePage {
     { value: '12', disabled: true },
     { nonNullable: true },
   );
+
+  protected bestellen(): void {
+    this.abgeschickt.set(true);
+  }
 }
