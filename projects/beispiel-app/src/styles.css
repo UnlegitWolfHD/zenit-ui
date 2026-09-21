@@ -1,3 +1,4 @@
+/* #region schriften */
 /* Fonts, self-hosted, exactly as step 3 of the package README describes them:
    Material Icons for z-icon, Inter 400/500/600 as body, Space Grotesk 600/700
    as display, JetBrains Mono 400/600 as mono. No request to Google.
@@ -12,11 +13,13 @@
 @import '@fontsource/space-grotesk/700.css';
 @import '@fontsource/jetbrains-mono/400.css';
 @import '@fontsource/jetbrains-mono/600.css';
+/* #endregion */
 
-/* Everything below is the whole stylesheet of this application: five rules.
-   The building blocks bring their own classes, so an application only spaces
-   the regions of the page. Values come from tokens.css only, no hex, no pixel
-   literals, no radius of its own. */
+/* Everything below is the whole stylesheet of this application. The building
+   blocks bring their own classes, so an application only spaces the regions of
+   the page and styles what the library has no block for: the code display of
+   this example. Values come from tokens.css only, no hex, no pixel literals,
+   no radius of its own. */
 
 /* Skip link: visually hidden until it takes focus, then a real 40px target
    above the header (15-zustaende.md, "Tastatur"). */
@@ -75,4 +78,88 @@
    head and only moves to the right. */
 .app-rechts {
   text-align: right;
+}
+
+/* Sections of the page "Einbindung": a heading, a sentence, a code block,
+   separated by a 1px line instead of a frame (CLAUDE.md, "Rahmen nur um
+   Werkzeuge"). */
+.app-abschnitt {
+  display: grid;
+  gap: var(--space-4);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--border);
+}
+.app-abschnitt h2,
+.app-abschnitt p {
+  margin: 0;
+  max-width: var(--measure);
+}
+
+/* Disclosure over a code block. Same shape as z-faq, but a native details, so
+   that a <pre> is allowed inside it (z-faq projects into a <p>). */
+.app-code-faq {
+  border-top: 1px solid var(--border);
+}
+.app-code-faq > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  min-height: var(--control-md);
+  padding-block: var(--space-2);
+  color: var(--text-muted);
+  font-weight: 500;
+  cursor: pointer;
+  list-style: none;
+}
+.app-code-faq > summary::-webkit-details-marker {
+  display: none;
+}
+.app-code-faq > summary::after {
+  content: '+';
+  font-family: var(--font-mono);
+}
+.app-code-faq[open] > summary::after {
+  content: '−';
+}
+.app-code-faq[open] > summary {
+  color: var(--text);
+}
+
+/* Several blocks inside one disclosure. */
+.app-code-gruppe {
+  display: grid;
+  gap: var(--space-5);
+  padding-bottom: var(--space-4);
+}
+
+/* Code block: caption line, then the framed area. */
+.app-code {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  min-width: 0;
+}
+.app-code__kopf {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.app-code__datei {
+  color: var(--text-subtle);
+}
+/* The only element of the page that may scroll sideways, capped in height so
+   that a long file does not push everything else off the screen. */
+.app-code__flaeche {
+  max-height: calc(var(--space-9) * 4);
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg);
+}
+.app-code__text {
+  margin: 0;
+  padding: var(--space-4);
 }

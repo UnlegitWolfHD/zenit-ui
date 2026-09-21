@@ -81,6 +81,7 @@ const PLATZHALTER = [1, 2, 3];
         [busy]="zustand() === 'skelett'"
         [attr.aria-label]="zustand() === 'skelett' ? 'Server werden geladen' : null"
       >
+        <!-- #region zustaende -->
         @switch (zustand()) {
           @case ('start') {
             <!-- The first 300 milliseconds stay empty: an answer that fast must
@@ -145,6 +146,7 @@ const PLATZHALTER = [1, 2, 3];
                 <span></span>
               </z-rows-head>
               @for (server of sichtbar(); track server.id) {
+                <!-- #region zeile -->
                 <!--
                   A row with its own actions is a <div>, not an <a>: a button
                   inside a link is invalid HTML, and the menu has to be a tab
@@ -194,10 +196,13 @@ const PLATZHALTER = [1, 2, 3];
                     </button>
                   </z-menu>
                 </ng-template>
+                <!-- #endregion -->
               }
             </z-rows>
           }
         }
+        <!-- #endregion -->
+        <!-- #region seitenwahl -->
         <!--
           The pagination stands alone in its @if: z-panel picks it out of the
           projected content and puts it in the last row, and a control flow
@@ -212,6 +217,7 @@ const PLATZHALTER = [1, 2, 3];
             itemLabel="Servern"
           />
         }
+        <!-- #endregion -->
       </z-panel>
     }
   `,
