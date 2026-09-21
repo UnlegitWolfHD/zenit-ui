@@ -1,4 +1,4 @@
-/* Paket formulare: Checkbox, Toggle, Setting, Slider, Segment. */
+/* Package formulare: Checkbox, Toggle, Setting, Slider and Segment. */
 
 export * from '../checkbox';
 export * from '../toggle';

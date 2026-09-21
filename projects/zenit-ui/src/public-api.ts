@@ -1,5 +1,5 @@
 /*
- * Oeffentliche API der Library zenit-ui.
+ * Public API of the zenit-ui library.
  */
 
 export * from './lib/icon';
