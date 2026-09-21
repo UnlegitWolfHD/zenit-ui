@@ -1,9 +1,22 @@
 import { Dialog, DialogConfig, DialogRef } from '@angular/cdk/dialog';
 import { ComponentType } from '@angular/cdk/portal';
-import { inject, Service } from '@angular/core';
+import { ElementRef, inject, Service } from '@angular/core';
 import { map, Observable } from 'rxjs';
-import { ZConfirmConfig, ZConfirmDialog } from './confirm-dialog';
+import { ZConfirmConfig, ZConfirmDialog, ZRestoreFocusTarget } from './confirm-dialog';
 import { naechsteId, Z_DIALOG_TITLE_ID } from './dialog-layout';
+
+/**
+ * Options of `@angular/cdk/dialog` plus {@link ZDialogConfig.restoreFocusTo}.
+ */
+export type ZDialogConfig<D, R> = DialogConfig<D, R> & {
+  /**
+   * Element focus returns to when the dialog closes, mapped onto the CDK's
+   * `restoreFocus`. Without it focus goes back to whatever was focused before
+   * the dialog opened, which is the CDK default. Set it when the trigger is
+   * gone by then; opened from a menu, pass the menu trigger.
+   */
+  restoreFocusTo?: ZRestoreFocusTarget;
+};
 
 /** Caller classes as a list, so the library's own ones keep coming first. */
 function alsListe(klassen: string | string[] | undefined): string[] {
@@ -13,15 +26,21 @@ function alsListe(klassen: string | string[] | undefined): string[] {
   return Array.isArray(klassen) ? klassen : [klassen];
 }
 
+/** `restoreFocusTo` as the `boolean | string | HTMLElement` the CDK takes. */
+function fokusZiel(ziel: ZRestoreFocusTarget | undefined): HTMLElement | string | undefined {
+  return ziel instanceof ElementRef ? ziel.nativeElement : ziel;
+}
+
 /**
  * Thin wrapper around `Dialog` from `@angular/cdk/dialog`, provided in root.
  *
  * The focus trap, Escape, the backdrop and returning focus to the trigger come
  * from the CDK. This service only adds the fixed classes `z-dialog-panel` and
- * `z-backdrop`, sets `aria-modal`, and links the heading of `z-dialog` to the
- * container through `aria-labelledby`. Focus lands on the first tabbable
- * element when the dialog opens, which is the first field or otherwise the
- * cancel button.
+ * `z-backdrop`, sets `aria-modal`, links the heading of `z-dialog` to the
+ * container through `aria-labelledby`, and offers `restoreFocusTo` for the case
+ * where the trigger is gone by the time the dialog closes. Focus lands on the
+ * first tabbable element when the dialog opens, which is the first field or
+ * otherwise the cancel button.
  *
  * Use a dialog for a decision that cannot be undone or for a short form, not
  * for "stop" or "restart".
@@ -67,22 +86,32 @@ export class ZDialog {
    * @typeParam C Type of the component.
    * @param component The component to render inside the dialog.
    * @param config Options of `@angular/cdk/dialog`, for example `data`, `width`
-   * or `disableClose`.
+   * or `disableClose`, plus `restoreFocusTo`.
    * @returns The `DialogRef` of the CDK. Its `closed` observable emits the
    * result once and then completes, `undefined` when the dialog was dismissed
    * by Escape or by a click on the backdrop.
+   *
+   * @example
+   * ```ts
+   * // Opened from a menu: the menu item is gone when the dialog closes, so
+   * // pass the menu trigger and focus lands back there.
+   * this.dialog.open(NotizDialog, { restoreFocusTo: this.trigger() });
+   * ```
    */
   open<R = unknown, D = unknown, C = unknown>(
     component: ComponentType<C>,
-    config?: DialogConfig<D, DialogRef<R, C>>,
+    config?: ZDialogConfig<D, DialogRef<R, C>>,
   ): DialogRef<R, C> {
     const titelId = naechsteId('z-dialog-title');
     const titelProvider = { provide: Z_DIALOG_TITLE_ID, useValue: titelId };
     const fremde = config?.providers;
+    const ziel = fokusZiel(config?.restoreFocusTo);
     return this.cdk.open<R, D, C>(component, {
       // autoFocus 'first-tabbable' (first field, otherwise "Abbrechen"),
       // restoreFocus and Escape are the defaults of the CDK.
       ...config,
+      // Only when given, so an absent restoreFocusTo keeps the CDK default.
+      ...(ziel === undefined ? {} : { restoreFocus: ziel }),
       panelClass: ['z-dialog-panel', ...alsListe(config?.panelClass)],
       backdropClass: ['z-backdrop', ...alsListe(config?.backdropClass)],
       ariaModal: true,
@@ -100,6 +129,7 @@ export class ZDialog {
    * exactly.
    *
    * The dialog opens as soon as this method is called, not on subscribe.
+   * `restoreFocusTo` of the config names where focus lands afterwards.
    *
    * @param config Texts and behaviour of the confirmation.
    * @returns An `Observable<boolean>` that emits exactly once and then
@@ -109,6 +139,7 @@ export class ZDialog {
   confirm(config: ZConfirmConfig): Observable<boolean> {
     return this.open<boolean, ZConfirmConfig, ZConfirmDialog>(ZConfirmDialog, {
       data: config,
+      restoreFocusTo: config.restoreFocusTo,
     }).closed.pipe(map((ergebnis) => ergebnis === true));
   }
 }

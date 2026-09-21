@@ -30,7 +30,7 @@ anywhere.
 
 | Method                     | Returns               | Description                                                                                                                                                                    |
 | -------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `open(component, config?)` | `DialogRef<R, C>`     | Opens a component of your own, as a rule one whose root element is `<z-dialog title="…">`. `config` is the CDK's `DialogConfig`: `data`, `width`, `disableClose` and the rest. |
+| `open(component, config?)` | `DialogRef<R, C>`     | Opens a component of your own, as a rule one whose root element is `<z-dialog title="…">`. `config` is the CDK's `DialogConfig` (`data`, `width`, `disableClose` and the rest) plus `restoreFocusTo`. |
 | `confirm(config)`          | `Observable<boolean>` | Confirmation with two buttons. Emits exactly once and then completes.                                                                                                          |
 
 `open()` generates the id of the heading, provides it to the layout and puts the same id on the
@@ -40,6 +40,13 @@ other CDK option stays untouched.
 
 `confirm()` returns `true` only through the confirming button. "Abbrechen", Escape and a click on
 the backdrop all give `false`. The dialog opens as soon as the method is called, not on subscribe.
+
+`restoreFocusTo` names the element focus returns to when the dialog closes, whichever way it
+closes. It takes an `HTMLElement`, an `ElementRef<HTMLElement>` or a CSS selector, and is mapped
+onto the CDK's `restoreFocus`. Left out, focus goes back to whatever was focused before the dialog
+opened, which is the CDK default and right in almost every case. Set it when the trigger is gone by
+then: a dialog opened from a menu item is the usual case, because the CDK menu closes with the
+click and takes the focused item with it. Pass the menu trigger instead.
 
 `ZConfirmConfig`:
 
@@ -52,6 +59,7 @@ the backdrop all give `false`. The dialog opens as soon as the method is called,
 | `danger`       | `boolean` | `false` | Renders the confirming button as `danger` instead of `primary`.                                                                                                                               |
 | `requireText`  | `string`  | none    | Text that has to be typed exactly. It is the placeholder, and the confirming button stays disabled until the input matches character for character. Without it the dialog has no input field. |
 | `requireLabel` | `string`  | none    | Label of that field. Without it the field takes `requireText` as its `aria-label`, so it is never unlabelled.                                                                                 |
+| `restoreFocusTo` | `HTMLElement \| ElementRef<HTMLElement> \| string` | none | Element focus returns to after the dialog closes. Without it focus goes back to what was focused before it opened. |
 
 ### `z-dialog` (`ZDialogLayout`)
 
@@ -139,6 +147,35 @@ dialog
   .closed.subscribe((notiz) => (notiz ? speichere(notiz) : undefined));
 ```
 
+Opened from a menu, where the trigger outlives the item that was clicked:
+
+```ts
+import { ElementRef, inject, viewChild } from '@angular/core';
+import { ZDialog } from 'zenit-ui';
+
+const dialog = inject(ZDialog);
+const trigger = viewChild.required<ElementRef<HTMLElement>>('trigger');
+
+function loeschen(): void {
+  dialog
+    .confirm({
+      title: 'Beispiel-Server 1 löschen?',
+      body: 'Welt, Konfiguration und alle 3 Backups werden sofort gelöscht.',
+      confirmLabel: 'Server löschen',
+      cancelLabel: 'Abbrechen',
+      danger: true,
+      restoreFocusTo: trigger(),
+    })
+    .subscribe((ja) => (ja ? entferne() : undefined));
+}
+```
+
+```html
+<button #trigger zBtn="ghost" iconOnly type="button" aria-label="Aktionen für Beispiel-Server 1">
+  <z-icon name="more_vert" />
+</button>
+```
+
 ## States
 
 | State     | How it looks                                                                                    | How to trigger it                                    |
@@ -155,6 +192,8 @@ submit button and `error` on its fields.
 
 - `role="dialog"`, `aria-modal`, the focus trap, Escape and returning focus to the trigger all come
   from the container of `@angular/cdk/dialog`.
+- Focus never lands on the document body: when the trigger is gone by the time the dialog closes,
+  `restoreFocusTo` names where it goes instead, for confirm, cancel and Escape alike.
 - The heading of `z-dialog` supplies the id that the container's `aria-labelledby` points at, which
   is what gives the dialog its accessible name. `title` is required for exactly that reason.
 - Focus lands on the first tabbable element when the dialog opens: the first field, or otherwise the
@@ -202,6 +241,8 @@ The 480px width is a literal value from the reference stylesheet.
 - Do phrase the title as a question or a task and repeat its verb on the confirming button.
 - Do name the concrete consequences in `body`: what is lost, what it costs.
 - Do use `requireText` for deleting servers, domains and backups.
+- Do pass `restoreFocusTo` when the dialog is opened from a menu item; the item is gone when the
+  dialog closes.
 - Don't ask for confirmation for "Stoppen" or "Neustart".
 - Don't put a blur behind the dialog; it is `scrim`.
 - Don't make the dialog wider than 480px.

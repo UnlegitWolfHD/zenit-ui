@@ -1,8 +1,24 @@
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  ElementRef,
+  inject,
+  signal,
+} from '@angular/core';
 import { ZButton } from '../button';
 import { ZField, ZInput } from '../field';
 import { naechsteId, ZDialogActions, ZDialogLayout } from './dialog-layout';
+
+/**
+ * Where focus lands after a dialog closes, on top of the CDK default of
+ * returning it to the element that was focused before the dialog opened.
+ *
+ * An `HTMLElement` or an `ElementRef` names the element directly, a `string` is
+ * a CSS selector resolved against the document when the dialog closes.
+ */
+export type ZRestoreFocusTarget = HTMLElement | ElementRef<HTMLElement> | string;
 
 /**
  * Texts and behaviour of a confirmation, passed to `ZDialog.confirm()`. Every
@@ -36,6 +52,29 @@ export interface ZConfirmConfig {
    * `aria-label` instead, so it is never unlabelled.
    */
   requireLabel?: string;
+  /**
+   * Element focus returns to when the dialog closes, whichever way it closes.
+   * Without it focus goes back to whatever was focused before the dialog
+   * opened, which is the CDK default.
+   *
+   * Set it when the trigger is gone by then. A menu item is the usual case: the
+   * CDK menu closes with the click, so pass the menu trigger instead.
+   *
+   * @example
+   * ```html
+   * <button #trigger zBtn="ghost" [cdkMenuTriggerFor]="aktionen">…</button>
+   * ```
+   * ```ts
+   * readonly trigger = viewChild.required<ElementRef<HTMLElement>>('trigger');
+   *
+   * loeschen(): void {
+   *   this.dialog
+   *     .confirm({ …, restoreFocusTo: this.trigger() })
+   *     .subscribe((ja) => (ja ? this.entferne() : undefined));
+   * }
+   * ```
+   */
+  restoreFocusTo?: ZRestoreFocusTarget;
 }
 
 /**
