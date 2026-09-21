@@ -1,0 +1,24 @@
+/* Schematics are plain Node code, not Angular code: they are compiled to
+   CommonJS by `node tools/build-schematics.mjs`, not by ng-packagr.
+   See https://angular.dev/tools/cli/schematics-for-libraries. */
+{
+  "compilerOptions": {
+    "lib": ["es2022"],
+    "declaration": false,
+    "module": "commonjs",
+    "esModuleInterop": true,
+    "strict": true,
+    "noEmitOnError": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
+    "rootDir": "schematics",
+    "outDir": "../../dist/zenit-ui/schematics",
+    "skipDefaultLibCheck": true,
+    "skipLibCheck": true,
+    "sourceMap": false,
+    "target": "es2022",
+    "types": []
+  },
+  "include": ["schematics/**/*.ts"],
+  "exclude": ["schematics/**/*.spec.ts"]
+}

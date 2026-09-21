@@ -13,6 +13,10 @@
     "tslib": "^2.3.0"
   },
   "sideEffects": false,
+  "schematics": "./schematics/collection.json",
+  "ng-add": {
+    "save": "dependencies"
+  },
   "exports": {
     "./styles/*": {
       "default": "./styles/*"
