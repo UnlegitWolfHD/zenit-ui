@@ -153,11 +153,18 @@ z-option-group, z-combobox, z-wizard-step, z-included-list, z-disclosure, z-inpu
 .z-summary .z-alert { flex-wrap: wrap; }
 .z-summary .z-alert > .z-btn { flex-basis: 100%; margin-left: 32px; }
 
-/* Addition to the reference: bundle.css takes the radio out of the pointer
-   flow entirely. It sits inside its own <label>, so a click reaches it either
-   way, while "pointer-events: none" makes an enabled control read as locked to
-   anything that measures it (e2e/a11y-baum.spec.ts does). A locked card keeps
-   the cursor it inherits, so only the enabled ones get their pointer back. */
+/* Addition to the reference: bundle.css leaves the hidden radio at its natural
+   13px in the corner of the card. The browser scrolls THAT box into view and
+   draws the focus ring around the card, so a focused card can still sit behind
+   the sticky bar (WCAG 2.4.11). Stretched over the card the focused box is the
+   card. It stays invisible (opacity 0 from the reference) and keeps its place
+   in the layer order, so title, description and badge stay readable.
+   bundle.css also takes it out of the pointer flow entirely; it sits inside its
+   own <label>, so a click reaches it either way, while "pointer-events: none"
+   makes an enabled control read as locked to anything that measures it
+   (e2e/a11y-baum.spec.ts does). A locked card keeps the cursor it inherits, so
+   only the enabled ones get their pointer back. */
+.z-option input { inset: 0; width: 100%; height: 100%; margin: 0; }
 .z-option input:enabled { pointer-events: auto; }
 
 /* Addition to the reference: a badge sits space-3 above its card and would
@@ -166,14 +173,15 @@ z-option-group, z-combobox, z-wizard-step, z-included-list, z-disclosure, z-inpu
 .z-options:has(.z-option__badge) .z-options__legend { margin-bottom: var(--space-3); }
 
 /* Addition to the reference: the sticky bar covers the bottom of the viewport,
-   so a control focused behind it would be invisible (WCAG 2.4.11). z-sticky-bar
-   measures itself into --z-stickybar; the page keeps that much room free below
-   its content and adds it to scroll-padding, so the browser scrolls a focused
-   element clear of the bar instead of behind it. Above 900px the bar is gone
-   and the variable is not used. */
-@media (max-width: 899px) {
-  .z-root:has(.z-stickybar--mobile) { scroll-padding-bottom: calc(var(--z-stickybar, 0px) + var(--space-4)); }
-  .z-config:has(~ .z-stickybar--mobile) { padding-bottom: calc(var(--z-stickybar, 0px) + var(--space-4)); }
+   so a control focused behind it would be invisible (WCAG 2.4.11).
+   z-sticky-bar measures its own height into --z-stickybar, and the document
+   adds that to its scroll-padding, so the browser scrolls a focused element
+   clear of the bar. It needs no extra room at the end of the page: the bar is
+   sticky inside the flow and already occupies its own height there. The rule
+   holds for every visible bar, a bulk action bar included; a --mobile bar is
+   display:none from 900px on and then reports 0px. */
+.z-root:has(.z-stickybar) {
+  scroll-padding-bottom: calc(var(--z-stickybar, 0px) + var(--space-4));
 }
 
 /* Addition to the reference: click targets at least 40px on mobile (CLAUDE.md,

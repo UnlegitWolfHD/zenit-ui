@@ -162,6 +162,23 @@ export const RECHNER_SPIELE = SPIELE.map((spiel) => ({
   preis: `ab ${euro(proZeitraum(spiel.grundpreis, 'budget', KLEINSTE_RAM_STUFE))} / 30\u00a0Tage`,
 }));
 
+/**
+ * How the order is billed. Two cards, not a switch, because both have a price.
+ * `12-konfigurator.md` lists "Monatspreis oder Flex" as an OptionCard.
+ */
+export const ABRECHNUNGEN: ZOption[] = [
+  {
+    value: 'monat',
+    title: 'Monatspreis',
+    description: 'Fester Betrag je Laufzeit, egal wie viel gespielt wird.',
+  },
+  {
+    value: 'flex',
+    title: 'Flex',
+    description: 'Nach gespielten Stunden, nach oben gedeckelt.',
+  },
+];
+
 /** The three terms with their discount. */
 export const LAUFZEITEN = [
   { tage: 30, rabatt: 0 },

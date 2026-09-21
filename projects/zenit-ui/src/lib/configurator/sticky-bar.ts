@@ -10,6 +10,23 @@ import {
   input,
 } from '@angular/core';
 
+/** Every bar on the page, so the tallest visible one sets the room to keep clear. */
+const lebende = new Set<HTMLElement>();
+
+/** Writes the height of the tallest visible bar, or removes the property. */
+function schreibe(dokument: Document): void {
+  const wurzel = dokument.documentElement;
+  let hoechste = 0;
+  for (const bar of lebende) {
+    hoechste = Math.max(hoechste, bar.getBoundingClientRect().height);
+  }
+  if (hoechste > 0) {
+    wurzel.style.setProperty('--z-stickybar', `${Math.round(hoechste)}px`);
+  } else {
+    wurzel.style.removeProperty('--z-stickybar');
+  }
+}
+
 /**
  * Keeps price and next step in view at the bottom edge of small screens, and
  * carries exactly one button.
@@ -56,29 +73,27 @@ export class ZStickyBar {
   constructor() {
     // The bar covers the bottom of the viewport, so a control focused behind it
     // would be invisible (WCAG 2.4.11). Its height is not a literal anywhere:
-    // the bar measures itself and writes --z-stickybar into the document, and
-    // the stylesheet keeps that much room free below the content and in
-    // scroll-padding. ResizeObserver is missing on the server, where there is
-    // no layout to keep free either.
-    const wurzel = this.dokument.documentElement;
-    const schreibe = (hoehe: number) =>
-      wurzel.style.setProperty('--z-stickybar', `${Math.round(hoehe)}px`);
+    // every bar measures itself, the tallest visible one lands in
+    // --z-stickybar, and the stylesheet turns that into scroll-padding. A bar
+    // that is hidden (a mobileOnly bar from 900px on) measures 0 and drops out
+    // of the maximum by itself. ResizeObserver is missing on the server, where
+    // there is no layout to keep clear either.
+    const element = this.host.nativeElement;
+    lebende.add(element);
     const beobachter =
       typeof ResizeObserver === 'undefined'
         ? undefined
-        : new ResizeObserver(([eintrag]) =>
-            schreibe(eintrag.target.getBoundingClientRect().height),
-          );
+        : new ResizeObserver(() => schreibe(this.dokument));
 
     afterRenderEffect(() => {
-      const element = this.host.nativeElement;
       beobachter?.observe(element);
-      schreibe(element.getBoundingClientRect().height);
+      schreibe(this.dokument);
     });
 
     inject(DestroyRef).onDestroy(() => {
       beobachter?.disconnect();
-      wurzel.style.removeProperty('--z-stickybar');
+      lebende.delete(element);
+      schreibe(this.dokument);
     });
   }
 

@@ -1,11 +1,15 @@
+import { zCostAt, zCostCapHour } from './cost-chart-rules';
+
 /**
- * The arithmetic behind `z-cost-chart`, as pure functions: where the cap takes
+ * The geometry behind `z-cost-chart`, as pure functions: where the cap takes
  * over, what an hour costs, how that maps onto the drawing area and which
  * ticks the axes get. Nothing in here touches the DOM, so every rule is
  * testable on its own and the component stays a template.
  */
 
-/** The drawing area of a chart, in viewBox units, which are CSS pixels. */
+/** The drawing area of a chart, in viewBox units, which are CSS pixels. *
+ * @internal Geometry of `z-cost-chart`, not part of the public API.
+ */
 export interface ZChartArea {
   /** Width of the viewBox, which is the measured width of the plot. */
   width: number;
@@ -24,6 +28,8 @@ export interface ZChartArea {
 /**
  * The drawing area of the reference (CostChart/preview.html). It is the width
  * the chart draws with before it has measured itself.
+ *
+ * @internal Geometry of `z-cost-chart`, not part of the public API.
  */
 export const Z_CHART_AREA: ZChartArea = {
   width: 520,
@@ -40,15 +46,20 @@ export const Z_CHART_AREA: ZChartArea = {
  * a fixed viewBox.
  *
  * @param width Measured width of the plot in CSS pixels.
- * @returns The area; below 240px the chart keeps that minimum and its
- * container scrolls rather than the type becoming unreadable.
+ * @returns The area; 240px is the floor, so a plot narrower than that draws
+ * at 240 units and the svg scales those down rather than letting the type fall
+ * below its own size everywhere else.
+ *
+ * @internal Geometry of `z-cost-chart`, not part of the public API.
  */
 export function zCostArea(width: number): ZChartArea {
   const breite = Math.max(240, Number.isFinite(width) && width > 0 ? width : Z_CHART_AREA.width);
   return { ...Z_CHART_AREA, width: breite, x1: breite - 12 };
 }
 
-/** One tick of an axis: what it says and where it sits. */
+/** One tick of an axis: what it says and where it sits. *
+ * @internal Geometry of `z-cost-chart`, not part of the public API.
+ */
 export interface ZChartTick {
   /** The value the tick stands for. */
   value: number;
@@ -56,7 +67,9 @@ export interface ZChartTick {
   pos: number;
 }
 
-/** Everything the template of `z-cost-chart` draws, in viewBox units. */
+/** Everything the template of `z-cost-chart` draws, in viewBox units. *
+ * @internal Geometry of `z-cost-chart`, not part of the public API.
+ */
 export interface ZChartGeometry {
   /** The drawing area this geometry was built for. */
   area: ZChartArea;
@@ -94,6 +107,8 @@ function zahl(wert: number): number {
  * @param maxHours Hours the axis runs to.
  * @param area The drawing area, from {@link zCostArea}.
  * @returns The `x` in viewBox units.
+ *
+ * @internal Geometry of `z-cost-chart`, not part of the public API.
  */
 export function zCostX(hours: number, maxHours: number, area: ZChartArea = Z_CHART_AREA): number {
   const spanne = Math.max(1, zahl(maxHours));
@@ -105,8 +120,11 @@ export function zCostX(hours: number, maxHours: number, area: ZChartArea = Z_CHA
  * do not collide: every label needs about 64px of room.
  *
  * @param maxHours Hours the axis runs to.
- * @param plotWidth Width of the plot between the two axes, in pixels.
- * @returns The step, always greater than 0.
+ * @param plotWidth Width of the plot between the two axes, in pixels. One
+ * label needs about 110px of room.
+ * @returns The step, always greater than 0, and never below one whole hour.
+ *
+ * @internal Geometry of `z-cost-chart`, not part of the public API.
  */
 export function zCostHourStep(maxHours: number, plotWidth: number): number {
   const stunden = Math.max(1, zahl(maxHours));
@@ -129,59 +147,12 @@ export function zCostHourStep(maxHours: number, plotWidth: number): number {
  * @param value The amount; outside the axis it is clamped to its edge.
  * @param maxValue Amount the axis runs to.
  * @returns The `y` in viewBox units.
+ *
+ * @internal Geometry of `z-cost-chart`, not part of the public API.
  */
 export function zCostY(value: number, maxValue: number, area: ZChartArea = Z_CHART_AREA): number {
   const spanne = Math.max(Number.EPSILON, zahl(maxValue));
   return area.y0 - (Math.min(Math.max(zahl(value), 0), spanne) / spanne) * (area.y0 - area.y1);
-}
-
-/**
- * What a month costs after a number of hours: the base amount plus the hourly
- * price, never more than the cap.
- *
- * @param base Base amount per month.
- * @param rate Price per hour, unrounded.
- * @param cap Upper limit per month. A cap below the base amount wins from hour 0.
- * @param hours Hours played; negative counts as 0.
- * @returns The cost, never negative.
- */
-export function zCostAt(base: number, rate: number, cap: number, hours: number): number {
-  const grund = zahl(base);
-  const preis = zahl(rate);
-  const deckel = zahl(cap);
-  const stunden = zahl(hours);
-  const offen = grund + preis * stunden;
-  return deckel > 0 ? Math.min(deckel, offen) : offen;
-}
-
-/**
- * The hour from which the cap holds: `(cap - base) / rate`, with the unrounded
- * hourly price. Rounding the price first moves the point, which is why the
- * chart never computes with the displayed value: 0,09 € instead of 0,088 €
- * turns 100 hours into 98.
- *
- * @param base Base amount per month.
- * @param rate Price per hour, unrounded.
- * @param cap Upper limit per month.
- * @returns The hour, `0` when the cap is already reached at hour 0, and `null`
- * when it is never reached, which is the case for a price of 0 per hour.
- */
-export function zCostCapHour(base: number, rate: number, cap: number): number | null {
-  const grund = zahl(base);
-  const preis = zahl(rate);
-  const deckel = zahl(cap);
-  if (deckel <= 0) {
-    return null;
-  }
-  if (deckel <= grund) {
-    return 0;
-  }
-  if (preis <= 0) {
-    return null;
-  }
-  // Rounded to a millionth: (10,30 - 1,50) / 0,088 lands on 100.00000000000001
-  // in binary floating point, and a cap hour of "101" would follow from it.
-  return Math.round(((deckel - grund) / preis) * 1e6) / 1e6;
 }
 
 /**
@@ -190,6 +161,8 @@ export function zCostCapHour(base: number, rate: number, cap: number): number | 
  *
  * @param spanne The span one tick should roughly cover.
  * @returns The step, always greater than 0.
+ *
+ * @internal Geometry of `z-cost-chart`, not part of the public API.
  */
 export function zCostStep(spanne: number): number {
   const weite = zahl(spanne);
@@ -212,6 +185,8 @@ export function zCostStep(spanne: number): number {
  * @param spanne Highest value the axis has to show.
  * @param step Distance between two ticks, from {@link zCostStep}.
  * @returns The values, 0 first, at most twelve of them.
+ *
+ * @internal Geometry of `z-cost-chart`, not part of the public API.
  */
 export function zCostTicks(spanne: number, step: number): number[] {
   const weite = zahl(spanne);
@@ -232,6 +207,8 @@ export function zCostTicks(spanne: number, step: number): number[] {
  * @param cap Upper limit per month.
  * @param maxHours Hours the time axis runs to; anything at or below 0 becomes 1.
  * @returns The geometry in viewBox units of {@link Z_CHART_AREA}.
+ *
+ * @internal Geometry of `z-cost-chart`, not part of the public API.
  */
 export function zCostGeometry(
   base: number,
@@ -286,6 +263,8 @@ export function zCostGeometry(
  * @param capHour The hour the cap takes over, or `null`.
  * @param maxHours Hours the time axis runs to.
  * @returns The hours in ascending order, without duplicates.
+ *
+ * @internal Geometry of `z-cost-chart`, not part of the public API.
  */
 export function zCostTableHours(capHour: number | null, maxHours: number): number[] {
   // Rounded up, not to the nearest: the cap holds from the hour the line
@@ -303,6 +282,8 @@ export function zCostTableHours(capHour: number | null, maxHours: number): numbe
  * @param anteil Position across the plot, 0 at the left edge, 1 at the right.
  * @param maxHours Hours the time axis runs to.
  * @returns The hour, between 0 and `maxHours`.
+ *
+ * @internal Geometry of `z-cost-chart`, not part of the public API.
  */
 export function zCostHourAt(anteil: number, maxHours: number): number {
   const stunden = Math.max(1, zahl(maxHours));

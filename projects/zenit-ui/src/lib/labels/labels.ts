@@ -62,14 +62,6 @@ export interface ZLabels {
   /** Caption of the "Ändern" button on a finished step of `z-wizard-step`. */
   wizardEdit: string;
 
-  /**
-   * Accessible name of that button, so several of them stay distinguishable.
-   *
-   * @param title Title of the step, for example "Inhalt".
-   * @returns The rendered name, for example `Inhalt ändern`.
-   */
-  wizardEditFor: (title: string) => string;
-
   /** The one line `z-combobox` shows when nothing matches and `emptyText` is empty. */
   comboboxEmpty: string;
 
@@ -208,7 +200,6 @@ export const Z_LABELS_DE = {
   toastClose: 'Schließen',
   tableRegion: 'Tabelle, seitlich scrollbar',
   wizardEdit: 'Ändern',
-  wizardEditFor: (title) => `${title} ändern`,
   comboboxEmpty: 'Kein Treffer',
   comboboxResults: (count) => (count === 1 ? '1 Treffer' : `${count} Treffer`),
   summaryRetry: 'Erneut versuchen',
@@ -253,7 +244,6 @@ export const Z_LABELS_EN = {
   toastClose: 'Close',
   tableRegion: 'Table, scrollable horizontally',
   wizardEdit: 'Change',
-  wizardEditFor: (title) => `Change ${title}`,
   comboboxEmpty: 'No match',
   comboboxResults: (count) => (count === 1 ? '1 result' : `${count} results`),
   summaryRetry: 'Try again',

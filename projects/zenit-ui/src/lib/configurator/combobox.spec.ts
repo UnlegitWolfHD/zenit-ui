@@ -310,6 +310,38 @@ describe('ZCombobox', () => {
       Array.from(document.querySelectorAll('.z-listbox__group')).map((k) => k.textContent?.trim()),
     ).toEqual(['Aktuell', 'Ältere']);
     expect(namen()).toEqual(['a', 'c', 'b']);
+
+    // The arrow keys walk the rows in the order they are drawn, not in the
+    // order of `options`: grouping moves rows, and the keyboard follows the eye.
+    const id = feld(fixture).getAttribute('aria-controls');
+    expect(zeilen().map((zeile) => zeile.id)).toEqual([`${id}-0`, `${id}-1`, `${id}-2`]);
+
+    taste(fixture, 'Home');
+    expect(feld(fixture).getAttribute('aria-activedescendant')).toBe(`${id}-0`);
+    taste(fixture, 'ArrowDown');
+    expect(zeilen()[1].classList.contains('z-listbox__option--active')).toBe(true);
+    taste(fixture, 'Enter');
+
+    expect(fixture.componentInstance.version()).toBe('c');
+  });
+
+  it('follows an overlay that is detached from outside', () => {
+    const fixture = TestBed.createComponent(ModellHost);
+    fixture.detectChanges();
+    oeffne(fixture);
+
+    expect(panel()).not.toBeNull();
+
+    // This is what the scroll strategy does once the field leaves the viewport.
+    // Without the detachments() subscription the component would keep an open
+    // state the document no longer has. (Whether the strategy really fires
+    // needs layout, so e2e/konfigurator.spec.ts scrolls a real page.)
+    (document.querySelector('.z-combo-pane') as HTMLElement).remove();
+    feld(fixture).dispatchEvent(new Event('blur'));
+    fixture.detectChanges();
+
+    expect(feld(fixture).getAttribute('aria-expanded')).toBe('false');
+    expect(feld(fixture).hasAttribute('aria-controls')).toBe(false);
   });
 
   it('closes on Escape without clearing, and a second Escape takes nothing away', () => {

@@ -37,7 +37,6 @@ parameters.
 | `toastClose` | `z-toast-outlet`, `aria-label` of the close button | `Schließen` | `Close` |
 | `tableRegion` | `z-table-container`, accessible name of the scrollable region | `Tabelle, seitlich scrollbar` | `Table, scrollable horizontally` |
 | `wizardEdit` | `z-wizard-step`, caption of the button on a finished step | `Ändern` | `Change` |
-| `wizardEditFor` | `z-wizard-step`, accessible name of that button | `` `${title} ändern` `` | `` `Change ${title}` `` |
 | `comboboxEmpty` | `z-combobox`, the row shown when nothing matches, if `emptyText` is empty | `Kein Treffer` | `No match` |
 | `comboboxResults` | `z-combobox`, the live region with the number of matches | `` `${count} Treffer` `` | `` `${count} results` `` |
 | `summaryRetry` | `z-price-summary`, caption of the retry button, if `retryLabel` is empty | `Erneut versuchen` | `Try again` |
@@ -59,7 +58,7 @@ parameters.
 
 The keys that take parameters are functions: `comboboxResults` (`(count) => string`), `paginationRange`
 (`(from, to, total, itemLabel) => string`, where `from` and `to` are the entry numbers of the
-current page, 1-based), `wizardEditFor` (`(title) => string`), `chartDesc`
+current page, 1-based), `chartDesc`
 (`(base, rate, cap, capHours) => string`) and the number formats of `z-cost-chart`
 (`chartMoney`, `chartAxisMoney`, `chartAxisHours`, `chartBaseLabel`, `chartCapLabel`,
 `chartPlayed` and `chartTableCapRow`, each `(n: number) => string`). The German formats write a

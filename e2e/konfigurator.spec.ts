@@ -138,51 +138,82 @@ test.describe('axe in den geöffneten Zuständen', () => {
 });
 
 test.describe('Fokus wird nirgends verdeckt', () => {
-  for (const route of ['muster/server-erstellen', 'muster/preisrechner'] as const) {
-    test(`/${route} bei 375x667`, async ({ page }) => {
-      await page.setViewportSize({ width: 375, height: 667 });
-      await page.goto(`/${route}?schritt=3&bezahlung=paypal`);
-      await page.locator('main h1').waitFor();
-      await page.evaluate(() => document.fonts.ready.then(() => true));
-      await expect(page.locator('z-sticky-bar')).toBeVisible();
-
-      const verdeckt: string[] = [];
-      const gesehen = new Set<string>();
-      await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
-      for (let schritt = 0; schritt < 120; schritt++) {
-        await page.keyboard.press('Tab');
-        const fund = await page.evaluate(() => {
-          const el = document.activeElement as HTMLElement | null;
-          if (!el || el === document.body) return null;
-          const kasten = el.getBoundingClientRect();
-          if (kasten.width < 2 || kasten.height < 2) {
-            return { schluessel: el.outerHTML.slice(0, 60), name: '', verdeckt: false };
-          }
-          const name = (el.textContent || el.getAttribute('aria-label') || el.tagName)
-            .trim()
-            .slice(0, 40);
-          const mitte = document.elementFromPoint(
+  /**
+   * Geht durch alle Tab-Stopps und prüft, dass die StickyBar keinen davon
+   * verdeckt (WCAG 2.4.11). Gemessen wird die KARTE, nicht das versteckte
+   * Radio darin: der Browser scrollt die fokussierte Box in den Sichtbereich,
+   * und was der Nutzer sieht, ist die Karte. Mitte und Unterkante, weil ein
+   * halb verdecktes Ziel auch verdeckt ist.
+   */
+  async function verdeckteStopps(page: Page): Promise<string[]> {
+    const verdeckt: string[] = [];
+    const gesehen = new Set<string>();
+    await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+    for (let schritt = 0; schritt < 140; schritt++) {
+      await page.keyboard.press('Tab');
+      const fund = await page.evaluate(() => {
+        const el = document.activeElement as HTMLElement | null;
+        if (!el || el === document.body) return null;
+        // Ein verstecktes Radio steht für seine Karte.
+        const sichtbar =
+          el.tagName === 'INPUT' && (el as HTMLInputElement).type === 'radio'
+            ? (el.closest('label') as HTMLElement) ?? el
+            : el;
+        const kasten = sichtbar.getBoundingClientRect();
+        const name = (sichtbar.textContent || el.getAttribute('aria-label') || el.tagName)
+          .trim()
+          .replace(/\s+/g, ' ')
+          .slice(0, 40);
+        const schluessel = `${sichtbar.tagName}.${sichtbar.className}:${name}`;
+        if (kasten.width < 2 || kasten.height < 2) {
+          return { schluessel, name, verdeckt: false };
+        }
+        const leiste = document.querySelector('z-sticky-bar');
+        const trifftLeiste = (y: number) => {
+          const punkt = document.elementFromPoint(
             Math.round(kasten.left + kasten.width / 2),
-            Math.round(kasten.top + kasten.height / 2),
+            Math.round(y),
           );
-          const leiste = document.querySelector('z-sticky-bar');
-          return {
-            schluessel: `${el.tagName}.${el.className}:${name}`,
-            name,
-            // Verdeckt ist, was der Treffertest an seiner eigenen Mitte nicht
-            // mehr liefert, weil die Leiste davor liegt.
-            verdeckt: !!leiste && !!mitte && leiste.contains(mitte) && !leiste.contains(el),
-          };
-        });
-        if (!fund) break;
-        if (gesehen.has(fund.schluessel)) break;
-        gesehen.add(fund.schluessel);
-        if (fund.verdeckt) verdeckt.push(fund.name);
-      }
+          return !!leiste && !!punkt && leiste.contains(punkt) && !leiste.contains(sichtbar);
+        };
+        return {
+          schluessel,
+          name,
+          verdeckt:
+            trifftLeiste(kasten.top + kasten.height / 2) || trifftLeiste(kasten.bottom - 2),
+        };
+      });
+      if (!fund) break;
+      if (gesehen.has(fund.schluessel)) break;
+      gesehen.add(fund.schluessel);
+      if (fund.verdeckt) verdeckt.push(fund.name);
+    }
+    expect(gesehen.size, 'kein Tab-Stopp gefunden').toBeGreaterThan(5);
+    return verdeckt;
+  }
 
-      expect(gesehen.size, `/${route} hat keinen Tab-Stopp`).toBeGreaterThan(5);
-      expect(verdeckt, `/${route}: Fokus hinter der StickyBar (WCAG 2.4.11)`).toEqual([]);
-    });
+  const SEITEN = [
+    { route: 'muster/server-erstellen', suche: '?schritt=1' },
+    { route: 'muster/server-erstellen', suche: '?schritt=2' },
+    { route: 'muster/server-erstellen', suche: '?schritt=3&bezahlung=paypal' },
+    { route: 'muster/preisrechner', suche: '?abrechnung=flex' },
+  ] as const;
+
+  for (const hoehe of [600, 667, 740]) {
+    for (const seite of SEITEN) {
+      test(`/${seite.route}${seite.suche} bei 375x${hoehe}`, async ({ page }) => {
+        await page.setViewportSize({ width: 375, height: hoehe });
+        await page.goto(`/${seite.route}${seite.suche}`);
+        await page.locator('main h1').waitFor();
+        await page.evaluate(() => document.fonts.ready.then(() => true));
+        await expect(page.locator('z-sticky-bar')).toBeVisible();
+
+        expect(
+          await verdeckteStopps(page),
+          `/${seite.route}${seite.suche}: Fokus hinter der StickyBar (WCAG 2.4.11)`,
+        ).toEqual([]);
+      });
+    }
   }
 });
 
@@ -281,6 +312,24 @@ test.describe('Combobox mit der Tastatur', () => {
 
     await page.keyboard.press('Escape');
     await expect(feld).toHaveValue('1.20.1');
+  });
+});
+
+test.describe('Combobox beim Scrollen', () => {
+  test('das Panel schließt, wenn das Feld aus dem Bild scrollt', async ({ page }) => {
+    await seiteOeffnen(page, 'konfigurator', 1440, 700);
+    const feld = page.locator('#kf-version');
+    await feld.scrollIntoViewIfNeeded();
+    await feld.focus();
+    await page.keyboard.press('ArrowDown');
+    await expect(page.locator('.z-listbox')).toBeVisible();
+
+    await page.evaluate(() => window.scrollBy(0, 1600));
+    await page.waitForTimeout(150);
+
+    // Weder offen noch irgendwo allein in der Seite stehend.
+    await expect(page.locator('.z-listbox')).toHaveCount(0);
+    await expect(feld).toHaveAttribute('aria-expanded', 'false');
   });
 });
 

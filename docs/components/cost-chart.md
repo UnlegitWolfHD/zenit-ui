@@ -16,14 +16,7 @@ Shows how flex costs grow with the hours played and where the cap takes over.
 ## Import
 
 ```ts
-import {
-  Z_CHART_AREA,
-  ZChartGeometry,
-  ZCostChart,
-  zCostAt,
-  zCostCapHour,
-  zCostGeometry,
-} from 'zenit-ui';
+import { ZCostChart, zCostAt, zCostCapHour } from 'zenit-ui';
 ```
 
 ## API
@@ -42,9 +35,11 @@ No outputs, no content projection. Every visible default text and number format 
 label registry (`chartTitle`, `chartDesc`, `chartMoney`, `chartPlayed`, …), so an application in
 another language sets them once; see [Labels](../labels.md).
 
-The arithmetic is exported as pure functions: `zCostAt`, `zCostCapHour`, `zCostStep`, `zCostTicks`,
-`zCostHourStep`, `zCostGeometry`, `zCostTableHours`, `zCostHourAt`, `zCostX`, `zCostY`, plus
-`zCostArea` and the default drawing area `Z_CHART_AREA`.
+Two rules are exported as pure functions, because a caller computes with them too: `zCostAt` (what
+an hour costs) and `zCostCapHour` (the hour the cap takes over). The rest of the arithmetic —
+`zCostArea`, `zCostGeometry`, `zCostHourStep`, `zCostStep`, `zCostTicks`, `zCostTableHours`,
+`zCostHourAt`, `zCostX`, `zCostY`, `Z_CHART_AREA` and the geometry types — is the drawing of this
+one chart, is marked `@internal` and stays out of the public API.
 
 ## Examples
 
@@ -160,8 +155,20 @@ and the 5px marker radius are literal values from the reference stylesheet.
   padding that the preview writes as an inline style; a library component carries no inline styles.
 - Addition to the reference: `.z-chart__plot:focus-visible` gets the 2px ring, because the plot is
   a tab stop.
-- The tooltip is placed in pixels from the measured widths of plot and tooltip, so it stays inside
-  the plot at every width. The reference script writes the same offset as an inline transform.
+- The tooltip is placed in pixels from the measured **border box** of plot and tooltip, so it stays
+  inside the plot at every width; the content box alone leaves out the border and padding and lets
+  it hang out by exactly that much. The reference script writes the same offset as an inline
+  transform.
+- The second figure ("Höchstens im Monat") is left out when there is no cap, so it never reads
+  "0,00 €" next to a description that says there is none.
+
+## Deviation from the README
+
+`CostChart/README.md` prescribes the wording "Höchstens im Monat" for the second figure, and that
+stays the default of the `chartCapPerMonth` label. The unit of the configurator pages is the day
+("30 Tage", never a month), so the two sit next to each other on `/muster/preisrechner`. The label
+is overridable, but the demo does not override it: the README wording is normative, and a caller
+whose page counts in days can set the key once.
 
 ## Do / Don't
 

@@ -306,8 +306,38 @@ export class ZCombobox implements ControlValueAccessor, FormValueControl<string>
     return this.options().filter((o) => `${o.label} ${o.note ?? ''}`.toLowerCase().includes(suche));
   });
 
+  /**
+   * Grouped by name, in the order the names first appear. Entries of the same
+   * group that stand apart in `options` land under one heading, so a name never
+   * shows up twice and the tracking key of the list stays unique.
+   */
+  protected readonly gruppen = computed<Gruppe[]>(() => {
+    const nach = new Map<string, ZComboOption[]>();
+    for (const option of this.treffer()) {
+      const name = option.group ?? '';
+      const vorhanden = nach.get(name);
+      if (vorhanden) {
+        vorhanden.push(option);
+      } else {
+        nach.set(name, [option]);
+      }
+    }
+    // Numbered in the order the rows are drawn, not in the order of `options`:
+    // grouping moves rows, and the arrow keys have to follow the eye.
+    let index = 0;
+    return [...nach].map(([name, optionen]) => ({
+      name,
+      eintraege: optionen.map((option) => this.zuEintrag(option, index++)),
+    }));
+  });
+
+  /** Every row of every group, in the order they are drawn. */
   private readonly eintraege = computed<Eintrag[]>(() =>
-    this.treffer().map((option, index) => ({
+    this.gruppen().flatMap((gruppe) => gruppe.eintraege as Eintrag[]),
+  );
+
+  private zuEintrag(option: ZComboOption, index: number): Eintrag {
+    return {
       option,
       index,
       getLabel: () => option.label,
@@ -315,27 +345,8 @@ export class ZCombobox implements ControlValueAccessor, FormValueControl<string>
       // whole state and the counterpart has nothing left to undo.
       setActiveStyles: () => this.aktiverIndex.set(index),
       setInactiveStyles: () => undefined,
-    })),
-  );
-
-  /**
-   * Grouped by name, in the order the names first appear. Entries of the same
-   * group that stand apart in `options` land under one heading, so a name never
-   * shows up twice and the tracking key of the list stays unique.
-   */
-  protected readonly gruppen = computed<Gruppe[]>(() => {
-    const nach = new Map<string, Eintrag[]>();
-    for (const eintrag of this.eintraege()) {
-      const name = eintrag.option.group ?? '';
-      const vorhanden = nach.get(name);
-      if (vorhanden) {
-        vorhanden.push(eintrag);
-      } else {
-        nach.set(name, [eintrag]);
-      }
-    }
-    return [...nach].map(([name, eintraege]) => ({ name, eintraege }));
-  });
+    };
+  }
 
   /**
    * What the live region says while the panel is open: how many entries the
@@ -488,18 +499,26 @@ export class ZCombobox implements ControlValueAccessor, FormValueControl<string>
 
   /** As wide as the field, below it, above it as the fallback position. */
   private erzeugeOverlay(): OverlayRef {
+    const position = this.overlay.position().flexibleConnectedTo(this.feld());
     const ref = this.overlay.create({
       panelClass: 'z-combo-pane',
-      positionStrategy: this.overlay
-        .position()
-        .flexibleConnectedTo(this.feld())
+      positionStrategy: position
         .withPositions([
           { originX: 'start', originY: 'bottom', overlayX: 'start', overlayY: 'top' },
           { originX: 'start', originY: 'top', overlayX: 'start', overlayY: 'bottom' },
-        ]),
-      // autoClose detaches the panel as soon as the field is scrolled out of
-      // view; without it the list would stand alone in the page.
+        ])
+        // Without this the strategy pushes the panel back into the viewport
+        // when the field leaves it, and autoClose, which measures the overlay,
+        // then never sees anything clipped: the list would stand in the page
+        // far from the field it belongs to.
+        .withPush(false),
       scrollStrategy: this.overlay.scrollStrategies.reposition({ autoClose: true }),
+    });
+    // The panel belongs to the field. Once the field is out of sight, so is it.
+    position.positionChanges.subscribe((aenderung) => {
+      if (aenderung.scrollableViewProperties.isOriginClipped) {
+        this.schliesse();
+      }
     });
     // A pointer on the field itself is not "outside": it opens the panel and
     // would otherwise close it again within the same event.

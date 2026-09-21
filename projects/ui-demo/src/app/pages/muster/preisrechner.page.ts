@@ -25,6 +25,7 @@ import {
   ZStickyBar,
 } from 'zenit-ui';
 import {
+  ABRECHNUNGEN,
   ENTHALTEN,
   euro,
   FLEX_GRUNDBETRAG,
@@ -39,20 +40,6 @@ import {
   rechnung,
   VORGABE,
 } from './konfigurator-daten';
-
-/** How the order is billed. Two cards, not a switch, because both have a price. */
-const ABRECHNUNGEN: ZOption[] = [
-  {
-    value: 'monat',
-    title: 'Monatspreis',
-    description: 'Fester Betrag je Laufzeit, egal wie viel gespielt wird.',
-  },
-  {
-    value: 'flex',
-    title: 'Flex',
-    description: 'Nach gespielten Stunden, nach oben gedeckelt.',
-  },
-];
 
 /** The RAM steps without a version rule: this page orders nothing yet. */
 const RAM_OPTIONEN: ZOption<number>[] = RAM_STUFEN.map((stufe) => ({

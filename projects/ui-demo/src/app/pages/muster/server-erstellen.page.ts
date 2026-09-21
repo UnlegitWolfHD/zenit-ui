@@ -39,10 +39,14 @@ import {
 } from 'zenit-ui';
 import {
   angehobenerRam,
+  ABRECHNUNGEN,
   BEZAHLMETHODEN,
   DemoAuswahl,
+  flexDeckel,
   ENTHALTEN,
   euro,
+  FLEX_GRUNDBETRAG,
+  flexStundenpreis,
   gutscheinFehler,
   JAVA_VERSIONEN,
   KLASSEN,
@@ -198,6 +202,12 @@ type Parameter = Record<string, string>;
             />
 
             <z-option-group
+              legend="Abrechnung"
+              [options]="abrechnungen"
+              [formField]="formular.abrechnung"
+            />
+
+            <z-option-group
               legend="Bezahlmethode"
               [options]="bezahlmethoden"
               [formField]="formular.bezahlung"
@@ -241,6 +251,7 @@ type Parameter = Record<string, string>;
           <z-price-summary
             [label]="summenLabel()"
             [price]="preisText()"
+            [period]="zeitraumText()"
             [lines]="posten()"
             [total]="summenZeile()"
             [loading]="preisLaedt()"
@@ -285,6 +296,7 @@ export class MusterServerErstellenPage {
   protected readonly versionen = VERSIONEN;
   protected readonly javaVersionen = JAVA_VERSIONEN;
   protected readonly bezahlmethoden = BEZAHLMETHODEN;
+  protected readonly abrechnungen = ABRECHNUNGEN;
   protected readonly enthalten = ENTHALTEN;
 
   private readonly route = inject(ActivatedRoute);
@@ -302,6 +314,7 @@ export class MusterServerErstellenPage {
    */
   protected readonly werte = signal({
     ...VORGABE,
+    abrechnung: 'monat',
     name: '',
     verlaengern: true,
     build: '',
@@ -326,8 +339,6 @@ export class MusterServerErstellenPage {
   /** The voucher that is really applied, not what stands in the field. */
   private readonly gutscheinCode = signal('');
 
-  /** What the price calculator last came back with, and what the page shows. */
-  private readonly bestaetigterPreis = signal('');
   /** Set when the selection arrived from the calculator with another game. */
   private readonly uebernommenesSpiel = signal('');
 
@@ -372,36 +383,18 @@ export class MusterServerErstellenPage {
     const klassenname = this.klassen.find((e) => e.value === klasse)?.title ?? '';
     return (
       `Für ${spiel} gibt es hier noch keinen eigenen Ablauf. Übernommen sind ` +
-      `${ramGb}\u00a0GB, ${klassenname} und ${tage}\u00a0Tage; Server-Typ und Version ` +
-      `gehören zu Minecraft. Wechsle im Preisrechner zurück, wenn du ${spiel} wolltest.`
+      `${ramGb}\u00a0GB, ${klassenname}, ${tage}\u00a0Tage und die Abrechnung; ` +
+      `Server-Typ, Version und Preis gehören zu Minecraft. Wechsle im Preisrechner ` +
+      `zurück, wenn du ${spiel} wolltest.`
     );
   });
 
-  private readonly summe = computed(() => rechnung(this.auswahl(), this.gutscheinCode()));
-
-  /**
-   * The number on screen. While a calculation runs it is the last one that came
-   * back, never the new one in muted grey: a price a customer reads has been
-   * confirmed.
-   */
-  protected readonly preisText = computed(() =>
-    this.preisLaedt() ? this.bestaetigterPreis() : euro(this.summe().summe),
-  );
-
-  /** Whether anything is taken off, which is what a sum line is there for. */
-  private readonly mitRabatt = computed(
-    () => !!this.summe().laufzeitrabatt || !!this.summe().gutschein,
-  );
-
-  // One fact, one place: without a deduction the sum is the price in the head
-  // already, so neither the sum nor the price before the discount gets a line.
-  protected readonly summenZeile = computed(() =>
-    this.mitRabatt() ? { label: 'Summe', value: euro(this.summe().summe) } : null,
-  );
-
-  protected readonly posten = computed<ZPriceLine[]>(() => {
-    const { typ, version: v, klasse, tage, ramGb } = this.werte();
-    const zahl = this.summe();
+  /** Everything the summary shows, as one value that can be frozen as a whole. */
+  private readonly stand = computed(() => {
+    const { typ, version: v, klasse, tage, ramGb, abrechnung } = this.werte();
+    const zahl = rechnung(this.auswahl(), this.gutscheinCode());
+    const flex = abrechnung === 'flex';
+    const mitRabatt = !flex && (!!zahl.laufzeitrabatt || !!zahl.gutschein);
     const zeilen: ZPriceLine[] = [
       { label: 'Typ', value: this.typen.find((e) => e.value === typ)?.title ?? '' },
       { label: 'Version', value: version(v).label },
@@ -410,27 +403,57 @@ export class MusterServerErstellenPage {
         label: 'Leistungsklasse',
         value: this.klassen.find((e) => e.value === klasse)?.title ?? '',
       },
-      { label: 'Laufzeit', value: `${tage}\u00a0Tage` },
     ];
-    if (this.mitRabatt()) {
+    if (flex) {
+      // Flex bills by the hour with a cap, so a term is not what is paid for.
+      zeilen.push({ label: 'Abrechnung', value: 'Flex' });
+      zeilen.push({ label: 'Grundbetrag', value: euro(FLEX_GRUNDBETRAG) });
+      zeilen.push({ label: 'Pro Stunde', value: euro(flexStundenpreis(ramGb)) });
+    } else {
+      zeilen.push({ label: 'Laufzeit', value: `${tage}\u00a0Tage` });
+    }
+    if (mitRabatt) {
       zeilen.push({ label: `Preis für ${tage}\u00a0Tage`, value: euro(zahl.vorRabatt) });
     }
-    if (zahl.laufzeitrabatt) {
+    if (!flex && zahl.laufzeitrabatt) {
       zeilen.push({
         label: 'Laufzeitrabatt',
         value: minusEuro(zahl.laufzeitrabatt),
         discount: true,
       });
     }
-    if (zahl.gutschein) {
+    if (!flex && zahl.gutschein) {
       zeilen.push({
         label: `Gutschein ${this.gutscheinCode()}`,
         value: minusEuro(zahl.gutschein),
         discount: true,
       });
     }
-    return zeilen;
+    const betrag = flex ? flexDeckel(zahl.proZeitraum) : zahl.summe;
+    return {
+      preis: euro(betrag),
+      zeitraum: flex ? 'höchstens je 30\u00a0Tage' : '',
+      label: flex ? 'Minecraft, Flex' : `Minecraft, alle ${tage}\u00a0Tage`,
+      lines: zeilen,
+      total: mitRabatt ? { label: 'Summe', value: euro(betrag) } : null,
+    };
   });
+
+  /**
+   * What the summary shows. While a calculation runs it is the state that last
+   * came back, as a whole: a head price from before next to lines from after
+   * would be two different sums on one card.
+   */
+  private readonly bestaetigterStand = signal(this.stand());
+  private readonly sichtbarerStand = computed(() =>
+    this.preisLaedt() ? this.bestaetigterStand() : this.stand(),
+  );
+
+  protected readonly preisText = computed(() => this.sichtbarerStand().preis);
+  protected readonly zeitraumText = computed(() => this.sichtbarerStand().zeitraum);
+  protected readonly summenLabel = computed(() => this.sichtbarerStand().label);
+  protected readonly posten = computed(() => this.sichtbarerStand().lines);
+  protected readonly summenZeile = computed(() => this.sichtbarerStand().total);
 
   /**
    * Everything the order needs before the button opens: the last step, a
@@ -457,8 +480,6 @@ export class MusterServerErstellenPage {
     }
     return 'Nach Stunden abgerechnet, jederzeit kündbar.';
   });
-
-  protected readonly summenLabel = computed(() => `Minecraft, alle ${this.werte().tage}\u00a0Tage`);
 
   protected readonly kurzInhalt = computed(
     () =>
@@ -487,7 +508,6 @@ export class MusterServerErstellenPage {
 
   constructor() {
     this.ausUrl();
-    this.bestaetigterPreis.set(euro(this.summe().summe));
 
     // The URL carries the whole selection, so a link is shareable and a reload
     // brings the state back, step included.
@@ -590,7 +610,7 @@ export class MusterServerErstellenPage {
       const fehlgeschlagen = this.preisFehlerSchalter();
       this.preisFehler.set(fehlgeschlagen);
       if (!fehlgeschlagen) {
-        this.bestaetigterPreis.set(euro(this.summe().summe));
+        this.bestaetigterStand.set(this.stand());
       }
     }, RECHENDAUER);
   }
@@ -608,7 +628,7 @@ export class MusterServerErstellenPage {
       this.werte().klasse,
       this.werte().ramGb,
       this.werte().tage,
-      this.werte().grundbetrag,
+      this.werte().abrechnung,
       this.gutscheinCode(),
       this.preisFehlerSchalter(),
     ].join('|'),
@@ -663,7 +683,13 @@ export class MusterServerErstellenPage {
       klasse: einer(KLASSEN, p.get('klasse')) || VORGABE.klasse,
       tage,
       bezahlung: einer(BEZAHLMETHODEN, p.get('bezahlung')),
-      grundbetrag: spiel?.grundbetrag ?? MINECRAFT_GRUNDBETRAG,
+      // The order page is the Minecraft flow and prices as Minecraft, whatever
+      // game the calculator handed over. The alert above the wizard says so.
+      grundbetrag: MINECRAFT_GRUNDBETRAG,
+      abrechnung:
+        p.get('abrechnung') === 'flex' || p.get('abrechnung') === 'monat'
+          ? (p.get('abrechnung') as string)
+          : alt.abrechnung,
     }));
     const schritt = Number(p.get('schritt'));
     this.schritt.set([1, 2, 3].includes(schritt) ? schritt : 1);

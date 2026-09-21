@@ -15,12 +15,12 @@ import { injectZLabels } from '../labels';
 import {
   Z_CHART_AREA,
   zCostArea,
-  zCostAt,
   zCostGeometry,
   zCostHourAt,
   zCostX,
   zCostY,
 } from './cost-chart-math';
+import { zCostAt } from './cost-chart-rules';
 
 let zaehler = 0;
 
@@ -67,10 +67,12 @@ let zaehler = 0;
         <span>{{ etiketten.chartPerHour }}</span
         ><strong>{{ etiketten.chartMoney(stundenpreis()) }}</strong>
       </div>
-      <div class="z-chart__figure">
-        <span>{{ etiketten.chartCapPerMonth }}</span
-        ><strong>{{ etiketten.chartMoney(deckelBetrag()) }}</strong>
-      </div>
+      @if (deckelBetrag() > 0) {
+        <div class="z-chart__figure">
+          <span>{{ etiketten.chartCapPerMonth }}</span
+          ><strong>{{ etiketten.chartMoney(deckelBetrag()) }}</strong>
+        </div>
+      }
     </div>
 
     <div
@@ -116,10 +118,9 @@ let zaehler = 0;
             {{ etiketten.chartAxisMoney(tick.value) }}
           </text>
         }
-        @for (tick of geometrie().hourTicks; track tick.value; let letzte = $last; let i = $index) {
+        @for (tick of geometrie().hourTicks; track tick.value; let letzte = $last) {
           <text
             class="z-chart__axis"
-            [class.z-chart__axis--half]="i % 2 === 1"
             [attr.x]="tick.pos"
             [attr.y]="flaeche().y0 + 24"
             [attr.text-anchor]="letzte ? 'end' : 'middle'"
@@ -369,8 +370,12 @@ export class ZCostChart {
         ? undefined
         : new ResizeObserver((eintraege) => {
             for (const eintrag of eintraege) {
-              const breite = eintrag.contentRect.width;
-              if (eintrag.target === this.plot().nativeElement) {
+              // The border box, not contentRect: the tooltip has a border and
+              // padding, and clamping it by its content alone lets it hang out
+              // of the plot by exactly that much.
+              const element = eintrag.target as HTMLElement;
+              const breite = element.offsetWidth || eintrag.contentRect.width;
+              if (element === this.plot().nativeElement) {
                 this.breite.set(breite);
               } else {
                 this.tipBreite.set(breite);

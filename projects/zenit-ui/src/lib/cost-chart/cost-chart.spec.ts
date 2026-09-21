@@ -3,16 +3,15 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ZCostChart } from './cost-chart';
 import {
   Z_CHART_AREA,
-  zCostAt,
-  zCostCapHour,
+  zCostArea,
   zCostGeometry,
   zCostHourAt,
-  zCostArea,
   zCostHourStep,
   zCostStep,
   zCostTableHours,
   zCostTicks,
 } from './cost-chart-math';
+import { zCostAt, zCostCapHour } from './cost-chart-rules';
 
 /*
  * The numbers are the ones from CostChart/preview.html: 1,50 € base, 0,088 €

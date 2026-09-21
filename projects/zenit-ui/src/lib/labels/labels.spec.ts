@@ -49,8 +49,6 @@ describe('Z_LABELS', () => {
   it('renders every function key in both languages', () => {
     // Keys that take parameters are exempt from the string comparison below, so
     // they are compared by their result instead.
-    expect(Z_LABELS_DE.wizardEditFor('Inhalt')).toBe('Inhalt ändern');
-    expect(Z_LABELS_EN.wizardEditFor('Content')).toBe('Change Content');
     expect(Z_LABELS_DE.chartMoney(5.9)).toBe('5,90\u00a0€');
     expect(Z_LABELS_EN.chartMoney(5.9)).toBe('€5.90');
     expect(Z_LABELS_DE.chartAxisMoney(10)).toBe('10\u00a0€');
@@ -77,7 +75,6 @@ describe('Z_LABELS', () => {
   it('holds the new keys of the configurator, in both languages', () => {
     for (const schluessel of [
       'wizardEdit',
-      'wizardEditFor',
       'comboboxEmpty',
       'comboboxResults',
       'summaryRetry',
