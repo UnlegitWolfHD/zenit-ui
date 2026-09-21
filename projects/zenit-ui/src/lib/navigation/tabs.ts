@@ -21,7 +21,7 @@ import { booleanAttribute, Directive, input } from '@angular/core';
  */
 @Directive({
   selector: 'nav[zTabs]',
-  host: { 'class': 'z-tabs' },
+  host: { class: 'z-tabs' },
 })
 export class ZTabs {}
 
@@ -42,7 +42,7 @@ export class ZTabs {}
 @Directive({
   selector: 'a[zTab]',
   host: {
-    'class': 'z-tab',
+    class: 'z-tab',
     '[attr.aria-current]': `active() ? "page" : null`,
   },
 })

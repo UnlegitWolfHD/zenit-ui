@@ -43,7 +43,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
     <ng-content />
   `,
   host: {
-    'class': 'z-setting',
+    class: 'z-setting',
     // Otherwise the browser hangs its own tooltip on the whole row because of
     // the static attribute title="…".
     '[attr.title]': `null`,

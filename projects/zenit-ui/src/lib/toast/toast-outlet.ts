@@ -57,7 +57,7 @@ import { ZToast, ZToastItem } from './toast';
       </div>
     }
   `,
-  host: { 'class': 'z-toast-outlet' },
+  host: { class: 'z-toast-outlet' },
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ZToastOutlet {

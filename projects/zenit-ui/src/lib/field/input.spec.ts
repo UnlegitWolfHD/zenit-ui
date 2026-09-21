@@ -45,9 +45,9 @@ class GruppeHost {}
 
 @Component({
   imports: [ZField, ZInput],
-  template: `<z-field label="Notiz" for="notiz" hint="Optional"
-    ><textarea zInput id="notiz"></textarea
-  ></z-field>`,
+  template: `<z-field label="Notiz" for="notiz" hint="Optional">
+    <textarea zInput id="notiz"></textarea>
+  </z-field>`,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 class TextareaHost {}

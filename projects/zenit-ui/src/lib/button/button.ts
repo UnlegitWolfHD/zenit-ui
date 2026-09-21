@@ -47,9 +47,12 @@ export type ZButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 @Component({
   selector: 'button[zBtn], a[zBtn]',
   imports: [ZSpinner],
-  template: `@if (loading()) {<z-spinner />}<ng-content />`,
+  template: `@if (loading()) {
+      <z-spinner />
+    }
+    <ng-content />`,
   host: {
-    'class': 'z-btn',
+    class: 'z-btn',
     '[class.z-btn--primary]': `variante() === 'primary'`,
     '[class.z-btn--secondary]': `variante() === 'secondary'`,
     '[class.z-btn--ghost]': `variante() === 'ghost'`,

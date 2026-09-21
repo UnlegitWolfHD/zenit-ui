@@ -26,7 +26,7 @@ import { ZField } from './field';
 @Directive({
   selector: 'input[zInput], textarea[zInput]',
   host: {
-    'class': 'z-input',
+    class: 'z-input',
     '[class.z-input--sm]': `size() === 'sm'`,
     '[class.z-input--mono]': `mono()`,
     '[attr.aria-invalid]': `invalid() ? "true" : null`,

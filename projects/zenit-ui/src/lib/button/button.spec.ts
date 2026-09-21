@@ -18,7 +18,9 @@ class StandardHost {}
     [iconOnly]="nurIcon()"
     [loading]="laedt()"
     [disabled]="gesperrt()"
-  >Wird gestartet</button>`,
+  >
+    Wird gestartet
+  </button>`,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 class ButtonHost {

@@ -88,7 +88,7 @@ export class ZDialogActions {}
     }
   `,
   host: {
-    'class': 'z-dialog',
+    class: 'z-dialog',
     '[attr.title]': `null`,
   },
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -88,7 +88,7 @@ let laufendeNummer = 0;
       <span class="z-field__hint" [id]="hinweisId">{{ hint() }}</span>
     }
   `,
-  host: { 'class': 'z-range' },
+  host: { class: 'z-range' },
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => ZSlider), multi: true }],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

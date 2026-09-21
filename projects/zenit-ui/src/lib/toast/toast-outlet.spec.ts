@@ -98,7 +98,9 @@ describe('ZToastOutlet', () => {
 
   it('calls the callback on a click on the action and closes the toast', () => {
     const aktion = vi.fn();
-    zeige(() => dienst.show('Eigenschaften gespeichert', { actionLabel: 'Rückgängig', action: aktion }));
+    zeige(() =>
+      dienst.show('Eigenschaften gespeichert', { actionLabel: 'Rückgängig', action: aktion }),
+    );
 
     const button = toasts()[0].querySelector<HTMLButtonElement>('.z-toast__action');
     button?.click();
@@ -132,9 +134,9 @@ describe('ZToastOutlet', () => {
     TestBed.inject(ZToast).show('Adresse kopiert');
     eigenes.detectChanges();
 
-    expect(
-      eigenes.nativeElement.querySelector('.z-toast__close').getAttribute('aria-label'),
-    ).toBe('Meldung schließen');
+    expect(eigenes.nativeElement.querySelector('.z-toast__close').getAttribute('aria-label')).toBe(
+      'Meldung schließen',
+    );
   });
 
   it('removes the toast on a click on close', () => {

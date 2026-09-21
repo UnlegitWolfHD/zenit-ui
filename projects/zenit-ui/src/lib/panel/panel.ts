@@ -65,7 +65,7 @@ export class ZPanelActions {}
     <ng-content select="z-pagination" />
   `,
   host: {
-    'class': 'z-panel',
+    class: 'z-panel',
     '[attr.title]': `null`,
     '[attr.aria-busy]': `busy() ? "true" : null`,
   },

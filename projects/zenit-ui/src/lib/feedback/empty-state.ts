@@ -47,7 +47,7 @@ export class ZEmptyAction {}
     <ng-content select="[zEmptyAction]" />
   `,
   host: {
-    'class': 'z-empty',
+    class: 'z-empty',
     /* Without this the title would also sit on the element as a native title
        attribute and the browser would show its own tooltip (measured). */
     '[attr.title]': `null`,

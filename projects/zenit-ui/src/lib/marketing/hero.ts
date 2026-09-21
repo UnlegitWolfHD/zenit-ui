@@ -15,7 +15,7 @@ import { ChangeDetectionStrategy, Component, Directive, input } from '@angular/c
  */
 @Directive({
   selector: '[zHeroActions]',
-  host: { 'class': 'z-hero__actions' },
+  host: { class: 'z-hero__actions' },
 })
 export class ZHeroActions {}
 
@@ -77,7 +77,7 @@ export class ZHeroAside {}
     <ng-content select="[zHeroAside]" />
   `,
   host: {
-    'class': 'z-hero',
+    class: 'z-hero',
     '[attr.title]': `null`,
   },
   changeDetection: ChangeDetectionStrategy.OnPush,

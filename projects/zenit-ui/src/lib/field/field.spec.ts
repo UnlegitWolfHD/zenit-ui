@@ -5,12 +5,9 @@ import { ZInput } from './input';
 
 @Component({
   imports: [ZField, ZInput],
-  template: `<z-field
-    [label]="beschriftung()"
-    [for]="fuer()"
-    [hint]="hinweis()"
-    [error]="fehler()"
-  ><input zInput [attr.id]="fuer() || null" /></z-field>`,
+  template: `<z-field [label]="beschriftung()" [for]="fuer()" [hint]="hinweis()" [error]="fehler()"
+    ><input zInput [attr.id]="fuer() || null"
+  /></z-field>`,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 class FieldHost {

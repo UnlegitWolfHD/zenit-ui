@@ -39,7 +39,7 @@ import { ZIcon } from '../icon';
 @Component({
   selector: 'z-menu',
   template: `<ng-content />`,
-  host: { 'class': 'z-menu' },
+  host: { class: 'z-menu' },
   hostDirectives: [CdkMenu],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -72,9 +72,12 @@ export class ZMenu {}
   // The API table says the entry is a button with an attribute selector.
   selector: 'button[zMenuItem]',
   imports: [ZIcon],
-  template: `@if (icon()) {<z-icon [name]="icon()" />}<ng-content />`,
+  template: `@if (icon()) {
+      <z-icon [name]="icon()" />
+    }
+    <ng-content />`,
   host: {
-    'class': 'z-menu__item',
+    class: 'z-menu__item',
     '[class.z-menu__item--danger]': `danger()`,
   },
   hostDirectives: [
@@ -144,8 +147,8 @@ function beschriftung(wirt: HTMLElement): string {
   selector: 'z-menu-separator',
   template: ``,
   host: {
-    'class': 'z-menu__sep',
-    'role': 'separator',
+    class: 'z-menu__sep',
+    role: 'separator',
   },
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

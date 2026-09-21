@@ -25,7 +25,7 @@ let laufendeNummer = 0;
  */
 @Directive({
   selector: '[zBrand]',
-  host: { 'class': 'z-header__brand' },
+  host: { class: 'z-header__brand' },
 })
 export class ZBrand {}
 
@@ -44,7 +44,7 @@ export class ZBrand {}
 @Directive({
   selector: 'a[zHeaderLink]',
   host: {
-    'class': 'z-header__link',
+    class: 'z-header__link',
     '[attr.aria-current]': `active() ? "page" : null`,
   },
 })
@@ -120,7 +120,7 @@ export class ZHeaderEnd {}
     <div class="z-header__end"><ng-content select="[zHeaderEnd]" /></div>
   `,
   host: {
-    'class': 'z-header',
+    class: 'z-header',
     '[class.z-header--open]': `offen()`,
   },
   changeDetection: ChangeDetectionStrategy.OnPush,

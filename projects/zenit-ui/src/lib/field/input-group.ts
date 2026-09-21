@@ -22,7 +22,7 @@ import { ZIcon } from '../icon';
   selector: 'z-input-group',
   imports: [ZIcon],
   template: `<z-icon [name]="icon()" /><ng-content />`,
-  host: { 'class': 'z-input-wrap' },
+  host: { class: 'z-input-wrap' },
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ZInputGroup {

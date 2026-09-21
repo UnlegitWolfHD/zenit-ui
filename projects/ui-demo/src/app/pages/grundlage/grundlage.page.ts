@@ -38,8 +38,8 @@ import {
     <section class="demo-section">
       <h2 class="heading-2">Button</h2>
       <p class="demo-cap caption">
-        Zustandsübersicht: hier stehen mehrere primäre Buttons nebeneinander, auf einer echten
-        Seite ist es höchstens einer je Bildschirmhöhe.
+        Zustandsübersicht: hier stehen mehrere primäre Buttons nebeneinander, auf einer echten Seite
+        ist es höchstens einer je Bildschirmhöhe.
       </p>
 
       <div class="demo-row">
@@ -298,8 +298,8 @@ import {
             <button zBtn="secondary" disabled><z-icon name="stop" />Stoppen</button>
           </div>
           <p class="demo-cap caption">
-            Solange der Server startet, sind alle Aktionen gesperrt. Der auslösende Button zeigt
-            den Spinner.
+            Solange der Server startet, sind alle Aktionen gesperrt. Der auslösende Button zeigt den
+            Spinner.
           </p>
         </div>
 
@@ -333,7 +333,9 @@ import {
         <div class="demo-status__row">
           <div class="demo-row">
             <z-badge status="danger" dot>Gesperrt</z-badge>
-            <button zBtn="primary"><z-icon name="account_balance_wallet" />Guthaben aufladen</button>
+            <button zBtn="primary">
+              <z-icon name="account_balance_wallet" />Guthaben aufladen
+            </button>
           </div>
           <p class="demo-cap caption">
             Dein Guthaben ist leer. Lade auf, dann läuft Beispiel-Server 1 weiter.

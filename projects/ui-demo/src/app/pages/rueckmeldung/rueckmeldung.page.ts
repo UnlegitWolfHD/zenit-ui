@@ -41,8 +41,8 @@ import {
     <section class="demo-section">
       <h2 class="heading-2">Alert</h2>
       <p class="demo-cap caption">
-        Höchstens ein Alert pro Seite, hier als Übersicht. Die Farbe liegt nur auf Fläche und
-        Icon. Unter 640px bricht der Button unter den Text.
+        Höchstens ein Alert pro Seite, hier als Übersicht. Die Farbe liegt nur auf Fläche und Icon.
+        Unter 640px bricht der Button unter den Text.
       </p>
 
       <z-alert status="info" title="Dein Lieblingsspiel fehlt?" icon="info">
@@ -60,8 +60,8 @@ import {
       </z-alert>
 
       <z-alert status="danger" title="Installation fehlgeschlagen" icon="error">
-        SteamCMD hat nach 120 Sekunden nicht geantwortet. Starte die Installation erneut oder
-        öffne ein Ticket.
+        SteamCMD hat nach 120 Sekunden nicht geantwortet. Starte die Installation erneut oder öffne
+        ein Ticket.
         <button zAlertAction zBtn="secondary" size="sm">Erneut installieren</button>
       </z-alert>
 
@@ -83,8 +83,8 @@ import {
     <section class="demo-section">
       <h2 class="heading-2">EmptyState</h2>
       <p class="demo-cap caption">
-        Eine leere Liste zeigt keine Pagination und keine Filter. Kein großes graues Icon, der
-        Text trägt den Zustand.
+        Eine leere Liste zeigt keine Pagination und keine Filter. Kein großes graues Icon, der Text
+        trägt den Zustand.
       </p>
 
       <z-panel title="Tickets" flush>
@@ -127,8 +127,8 @@ import {
     <section class="demo-section">
       <h2 class="heading-2">Toast</h2>
       <p class="demo-cap caption">
-        5 Sekunden sichtbar, mit Aktion 8 Sekunden. Fehler bleiben, bis man sie schließt, und
-        nutzen role="alert". Höchstens drei gleichzeitig, der neueste unten.
+        5 Sekunden sichtbar, mit Aktion 8 Sekunden. Fehler bleiben, bis man sie schließt, und nutzen
+        role="alert". Höchstens drei gleichzeitig, der neueste unten.
       </p>
 
       <div class="demo-row">
@@ -147,11 +147,11 @@ import {
     <section class="demo-section">
       <h2 class="heading-2">Tooltip</h2>
       <p class="demo-cap caption">
-        Erscheint bei Zeiger und Fokus, verschwindet bei Verlassen, Fokusverlust und Escape.
-        Ein Button mit <code class="z-mono">disabled</code> meldet keine Ereignisse, deshalb
-        trägt der gesperrte Button <code class="z-mono">aria-disabled="true"</code>: er sieht
-        deaktiviert aus, bleibt per Tab erreichbar und tut beim Klick nichts. Für die Tastatur
-        steht derselbe Grund darunter als Satz.
+        Erscheint bei Zeiger und Fokus, verschwindet bei Verlassen, Fokusverlust und Escape. Ein
+        Button mit <code class="z-mono">disabled</code> meldet keine Ereignisse, deshalb trägt der
+        gesperrte Button <code class="z-mono">aria-disabled="true"</code>: er sieht deaktiviert aus,
+        bleibt per Tab erreichbar und tut beim Klick nichts. Für die Tastatur steht derselbe Grund
+        darunter als Satz.
       </p>
 
       <div class="demo-row">
@@ -169,7 +169,9 @@ import {
         >
           <z-icon name="stop" />Stoppen
         </button>
-        <p class="demo-cap caption">Stoppen ist gesperrt: Beispiel-Server 1 ist bereits gestoppt.</p>
+        <p class="demo-cap caption">
+          Stoppen ist gesperrt: Beispiel-Server 1 ist bereits gestoppt.
+        </p>
       </div>
     </section>
 

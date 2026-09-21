@@ -36,7 +36,7 @@ import { ZField } from './field';
   selector: 'z-select',
   template: `<ng-content />`,
   host: {
-    'class': 'z-select',
+    class: 'z-select',
     '[class.z-select--sm]': `size() === 'sm'`,
   },
   changeDetection: ChangeDetectionStrategy.OnPush,

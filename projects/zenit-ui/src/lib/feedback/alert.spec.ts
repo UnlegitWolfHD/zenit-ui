@@ -18,7 +18,10 @@ class AlertHost {
 @Component({
   imports: [ZAlert, ZAlertAction],
   template: `<z-alert status="danger" title="Backup fehlgeschlagen" icon="error"
-    >Der Speicher ist voll. Lösche alte Backups und starte erneut.<button zAlertAction type="button">
+    >Der Speicher ist voll. Lösche alte Backups und starte erneut.<button
+      zAlertAction
+      type="button"
+    >
       Speicher ansehen
     </button></z-alert
   >`,

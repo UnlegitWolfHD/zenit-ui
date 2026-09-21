@@ -20,7 +20,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
   selector: 'z-spinner',
   template: ``,
   host: {
-    'class': 'z-spinner',
+    class: 'z-spinner',
     '[attr.role]': `label() ? 'status' : null`,
     '[attr.aria-label]': `label() || null`,
     '[attr.aria-hidden]': `label() ? null : 'true'`,

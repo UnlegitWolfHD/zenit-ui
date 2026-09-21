@@ -73,8 +73,7 @@ export interface ZConsoleLine {
         [class.z-log--error]="zeile.level === 'error'"
         [class.z-log--cmd]="zeile.level === 'cmd'"
       ><span class="z-log__time">{{ zeile.time }}</span> {{ zeile.text
-      }}{{ letzte ? '' : umbruch }}</span>} @empty {<ng-content />}</pre
-    >
+      }}{{ letzte ? '' : umbruch }}</span>} @empty {<ng-content />}</pre>
     @if (!amEnde()) {
       <div class="z-console__end">
         <button zBtn="secondary" size="sm" (click)="zumEnde()">{{ endLabel() }}</button>
@@ -91,7 +90,7 @@ export interface ZConsoleLine {
         (keydown.arrowup)="verlauf($event, -1)"
         (keydown.arrowdown)="verlauf($event, 1)"
     /></label>`,
-  host: { 'class': 'z-console' },
+  host: { class: 'z-console' },
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ZConsole {

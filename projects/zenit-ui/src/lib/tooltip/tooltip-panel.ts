@@ -13,8 +13,8 @@ import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
   selector: 'z-tooltip',
   template: `{{ text() }}`,
   host: {
-    'class': 'z-tooltip',
-    'role': 'tooltip',
+    class: 'z-tooltip',
+    role: 'tooltip',
     '[attr.id]': `id()`,
   },
   changeDetection: ChangeDetectionStrategy.OnPush,

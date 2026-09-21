@@ -39,9 +39,15 @@ import { ZIcon } from '../icon';
   imports: [ZIcon],
   // No whitespace between the parts: .z-side__item is flex with gap, so every
   // text node would otherwise be an item of its own in the row.
-  template: `@if (icon()) {<z-icon [name]="icon()" />}<ng-content />@if (count() !== null) {<span class="z-side__count">{{ count() }}</span>}`,
+  template: `@if (icon()) {
+      <z-icon [name]="icon()" />
+    }
+    <ng-content />
+    @if (count() !== null) {
+      <span class="z-side__count">{{ count() }}</span>
+    }`,
   host: {
-    'class': 'z-side__item',
+    class: 'z-side__item',
     '[attr.aria-current]': `active() ? "page" : null`,
   },
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -119,8 +125,11 @@ export class ZSidebarItem {
  */
 @Component({
   selector: 'z-sidebar-group',
-  template: `@if (label()) {<span class="z-side__label">{{ label() }}</span>}<ng-content />`,
-  host: { 'class': 'z-side__group' },
+  template: `@if (label()) {
+      <span class="z-side__label">{{ label() }}</span>
+    }
+    <ng-content />`,
+  host: { class: 'z-side__group' },
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ZSidebarGroup {

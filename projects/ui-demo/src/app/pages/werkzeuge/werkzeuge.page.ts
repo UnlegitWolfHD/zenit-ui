@@ -72,7 +72,9 @@ const STARTZEILEN: ZConsoleLine[] = [
 
       <div class="demo-row">
         <button zBtn="ghost" size="sm"><z-icon name="content_copy" size="sm" />Log kopieren</button>
-        <button zBtn="ghost" size="sm"><z-icon name="download" size="sm" />Log herunterladen</button>
+        <button zBtn="ghost" size="sm">
+          <z-icon name="download" size="sm" />Log herunterladen
+        </button>
         <button zBtn="ghost" size="sm" (click)="leeren()">
           <z-icon name="delete" size="sm" />Leeren
         </button>
@@ -103,9 +105,7 @@ const STARTZEILEN: ZConsoleLine[] = [
       <z-console disabled placeholder="Befehl eingeben, Enter sendet">
         <z-empty-state title="Server ist gestoppt">
           Starte Beispiel-Server 1, dann nimmt die Konsole wieder Befehle an.
-          <button zEmptyAction zBtn="secondary">
-            <z-icon name="play_arrow" />Server starten
-          </button>
+          <button zEmptyAction zBtn="secondary"><z-icon name="play_arrow" />Server starten</button>
         </z-empty-state>
       </z-console>
     </section>

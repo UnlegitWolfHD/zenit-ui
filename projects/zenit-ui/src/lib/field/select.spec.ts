@@ -7,7 +7,9 @@ import { ZSelect } from './select';
 @Component({
   imports: [ZSelect],
   template: `<z-select [size]="groesse()">
-    <select><option value="eu">Nuernberg</option></select>
+    <select>
+      <option value="eu">Nuernberg</option>
+    </select>
   </z-select>`,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -33,7 +35,9 @@ class FormControlHost {
   imports: [ZField, ZSelect],
   template: `<z-field label="Standort" for="standort" [hint]="hinweis()" [error]="fehler()">
     <z-select>
-      <select id="standort"><option value="eu">Nuernberg</option></select>
+      <select id="standort">
+        <option value="eu">Nuernberg</option>
+      </select>
     </z-select>
   </z-field>`,
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -48,7 +52,9 @@ class FeldHost {
   template: `<z-field label="Standort" for="standort" hint="Nur EU">
     <z-select>
       @if (sichtbar()) {
-        <select id="standort"><option value="eu">Nuernberg</option></select>
+        <select id="standort">
+          <option value="eu">Nuernberg</option>
+        </select>
       }
     </z-select>
   </z-field>`,

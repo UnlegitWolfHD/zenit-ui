@@ -19,7 +19,7 @@ import { booleanAttribute, ChangeDetectionStrategy, Component, input } from '@an
 @Component({
   selector: 'z-game-grid',
   template: `<ng-content />`,
-  host: { 'class': 'z-games' },
+  host: { class: 'z-games' },
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ZGameGrid {}
@@ -69,7 +69,7 @@ export class ZGameGrid {}
     <span class="z-game__title">{{ title() }}</span>
     <span class="z-game__price">{{ price() }}</span>`,
   host: {
-    'class': 'z-game',
+    class: 'z-game',
     '[attr.aria-pressed]': `selected() ? "true" : "false"`,
     '[attr.title]': `null`,
   },

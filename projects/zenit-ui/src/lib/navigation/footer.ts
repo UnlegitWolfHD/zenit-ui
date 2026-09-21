@@ -38,7 +38,9 @@ export class ZFooterBase {}
     @if (heading()) {
       <h2 class="z-footer__head">{{ heading() }}</h2>
     }
-    <ul class="z-footer__list"><ng-content /></ul>
+    <ul class="z-footer__list">
+      <ng-content />
+    </ul>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -81,7 +83,7 @@ export class ZFooterCol {
     <div class="z-footer__cols"><ng-content select="z-footer-col" /></div>
     <div class="z-footer__base"><ng-content select="[zFooterBase]" /></div>
   `,
-  host: { 'class': 'z-footer' },
+  host: { class: 'z-footer' },
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ZFooter {}
