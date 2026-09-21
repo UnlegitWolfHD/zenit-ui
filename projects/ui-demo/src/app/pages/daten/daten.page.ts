@@ -25,6 +25,8 @@ import {
   ZRowsHead,
   ZRowTitle,
   ZSkeleton,
+  ZSort,
+  ZSortHeader,
   ZTable,
   ZTableContainer,
   ZTableName,
@@ -56,12 +58,20 @@ interface DemoServer {
   kosten: string;
 }
 
-/** One row of the FileTable, including whether it is currently selected. */
+/**
+ * One row of the FileTable, including whether it is currently selected.
+ *
+ * `bytes` and `zeitpunkt` are what the page sorts by: the library reports the
+ * wanted column, the values behind the rendered text are the caller's, because
+ * "61,25 MB" and "04.09.2026, 05:53" do not sort as text.
+ */
 interface DemoDatei {
   name: string;
   icon: string;
   groesse: string;
+  bytes: number;
   geaendert: string;
+  zeitpunkt: string;
   gewaehlt: boolean;
 }
 
@@ -93,6 +103,7 @@ interface DemoDatei {
     ZRowsHead,
     ZRowTitle,
     ZSkeleton,
+    ZSortHeader,
     ZTable,
     ZTableContainer,
     ZTableName,
@@ -307,7 +318,9 @@ interface DemoDatei {
         Unter 640px scrollt die Tabelle seitlich in ihrem eigenen Container, die Seite nie. Der
         Container ist per Tab erreichbar. Die Kästchen sind z-checkbox, beschriftet über ariaLabel,
         und sie schalten hier wirklich. Ohne Auswahl steht die Werkzeugleiste über der Tabelle,
-        sobald eine Zeile gewählt ist die Auswahl-Leiste.
+        sobald eine Zeile gewählt ist die Auswahl-Leiste. Die drei Spaltenköpfe sind Buttons
+        (zSortHeader): ein Klick sortiert aufsteigend, der zweite absteigend, der dritte hebt die
+        Sortierung auf. Nur der sortierte Kopf trägt aria-sort und den Pfeil.
       </p>
       <z-panel title="plugins" flush>
         <span zPanelActions class="caption z-subtle">{{ dateien().length }} Einträge</span>
@@ -339,7 +352,7 @@ interface DemoDatei {
           </div>
         }
         <z-table-container ariaLabel="Dateien, seitlich scrollbar">
-          <table zTable>
+          <table zTable [(sort)]="sortierung">
             <thead>
               <tr>
                 <th class="z-table__check">
@@ -349,13 +362,13 @@ interface DemoDatei {
                     (checkedChange)="alleWaehlen($event)"
                   />
                 </th>
-                <th>Name</th>
-                <th style="text-align:right">Größe</th>
-                <th style="text-align:right">Geändert</th>
+                <th zSortHeader="name">Name</th>
+                <th zNum zSortHeader="groesse" sortStart="desc">Größe</th>
+                <th zNum zSortHeader="geaendert" sortStart="desc">Geändert</th>
               </tr>
             </thead>
             <tbody>
-              @for (datei of dateien(); track datei.name) {
+              @for (datei of sortierteDateien(); track datei.name) {
                 <tr>
                   <td>
                     <z-checkbox
@@ -378,7 +391,10 @@ interface DemoDatei {
       <p class="demo-grund caption">
         "Löschen" ist unumkehrbar und steht deshalb nach Button/README nicht als danger neben den
         anderen Aktionen, sondern im Menü "Weitere Aktionen". Das Kästchen im Kopf kennt nur ein und
-        aus; für "teilweise gewählt" fehlt z-checkbox ein indeterminate.
+        aus; für "teilweise gewählt" fehlt z-checkbox ein indeterminate. Sortiert wird hier auf der
+        Seite: die Bibliothek meldet über [(sort)] nur, welche Spalte gewünscht ist, die Reihenfolge
+        rechnet ein computed. "Ordner zuerst" ist eine Regel dieser Seite und bleibt in beiden
+        Richtungen stehen.
       </p>
 
       <p class="demo-cap caption">
@@ -468,6 +484,22 @@ interface DemoDatei {
           [total]="transaktionen.length"
           itemLabel="Transaktionen"
           ariaLabel="Seiten der Transaktionen"
+        />
+      </z-panel>
+
+      <p class="demo-cap caption">
+        Mit pageSizeOptions steht die Auswahl "Einträge pro Seite" im Pager, beschriftet und mit dem
+        Feld verbunden. Beim Wechsel bleibt der erste sichtbare Eintrag sichtbar: aus Seite 3 bei 25
+        wird Seite 6 bei 10. Unter 640px steht die Auswahl in einer eigenen Zeile und ist 40px hoch.
+      </p>
+      <z-panel title="Transaktionen" flush>
+        <z-pagination
+          [(page)]="groessenSeite"
+          [(pageSize)]="proSeite"
+          [total]="transaktionen.length"
+          [pageSizeOptions]="[10, 25, 50]"
+          itemLabel="Transaktionen"
+          ariaLabel="Seiten der Transaktionen mit Auswahl der Seitengröße"
         />
       </z-panel>
 
@@ -587,25 +619,69 @@ export class DatenPage {
       name: 'plugins',
       icon: 'folder',
       groesse: '',
+      bytes: 0,
       geaendert: '04.09.2026, 05:53',
+      zeitpunkt: '2026-09-04 05:53',
       gewaehlt: false,
     },
-    { name: 'world', icon: 'folder', groesse: '', geaendert: '21.09.2026, 13:55', gewaehlt: false },
+    {
+      name: 'world',
+      icon: 'folder',
+      groesse: '',
+      bytes: 0,
+      geaendert: '21.09.2026, 13:55',
+      zeitpunkt: '2026-09-21 13:55',
+      gewaehlt: false,
+    },
     {
       name: 'server.jar',
       icon: 'description',
       groesse: '61,25\u00a0MB',
+      bytes: 64_224_870,
       geaendert: '18.09.2026, 14:45',
+      zeitpunkt: '2026-09-18 14:45',
       gewaehlt: false,
     },
     {
       name: 'server.properties',
       icon: 'description',
       groesse: '1,74\u00a0KB',
+      bytes: 1_782,
       geaendert: '18.09.2026, 15:55',
+      zeitpunkt: '2026-09-18 15:55',
       gewaehlt: true,
     },
   ]);
+
+  /** Which column the file table is sorted by, written by `th[zSortHeader]`. */
+  protected readonly sortierung = signal<ZSort | null>({ key: 'name', direction: 'asc' });
+
+  /**
+   * The rows in the order the header asked for. The library sorts nothing: it
+   * reports the column and the direction, the page owns the comparison and its
+   * own rules. Folders stay in front in both directions, as FileTable/README.md
+   * asks.
+   */
+  protected readonly sortierteDateien = computed(() => {
+    const sortierung = this.sortierung();
+    const zeilen = [...this.dateien()];
+    if (!sortierung) {
+      return zeilen;
+    }
+    const richtung = sortierung.direction === 'asc' ? 1 : -1;
+    return zeilen.sort((a, b) => {
+      const ordnerZuerst = Number(b.icon === 'folder') - Number(a.icon === 'folder');
+      if (ordnerZuerst !== 0) {
+        return ordnerZuerst;
+      }
+      if (sortierung.key === 'groesse') {
+        return richtung * (a.bytes - b.bytes);
+      }
+      const links = sortierung.key === 'geaendert' ? a.zeitpunkt : a.name;
+      const rechts = sortierung.key === 'geaendert' ? b.zeitpunkt : b.name;
+      return richtung * links.localeCompare(rechts, 'de');
+    });
+  });
 
   /** Widths of the placeholders in the loading state of the table. */
   protected readonly dateiPlatzhalter = [{ name: '40%' }, { name: '55%' }, { name: '30%' }];
@@ -633,6 +709,9 @@ export class DatenPage {
   }));
 
   protected readonly seite = signal(1);
+  /** The pager with the size picker owns both values, page and page size. */
+  protected readonly groessenSeite = signal(1);
+  protected readonly proSeite = signal(25);
   protected readonly ersteSeite = signal(1);
   protected readonly letzteSeite = signal(5);
   protected readonly leereSeite = signal(1);

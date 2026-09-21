@@ -164,8 +164,8 @@ Entries marked "(addition)" are not part of the reference table (`spec/guideline
 | Panel | `z-panel` | `title`, `flush`, `busy`; slot `[zPanelActions]`, `z-pagination` is moved to the end |
 | Metric | `z-metrics`, `z-metric` | `label`, `value`, `unit`, `sub`, `percent` (warning from 80, error from 95) |
 | ServerList | `z-rows`, `z-rows-head`, `a[zRow]`, `div[zRow]`, `z-row-main`, `[zRowNum]` | `columns` (grid columns) on `z-rows`; `title`, `meta`, `image` on `z-row-main` |
-| FileTable | `z-table-container`, `table[zTable]`, `[zNum]`, `[zTableName]` | none; `ariaLabel` on `z-table-container` (addition) |
-| Pagination | `z-pagination` | `[(page)]`, `pageSize` (25), `total`, `itemLabel`; `rangeLabel`, `ariaLabelPrev`, `ariaLabelNext` (additions) |
+| FileTable | `z-table-container`, `table[zTable]`, `[zNum]`, `[zTableName]`, `th[zSortHeader]` | none; `ariaLabel` on `z-table-container`, `[(sort)]` on `table[zTable]` and the sort header with `zSortHeader`, `sortStart`, `disabled` (additions) |
+| Pagination | `z-pagination` | `[(page)]`, `[(pageSize)]` (25), `total`, `itemLabel`; `pageSizeOptions`, `pageSizeLabel`, `rangeLabel`, `ariaLabelPrev`, `ariaLabelNext` (additions) |
 | Alert | `z-alert` | `status`, `title`, `icon`; content is the text; slot `[zAlertAction]` |
 | EmptyState | `z-empty-state` | `title`; content is the text; slot `[zEmptyAction]` |
 | Skeleton | `z-skeleton` | `width`, `thumb` |
