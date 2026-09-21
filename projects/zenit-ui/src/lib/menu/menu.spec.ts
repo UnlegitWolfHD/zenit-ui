@@ -1,0 +1,177 @@
+import { CdkMenuTrigger } from '@angular/cdk/menu';
+import { OverlayContainer } from '@angular/cdk/overlay';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { Z_MENU } from './menu';
+
+@Component({
+  imports: [CdkMenuTrigger, Z_MENU],
+  template: `
+    <button [cdkMenuTriggerFor]="menue">Weitere Aktionen</button>
+    <ng-template #menue>
+      <z-menu>
+        <button zMenuItem icon="content_copy" (triggered)="kopiert = kopiert + 1">
+          Adresse kopieren
+        </button>
+        <button zMenuItem [disabled]="gesperrt()" (triggered)="geteilt = geteilt + 1">
+          Zugriff teilen
+        </button>
+        <z-menu-separator />
+        <button zMenuItem danger icon="delete" (triggered)="geloescht = geloescht + 1">
+          Server löschen
+        </button>
+      </z-menu>
+    </ng-template>
+  `,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class MenuHost {
+  readonly gesperrt = signal(true);
+  kopiert = 0;
+  geteilt = 0;
+  geloescht = 0;
+}
+
+describe('ZMenu', () => {
+  let fixture: ComponentFixture<MenuHost>;
+  let host: MenuHost;
+  let behaelter: OverlayContainer;
+  let ausloeser: HTMLButtonElement;
+
+  function menue(): HTMLElement | null {
+    return behaelter.getContainerElement().querySelector('z-menu');
+  }
+
+  function eintraege(): HTMLButtonElement[] {
+    return Array.from(behaelter.getContainerElement().querySelectorAll('button[zMenuItem]'));
+  }
+
+  function oeffne(): void {
+    ausloeser.click();
+    fixture.detectChanges();
+  }
+
+  function klicke(eintrag: HTMLButtonElement): void {
+    eintrag.click();
+    fixture.detectChanges();
+  }
+
+  beforeEach(() => {
+    fixture = TestBed.createComponent(MenuHost);
+    host = fixture.componentInstance;
+    behaelter = TestBed.inject(OverlayContainer);
+    fixture.detectChanges();
+    ausloeser = fixture.nativeElement.querySelector('button');
+  });
+
+  afterEach(() => {
+    behaelter.ngOnDestroy();
+  });
+
+  it('stays closed until the trigger is clicked', () => {
+    expect(menue()).toBeNull();
+
+    oeffne();
+
+    expect(menue()).not.toBeNull();
+    expect(eintraege()).toHaveLength(3);
+  });
+
+  it('closes again on a second click on the trigger', () => {
+    oeffne();
+    oeffne();
+
+    expect(menue()).toBeNull();
+  });
+
+  it('gives the surface the class z-menu and the role menu', () => {
+    oeffne();
+
+    expect(menue()?.classList.contains('z-menu')).toBe(true);
+    expect(menue()?.getAttribute('role')).toBe('menu');
+  });
+
+  it('gives every entry the role menuitem and the class z-menu__item', () => {
+    oeffne();
+
+    for (const eintrag of eintraege()) {
+      expect(eintrag.getAttribute('role')).toBe('menuitem');
+      expect(eintrag.classList.contains('z-menu__item')).toBe(true);
+    }
+  });
+
+  it('gives the separator the role separator and the class z-menu__sep', () => {
+    oeffne();
+    const trenner = behaelter.getContainerElement().querySelector('z-menu-separator');
+
+    expect(trenner?.getAttribute('role')).toBe('separator');
+    expect(trenner?.classList.contains('z-menu__sep')).toBe(true);
+    expect(trenner?.textContent).toBe('');
+  });
+
+  it('renders the icon as a z-icon and nothing without an icon', () => {
+    oeffne();
+    const [kopieren, teilen] = eintraege();
+
+    expect(kopieren.querySelector('z-icon')?.textContent).toBe('content_copy');
+    expect(kopieren.firstElementChild?.tagName.toLowerCase()).toBe('z-icon');
+    expect(teilen.querySelector('z-icon')).toBeNull();
+  });
+
+  it('marks only the danger entry with the danger class', () => {
+    oeffne();
+    const [kopieren, , loeschen] = eintraege();
+
+    expect(kopieren.classList.contains('z-menu__item--danger')).toBe(false);
+    expect(loeschen.classList.contains('z-menu__item--danger')).toBe(true);
+  });
+
+  it('marks a disabled entry with aria-disabled and swallows its trigger', () => {
+    oeffne();
+    const teilen = eintraege()[1];
+
+    expect(teilen.getAttribute('aria-disabled')).toBe('true');
+
+    klicke(teilen);
+
+    expect(host.geteilt).toBe(0);
+    expect(menue()).not.toBeNull();
+  });
+
+  it('carries no aria-disabled once the entry is enabled again', () => {
+    host.gesperrt.set(false);
+    fixture.detectChanges();
+    oeffne();
+    const teilen = eintraege()[1];
+
+    expect(teilen.hasAttribute('aria-disabled')).toBe(false);
+
+    klicke(teilen);
+
+    expect(host.geteilt).toBe(1);
+  });
+
+  it('fires triggered on a click and closes the menu', () => {
+    oeffne();
+
+    klicke(eintraege()[0]);
+
+    expect(host.kopiert).toBe(1);
+    expect(host.geloescht).toBe(0);
+    expect(menue()).toBeNull();
+  });
+
+  it('keeps the typeahead label free of the icon ligature', async () => {
+    oeffne();
+    const kopieren = eintraege()[0];
+
+    // Without the own typeaheadLabel the CDK would read the textContent, and
+    // that starts with the ligature "content_copy" instead of with "Adresse".
+    menue()?.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'a', keyCode: 65, bubbles: true }),
+    );
+    await new Promise((fertig) => setTimeout(fertig, 250));
+
+    expect(document.activeElement).toBe(kopieren);
+  });
+});
