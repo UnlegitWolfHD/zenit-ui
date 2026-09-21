@@ -23,7 +23,25 @@ import {
   ZTable,
   ZTableContainer,
   ZTableName,
+  Z_LABELS,
+  Z_LABELS_EN,
 } from 'zenit-ui';
+
+/**
+ * Pagination without a single text input: the component provides `Z_LABELS`
+ * with the English set for its own subtree, so the range sentence and both
+ * `aria-label`s come out English.
+ */
+@Component({
+  selector: 'demo-englische-pagination',
+  imports: [ZPagination],
+  template: `<z-pagination [(page)]="seite" [total]="118" itemLabel="transactions" />`,
+  providers: [{ provide: Z_LABELS, useValue: Z_LABELS_EN }],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class EnglischePagination {
+  protected readonly seite = signal(1);
+}
 
 interface DemoServer {
   name: string;
@@ -36,6 +54,7 @@ interface DemoServer {
 @Component({
   selector: 'demo-daten-page',
   imports: [
+    EnglischePagination,
     ZAlert,
     ZBadge,
     ZButton,
@@ -302,6 +321,16 @@ interface DemoServer {
           itemLabel="transactions"
           [rangeLabel]="englischerBereich"
         />
+      </z-panel>
+
+      <p class="demo-cap caption">
+        Alle Texte zentral getauscht: diese Pagination bekommt keinen einzigen Text-Input. Die
+        umgebende Komponente stellt Z_LABELS über providers auf den englischen Satz, deshalb sind
+        auch die aria-Labels der beiden Pfeile englisch.
+      </p>
+      <z-panel>
+        <p class="demo-sub">Z_LABELS_EN lokal über providers</p>
+        <demo-englische-pagination />
       </z-panel>
 
       <p class="demo-cap caption">

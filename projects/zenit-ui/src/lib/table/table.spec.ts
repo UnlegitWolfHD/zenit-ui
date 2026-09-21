@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { provideZenitLabels, Z_LABELS_EN } from '../labels';
 import { ZNum, ZTable, ZTableContainer, ZTableName } from './table';
 
 @Component({
@@ -49,6 +50,22 @@ describe('ZTable', () => {
 
     expect(
       fixture.nativeElement.querySelector('z-table-container').getAttribute('aria-label'),
+    ).toBe('Rechnungen, seitlich scrollbar');
+  });
+
+  it('takes its aria-label from the label registry, and an own input still wins', () => {
+    TestBed.configureTestingModule({ providers: [provideZenitLabels(Z_LABELS_EN)] });
+
+    const ausRegistry = TestBed.createComponent(TableHost);
+    ausRegistry.detectChanges();
+    const mitEingabe = TestBed.createComponent(EigenesLabelHost);
+    mitEingabe.detectChanges();
+
+    expect(
+      ausRegistry.nativeElement.querySelector('z-table-container').getAttribute('aria-label'),
+    ).toBe('Table, scrolls sideways');
+    expect(
+      mitEingabe.nativeElement.querySelector('z-table-container').getAttribute('aria-label'),
     ).toBe('Rechnungen, seitlich scrollbar');
   });
 

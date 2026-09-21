@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { Z_LABELS, Z_LABELS_EN } from '../labels';
 import { ZConsole, ZConsoleLine } from './console';
 
 const ZEILEN: ZConsoleLine[] = [
@@ -33,6 +34,14 @@ class ConsoleHost {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 class LabelHost {}
+
+@Component({
+  imports: [ZConsole],
+  template: `<z-console /><z-console logLabel="Konsole von Test" />`,
+  providers: [{ provide: Z_LABELS, useValue: Z_LABELS_EN }],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class RegistryHost {}
 
 describe('ZConsole', () => {
   let fixture: ComponentFixture<ConsoleHost>;
@@ -97,6 +106,20 @@ describe('ZConsole', () => {
 
     expect(zeilen[2].textContent?.endsWith('\n')).toBe(true);
     expect(zeilen[3].textContent?.endsWith('\n')).toBe(false);
+  });
+
+  it('takes its texts from the label registry, and an own input still wins', () => {
+    const eigenes = TestBed.createComponent(RegistryHost);
+    eigenes.detectChanges();
+    const [ausRegistry, mitEingabe] = Array.from<HTMLElement>(
+      eigenes.nativeElement.querySelectorAll('.z-console__log'),
+    );
+
+    expect(ausRegistry.getAttribute('aria-label')).toBe('Server log');
+    expect(mitEingabe.getAttribute('aria-label')).toBe('Konsole von Test');
+    expect(
+      eigenes.nativeElement.querySelector('.z-console__input input').getAttribute('aria-label'),
+    ).toBe('Command');
   });
 
   it('makes the log focusable and names it Serverlog by default', () => {

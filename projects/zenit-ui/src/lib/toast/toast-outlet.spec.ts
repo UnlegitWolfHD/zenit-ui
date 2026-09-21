@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { Z_LABELS, Z_LABELS_EN } from '../labels';
 import { ZToast } from './toast';
 import { ZToastOutlet } from './toast-outlet';
 
@@ -16,6 +17,14 @@ class OutletHost {}
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 class EigenesLabelHost {}
+
+@Component({
+  imports: [ZToastOutlet],
+  template: `<z-toast-outlet /><z-toast-outlet closeLabel="Meldung schließen" />`,
+  providers: [{ provide: Z_LABELS, useValue: Z_LABELS_EN }],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class RegistryHost {}
 
 describe('ZToastOutlet', () => {
   let fixture: ComponentFixture<OutletHost>;
@@ -126,6 +135,19 @@ describe('ZToastOutlet', () => {
 
     expect(schliessen?.getAttribute('aria-label')).toBe('Schließen');
     expect(schliessen?.querySelector('z-icon')?.textContent?.trim()).toBe('close');
+  });
+
+  it('takes the close label from the registry, and an own input still wins', () => {
+    const eigenes = TestBed.createComponent(RegistryHost);
+    eigenes.detectChanges();
+    TestBed.inject(ZToast).show('Adresse kopiert');
+    eigenes.detectChanges();
+    const [ausRegistry, mitEingabe] = Array.from<HTMLElement>(
+      eigenes.nativeElement.querySelectorAll('.z-toast__close'),
+    );
+
+    expect(ausRegistry.getAttribute('aria-label')).toBe('Close');
+    expect(mitEingabe.getAttribute('aria-label')).toBe('Meldung schließen');
   });
 
   it('lets closeLabel override the aria-label', () => {

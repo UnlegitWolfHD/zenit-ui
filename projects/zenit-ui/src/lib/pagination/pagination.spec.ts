@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { provideZenitLabels, Z_LABELS_EN } from '../labels';
 import { ZPagination } from './pagination';
 
 @Component({
@@ -170,5 +171,23 @@ describe('ZPagination', () => {
 
     expect(zurueck.getAttribute('aria-label')).toBe('Vorherige Seite');
     expect(weiter.getAttribute('aria-label')).toBe('Nächste Seite');
+  });
+
+  it('takes its texts from the label registry, and an own input still wins', () => {
+    TestBed.configureTestingModule({ providers: [provideZenitLabels(Z_LABELS_EN)] });
+
+    const ausRegistry = TestBed.createComponent(PagerHost);
+    ausRegistry.detectChanges();
+    const [zurueck, weiter] = nav(ausRegistry);
+
+    expect(bereich(ausRegistry)).toBe('1 to 25 of 118 Transaktionen');
+    expect(zurueck.getAttribute('aria-label')).toBe('Previous page');
+    expect(weiter.getAttribute('aria-label')).toBe('Next page');
+
+    const mitEingabe = TestBed.createComponent(EigenerTextHost);
+    mitEingabe.detectChanges();
+
+    expect(bereich(mitEingabe)).toBe('Transaktionen 1-25 (118)');
+    expect(nav(mitEingabe)[0].getAttribute('aria-label')).toBe('Eine Seite zurueck');
   });
 });

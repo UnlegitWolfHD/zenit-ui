@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, Directive, input } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  Directive,
+  inject,
+  input,
+} from '@angular/core';
+import { Z_LABELS } from '../labels';
 
 /**
  * Wrapper around `table[zTable]`. Below 640px the table scrolls sideways in
@@ -32,18 +40,23 @@ import { ChangeDetectionStrategy, Component, Directive, input } from '@angular/c
     class: 'z-table-wrap',
     role: 'region',
     tabindex: '0',
-    '[attr.aria-label]': `ariaLabel()`,
+    '[attr.aria-label]': `bereichText()`,
   },
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ZTableContainer {
   /**
-   * Accessible name of the scrollable region. German default, meant to be
-   * overridden with the content of the table.
+   * Accessible name of the scrollable region, meant to be overridden with the
+   * content of the table. Unset, the component uses
+   * {@link ZLabels.tableRegion} from the label registry.
    *
-   * @default 'Tabelle, seitlich scrollbar'
+   * @default undefined
    */
-  readonly ariaLabel = input('Tabelle, seitlich scrollbar');
+  readonly ariaLabel = input<string>();
+
+  private readonly labels = inject(Z_LABELS);
+
+  protected readonly bereichText = computed(() => this.ariaLabel() ?? this.labels.tableRegion);
 }
 
 /**
