@@ -180,6 +180,11 @@ Entries marked "(addition)" are not part of the reference table in `spec/guideli
 
 The generated reference with every signature, type and default is produced by `npm run docs:api` into `docs/api/`.
 
+Two things are worth knowing before you build a page from this table. Both turned up while building `projects/beispiel-app` against the packed library:
+
+- **Menu: import the three classes, not `Z_MENU`.** In the emitted types the bundle collapses to `declare const Z_MENU: (typeof ZMenu)[]`, because the three classes are structurally compatible. The Angular compiler then sees only `ZMenu` and rejects the array with `NG1010`. Put `ZMenu`, `ZMenuItem` and `ZMenuSeparator` into `imports` instead.
+- **Slots and control flow.** `z-panel` picks `z-pagination` out of the projected content, and Alert, EmptyState, AppHeader and Footer have slots of their own. A node inside `@if`, `@for` or `@switch` only reaches its slot while it is the single root node of that block; otherwise it stays in the default content. Give such a node an `@if` of its own.
+
 ## Documented deviations from the reference styles
 
 `spec/components/bundle.css` is the reference for all styles. Five deviations are deliberate:
@@ -244,8 +249,11 @@ npm run lint          # ESLint over library and demo
 npm run lint:css      # Stylelint over projects/**/*.css
 npm run e2e           # Playwright with axe over the demo pages
 npm run docs:api      # TypeDoc reference into docs/api
-npm run check         # lint, lint:css, both builds and the unit tests in one run
+npm run check         # lint, lint:css, all builds and the unit tests in one run
 ng serve ui-demo      # demo app with every building block in all states
+npm run start:beispiel # example app: one complete page against dist/zenit-ui
 ```
 
 The demo app `ui-demo` shows every building block in the states idle, hover, focus, active, disabled, loading, error, empty and success. It is the reference for markup and classes.
+
+The example app `beispiel-app` shows one complete page of the customer area, built the way an application builds it: it imports from the package in `dist/zenit-ui` and follows the setup steps above one by one. Copy it as the starting point for a real page; `projects/beispiel-app/README.md` maps every region of the page to the rule it follows.
