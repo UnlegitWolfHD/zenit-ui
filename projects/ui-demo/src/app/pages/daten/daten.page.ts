@@ -662,8 +662,8 @@ export class DatenPage {
   /**
    * The rows in the order the header asked for. The library sorts nothing: it
    * reports the column and the direction, the page owns the comparison and its
-   * own rules. Folders stay in front in both directions, as FileTable/README.md
-   * asks.
+   * own rules. Folders stay in front in both directions, which is a rule of
+   * this page, not of the table.
    */
   protected readonly sortierteDateien = computed(() => {
     const sortierung = this.sortierung();
