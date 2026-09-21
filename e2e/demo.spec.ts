@@ -297,42 +297,38 @@ for (const route of ROUTEN) {
             (text ? ` "${text}"` : '')
           );
         };
-        // Master-Entscheidung: Maße dieser Bausteine sind aus bundle.css
-        // abgenommen, deshalb nur Warnung.
-        const nurWarnung =
-          '.z-btn--sm, .z-tab, .z-segment button, .z-check input, .z-toggle, ' +
-          'input[type="checkbox"], input[type="radio"], [role="switch"]';
         const funde: string[] = [];
-        const warnungen: string[] = [];
         const auswahl = document.body.querySelectorAll(
           'a, button, input, select, summary, [role="switch"], [tabindex="0"]',
         );
         for (const el of Array.from(auswahl)) {
-          const rect = el.getBoundingClientRect();
           const st = getComputedStyle(el);
-          if (rect.width === 0 || rect.height === 0 || st.visibility === 'hidden') continue;
+          const eigen = el.getBoundingClientRect();
+          if (st.display === 'none' || st.visibility === 'hidden') continue;
           // Nur fuer die Tastatur sichtbar (Skip-Link, sr-only): kein Klickziel.
           // Im Fokus klappt der Link auf und wird hier wieder mitgeprueft.
-          if ((st.clipPath !== 'none' || st.clip !== 'auto') && rect.width <= 2 && rect.height <= 2)
+          if (
+            (st.clipPath !== 'none' || st.clip !== 'auto') &&
+            eigen.width <= 2 &&
+            eigen.height <= 2
+          )
             continue;
+          // Checkbox, Radio, Switch und Range liegen im <label>: geklickt wird
+          // das Label, also zählt dessen Box.
+          const ziel = el.closest('label') ?? el;
+          const rect = ziel.getBoundingClientRect();
+          if (rect.width === 0 || rect.height === 0) continue;
           if (rect.height >= 39.5) continue;
           // Inline-Link im Fließtext: Höhe ist die Zeilenhöhe, kein Klickziel.
           if (el.nodeName === 'A' && st.display === 'inline') continue;
-          const eintrag = `${beschreibung(el)}: ${Math.round(rect.height * 10) / 10}px hoch`;
-          if (el.matches(nurWarnung)) warnungen.push(eintrag);
-          else funde.push(eintrag);
+          funde.push(
+            `${beschreibung(el)}: ${Math.round(rect.height * 10) / 10}px hoch` +
+              (ziel === el ? '' : ` (gemessen am ${beschreibung(ziel)})`),
+          );
         }
-        return { funde, warnungen };
+        return { funde };
       });
 
-      for (const warnung of ziele.warnungen) {
-        console.warn(`[Klickziel unter 40px, abgenommen aus bundle.css] /${route}: ${warnung}`);
-      }
-      if (ziele.warnungen.length) {
-        test
-          .info()
-          .annotations.push({ type: 'Klickziel-Warnung', description: ziele.warnungen.join(' | ') });
-      }
       expect(ziele.funde, `/${route}: Klickziele unter 40px Höhe bei 375px`).toEqual([]);
     });
   });
