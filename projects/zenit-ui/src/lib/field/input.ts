@@ -2,10 +2,26 @@ import { booleanAttribute, Directive, inject, input } from '@angular/core';
 import { ZField } from './field';
 
 /**
- * Natives `<input>` oder `<textarea>` im Zenit-Stil. Der Fehlerzustand steht
- * als `aria-invalid="true"`, darauf greift der Rahmen in danger. Steht das
- * Feld in einem `z-field`, zeigt `aria-describedby` auf dessen Hinweis oder
- * Fehler.
+ * Native `<input>` or `<textarea>` in Zenit style. The element stays native,
+ * the directive only adds classes and accessibility state.
+ *
+ * Adds the class `z-input`, plus `z-input--sm` for the small size and
+ * `z-input--mono` for monospace values. The error state is expressed as
+ * `aria-invalid="true"`, and the danger border hooks onto that attribute.
+ * Inside a `z-field` the `aria-describedby` attribute points at that field's
+ * hint or error. The native `size` attribute is removed from the host, because
+ * the input `size` carries `sm`/`md` here, which would be invalid HTML.
+ *
+ * @example
+ * ```html
+ * <z-field label="Adresse" for="in-addr" hint="IP und Port deines Servers.">
+ *   <input zInput mono id="in-addr" value="203.0.113.10:25565" readonly />
+ * </z-field>
+ *
+ * <z-field label="Notiz" for="in-note">
+ *   <textarea zInput id="in-note" placeholder="Was hast du zuletzt geändert?"></textarea>
+ * </z-field>
+ * ```
  */
 @Directive({
   selector: 'input[zInput], textarea[zInput]',
@@ -15,14 +31,35 @@ import { ZField } from './field';
     '[class.z-input--mono]': `mono()`,
     '[attr.aria-invalid]': `invalid() ? "true" : null`,
     '[attr.aria-describedby]': `feld?.beschreibung() ?? null`,
-    // size ist der Name aus der API-Tabelle, als natives Attribut am <input>
-    // waere "sm" aber ungueltiges HTML.
+    // size is the name from the API table, but as a native attribute on the
+    // <input> the value "sm" would be invalid HTML.
     '[attr.size]': `null`,
   },
 })
 export class ZInput {
+  /**
+   * Height of the control: `md` for forms, `sm` for fields in toolbars and
+   * filter rows. Adds `z-input--sm` for `sm`.
+   *
+   * @default 'md'
+   */
   readonly size = input<'sm' | 'md'>('md');
+
+  /**
+   * Sets the monospace font with tabular figures. For numbers, ports, IP
+   * addresses, file names and configuration values. Boolean attribute.
+   *
+   * @default false
+   */
   readonly mono = input(false, { transform: booleanAttribute });
+
+  /**
+   * Marks the value as invalid: sets `aria-invalid="true"` and with it the
+   * danger border. Goes together with `error` on the surrounding `z-field`.
+   * Boolean attribute.
+   *
+   * @default false
+   */
   readonly invalid = input(false, { transform: booleanAttribute });
 
   protected readonly feld = inject(ZField, { optional: true });

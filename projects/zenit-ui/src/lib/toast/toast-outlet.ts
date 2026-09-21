@@ -4,8 +4,24 @@ import { ZIcon } from '../icon';
 import { ZToast, ZToastItem } from './toast';
 
 /**
- * Steht einmal im Root-Template und zeigt die Toasts des Service. Liegt
- * `position: fixed` unten rechts, mobil unten ueber die volle Breite.
+ * Stands once in the root template and renders the toasts of the `ZToast`
+ * service. Sits `position: fixed` in the bottom right corner, on mobile at the
+ * bottom across the full width.
+ *
+ * Renders a host with the class `z-toast-outlet` and per toast a `div.z-toast`
+ * plus `z-toast--success` or `z-toast--danger`, an optional `z-icon`, the text,
+ * an optional `button.z-toast__action` and the close button
+ * `button.z-toast__close` (ghost, `sm`, icon only).
+ *
+ * Accessibility: a `danger` toast carries `role="alert"`, all others
+ * `role="status"`. The close button has an overridable German `aria-label`
+ * default. Using the action runs it and closes that toast.
+ *
+ * @example
+ * ```html
+ * <z-toast-outlet />
+ * <z-toast-outlet closeLabel="Close" />
+ * ```
  */
 @Component({
   selector: 'z-toast-outlet',
@@ -45,7 +61,11 @@ import { ZToast, ZToastItem } from './toast';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ZToastOutlet {
-  /** Ueberschreibbarer aria-Standard des Schliessen-Buttons. */
+  /**
+   * `aria-label` of the close button on every toast. Overridable default.
+   *
+   * @default 'Schließen'
+   */
   readonly closeLabel = input('Schließen');
 
   protected readonly dienst = inject(ZToast);

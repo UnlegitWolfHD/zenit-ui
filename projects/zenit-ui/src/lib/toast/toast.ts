@@ -1,34 +1,64 @@
 import { Injectable, OnDestroy, signal } from '@angular/core';
 
+/**
+ * Status of a toast. `neutral` confirms, `success` reports a completed
+ * operation, `danger` a failed one. Only `danger` is announced as
+ * `role="alert"`.
+ */
 export type ZToastStatus = 'neutral' | 'success' | 'danger';
 
+/** Options for a single toast, passed to `show`, `success` and `error`. */
 export interface ZToastOptions {
+  /** Color and announcement of the toast. Defaults to `neutral`. */
   status?: ZToastStatus;
-  /** Name der Material-Icon-Ligatur. */
+  /** Name of the Material Icons ligature. Omitted means no icon. */
   icon?: string;
+  /** Label of the extra action, for example `Rückgängig`. Omitted means no action button. */
   actionLabel?: string;
+  /** Called when the action is used. The toast closes afterwards. */
   action?: () => void;
-  /** Millisekunden. 0 heisst: bleibt stehen, bis man ihn schliesst. */
+  /**
+   * Milliseconds the toast stays visible. 0 means it stays until it is closed.
+   * Without a value: 5000, or 8000 when `actionLabel` is set.
+   */
   duration?: number;
 }
 
+/** A toast as it is currently shown. Read from `ZToast.toasts` by the outlet. */
 export interface ZToastItem {
+  /** Running number, also the handle for `dismiss`. */
   readonly id: number;
+  /** The message, one sentence without a full stop. */
   readonly text: string;
   readonly status: ZToastStatus;
+  /** Name of the Material Icons ligature, empty for no icon. */
   readonly icon: string;
+  /** Label of the action button, empty for no action. */
   readonly actionLabel: string;
+  /** Called when the action is used. */
   readonly action?: () => void;
 }
 
-/** Hoechstens drei gleichzeitig, der neueste unten. */
+/** At most three at a time, the newest at the bottom. */
 const HOECHSTENS = 3;
 const DAUER = 5000;
 const DAUER_MIT_AKTION = 8000;
 
 /**
- * Kurze Rueckmeldung ueber dem Inhalt. Das Bild haelt `z-toast-outlet`, das
- * einmal im Root-Template steht.
+ * Short feedback above the content: confirms that something happened and
+ * disappears by itself. The visible part is `z-toast-outlet`, which stands once
+ * in the root template.
+ *
+ * At most three toasts at a time, the newest at the bottom; a fourth one closes
+ * the oldest. An error that requires an action on the page is an alert and not
+ * a toast.
+ *
+ * @example
+ * ```html
+ * <!-- once in the root template -->
+ * <z-toast-outlet />
+ * <button zBtn="secondary" (click)="toast.success('Eigenschaften gespeichert')">Speichern</button>
+ * ```
  */
 @Injectable({ providedIn: 'root' })
 export class ZToast implements OnDestroy {
@@ -36,10 +66,19 @@ export class ZToast implements OnDestroy {
   private readonly timer = new Map<number, ReturnType<typeof setTimeout>>();
   private readonly liste = signal<readonly ZToastItem[]>([]);
 
-  /** Die sichtbaren Toasts, aeltester zuerst. */
+  /** The visible toasts, oldest first. Read by `z-toast-outlet`. */
   readonly toasts = this.liste.asReadonly();
 
-  /** Zeigt einen Toast und liefert seine id fuer `dismiss`. */
+  /**
+   * Shows a toast and returns its id for `dismiss`. While three toasts are
+   * already visible, the oldest one is closed first.
+   *
+   * @param text Message, one sentence without a full stop, in the past
+   *   participle, for example `Eigenschaften gespeichert`.
+   * @param optionen Status, icon, action and duration. Default duration: 5000ms,
+   *   8000ms with `actionLabel`, 0 keeps the toast until it is closed.
+   * @returns id of the new toast.
+   */
   show(text: string, optionen: ZToastOptions = {}): number {
     while (this.liste().length >= HOECHSTENS) {
       this.dismiss(this.liste()[0].id);
@@ -66,16 +105,33 @@ export class ZToast implements OnDestroy {
     return id;
   }
 
+  /**
+   * Shows a success toast: status `success` and the icon `check_circle`, both
+   * overridable through `optionen`.
+   *
+   * @returns id of the new toast.
+   */
   success(text: string, optionen: ZToastOptions = {}): number {
     return this.show(text, { status: 'success', icon: 'check_circle', ...optionen });
   }
 
-  /** Fehler bleiben stehen, bis man sie schliesst. */
+  /**
+   * Shows an error toast: status `danger`, the icon `error` and `duration: 0`,
+   * so it stays until it is closed. The outlet announces it with
+   * `role="alert"`. All three values are overridable through `optionen`.
+   *
+   * @returns id of the new toast.
+   */
   error(text: string, optionen: ZToastOptions = {}): number {
     return this.show(text, { status: 'danger', icon: 'error', duration: 0, ...optionen });
   }
 
-  /** Ohne id: schliesst alle. */
+  /**
+   * Closes a toast and stops its timer.
+   *
+   * @param id id from `show`, `success` or `error`. Without an id all toasts
+   *   are closed.
+   */
   dismiss(id?: number): void {
     for (const toast of this.liste()) {
       if (id === undefined || toast.id === id) {
@@ -86,7 +142,12 @@ export class ZToast implements OnDestroy {
     this.liste.update((alt) => (id === undefined ? [] : alt.filter((t) => t.id !== id)));
   }
 
-  /** Beim Abbau der Anwendung laeuft kein Timer weiter. */
+  /**
+   * Closes all toasts so no timer keeps running when the application is torn
+   * down.
+   *
+   * @internal Angular lifecycle hook.
+   */
   ngOnDestroy(): void {
     this.dismiss();
   }

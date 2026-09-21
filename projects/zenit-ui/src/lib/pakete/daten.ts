@@ -1,4 +1,4 @@
-/* Paket daten: Metric, ServerList, FileTable und Pagination. */
+/* Package daten: Metric, ServerList, FileTable and Pagination. */
 export * from '../metric';
 export * from '../rows';
 export * from '../table';

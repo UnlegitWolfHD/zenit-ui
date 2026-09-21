@@ -1,2 +1,2 @@
-/* Paket navigation: Tabs, Stepper, Sidebar, AppHeader, PageHeader, Footer. */
+/* Package navigation: Tabs, Stepper, Sidebar, AppHeader, PageHeader and Footer. */
 export * from '../navigation';

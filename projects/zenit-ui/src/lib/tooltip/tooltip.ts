@@ -3,18 +3,33 @@ import { ComponentPortal } from '@angular/cdk/portal';
 import { Directive, ElementRef, inject, input, OnDestroy, signal } from '@angular/core';
 import { ZTooltipPanel } from './tooltip-panel';
 
-/** Abstand zwischen Ausloeser und Flaeche, entspricht `space-2`. */
+/** Gap between trigger and panel, matches `space-2`. */
 const ABSTAND = 8;
 
 let zaehler = 0;
 
 /**
- * Kurzer Zusatz an einem Bedienelement. Erscheint bei Zeiger und Fokus,
- * verschwindet bei Verlassen, Fokusverlust und Escape.
+ * Short addition to a control. Opens the tooltip panel in a CDK overlay,
+ * centered above the trigger with 8px gap, below it as the fallback position,
+ * and repositions it on scroll.
  *
- * `aria-describedby` steht nur, solange die Flaeche im DOM haengt. Ein
- * dauerhafter Verweis zeigte sonst die meiste Zeit auf eine id, die es nicht
- * gibt.
+ * Accessibility: the panel appears on pointer and focus and disappears on
+ * mouse leave, focus loss and Escape. `aria-describedby` is only present while
+ * the panel hangs in the DOM, because a permanent reference would point at a
+ * missing id most of the time. A disabled button fires no events, so the
+ * surrounding element carries the tooltip, and the same reason also stands as a
+ * sentence for keyboard users.
+ *
+ * @example
+ * ```html
+ * <button zBtn="ghost" iconOnly aria-label="Aktualisieren" zTooltip="Aktualisieren">
+ *   <z-icon name="refresh" />
+ * </button>
+ *
+ * <span zTooltip="Beispiel-Server 1 ist bereits gestoppt">
+ *   <button zBtn="secondary" type="button" disabled>Stoppen</button>
+ * </span>
+ * ```
  */
 @Directive({
   selector: '[zTooltip]',
@@ -28,7 +43,12 @@ let zaehler = 0;
   },
 })
 export class ZTooltip implements OnDestroy {
-  /** Der Text. Leer heisst: kein Tooltip. */
+  /**
+   * The tooltip text, given as the value of the attribute. Empty means no
+   * tooltip: the panel is not opened at all.
+   *
+   * @default ''
+   */
   readonly zTooltip = input('');
 
   protected readonly tooltipId = `z-tooltip-${++zaehler}`;
@@ -58,11 +78,16 @@ export class ZTooltip implements OnDestroy {
     this.sichtbar.set(false);
   }
 
+  /**
+   * Disposes the overlay together with the trigger.
+   *
+   * @internal Angular lifecycle hook.
+   */
   ngOnDestroy(): void {
     this.overlayRef?.dispose();
   }
 
-  /** Oben mittig, darunter als Ausweichlage. */
+  /** Centered above, below as the fallback position. */
   private erzeugeOverlay(): OverlayRef {
     return this.overlay.create({
       positionStrategy: this.overlay
