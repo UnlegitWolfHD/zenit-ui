@@ -93,6 +93,35 @@ The customer area, with the bottom row only:
 </z-footer>
 ```
 
+## Width
+
+`z-footer` brings no page width of its own. The reference markup is a bare `<footer class="z-footer">`
+(`spec/components/Footer/preview.html`), and the width comes from the `.z-container` around it:
+
+```html
+<div class="z-container">
+  <z-footer>
+    <span zFooterBase>© 2026 Zenit-Hosting</span>
+  </z-footer>
+</div>
+```
+
+That is how the example application builds its shell: header and footer each sit in such a wrapper
+div, and `<main>` carries `class="z-container"` itself, which it can because it draws no line and
+has no padding of its own that the container padding would sit next to. All three end up on the
+same width, and that is what makes the line above the footer and the link columns start and end
+where the content of the page does.
+
+`class="z-container"` directly on `<z-footer>` is not the same element. Measured in Chromium at 1440
+and at 375: the content box lands in the same place both ways, but the border box of the footer is
+then the full container width, so its `border-top` runs 24px (16px below 640px) further out on each
+side and no longer aligns with the content above it. Use the wrapper.
+
+`z-app-header` is deliberately different: it carries its own inline padding and works as a full-width
+bar without a wrapper. Putting it in a `.z-container` as well is a decision about the page, not about
+the component: the example application does it so that brand, page title and copyright stand on one
+line at every width.
+
 ## States
 
 | State | How it looks                        | How to trigger it     |

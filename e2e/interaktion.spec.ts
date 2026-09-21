@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { pruefeAxe } from './pruefungen';
 
 /**
  * Real browser interaction, keyboard first. Every test drives the demo app the
@@ -10,6 +11,9 @@ import { expect, test, type Page } from '@playwright/test';
  * Findings that describe a real bug are marked with `// Finding:` above the
  * test and stay active.
  */
+
+/** Runs in the page: whether this element is the one holding the focus. */
+const istFokussiert = (el: Element) => el === document.activeElement;
 
 /** Opens a demo route and waits for its heading. */
 async function seite(page: Page, route: string): Promise<void> {
@@ -451,6 +455,79 @@ test.describe('Tabs, Sidebar and AppHeader on /navigation', () => {
     await expect(knopf).toHaveAttribute('aria-expanded', 'false');
     await expect(nav).toBeHidden();
   });
+
+  test('at 375px a click on a link in the open menu closes it', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 800 });
+    await seite(page, 'navigation');
+
+    const knopf = page.getByRole('button', { name: 'Menü' }).first();
+    const nav = page.getByRole('navigation', { name: 'Hauptnavigation' }).first();
+
+    await knopf.click();
+    await expect(nav).toBeVisible();
+
+    await nav.getByRole('link', { name: 'Abrechnung' }).click();
+
+    await expect(nav).toBeHidden();
+    await expect(knopf).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  test('at 375px the menu opens and closes again with the keyboard alone', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 800 });
+    await seite(page, 'navigation');
+
+    const knopf = page.getByRole('button', { name: 'Menü' }).first();
+    const nav = page.getByRole('navigation', { name: 'Hauptnavigation' }).first();
+
+    // Tab until the burger of the first header carries the focus.
+    for (let schritt = 0; schritt < 60 && !(await knopf.evaluate(istFokussiert)); schritt++) {
+      await page.keyboard.press('Tab');
+    }
+    await expect(knopf).toBeFocused();
+
+    await page.keyboard.press('Enter');
+    await expect(nav).toBeVisible();
+
+    // The first link of the open menu is the next tab stop after the burger.
+    await page.keyboard.press('Tab');
+    await expect(nav.getByRole('link', { name: 'Dashboard' })).toBeFocused();
+
+    await page.keyboard.press('Enter');
+    await expect(nav).toBeHidden();
+    await expect(knopf).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  test('at 375px Escape closes the menu and gives the focus back to the button', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 800 });
+    await seite(page, 'navigation');
+
+    const knopf = page.getByRole('button', { name: 'Menü' }).first();
+    const nav = page.getByRole('navigation', { name: 'Hauptnavigation' }).first();
+
+    await knopf.click();
+    await nav.getByRole('link', { name: 'Dashboard' }).focus();
+    await page.keyboard.press('Escape');
+
+    await expect(nav).toBeHidden();
+    await expect(knopf).toBeFocused();
+  });
+
+  for (const schema of ['dark', 'light', 'contrast'] as const) {
+    test(`axe on the open menu at 375px, scheme ${schema}`, async ({ page }) => {
+      await page.addInitScript(([wert]) => window.localStorage.setItem('zenit-theme', wert), [
+        JSON.stringify({ scheme: schema, accent: 'rot' }),
+      ] as const);
+      await page.setViewportSize({ width: 375, height: 800 });
+      await seite(page, 'navigation');
+
+      await page.getByRole('button', { name: 'Menü' }).first().click();
+      await expect(page.getByRole('navigation', { name: 'Hauptnavigation' }).first()).toBeVisible();
+
+      await pruefeAxe(page, `/navigation, offenes Menü, ${schema}`);
+    });
+  }
 });
 
 test.describe('Pagination on /daten', () => {
