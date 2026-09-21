@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, DOCUMENT, computed, inject } from '@angular/core';
 import { ZAlert, ZBadge, ZButton, ZField, ZIcon, ZInput, ZPanel, ZTheme } from 'zenit-ui';
 
-/** Die Farbtoken aus tokens.css, in der Reihenfolge von CLAUDE.md, "Farbe". */
+/** The colour tokens of tokens.css, in the order of CLAUDE.md, "Farbe". */
 const FARBTOKEN = [
   'bg',
   'surface',
@@ -32,7 +32,7 @@ const FARBTOKEN = [
   'on-mc',
 ];
 
-/** Die drei Flächen, auf denen die Textstufen geprüft werden. */
+/** The three surfaces the text levels are checked against. */
 const FLAECHEN = ['bg', 'surface', 'surface-raised'];
 
 @Component({
@@ -76,7 +76,9 @@ const FLAECHEN = ['bg', 'surface', 'surface-raised'];
           <div class="demo-stufen" [style.background]="'var(--' + flaeche + ')'">
             <p class="demo-flach mono-sm z-subtle">--{{ flaeche }}</p>
             <p class="demo-flach body-sm">text: Beispiel-Server 1 läuft seit 14 Tagen.</p>
-            <p class="demo-flach body-sm z-muted">text-muted: 4 vCPU, 8 GB, 120 GB NVMe.</p>
+            <p class="demo-flach body-sm z-muted">
+              text-muted: 4&nbsp;vCPU, 8&nbsp;GB, 120&nbsp;GB NVMe.
+            </p>
             <p class="demo-flach caption z-subtle">text-subtle: 18.09.2026, 15:55</p>
           </div>
         }
@@ -96,7 +98,7 @@ const FLAECHEN = ['bg', 'surface', 'surface-raised'];
         <z-badge dot>Gestoppt</z-badge>
       </div>
       <z-alert status="success" title="Sicherung abgeschlossen" icon="check_circle">
-        2,4 GB in 48 Sekunden gesichert.
+        2,4&nbsp;GB in 48 Sekunden gesichert.
       </z-alert>
       <z-alert
         status="warning"
@@ -192,9 +194,9 @@ export class ThemesPage {
   private readonly dok = inject(DOCUMENT);
 
   /**
-   * Die aufgelösten Werte kommen aus getComputedStyle: nur der Browser weiß,
-   * welcher Block am Ende gewonnen hat. Schema und Akzent stehen als
-   * Abhängigkeit darin, damit die Liste nach jedem Wechsel neu gelesen wird.
+   * The resolved values come from getComputedStyle: only the browser knows
+   * which block won in the end. Scheme and accent are read as dependencies, so
+   * the list is rebuilt after every switch.
    */
   protected readonly farben = computed(() => {
     this.theme.resolvedScheme();
