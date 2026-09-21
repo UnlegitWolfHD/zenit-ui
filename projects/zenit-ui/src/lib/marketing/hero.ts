@@ -43,9 +43,9 @@ export class ZHeroAside {}
  * cleared, so the {@link title} input never becomes a browser tooltip.
  *
  * Two columns in a 7 to 5 ratio, single column below 900px. The size of the
- * `<h1>` lives in `z-hero__title` and drops from `display-xl` to `display-lg`
- * below 640px. The `<h1>` is the page heading, so there is exactly one hero per
- * page.
+ * heading lives in `z-hero__title` and drops from `display-xl` to `display-lg`
+ * below 640px, whatever {@link headingLevel} says. On a public page the heading
+ * is the `<h1>`, so there is exactly one hero per page.
  *
  * @example
  * ```html
@@ -65,7 +65,17 @@ export class ZHeroAside {}
   selector: 'z-hero',
   template: `
     <div>
-      <h1 class="z-hero__title">{{ title() }}</h1>
+      @switch (headingLevel()) {
+        @case (2) {
+          <h2 class="z-hero__title">{{ title() }}</h2>
+        }
+        @case (3) {
+          <h3 class="z-hero__title">{{ title() }}</h3>
+        }
+        @default {
+          <h1 class="z-hero__title">{{ title() }}</h1>
+        }
+      }
       @if (lead()) {
         <p class="z-hero__lead">{{ lead() }}</p>
       }
@@ -84,12 +94,24 @@ export class ZHeroAside {}
 })
 export class ZHero {
   /**
-   * The `<h1>` of the page: what there is and where it comes from. One colour
+   * The heading of the page: what there is and where it comes from. One colour
    * throughout, the second line is never tinted.
    *
    * @default ''
    */
   readonly title = input('');
+
+  /**
+   * Tag of the heading: `1`, `2` or `3`. The design system prescribes `1` for
+   * public pages, where the hero is the page heading. Lower it only where the
+   * page already owns its `<h1>`, for example on a component page that shows a
+   * hero as an example. The visual size never changes with it.
+   *
+   * @default 1
+   */
+  readonly headingLevel = input<1 | 2 | 3, 1 | 2 | 3 | '1' | '2' | '3'>(1, {
+    transform: (wert) => Number(wert) as 1 | 2 | 3,
+  });
 
   /**
    * One sentence with the three strongest facts (process, hardware, price).

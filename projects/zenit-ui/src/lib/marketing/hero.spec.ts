@@ -4,14 +4,23 @@ import { ZHero, ZHeroActions, ZHeroAside } from './hero';
 
 @Component({
   imports: [ZHero],
-  template: `<z-hero [title]="titel()" [lead]="lead()" [note]="note()" />`,
+  template: `<z-hero [title]="titel()" [lead]="lead()" [note]="note()" [headingLevel]="ebene()" />`,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 class HeroHost {
   readonly titel = signal('Gameserver aus Nürnberg. In etwa 60 Sekunden online.');
   readonly lead = signal('');
   readonly note = signal('');
+  readonly ebene = signal<1 | 2 | 3>(1);
 }
+
+/** The level as a static attribute, which reaches the input as a string. */
+@Component({
+  imports: [ZHero],
+  template: `<z-hero title="Gameserver aus Nürnberg." headingLevel="2" />`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class AttributHost {}
 
 @Component({
   imports: [ZHero, ZHeroActions, ZHeroAside],
@@ -33,6 +42,55 @@ describe('ZHero', () => {
     expect(hero.classList.contains('z-hero')).toBe(true);
     expect(titel.classList.contains('z-hero__title')).toBe(true);
     expect(titel.textContent.trim()).toBe('Gameserver aus Nürnberg. In etwa 60 Sekunden online.');
+  });
+
+  it('renders h2 or h3 for headingLevel, with the same class and text', () => {
+    const fixture = TestBed.createComponent(HeroHost);
+    fixture.componentInstance.ebene.set(2);
+    fixture.detectChanges();
+    const hero = fixture.nativeElement.querySelector('z-hero');
+
+    expect(hero.querySelector('h1')).toBeNull();
+    expect(hero.querySelector('h2.z-hero__title').textContent.trim()).toBe(
+      'Gameserver aus Nürnberg. In etwa 60 Sekunden online.',
+    );
+
+    fixture.componentInstance.ebene.set(3);
+    fixture.detectChanges();
+
+    expect(hero.querySelector('h2')).toBeNull();
+    expect(hero.querySelector('h3.z-hero__title').textContent.trim()).toBe(
+      'Gameserver aus Nürnberg. In etwa 60 Sekunden online.',
+    );
+
+    fixture.componentInstance.ebene.set(1);
+    fixture.detectChanges();
+
+    expect(hero.querySelector('h3')).toBeNull();
+    expect(hero.querySelector('h1.z-hero__title')).not.toBeNull();
+  });
+
+  it('takes headingLevel from a static attribute as a number', () => {
+    const fixture = TestBed.createComponent(AttributHost);
+    fixture.detectChanges();
+    const hero = fixture.nativeElement.querySelector('z-hero');
+
+    expect(hero.querySelector('h1')).toBeNull();
+    expect(hero.querySelector('h2.z-hero__title').textContent.trim()).toBe(
+      'Gameserver aus Nürnberg.',
+    );
+  });
+
+  it('keeps the heading in the text column, before lead and actions', () => {
+    const fixture = TestBed.createComponent(HeroHost);
+    fixture.componentInstance.ebene.set(2);
+    fixture.componentInstance.lead.set('Spiel wählen, RAM einstellen, starten.');
+    fixture.detectChanges();
+    const hero = fixture.nativeElement.querySelector('z-hero');
+    const titel = hero.querySelector('.z-hero__title');
+
+    expect(titel.parentElement).toBe(hero.firstElementChild);
+    expect(titel.nextElementSibling.classList.contains('z-hero__lead')).toBe(true);
   });
 
   it('shows the lead only when it is set', () => {
