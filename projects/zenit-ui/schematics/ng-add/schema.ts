@@ -1,6 +1,9 @@
 /** Options of the `ng add zenit-ui` schematic. */
 export interface Schema {
-  /** Name of the application the library is wired into. Defaults to the workspace default. */
+  /**
+   * Name of the application the library is wired into. Without it the workspace
+   * must have exactly one application.
+   */
   project?: string;
   /**
    * Register `zenit-ui/styles/themes.css` and wire the theme without a flash: init

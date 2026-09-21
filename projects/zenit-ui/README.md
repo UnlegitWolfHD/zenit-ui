@@ -232,7 +232,7 @@ The setup above is a schematic as well. Name the tarball, not the package: `ng a
 ng add ./zenit-ui-0.1.0.tgz --themes
 ```
 
-It registers the stylesheets in `angular.json` in the prescribed order, merges `z-root` into `<html>` and `<body>`, adds `@angular/cdk` and the four font packages with their `@import` rules, and mounts `<z-toast-outlet />` in the root component. Every step is idempotent. What it changes exactly and which options it takes is in [`docs/ng-add.md`](../../docs/ng-add.md).
+It registers the stylesheets in `angular.json` in the prescribed order, merges `z-root` into `<html>` and `<body>`, adds `@angular/cdk` and the four font packages with their `@import` rules, and mounts `<z-toast-outlet />` in the root component. With `--themes` it also registers `themes.css`, puts the theme init script into `index.html`, adds `provideZenitTheme()` and sets `inlineCritical: false` for production. Every step is idempotent, and a source file is either fully patched or left untouched with the manual step in the log (NgModule applications, `imports` that are not an array literal). An existing `lang` on `<html>` is kept. To run it again after the package is installed: `ng generate zenit-ui:ng-add --project my-app`. What it changes exactly, which options it takes and its limits are in [`docs/ng-add.md`](../../docs/ng-add.md).
 
 ## Documented deviations from the reference styles
 
