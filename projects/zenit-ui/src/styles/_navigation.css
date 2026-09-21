@@ -115,3 +115,16 @@ z-sidebar > .z-select { display: none; }
     display: inline-flex; align-items: center; min-height: var(--control-md);
   }
 }
+
+/* Addition to the reference: text-subtle never sits on surface-hover
+   (CLAUDE.md, Farbe). The active sidebar entry is the only place in the library
+   where it did: the entry takes surface-hover and .z-side__count keeps
+   text-subtle. text-muted is the next step up and is the colour the entry uses
+   for its icons anyway.
+   Every other surface-hover ground was checked and is clean: .z-segment
+   button[aria-pressed="true"], .z-menu__item:hover and :focus-visible,
+   .z-btn--secondary:hover, .z-avatar and .z-step--done .z-step__num all set
+   text or text-muted on themselves, .z-row__thumb sets text-muted, .z-meter
+   and .z-skel carry no text at all, and the selected game tile changes only
+   its outline over surface-raised. */
+.z-side__item[aria-current="page"] .z-side__count { color: var(--text-muted); }

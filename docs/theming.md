@@ -175,12 +175,14 @@ contrast, with `rgba()` fills composited over the surface they are stated on.
 | `text` on `bg`, `surface`, `surface-raised`                     | ≥ 12:1   |
 | `text-muted` on `bg`, `surface`, `surface-raised`               | ≥ 7:1    |
 | `text-subtle` on `bg`, `surface`, `surface-raised`              | ≥ 4.5:1  |
+| `text-muted` on `surface-hover`                                 | ≥ 4.5:1  |
 | `border-control` on `surface`                                   | ≥ 3:1    |
 | `on-accent` on `accent` and on `accent-hover`                   | ≥ 4.5:1  |
 | `accent-text` on `bg` and on `surface`                          | ≥ 4.5:1  |
 | `on-mc` on `mc-accent` and on `mc-accent-hover`                 | ≥ 4.5:1  |
 | `success`/`warning`/`danger`/`info` on `bg` and `surface`        | ≥ 4.5:1  |
 | … and on their own `-subtle` over `surface-raised` and `surface` | ≥ 4.5:1  |
+| `text-muted` on every status `-subtle` over `bg` and `surface`   | ≥ 3:1    |
 | `focus` against all four surfaces and against `accent`           | ≥ 3:1    |
 | `danger` apart from `accent-text`                                | ≥ 1.25:1 **or** ≥ 30° hue |
 
@@ -202,7 +204,7 @@ for every scheme × accent combination, resolves `var()` aliases, composites
 It also fails when a scheme leaves a colour token undefined or an accent leaves
 one of its five undefined, so a new scheme cannot be half finished. Schemes and
 accents are discovered from the stylesheets, so adding one automatically adds
-it to the gate. Today: 3 schemes × 4 accents, 456 pairs.
+it to the gate. Today: 3 schemes × 4 accents, 564 pairs.
 
 This command is not wired into `package.json` yet; add it to `check` and to CI.
 
