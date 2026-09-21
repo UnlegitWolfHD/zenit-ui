@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { RouterLink, RouterOutlet } from '@angular/router';
+import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import {
   ZAppHeader,
   ZBrand,
@@ -10,23 +10,27 @@ import {
   ZToastOutlet,
 } from 'zenit-ui';
 import { GUTHABEN, KUNDEN_LINKS, NUTZER } from '../../gameserver/beispieldaten';
+import { ThemeControl } from '../theme-control/theme-control';
 
 /**
  * Layout of the customer area: header, content, footer (10-seitenmuster.md,
  * "Seite im Kundenbereich"). Every page of a real application sits in here, so
- * the shell is the only place that knows about navigation and toast outlet.
+ * the shell is the only place that knows about navigation, theme control and
+ * toast outlet.
  */
 @Component({
   selector: 'app-shell',
   imports: [
     RouterLink,
+    RouterLinkActive,
     RouterOutlet,
+    ThemeControl,
     ZAppHeader,
     ZBrand,
     ZFooter,
     ZFooterBase,
-    ZHeaderEnd,
     ZHeaderLink,
+    ZHeaderEnd,
     ZToastOutlet,
   ],
   template: `
@@ -36,22 +40,30 @@ import { GUTHABEN, KUNDEN_LINKS, NUTZER } from '../../gameserver/beispieldaten';
     <!-- Header, content and footer share the same z-container, so brand,
          page title and copyright stand on one line at every width. -->
     <div class="z-container">
+      <!-- #region kopfzeile -->
       <z-app-header navLabel="Hauptnavigation">
         <!-- The logo file belongs to the repository of the real site; the design
-           system ships none, so the brand is its name in the display face. -->
+             system ships none, so the brand is its name in the display face. -->
         <span zBrand>Zenit</span>
         @for (link of links; track link.name) {
           @if (link.route) {
-            <a zHeaderLink [routerLink]="link.route" active>{{ link.name }}</a>
+            <a
+              zHeaderLink
+              [routerLink]="link.route"
+              routerLinkActive
+              #aktiv="routerLinkActive"
+              [active]="aktiv.isActive"
+              >{{ link.name }}</a
+            >
           } @else {
             <!-- The other pages of the customer area are not part of this
-               example. They stay links so the header keeps its real shape. -->
+                 example. They stay links so the header keeps its real shape. -->
             <a zHeaderLink href="#" (click)="$event.preventDefault()">{{ link.name }}</a>
           }
         }
         <!-- Credit in mono without a red pill, and a link to the billing page
-           (AppHeader README). The label spells out what the number is, because
-           "25,00 €" alone says nothing when read out loud. -->
+             (AppHeader README). The label spells out what the number is, because
+             "25,00 €" alone says nothing when read out loud. -->
         <a
           zHeaderLink
           zHeaderEnd
@@ -61,9 +73,12 @@ import { GUTHABEN, KUNDEN_LINKS, NUTZER } from '../../gameserver/beispieldaten';
           (click)="$event.preventDefault()"
           >{{ guthaben }}</a
         >
+        <!-- Colour scheme and accent, see layout/theme-control. -->
+        <app-theme-control zHeaderEnd />
         <!-- Decorative: the name is already in the account menu of a real app. -->
         <span zHeaderEnd class="z-avatar" aria-hidden="true">{{ nutzer }}</span>
       </z-app-header>
+      <!-- #endregion -->
     </div>
 
     <!-- tabindex="-1" lets the skip link move the focus here. z-container keeps
@@ -73,6 +88,7 @@ import { GUTHABEN, KUNDEN_LINKS, NUTZER } from '../../gameserver/beispieldaten';
     </main>
 
     <div class="z-container">
+      <!-- #region fusszeile -->
       <z-footer>
         <!-- Customer area: only the bottom row, copyright left and the legal
              links right, no link columns (Footer README). Both parts carry
@@ -84,10 +100,13 @@ import { GUTHABEN, KUNDEN_LINKS, NUTZER } from '../../gameserver/beispieldaten';
           }
         </span>
       </z-footer>
+      <!-- #endregion -->
     </div>
 
+    <!-- #region toastauslass -->
     <!-- Once per application, at the end of the layout (README, step 4). -->
     <z-toast-outlet />
+    <!-- #endregion -->
   `,
 })
 export class Shell {

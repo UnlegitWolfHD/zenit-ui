@@ -22,3 +22,7 @@ docs/api/
 # Worktrees of parallel branches and the binary screenshot baselines.
 .worktrees/
 e2e/screenshots/
+
+# Generated from the real sources by tools/generate-example-snippets.mjs; its
+# format is JSON.stringify output and would be rewritten by Prettier.
+projects/beispiel-app/src/app/shared/quelltexte.generated.ts

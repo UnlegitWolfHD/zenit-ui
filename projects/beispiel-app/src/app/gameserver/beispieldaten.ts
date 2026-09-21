@@ -49,7 +49,11 @@ export const NUTZER = 'K';
 /** Credit in the header, in mono. */
 export const GUTHABEN = euro(25);
 
-/** The six links of the customer area. Only this page has a route here. */
+/**
+ * The six links of the customer area plus the page that explains this example.
+ * Only the two with a route exist here; the others keep the header in its real
+ * shape.
+ */
 export const KUNDEN_LINKS: readonly { name: string; route?: string }[] = [
   { name: 'Dashboard' },
   { name: 'Gameserver', route: '/gameserver' },
@@ -57,6 +61,7 @@ export const KUNDEN_LINKS: readonly { name: string; route?: string }[] = [
   { name: 'Domains' },
   { name: 'Abrechnung' },
   { name: 'Support' },
+  { name: 'Einbindung', route: '/einbindung' },
 ];
 
 /** Options of the status filter. The first one names the normal case (Select README). */

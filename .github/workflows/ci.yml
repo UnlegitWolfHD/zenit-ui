@@ -29,7 +29,16 @@ jobs:
 
       - run: npm run format:check
 
-      - run: npx ng build zenit-ui
+      # The derived theme values are checked, not trusted: every scheme times
+      # every accent against the contrast rules of docs/theming.md.
+      - run: npm run check:themes
+
+      # The example application shows its own source. This fails when the
+      # generated copy no longer matches the files.
+      - run: npm run check:snippets
+
+      # Library plus the compiled schematics that `ng add` needs.
+      - run: npm run build:lib
 
       - run: npx ng build ui-demo
 
@@ -41,6 +50,8 @@ jobs:
       - run: npx ng test zenit-ui --watch=false
 
       - run: npx ng test beispiel-app --watch=false
+
+      - run: npm run test:schematics
 
       - run: npx playwright install --with-deps chromium
 
