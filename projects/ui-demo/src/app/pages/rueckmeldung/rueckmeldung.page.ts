@@ -144,8 +144,9 @@ import {
       <h2 class="heading-2">Tooltip</h2>
       <p class="demo-cap caption">
         Erscheint bei Zeiger und Fokus, verschwindet bei Verlassen, Fokusverlust und Escape.
-        Ein deaktivierter Button meldet keine Ereignisse, deshalb trägt der Grund das
-        umschließende Element.
+        Ein Button mit <code class="z-mono">disabled</code> meldet keine Ereignisse, deshalb
+        trägt das umschließende Element den Grund. Für die Tastatur steht derselbe Grund
+        darunter als Satz.
       </p>
 
       <div class="demo-row">
@@ -155,9 +156,10 @@ import {
         <button zBtn="secondary" zTooltip="Beispiel-Server 1 läuft seit 3 Tagen ohne Neustart">
           <z-icon name="restart_alt" />Neustart
         </button>
-        <span tabindex="0" zTooltip="Beispiel-Server 1 ist bereits gestoppt">
-          <button zBtn="secondary" disabled><z-icon name="stop" />Stoppen</button>
+        <span zTooltip="Beispiel-Server 1 ist bereits gestoppt">
+          <button zBtn="secondary" type="button" disabled><z-icon name="stop" />Stoppen</button>
         </span>
+        <p class="demo-cap caption">Stoppen ist gesperrt: Beispiel-Server 1 ist bereits gestoppt.</p>
       </div>
     </section>
 

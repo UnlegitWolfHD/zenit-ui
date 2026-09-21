@@ -19,6 +19,8 @@ export class ZEmptyAction {}
   `,
   host: {
     'class': 'z-empty',
+    /* Ohne das steht der Titel zusaetzlich als natives title-Attribut am
+       Element und der Browser zeigt seinen eigenen Tooltip (gemessen). */
     '[attr.title]': `null`,
   },
   changeDetection: ChangeDetectionStrategy.OnPush,

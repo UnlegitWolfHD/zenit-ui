@@ -11,6 +11,10 @@
 .z-alert--warning { background: var(--warning-subtle); } .z-alert--warning .z-icon { color: var(--warning); }
 .z-alert--danger { background: var(--danger-subtle); } .z-alert--danger .z-icon { color: var(--danger); }
 @media (max-width: 640px) { .z-alert { flex-wrap: wrap; } .z-alert > .z-btn { margin-left: 32px; } }
+/* Ergaenzung zur Referenz: erst mit flex-basis bricht der Button unter den
+   Text um (Alert/README.md "Mobil bricht der Button unter den Text um"). Der
+   Einzug von 32px setzt ihn unter den Text, nicht unter das Icon. */
+@media (max-width: 640px) { .z-alert > .z-btn { flex-basis: 100%; } }
 
 /* EmptyState */
 .z-empty { display: grid; justify-items: center; gap: var(--space-2); padding: var(--space-7) var(--space-4); text-align: center; }
@@ -44,12 +48,11 @@
 /* Tooltip */
 .z-tooltip { max-width: 240px; padding: var(--space-1) var(--space-2); border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-raised); box-shadow: var(--shadow-overlay); color: var(--text); font-size: 12px; line-height: 16px; }
 
-/* Angular-Hosts des Pakets: z-alert, z-empty-state, z-skeleton und
-   z-toast-outlet bekommen ihr display ueber die Klasse oben. Die Flaeche des
-   Tooltips ist ein eigenes Element und braucht es hier. */
-z-tooltip { display: block; }
-/* Klickziel mobil mindestens 40px: der Schliessen-Button bleibt sm, waechst
-   unter 640px aber auf control-md. */
+/* Ergaenzung zur Referenz: Klickziele mobil mindestens 40px (CLAUDE.md,
+   Abstand und Layout). Die Hoehe des Schliessen-Buttons kommt aus der Regel
+   fuer z-btn--sm in _grundlage.css; hier bleibt nur, dass die Buttons im
+   Toast nicht schrumpfen und die Aktion selbst 40px hoch wird. */
 @media (max-width: 640px) {
-  .z-toast .z-toast__close.z-btn { width: var(--control-md); height: var(--control-md); }
+  .z-toast .z-btn, .z-toast__action { flex: none; }
+  .z-toast__action { display: inline-flex; align-items: center; min-height: var(--control-md); }
 }

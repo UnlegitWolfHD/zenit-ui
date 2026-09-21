@@ -1,39 +1,12 @@
 import { Overlay, OverlayRef } from '@angular/cdk/overlay';
 import { ComponentPortal } from '@angular/cdk/portal';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  Directive,
-  ElementRef,
-  inject,
-  input,
-  OnDestroy,
-  signal,
-} from '@angular/core';
+import { Directive, ElementRef, inject, input, OnDestroy, signal } from '@angular/core';
+import { ZTooltipPanel } from './tooltip-panel';
 
 /** Abstand zwischen Ausloeser und Flaeche, entspricht `space-2`. */
 const ABSTAND = 8;
 
 let zaehler = 0;
-
-/**
- * Die Flaeche des Tooltips. Haengt im CDK-Overlay am Body, nicht im
- * Seitenfluss, und wird nur von der Direktive `zTooltip` erzeugt.
- */
-@Component({
-  selector: 'z-tooltip',
-  template: `{{ text() }}`,
-  host: {
-    'class': 'z-tooltip',
-    'role': 'tooltip',
-    '[attr.id]': `id()`,
-  },
-  changeDetection: ChangeDetectionStrategy.OnPush,
-})
-export class ZTooltipPanel {
-  readonly text = signal('');
-  readonly id = signal('');
-}
 
 /**
  * Kurzer Zusatz an einem Bedienelement. Erscheint bei Zeiger und Fokus,

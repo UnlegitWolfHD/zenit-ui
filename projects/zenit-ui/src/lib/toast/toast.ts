@@ -1,4 +1,4 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, OnDestroy, signal } from '@angular/core';
 
 export type ZToastStatus = 'neutral' | 'success' | 'danger';
 
@@ -31,7 +31,7 @@ const DAUER_MIT_AKTION = 8000;
  * einmal im Root-Template steht.
  */
 @Injectable({ providedIn: 'root' })
-export class ZToast {
+export class ZToast implements OnDestroy {
   private letzteId = 0;
   private readonly timer = new Map<number, ReturnType<typeof setTimeout>>();
   private readonly liste = signal<readonly ZToastItem[]>([]);
@@ -84,5 +84,10 @@ export class ZToast {
       }
     }
     this.liste.update((alt) => (id === undefined ? [] : alt.filter((t) => t.id !== id)));
+  }
+
+  /** Beim Abbau der Anwendung laeuft kein Timer weiter. */
+  ngOnDestroy(): void {
+    this.dismiss();
   }
 }

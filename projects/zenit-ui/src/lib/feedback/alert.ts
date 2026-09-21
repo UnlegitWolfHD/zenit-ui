@@ -11,9 +11,8 @@ export class ZAlertAction {}
  * Hinweis im Seitenfluss: Titel als ganzer Satz, darunter die Einzelheit,
  * daneben hoechstens ein Button.
  *
- * Ein Alert steht als statischer Inhalt auf der Seite, deshalb bekommt nur
- * `danger` eine Live-Region (`role="alert"`). Flüchtige Rueckmeldungen sind
- * Toasts.
+ * Ein Alert ist statischer Inhalt der Seite und keine Live-Region. Was waehrend
+ * des Lesens eintrifft, meldet ein Toast mit `role="alert"`.
  */
 @Component({
   selector: 'z-alert',
@@ -36,7 +35,8 @@ export class ZAlertAction {}
     '[class.z-alert--success]': `status() === 'success'`,
     '[class.z-alert--warning]': `status() === 'warning'`,
     '[class.z-alert--danger]': `status() === 'danger'`,
-    '[attr.role]': `status() === 'danger' ? 'alert' : null`,
+    /* Ohne das steht der Titel zusaetzlich als natives title-Attribut am
+       Element und der Browser zeigt seinen eigenen Tooltip (gemessen). */
     '[attr.title]': `null`,
   },
   changeDetection: ChangeDetectionStrategy.OnPush,
