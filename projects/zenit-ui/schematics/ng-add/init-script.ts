@@ -51,8 +51,12 @@ export interface ZThemeInitConfig {
   readonly defaultAccent?: string;
 
   /**
-   * Key under which the choice is stored in `localStorage`. `null` turns
-   * persistence off: the theme then resets on every load.
+   * Key under which the choice is stored in `localStorage`. `null` turns the
+   * storage off: nothing is read or written, and `ZTheme` starts from the
+   * `data-theme` and `data-accent` that are already on the target, which is how
+   * an application with its own preference storage hands its choice over.
+   * Without such attributes the theme starts from the defaults on every load.
+   * The init script does not look at them, it always writes the defaults.
    *
    * @default 'zenit-theme'
    */
