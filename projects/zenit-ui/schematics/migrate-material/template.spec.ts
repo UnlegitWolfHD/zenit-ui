@@ -469,6 +469,20 @@ describe('tooltip', () => {
     });
   });
 
+  it('shares an element with another rule, also where their edits touch', () => {
+    // The dropped option starts where the icon rule inserts the name.
+    expect(
+      run('<mat-icon matTooltipPosition="above" matTooltip="Start">home</mat-icon>').text,
+    ).toBe('<z-icon name="home" zTooltip="Start" />');
+    expect(
+      run(
+        '<a mat-icon-button color="accent" matTooltip="Start" matTooltipPosition="above" href="/" aria-label="Start"><mat-icon>home</mat-icon></a>',
+      ).text,
+    ).toBe(
+      '<a zBtn="ghost" iconOnly zTooltip="Start" href="/" aria-label="Start"><z-icon name="home" /></a>',
+    );
+  });
+
   it('reports what the AST cannot show', () => {
     for (const source of [
       '<span matTooltip="Copy" i18n-matTooltip="@@copy">x</span>',
