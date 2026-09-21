@@ -16,7 +16,13 @@ const ROUTEN = [
   'rueckmeldung',
   'overlays',
   'werkzeuge',
+  'muster/dashboard',
+  'muster/server-panel',
+  'muster/startseite',
 ] as const;
+
+/** Screenshot-Name: der Pfad ohne Schrägstrich, z. B. muster-dashboard. */
+const bildname = (route: string) => route.replace(/\//g, '-');
 
 /** Die 7 Größen aus CLAUDE.md, "Typografie". */
 const SCHRIFTGROESSEN = [12, 14, 16, 20, 28, 40, 56];
@@ -37,7 +43,7 @@ for (const route of ROUTEN) {
     for (const breite of [1440, 375]) {
       test(`Screenshot ${breite}px`, async ({ page }) => {
         await seiteOeffnen(page, route, breite);
-        await expect(page).toHaveScreenshot(`${route}-${breite}.png`, { fullPage: true });
+        await expect(page).toHaveScreenshot(`${bildname(route)}-${breite}.png`, { fullPage: true });
       });
     }
 

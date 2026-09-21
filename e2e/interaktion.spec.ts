@@ -566,3 +566,92 @@ test.describe('Console and Faq on /werkzeuge', () => {
     await expect(page.getByRole('button', { pressed: true })).toContainText('Valheim');
   });
 });
+
+test.describe('Server panel on /muster/server-panel', () => {
+  /** The sticky panel head holds badge, address and the status actions. */
+  const kopf = (page: Page) => page.locator('.demo-panelkopf');
+
+  /** The demo control switches the server status by hand. */
+  const statusSetzen = (page: Page, wert: string) =>
+    page.getByRole('combobox', { name: 'Serverstatus' }).selectOption(wert);
+
+  test('badge word and main action follow the status (15-zustaende.md)', async ({ page }) => {
+    await seite(page, 'muster/server-panel');
+
+    // Online: two secondary actions, no primary in the head.
+    await expect(kopf(page).locator('z-badge')).toHaveText('Online');
+    await expect(kopf(page).getByRole('button', { name: 'Neustart' })).toHaveClass(
+      /z-btn--secondary/,
+    );
+    await expect(kopf(page).getByRole('button', { name: 'Stoppen' })).toHaveClass(
+      /z-btn--secondary/,
+    );
+    await expect(kopf(page).locator('.z-btn--primary')).toHaveCount(0);
+
+    await statusSetzen(page, 'gestoppt');
+    await expect(kopf(page).locator('z-badge')).toHaveText('Gestoppt');
+    await expect(kopf(page).getByRole('button', { name: 'Starten' })).toHaveClass(/z-btn--primary/);
+
+    // Startet: every status action is disabled, the triggering one spins.
+    await statusSetzen(page, 'startet');
+    await expect(kopf(page).locator('z-badge')).toHaveText('Startet');
+    await expect(kopf(page).getByRole('button', { name: 'Wird gestartet' })).toBeDisabled();
+    await expect(kopf(page).getByRole('button', { name: 'Stoppen' })).toBeDisabled();
+  });
+
+  test('"Hart beenden" from the menu asks first and reports with a toast', async ({ page }) => {
+    await seite(page, 'muster/server-panel');
+    await page.getByRole('button', { name: 'Weitere Aktionen' }).click();
+    await page.getByRole('menuitem', { name: 'Hart beenden' }).click();
+
+    const dialog = page.getByRole('dialog', { name: 'Beispiel-Server 1 hart beenden?' });
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole('button', { name: 'Hart beenden' }).click();
+
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await expect(page.getByRole('status')).toContainText('Beispiel-Server 1 wurde hart beendet');
+  });
+});
+
+test.describe('List states on /muster/dashboard', () => {
+  const steuerung = (page: Page) => page.getByRole('group', { name: 'Zustand der Serverliste' });
+
+  test('"Leer" shows the empty state and no pagination', async ({ page }) => {
+    await seite(page, 'muster/dashboard');
+    await expect(page.locator('z-pagination')).toHaveCount(1);
+
+    await steuerung(page).getByRole('button', { name: 'Leer' }).click();
+    await expect(page.getByText('Du hast noch keinen Server')).toBeVisible();
+    await expect(page.locator('z-pagination')).toHaveCount(0);
+  });
+
+  test('"Fehler" shows exactly one alert and it is the danger one', async ({ page }) => {
+    await seite(page, 'muster/dashboard');
+    await steuerung(page).getByRole('button', { name: 'Fehler' }).click();
+
+    const alert = page.locator('z-alert');
+    await expect(alert).toHaveCount(1);
+    await expect(alert).toHaveClass(/z-alert--danger/);
+    await expect(alert).toContainText('Die Serverliste ist nicht geladen');
+  });
+});
+
+test.describe('Calculator on /muster/startseite', () => {
+  test('the slider changes the price and exactly one game tile stays selected', async ({
+    page,
+  }) => {
+    await seite(page, 'muster/startseite');
+    const preis = page.locator('.z-summary__price');
+    const gewaehlt = page.locator('z-game-grid').getByRole('button', { pressed: true });
+
+    await expect(gewaehlt).toHaveCount(1);
+    await expect(gewaehlt).toContainText('Valheim');
+    // Valheim 2,70 € + 4 GB à 0,45 € + 8 Steckplätze à 0,20 €.
+    await expect(preis).toContainText('6,10');
+
+    await page.getByRole('slider', { name: 'Arbeitsspeicher' }).focus();
+    await page.keyboard.press('ArrowRight');
+    await expect(preis).toContainText('7,00');
+    await expect(gewaehlt).toHaveCount(1);
+  });
+});
