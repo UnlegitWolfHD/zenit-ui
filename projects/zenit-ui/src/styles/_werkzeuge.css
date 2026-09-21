@@ -81,3 +81,13 @@ z-faq:not(:last-of-type) .z-faq { border-bottom: 0; }
 
 /* Deaktivierte Eingabe wie .z-btn:disabled: 45 % und not-allowed. */
 .z-console__input input:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* Ergänzung zur Referenz: der Leerzustand im Log ist Fließtext, kein Log. Das
+   umschliessende pre setzt mono, 12px und white-space: pre-wrap; hier gilt
+   wieder body-sm mit normalem Umbruch. */
+.z-console__log .z-empty {
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 20px;
+  white-space: normal;
+}
