@@ -84,17 +84,40 @@
    5. Below 900px the bar may wrap: on public pages two buttons stand on the
       right, which would otherwise run out of the page horizontally at 360px.
       The height header remains as the minimum height.
+      Addition to the reference: what wraps, and when. Measured in the first
+      integration: a 60x40 image logo, "Login" and "Registrieren" in the end
+      slot, 360px. The three parts add up to 282px of the 312px between the
+      paddings, yet the two gaps of space-5 pushed the end slot onto a second
+      row and the bar to 126px, with the menu button stranded next to the
+      logo. Three declarations define the behaviour instead:
+      a. gap space-3, the gap the end slot already uses between its own items.
+         282 + 24 fits 312, so that bar is one row of 57px again.
+      b. order 1 on the menu button: logo, end slot, menu button. The DOM keeps
+         the button in front of the <nav>, so Tab still goes from the button
+         into the links it has just opened.
+      c. The end slot takes the room that is left (flex 1 1 0) and wraps its
+         own items, right aligned, when they do not fit in it. "Anmelden" and
+         "Server erstellen" next to that logo need 362px, which a window has
+         from 410px on: below that they stack inside the slot and the bar is
+         109px, logo and menu button centred. Its
+         automatic minimum width stays, which is the widest single item, so
+         the bar itself still wraps as the last resort and nothing runs out of
+         the page.
+      An image or svg in the brand is a block: as inline content it sits on
+      the baseline of a 16px line and made the brand 45px tall instead of 40.
    6. Below 900px the links of the header are as tall as a control, because
       click targets are at least 40px tall on mobile. */
 z-sidebar { display: block; }
 z-sidebar > .z-select { display: none; }
 .z-footer__cols:empty + .z-footer__base { margin-top: 0; }
 .z-header__menu { display: none; }
+.z-header__brand :where(img, svg) { display: block; }
 @media (max-width: 899px) {
   z-sidebar > .z-side { display: none; }
   z-sidebar > .z-select { display: block; }
-  .z-header { position: relative; flex-wrap: wrap; height: auto; min-height: var(--header); padding-block: var(--space-2); }
-  .z-header__menu { display: inline-flex; }
+  .z-header { position: relative; flex-wrap: wrap; gap: var(--space-3); height: auto; min-height: var(--header); padding-block: var(--space-2); }
+  .z-header__menu { display: inline-flex; order: 1; }
+  .z-header__end { flex: 1 1 0; flex-wrap: wrap; justify-content: flex-end; }
   .z-header__nav { display: none; }
   .z-header .z-header__link { height: var(--control-md); }
   .z-header--open .z-header__nav {

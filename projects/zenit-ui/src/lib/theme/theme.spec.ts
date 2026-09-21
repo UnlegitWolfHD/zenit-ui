@@ -178,6 +178,116 @@ describe('ZTheme', () => {
     expect(ziel.getAttribute('data-theme')).toBe('light');
   });
 
+  describe('with storageKey null and attributes set before bootstrap', () => {
+    // An application that keeps its own preference storage writes data-theme
+    // and data-accent with its own inline script before the first paint.
+
+    it('adopts them into the signals and leaves them on the target', () => {
+      ziel.setAttribute('data-theme', 'light');
+      ziel.setAttribute('data-accent', 'blau');
+      const geschrieben = vi.spyOn(ziel, 'setAttribute');
+
+      const theme = dienst({ storageKey: null });
+
+      expect(theme.scheme()).toBe('light');
+      expect(theme.resolvedScheme()).toBe('light');
+      expect(theme.accent()).toBe('blau');
+      expect(ziel.getAttribute('data-theme')).toBe('light');
+      expect(ziel.getAttribute('data-accent')).toBe('blau');
+      // No flash: the default never stood on the element in between.
+      expect(geschrieben.mock.calls.map(([, wert]) => wert)).not.toContain('dark');
+    });
+
+    it('never touches localStorage, from start to reset', () => {
+      ziel.setAttribute('data-theme', 'light');
+      const zugriffe = [
+        vi.spyOn(ablage, 'getItem'),
+        vi.spyOn(ablage, 'setItem'),
+        vi.spyOn(ablage, 'removeItem'),
+      ];
+
+      const theme = dienst({ storageKey: null });
+      theme.setScheme('contrast');
+      theme.setAccent('gruen');
+      theme.reset();
+
+      for (const zugriff of zugriffe) expect(zugriff).not.toHaveBeenCalled();
+      expect(ziel.getAttribute('data-theme')).toBe('dark');
+    });
+
+    it('keeps system as the choice when the attribute only states what system resolves to', () => {
+      abfrage.matches = false;
+      ziel.setAttribute('data-theme', 'light');
+
+      const theme = dienst({ storageKey: null, defaultScheme: 'system' });
+
+      expect(theme.scheme()).toBe('system');
+      abfrage.wechseln(true);
+      expect(ziel.getAttribute('data-theme')).toBe('dark');
+    });
+
+    it('adopts a scheme that differs from what system resolves to', () => {
+      abfrage.matches = false;
+      ziel.setAttribute('data-theme', 'dark');
+
+      const theme = dienst({ storageKey: null, defaultScheme: 'system' });
+
+      expect(theme.scheme()).toBe('dark');
+      expect(ziel.getAttribute('data-theme')).toBe('dark');
+    });
+
+    it('cannot tell an explicit choice from the resolved default, so the application calls setScheme() once', () => {
+      // The visitor chose dark in the application's own storage, the system is
+      // dark as well, and the default is system. The attribute says "dark"
+      // either way, so the service has to assume system ...
+      ziel.setAttribute('data-theme', 'dark');
+
+      const theme = dienst({ storageKey: null, defaultScheme: 'system' });
+
+      expect(theme.scheme()).toBe('system');
+      abfrage.wechseln(false);
+      expect(ziel.getAttribute('data-theme')).toBe('light');
+
+      // ... until the application hands over what it stored. The attribute only
+      // prevents the flash; setScheme(stored) at start-up states the choice.
+      abfrage.wechseln(true);
+      theme.setScheme('dark');
+      abfrage.wechseln(false);
+      expect(theme.scheme()).toBe('dark');
+      expect(ziel.getAttribute('data-theme')).toBe('dark');
+    });
+
+    it('replaces an id that is not registered with the default', () => {
+      ziel.setAttribute('data-theme', 'sepia');
+      ziel.setAttribute('data-accent', 'orange');
+
+      const theme = dienst({ storageKey: null });
+
+      expect(theme.scheme()).toBe('dark');
+      expect(theme.accent()).toBe('rot');
+      expect(ziel.getAttribute('data-theme')).toBe('dark');
+      expect(ziel.hasAttribute('data-accent')).toBe(false);
+    });
+
+    it('keeps the default the server wrote into the document', () => {
+      ziel.setAttribute('data-theme', 'light');
+
+      const theme = dienst({ storageKey: null, defaultScheme: 'light' });
+
+      expect(theme.scheme()).toBe('light');
+      expect(ziel.getAttribute('data-theme')).toBe('light');
+    });
+  });
+
+  it('lets the storage and the defaults win over a pre-set attribute while a storage key is set', () => {
+    ziel.setAttribute('data-theme', 'light');
+
+    const theme = dienst();
+
+    expect(theme.scheme()).toBe('dark');
+    expect(ziel.getAttribute('data-theme')).toBe('dark');
+  });
+
   it('restores a stored choice', () => {
     ablage.setItem('zenit-theme', JSON.stringify({ scheme: 'contrast', accent: 'gruen' }));
 
@@ -489,6 +599,24 @@ describe('zenitThemeInitScript', () => {
 
   it('applies the defaults without a stored choice', () => {
     expect(ausfuehren()).toEqual({ theme: 'dark', accent: null });
+  });
+
+  it('overwrites attributes another script set before it, so an own script runs after it or instead of it', () => {
+    const vorher = (): void => {
+      document.documentElement.setAttribute('data-theme', 'light');
+      document.documentElement.setAttribute('data-accent', 'blau');
+    };
+    const quelle = zenitThemeInitScript({ storageKey: null });
+
+    vorher();
+    new Function(quelle)();
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
+    // The default accent is not written, so a pre-set accent survives by accident.
+    expect(document.documentElement.getAttribute('data-accent')).toBe('blau');
+
+    new Function(quelle)();
+    vorher();
+    expect(document.documentElement.getAttribute('data-theme')).toBe('light');
   });
 
   it('never reads the storage with storageKey null', () => {

@@ -19,6 +19,7 @@ Angular workspace for the Zenit design system. It holds the library `zenit-ui` w
 | `docs/forms.md` | the three ways to bind a form control, Signal Forms first |
 | `docs/components/` | one usage guide per building block, checked by `node tools/check-docs-examples.mjs` |
 | `docs/migration-from-material.md` | how a page moves off Angular Material |
+| `docs/legacy.md` | `.z-legacy`: keeping the library out of the pages that are not migrated yet |
 | `docs/bundle-report.md` | size of the package per entry point |
 | `docs/api/` | generated TypeDoc reference, not committed |
 | `tools/` | schematics build, schematics tests, contrast gate, example snippets |
