@@ -97,6 +97,18 @@ test('360px: menu button, open header links and end slot controls are 40px tall'
   expect(hoehen).toEqual(Array(9).fill(40));
 });
 
+// From 900px on the six links stand in the bar. Its nav scrolls when they do
+// not fit; the page must not (it did, up to 959px, through the demo wrapper).
+for (const breite of [900, 930, 960]) {
+  test(`${breite}px: links in the bar, no horizontal scrolling`, async ({ page }) => {
+    await seiteOeffnen(page, ROUTE, breite);
+    const m = await messen(page, 'abgemeldet');
+    expect(m.breite).toBe(breite);
+    await expect(page.locator('[data-kopf="abgemeldet"] .z-header__menu')).toBeHidden();
+    await pruefeKeinScrollen(page, `${ROUTE} at ${breite}px`);
+  });
+}
+
 test('axe finds nothing on the page', async ({ page }) => {
   await seiteOeffnen(page, ROUTE, 375);
   await pruefeAxe(page, ROUTE);
