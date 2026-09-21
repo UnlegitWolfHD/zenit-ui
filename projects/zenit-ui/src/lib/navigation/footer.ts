@@ -71,6 +71,11 @@ export class ZFooterCol {
  * collapses, so the same element serves both cases. Content that matches
  * neither slot is not rendered.
  *
+ * It centres nothing: the footer runs the full width of whatever contains it,
+ * so put it inside a `div.z-container`, the same one `z-app-header` and
+ * `<main>` get, or the copyright ends up at the left edge of the window while
+ * the page above it is centred.
+ *
  * @example
  * ```html
  * <z-footer>

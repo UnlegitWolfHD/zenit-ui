@@ -39,7 +39,7 @@ Phase 4 is done when the application builds and Arial is gone. Phase 6 is done w
 
 One row per row of the table "Material ablösen" in `spec/guidelines/30-angular.md`. The "before" column is ordinary Angular Material usage written from general knowledge — the real templates were not read. The "after" column uses the selectors and inputs that exist in `projects/zenit-ui/src/lib`.
 
-### 3.1 `mat-toolbar` → AppHeader
+### 3.1 `mat-toolbar` → `z-app-header`
 
 ```html
 <!-- before -->
@@ -155,7 +155,7 @@ Watch the acceptance rule: at most one primary button per screen height. A Mater
 
 This is the biggest behavioural change in the list; see section 4.1.
 
-### 3.6 `mat-checkbox`, `mat-slide-toggle` → Checkbox, Toggle
+### 3.6 `mat-checkbox`, `mat-slide-toggle` → `z-checkbox`, `z-toggle`
 
 ```html
 <!-- before -->
@@ -200,7 +200,7 @@ Both implement `ControlValueAccessor`, so `[(ngModel)]` and `[formControl]` keep
 
 `z-slider` is a native `<input type="range">` with its own label, value readout, unit and tick marks. `ticks` is a list of strings or numbers printed under the track, not a Material-style value bubble.
 
-### 3.8 `mat-tab-group`, `mat-tab-nav-bar` → Tabs
+### 3.8 `mat-tab-group`, `mat-tab-nav-bar` → `z-tab-group`, `nav[zTabs]` with `a[zTab]`
 
 ```html
 <!-- before -->
@@ -292,7 +292,7 @@ The bigger change is where panels are used at all: per `CLAUDE.md`, "Rahmen nur 
 
 `status` is one of `neutral | success | warning | danger | info`, `dot` adds the leading dot. A badge is not interactive and has no remove button; a removable `mat-chip` has no counterpart and needs a different pattern. Per the acceptance list a status is always also a word, so the label stays.
 
-### 3.12 `mat-table`, `mat-sort` → FileTable
+### 3.12 `mat-table`, `mat-sort` → `table[zTable]` with `th[zSortHeader]`
 
 ```html
 <!-- before -->
@@ -498,7 +498,7 @@ See section 4.4.
 
 The directive takes the text as its own value and has no position, delay or class inputs. See section 4.8.
 
-### 3.18 `mat-progress-spinner`, `mat-progress-bar` → Spinner, Meter, Skeleton
+### 3.18 `mat-progress-spinner`, `mat-progress-bar` → `z-spinner`, `z-metric` with `[percent]`, `z-skeleton`
 
 ```html
 <!-- before -->

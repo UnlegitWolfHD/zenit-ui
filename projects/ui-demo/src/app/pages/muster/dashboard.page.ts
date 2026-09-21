@@ -116,6 +116,7 @@ const PRO_SEITE = 4;
               </button>
             </z-alert>
 
+            <!-- #region tabellenseite -->
             <z-panel title="Meine Server" headingLevel="2" flush [busy]="zustand() === 'laedt'">
               @switch (zustand()) {
                 @case ('laedt') {
@@ -179,6 +180,7 @@ const PRO_SEITE = 4;
                 />
               }
             </z-panel>
+            <!-- #endregion -->
 
             <z-panel title="Auslastung der laufenden Server" headingLevel="2" flush>
               <z-metrics>

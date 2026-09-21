@@ -75,9 +75,9 @@ The entries, with headings and the consequence of each:
 import { ZComboOption } from 'zenit-ui';
 
 const versionen: ZComboOption[] = [
-  { value: 'neueste', label: 'Neueste', note: 'mindestens 4 GB', group: 'Aktuell' },
-  { value: '1.20.1', label: '1.20.1', note: 'mindestens 2 GB', group: 'Ältere' },
-  { value: '25w14a', label: '25w14a', note: 'mindestens 6 GB', group: 'Snapshots' },
+  { value: 'neueste', label: 'Neueste', note: 'mindestens 4\u00a0GB', group: 'Aktuell' },
+  { value: '1.20.1', label: '1.20.1', note: 'mindestens 2\u00a0GB', group: 'Ältere' },
+  { value: '25w14a', label: '25w14a', note: 'mindestens 6\u00a0GB', group: 'Snapshots' },
 ];
 ```
 

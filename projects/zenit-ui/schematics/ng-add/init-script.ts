@@ -146,8 +146,9 @@ function alsLiteral(wert: unknown): string {
  * The stylesheet has to block rendering as well. The Angular CLI inlines
  * "critical" CSS and loads the rest late; `[data-theme="light"]` is never
  * critical, because nothing in `index.html` matches it. Set
- * `optimization.styles.inlineCritical` to `false` (`ng add zenit-ui --themes`
- * does both). See `docs/theming.md`, "No flash of the wrong theme".
+ * `optimization.styles.inlineCritical` to `false` in the `production`
+ * configuration of the build target; `ng add zenit-ui --themes` writes both
+ * the script and that setting.
  *
  * With a Content Security Policy the returned string is what you hash
  * (`sha256`) or what goes into the `<script nonce="…">` element.

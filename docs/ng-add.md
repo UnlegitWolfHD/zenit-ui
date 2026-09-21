@@ -117,27 +117,89 @@ the schematic's. The init script carries a `<!-- prettier-ignore -->`.
    `providers` of the root NgModule.
 
 6. **Theme, only with `--themes`** – three steps that keep a stored colour
-   scheme from flashing in the default scheme first (`docs/theming.md`, "No
-   flash of the wrong theme"):
+   scheme from flashing in the default scheme first (`theming.md`, "No flash of
+   the wrong theme"):
    - The output of `zenitThemeInitScript()` goes into `src/index.html` as an
      inline `<script>`, right after `<meta charset>` (which has to stay within
      the first 1024 bytes) or as the first child of `<head>` when there is none.
      It is written in the same pass as `z-root`. It carries the marker comment
      `zenit-theme-init`; a file that already contains the marker gets no second
-     script.
+     script. Verbatim, these four lines:
+
+     ```html
+     <!-- zenit-theme-init: output of zenitThemeInitScript() from zenit-ui. It applies the stored
+          theme before the first paint. Regenerate it when you pass a config to
+          provideZenitTheme(); with a CSP, hash or nonce it (docs/theming.md). -->
+     <!-- prettier-ignore -->
+     <script>(function(k,S,A,ds,da){var s=ds,a=da,d=document.documentElement,m=function(q,f){try{return matchMedia(q).matches}catch(e){return f}};try{var v=JSON.parse((k&&localStorage.getItem(k))||'null');if(v&&typeof v==='object'){if(v.scheme==='system'||S.indexOf(v.scheme)>-1)s=v.scheme;if(A.indexOf(v.accent)>-1)a=v.accent}}catch(e){}if(s==='system')s=S.indexOf('contrast')>-1&&m('(prefers-contrast: more)',false)?'contrast':m('(prefers-color-scheme: dark)',true)?'dark':'light';d.setAttribute('data-theme',s);if(a!==da)d.setAttribute('data-accent',a)})("zenit-theme",["dark","light","contrast"],["rot","blau","gruen","violett"],"dark","rot")</script>
+     ```
+
+     Together with step 2 the head of a fresh application then reads:
+
+     ```html
+     <html lang="en" class="z-root">
+       <head>
+         <meta charset="utf-8" />
+         <!-- zenit-theme-init: … -->
+         <!-- prettier-ignore -->
+         <script>…</script>
+         <title>my-app</title>
+         <base href="/" />
+         <meta name="viewport" content="width=device-width, initial-scale=1" />
+       </head>
+       <body class="z-root">
+         <app-root></app-root>
+       </body>
+     </html>
+     ```
+
    - `optimization.styles.inlineCritical` is set to `false` in the `production`
      configuration of the build target. The CLI otherwise inlines only the CSS
      that matches `index.html` and loads the rest without blocking;
      `[data-theme="light"]` matches nothing there, so the page would still paint
      dark first. An existing `optimization` object keeps its other settings,
-     `optimization: false` and `styles: false` are left alone.
+     `optimization: false` and `styles: false` are left alone. On a fresh
+     application, which has no `optimization` key, this is written:
+
+     ```json
+     "configurations": {
+       "production": {
+         "optimization": {
+           "scripts": true,
+           "fonts": true,
+           "styles": { "minify": true, "removeSpecialComments": true, "inlineCritical": false }
+         }
+       }
+     }
+     ```
+
+     and `styles` of the build target reads:
+
+     ```json
+     "styles": [
+       "zenit-ui/styles/tokens.css",
+       "@angular/cdk/overlay-prebuilt.css",
+       "zenit-ui/styles/themes.css",
+       "zenit-ui/styles/zenit-ui.css",
+       "src/styles.css"
+     ]
+     ```
+
    - `provideZenitTheme()` is added to the application config, when the
      `bootstrapApplication()` call and its config can be resolved and no
-     `provideZenitTheme(` is there yet. Otherwise the log names the step.
+     `provideZenitTheme(` is there yet, as
+     `providers: [provideZenitTheme()]`. Otherwise the log names the step.
 
-   The script matches the default config. If you pass a config to
-   `provideZenitTheme()`, replace the script with the output of
-   `zenitThemeInitScript(config)`.
+   The script matches the default config: storage key `zenit-theme`, schemes
+   `dark`, `light`, `contrast`, accents `rot`, `blau`, `gruen`, `violett`,
+   default scheme `dark`, default accent `rot` — the last five arguments of the
+   call at the end of the script. If you pass a config to `provideZenitTheme()`,
+   replace the script with the output of `zenitThemeInitScript(config)`:
+
+   ```bash
+   # @angular/compiler first, or the import of the package fails in plain Node
+   node -e "import('@angular/compiler').then(() => import('zenit-ui')).then((m) => console.log(m.zenitThemeInitScript({ defaultScheme: 'system' })))"
+   ```
 
 ## Options
 

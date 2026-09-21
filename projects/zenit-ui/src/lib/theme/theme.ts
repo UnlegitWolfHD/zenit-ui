@@ -81,11 +81,15 @@ function warnen(text: string): void {
  * mode.
  *
  * "As soon as the application starts" is still several frames after the first
- * paint. To avoid a flash of the default scheme put
- * {@link zenitThemeInitScript} into `index.html` (see `docs/theming.md`).
+ * paint. To avoid a flash of the default scheme put the output of
+ * {@link zenitThemeInitScript} as an inline `<script>` at the top of the
+ * `<head>` of `index.html`, in front of every stylesheet, and pass it the same
+ * config as this function.
  *
- * The stylesheets are not part of this: include `zenit-ui/styles/themes.css`
- * after `zenit-ui/styles/tokens.css` (see `docs/theming.md`).
+ * The stylesheets are not part of this: register
+ * `zenit-ui/styles/themes.css` after `zenit-ui/styles/tokens.css` and before
+ * `zenit-ui/styles/zenit-ui.css`. Without it only the `dark` scheme exists and
+ * `setScheme('light')` changes nothing visible.
  *
  * @param config Deviations from the defaults; see {@link ZThemeConfig}.
  * @returns Providers for the application root (`bootstrapApplication`).

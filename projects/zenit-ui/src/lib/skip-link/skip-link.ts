@@ -4,7 +4,8 @@ declare const ngDevMode: boolean | undefined;
 
 /**
  * The first tab stop of a page: a link that jumps past header and navigation
- * straight to the main content (`spec/guidelines/15-zustaende.md`, "Tastatur").
+ * straight to the main content. Every page has one; it is the keyboard's way
+ * out of a header that carries a dozen links.
  *
  * The directive adds the class `z-skip-link` and nothing else. Text, `href` and
  * position in the document belong to the caller, because only the application

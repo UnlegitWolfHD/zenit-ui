@@ -327,13 +327,26 @@ export const Z_LABELS = new InjectionToken<ZLabels>('Z_LABELS', {
  * Without an enclosing provider they keep their German default, so a partial
  * translation stays valid.
  *
+ * **Two calls in the same `providers` array do not stack.** The factory reads
+ * the enclosing injector with `skipSelf`, and both calls sit in the same
+ * injector, so the second one never sees the first: it merges over the parent,
+ * which at the root is `Z_LABELS_DE`. `[provideZenitLabels(Z_LABELS_EN),
+ * provideZenitLabels({ tableRegion: 'Invoices, scrollable' })]` therefore gives
+ * German labels with one English key, not English with one override. Stacking
+ * only works across injectors: application root, then a route.
+ *
+ * For "English plus one override" make it one call with a spread.
+ *
  * @param labels The keys to replace.
  * @returns Providers for `bootstrapApplication` or a route's `providers`.
  *
  * @example
  * ```ts
  * bootstrapApplication(App, {
- *   providers: [provideZenitLabels({ paginationPrev: 'Previous page' })],
+ *   providers: [
+ *     // One call, one object: English everywhere, one key of our own.
+ *     provideZenitLabels({ ...Z_LABELS_EN, tableRegion: 'Invoices, scrollable' }),
+ *   ],
  * });
  * ```
  */
