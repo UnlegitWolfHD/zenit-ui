@@ -1,7 +1,7 @@
 /* Package grundlage: head (z-root), Button, Badge, Field/Input/Select, Panel,
    Icon, Spinner and the layout helpers. Verbatim from spec/components/bundle.css. */
 
-.z-root, .z-root *:not(:where(.z-legacy :not(.z-legacy .z-root, .z-legacy .z-root *))) { box-sizing: border-box; }
+.z-root, .z-root *:not(:where(.z-legacy, .z-legacy *)), :where(.z-legacy) .z-root * { box-sizing: border-box; }
 .z-root {
   background: var(--bg);
   color: var(--text);
@@ -16,10 +16,11 @@
    override the size the visitor set in the browser. An application that adopts
    the library page by page keeps its old styles in rem, and all of them shrink
    by 12.5% the moment z-root is set.
-   The library needs neither value on <html>: it computes in px, styles/_*.css
-   contains no rem at all, and the only relative lengths in it are em on
-   letter-spacing and text-underline-offset, which refer to the element's own
-   font size. body.z-root carries the class itself and therefore keeps 14px/20px
+   The library needs neither value on <html>: its components compute in px.
+   The one rem in styles/_*.css is the 1rem of .z-legacy below, which hands the
+   visitor's size back to a page that is not migrated; the only other relative
+   lengths are em on letter-spacing and text-underline-offset, which refer to
+   the element's own font size. body.z-root carries the class itself and therefore keeps 14px/20px
    from the rule above; every component inherits from there, and the CDK overlay
    container hangs on <body> too, so overlays are unaffected.
    The class therefore has to sit on BOTH elements, as the README prescribes.
@@ -46,13 +47,35 @@ html.z-root { font-size: 100%; line-height: normal; }
       for that: it would be a second way to write the same two declarations.
 
    2. Base rules for bare elements stop at .z-legacy. Every rule of the library
-      that styles an element without a library class carries the exclusion
-        :not(:where(.z-legacy :not(.z-legacy .z-root, .z-legacy .z-root *)))
-      which reads: not inside .z-legacy, unless inside a .z-root that is itself
-      inside .z-legacy. The inner :not() is what lets a nested z-root switch
-      everything on again. It is wrapped in :where(), so it adds (0,0,0) and
-      every specificity written down in this file still holds, including the
-      tie with an application class at (0,1,0) and all a.z-* counter-rules.
+      that styles an element without a library class is written twice:
+        .z-root X:not(:where(.z-legacy, .z-legacy *)),
+        :where(.z-legacy) .z-root X
+      The first selector leaves out the host and everything in it, the second
+      is what lets a z-root inside .z-legacy switch the rule on again. Both
+      :where() add (0,0,0), so each rule weighs exactly what it weighed before
+      and every specificity written down in this file still holds, including
+      the tie with an application class at (0,1,0) and all a.z-* counter-rules.
+      The host is part of the old page: an old main { width: 600px; padding:
+      0 24px } is 648px wide without the library and has to stay 648px.
+      The focus rule has a third selector, :where(.z-legacy) .z-root:focus-visible,
+      for the nested container itself, the usual target of a skip link; outside
+      .z-legacy a page container is a descendant of body.z-root and gets the
+      ring that way.
+
+      What it costs. The exclusion sits on the universal selector, so every
+      element pays for it on a full style recalculation. Production build,
+      RecalcStyleDuration over CDP, forced full recalc, median of 40 rounds of
+      10, without and with the exclusion: /daten (647 elements) 1.21 to 1.39 ms;
+      /muster/server-panel with 2000 console lines (4130 elements) 4.22 to
+      4.9 ms, at 4x CPU throttling 23.9 to 27.8 ms. That is +14 to +18 % on
+      that one step, about 0.7 ms on the large page, and all of it comes from
+      the universal rule. A first version that said the same in one selector,
+      :not(:where(.z-legacy :not(.z-legacy .z-root, .z-legacy .z-root *))),
+      cost +25 % (5.27 ms) and did not cover the host. Covering the host is
+      free: with and without it measured the same within the noise.
+      Resetting instead (.z-legacy :where(*) { box-sizing: content-box }) is
+      cheaper and wrong: it flips an old * { box-sizing: border-box } and the
+      border-box the browser gives select and button by default.
       The rules, all in this file (the other partials style classes only):
         .z-root *                                   box-sizing     exempt
         .z-root :where(button, input, select, ...)  font, color    exempt
@@ -81,15 +104,18 @@ html.z-root { font-size: 100%; line-height: normal; }
       cannot be undone by a nested z-root.
 
    Ceiling: one level of re-entry. A .z-legacy inside a z-root inside a
-   .z-legacy counts as migrated; nearest-ancestor matching needs @scope.
+   .z-legacy counts as migrated (the base rules apply, while the inherited
+   values are the 1rem/normal of that inner .z-legacy); nearest-ancestor
+   matching needs @scope. .z-legacy never goes on <body>: the CDK overlay
+   container hangs there and would be part of the old page.
    A library component placed straight into .z-legacy, without a z-root around
    it, loses exactly the rules listed under 2; docs/legacy.md has the list. */
 .z-legacy { font-size: 1rem; line-height: normal; -webkit-font-smoothing: auto; }
 /* Deviation from the reference: bundle.css lists the four elements one by one
    (specificity 0,1,1) and thereby beats .z-btn--primary/--ghost/--danger
    (0,1,0). :where() lowers the rule to 0,1,0, the values stay the same. */
-.z-root :where(button, input, select, textarea):not(:where(.z-legacy :not(.z-legacy .z-root, .z-legacy .z-root *))) { font: inherit; color: inherit; }
-.z-root :focus-visible:not(:where(.z-legacy :not(.z-legacy .z-root, .z-legacy .z-root *))) { outline: 2px solid var(--focus); outline-offset: 2px; }
+.z-root :where(button, input, select, textarea):not(:where(.z-legacy, .z-legacy *)), :where(.z-legacy) .z-root :where(button, input, select, textarea) { font: inherit; color: inherit; }
+.z-root :focus-visible:not(:where(.z-legacy, .z-legacy *)), :where(.z-legacy) .z-root:focus-visible, :where(.z-legacy) .z-root :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 /* Deviation from the reference: bundle.css writes .z-root a (0,1,1), which beats
    every class an application can put on a link (0,1,0). In the first real
    integration that made the application's own skip link red on red (1.29:1) and
@@ -131,8 +157,8 @@ html.z-root { font-size: 100%; line-height: normal; }
    including by accident ("quiz-link"). That is a side effect of the selector,
    not a documented API; the documented way to keep the library out of a
    subtree is .z-legacy above. */
-.z-root :where(a):not(:where(.z-legacy :not(.z-legacy .z-root, .z-legacy .z-root *))) { color: var(--accent-text); text-decoration: none; }
-.z-root :where(a):hover:not(:where(.z-legacy :not(.z-legacy .z-root, .z-legacy .z-root *))) { text-decoration: underline; }
+.z-root :where(a):not(:where(.z-legacy, .z-legacy *)), :where(.z-legacy) .z-root :where(a) { color: var(--accent-text); text-decoration: none; }
+.z-root :where(a):hover:not(:where(.z-legacy, .z-legacy *)), :where(.z-legacy) .z-root :where(a):hover { text-decoration: underline; }
 /* Deviation from the reference: bundle.css underlines a link on hover only. A
    link inside running text then differs from the words around it by colour
    alone, and accent-text against text stays below 3:1 in 11 of the 12 scheme
@@ -147,7 +173,8 @@ html.z-root { font-size: 100%; line-height: normal; }
    font size is the only kind that fits 12px hints and 16px body alike; it
    moves the line clear of the descenders of g, j and y. No px literal is added.
    Weight (0,2,1), the same as .z-root a.z-btn below. */
-.z-root :where(p, li, dd, label, .z-alert__body, .z-faq__body, .z-empty__body, .z-field__hint):not(:where(nav, .z-header, .z-footer) *) a:not([class*="z-"]):not(:where(.z-legacy :not(.z-legacy .z-root, .z-legacy .z-root *))) {
+.z-root :where(p, li, dd, label, .z-alert__body, .z-faq__body, .z-empty__body, .z-field__hint):not(:where(nav, .z-header, .z-footer) *) a:not([class*="z-"]):not(:where(.z-legacy, .z-legacy *)),
+:where(.z-legacy) .z-root :where(p, li, dd, label, .z-alert__body, .z-faq__body, .z-empty__body, .z-field__hint):not(:where(nav, .z-header, .z-footer) *) a:not([class*="z-"]) {
   text-decoration: underline;
   text-underline-offset: 0.15em;
 }

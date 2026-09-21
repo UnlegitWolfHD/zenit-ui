@@ -95,7 +95,9 @@ export class Altlast {}
       Seite umgezogen ist, und eine umgezogene Seite setzt z-root wieder an ihren Container.
     </p>
 
-    <section class="demo-section" data-legacy="referenz">
+    <!-- tabindex -1 on both page containers: a migrated page is the usual target
+         of the skip link, and its focus ring is one of the rules that come back. -->
+    <section class="demo-section" data-legacy="referenz" tabindex="-1">
       <h2 class="heading-2">Umgezogene Seite, normal eingebunden</h2>
       <demo-legacy-migriert praefix="ref" />
       <div class="demo-row" data-legacy="ausloeser-referenz">
@@ -111,7 +113,7 @@ export class Altlast {}
     </section>
     <!-- Outside .demo-section: its "h2 { margin: 0 }" is a rule of the demo shell
          and would reach the old h2, which no library rule does. -->
-    <div class="z-legacy demo-alt demo-legacy-host" data-legacy="insel">
+    <div class="z-legacy demo-alt" data-legacy="insel">
       <demo-altlast />
 
       <h3>Overlays von einer alten Seite aus</h3>
@@ -129,7 +131,7 @@ export class Altlast {}
       </z-alert>
 
       <h3>Umgezogene Seite im Inhaltsbereich</h3>
-      <div class="z-root demo-legacy-seite" data-legacy="verschachtelt">
+      <div class="z-root demo-legacy-seite" data-legacy="verschachtelt" tabindex="-1">
         <demo-legacy-migriert praefix="insel" />
       </div>
     </div>

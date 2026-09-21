@@ -16,11 +16,15 @@
  * sits on `<body>`, in the demo on the `.z-legacy` host: the library cannot
  * know these values, so the application restates them there (docs/legacy.md).
  *
+ * The same rule gives the element a width and a padding under `content-box`,
+ * the way an old `main { width: …; padding: … }` does: 18rem plus 1rem on each
+ * side is 320px. Under the `border-box` of `.z-root *` it would be 288px.
+ *
  * h2 and p carry no line height on purpose. They inherit it, which is where
  * the 20px of `body.z-root` used to arrive: 27.2px of type on a 20px line.
  */
 export const ALTLAST_CSS = `
-.demo-alt { font-family: Georgia, 'Times New Roman', serif; color: #1f2328; background: #fafafa; color-scheme: normal; }
+.demo-alt { width: 18rem; padding: 1rem; font-family: Georgia, 'Times New Roman', serif; color: #1f2328; background: #fafafa; color-scheme: normal; }
 :where(.demo-alt) { --alt-1: 0.5rem; --alt-2: 1rem; --alt-3: 1.5rem; }
 :where(.demo-alt) h1 { margin: 0 0 var(--alt-2); font-size: 1.75rem; line-height: 1.15; }
 :where(.demo-alt) h2 { margin: var(--alt-3) 0 var(--alt-1); font-size: 1.7rem; }

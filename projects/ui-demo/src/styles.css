@@ -345,11 +345,10 @@
   max-width: var(--measure);
 }
 
-/* Page "Legacy": room around the old page and around the migrated page inside
-   it. Everything else on that page comes from its own old stylesheet. */
-.demo-legacy-host,
+/* Page "Legacy": room around the migrated page inside the old one. The old
+   page itself, its host included, takes everything from its own stylesheet. */
 .demo-legacy-seite {
-  padding: var(--space-5);
+  padding: var(--space-4);
 }
 
 /* Page "Kopfzeile": a header spans the window, so the measuring page undoes

@@ -78,6 +78,31 @@ function lesen(page: Page, wurzel: string, nur = '*') {
   );
 }
 
+/**
+ * The element that carries the old body rule: the `.z-legacy` host in the demo,
+ * `<body>` in the bare document. Its own box is part of the old page, so
+ * `.z-root *` must not turn it into a border-box.
+ */
+function wirtLesen(page: Page, wirt: string) {
+  return page.evaluate((sel) => {
+    const el = document.querySelector(sel);
+    if (!el) throw new Error(`not found: ${sel}`);
+    const st = getComputedStyle(el);
+    return {
+      boxSizing: st.boxSizing,
+      width: st.width,
+      paddingLeft: st.paddingLeft,
+      paddingRight: st.paddingRight,
+      randbreite: el.getBoundingClientRect().width,
+      fontSize: st.fontSize,
+      lineHeight: st.lineHeight,
+      fontFamily: st.fontFamily,
+      color: st.color,
+      backgroundColor: st.backgroundColor,
+    };
+  }, wirt);
+}
+
 /** Resting state, the link hovered, the field focused, the button reached with Tab. */
 async function altlastLesen(page: Page, wurzel: string) {
   const ruhe = await lesen(page, wurzel, '[data-alt]');
@@ -112,6 +137,12 @@ for (const schema of SCHEMATA) {
     expect(referenz.ruhe).toHaveLength(7);
     expect(insel).toEqual(referenz);
 
+    // The host: 18rem of content plus 1rem of padding on each side.
+    const wirt = await wirtLesen(page, '[data-legacy="insel"]');
+    expect(wirt).toEqual(await wirtLesen(nackt, 'body'));
+    expect(wirt.boxSizing).toBe('content-box');
+    expect(wirt.randbreite).toBe(320);
+
     // What the first integration measured as broken, spelled out once: the
     // h2 carries no line height of its own and must not get the shell's 20px.
     const h2 = insel.ruhe.find((e) => e.startsWith('h2'));
@@ -142,6 +173,19 @@ for (const schema of SCHEMATA) {
     expect(ringNormal).toContain('outlineStyle: solid');
     expect(ringNormal).toContain('outlineWidth: 2px');
     expect(ringInsel).toEqual(ringNormal);
+
+    // The nested container itself, the usual target of a skip link, gets the
+    // ring like any page container outside .z-legacy.
+    const ring = async (sel: string) => {
+      await page.locator(sel).focus();
+      return page.evaluate((s) => {
+        const st = getComputedStyle(document.querySelector(s)!);
+        return [st.outlineStyle, st.outlineWidth, st.outlineColor, st.outlineOffset].join(' ');
+      }, sel);
+    };
+    const ringSeite = await ring('[data-legacy="referenz"]');
+    expect(ringSeite).toContain('solid 2px');
+    expect(await ring('[data-legacy="verschachtelt"]')).toBe(ringSeite);
   });
 
   test(`${schema}: axe finds nothing on the page`, async ({ page }) => {
@@ -198,6 +242,44 @@ test('a library component straight inside .z-legacy keeps its classes and loses 
     boxSizing: 'content-box',
     fontFamily: 'Georgia, "Times New Roman", serif',
     linkColor: 'rgb(11, 87, 208)',
+  });
+});
+
+test('the limits docs/legacy.md states: second level, both classes on one element', async ({
+  page,
+}) => {
+  await seiteOeffnen(page, ROUTE, 1440);
+  const werte = await page.evaluate(() => {
+    const main = document.querySelector('main')!;
+    const bauen = (html: string) => {
+      const huelle = document.createElement('div');
+      huelle.innerHTML = html;
+      main.appendChild(huelle);
+      const el = huelle.querySelector('[data-probe]')!;
+      const st = getComputedStyle(el);
+      const knopf = getComputedStyle(huelle.querySelector('button')!);
+      // font-family of a bare button tells whether the base rules apply:
+      // inherited (Inter) with them, the browser's Arial without.
+      return [st.boxSizing, st.fontSize, st.lineHeight, knopf.fontFamily.split(',')[0]].join(' | ');
+    };
+    const inhalt = '<p data-probe>Text</p><button type="button">Knopf</button>';
+    return {
+      zweiteEbene: bauen(
+        `<div class="z-legacy"><div class="z-root"><div class="z-legacy">${inhalt}</div></div></div>`,
+      ),
+      beideInDerInsel: bauen(
+        `<div class="z-legacy"><div class="z-root z-legacy">${inhalt}</div></div>`,
+      ),
+      beideOhneInsel: bauen(`<div class="z-root z-legacy">${inhalt}</div>`),
+    };
+  });
+  expect(werte).toEqual({
+    // Counts as migrated: base rules on. But the inherited values are those of
+    // the inner .z-legacy, 16px and normal, not the 14px/20px of a page.
+    zweiteEbene: 'border-box | 16px | normal | Inter',
+    beideInDerInsel: 'border-box | 16px | normal | Inter',
+    // Outside any island the element is a plain .z-legacy host.
+    beideOhneInsel: 'content-box | 16px | normal | Arial',
   });
 });
 
