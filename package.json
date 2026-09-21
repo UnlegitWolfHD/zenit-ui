@@ -11,6 +11,8 @@
     "snippets": "node tools/generate-example-snippets.mjs",
     "check:snippets": "node tools/generate-example-snippets.mjs --check",
     "check:themes": "node tools/check-theme-contrast.mjs",
+    "check:order": "node tools/check-declaration-order.mjs",
+    "check:bundle": "node tools/check-bundle-load.mjs",
     "test:schematics": "node tools/test-schematics.mjs",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
@@ -22,7 +24,7 @@
     "e2e:beispiel": "playwright test -c playwright.beispiel.config.ts",
     "e2e:update": "playwright test --update-snapshots",
     "docs:api": "typedoc",
-    "check": "npm run lint && npm run lint:css && npm run check:themes && npm run check:snippets && npm run build:lib && ng build ui-demo && ng build beispiel-app && ng test zenit-ui --watch=false && ng test beispiel-app --watch=false && npm run test:schematics && npm run format:check"
+    "check": "npm run lint && npm run lint:css && npm run check:themes && npm run check:snippets && npm run check:order && npm run build:lib && npm run check:bundle && ng build ui-demo && ng build beispiel-app && ng test zenit-ui --watch=false && ng test beispiel-app --watch=false && npm run test:schematics && npm run format:check"
   },
   "private": true,
   "packageManager": "npm@11.11.0",

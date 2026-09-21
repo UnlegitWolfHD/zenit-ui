@@ -28,6 +28,40 @@ export interface ZSort {
 }
 
 /**
+ * Table for files, invoices, backups and databases: everything with several
+ * equal columns and bulk actions. Adds the class `z-table` to a native
+ * `<table>` and renders nothing itself, so semantics, header cells and keyboard
+ * behaviour stay the browser's.
+ *
+ * It also holds the sort state of the table, which the header cells marked with
+ * `zSortHeader` read and write. The library does not sort: it reports what the
+ * user asked for through {@link sort}, the caller orders the rows.
+ *
+ * @example
+ * ```html
+ * <table zTable [(sort)]="sortierung">
+ *   <thead>…</thead>
+ *   <tbody>…</tbody>
+ * </table>
+ * ```
+ */
+@Directive({
+  selector: 'table[zTable]',
+  host: { class: 'z-table' },
+})
+export class ZTable {
+  /**
+   * Column the table is sorted by, two-way bindable. `null` means unsorted,
+   * which is also the third step of the cycle a `th[zSortHeader]` runs through.
+   * Only one column is sorted at a time, because the whole table shares this
+   * one value.
+   *
+   * @default null
+   */
+  readonly sort = model<ZSort | null>(null);
+}
+
+/**
  * Wrapper around `table[zTable]`. Below 640px the table scrolls sideways in
  * here, the page itself never does.
  *
@@ -78,6 +112,8 @@ export class ZTableContainer {
 
   private readonly labels = injectZLabels();
   private readonly el = inject<ElementRef<HTMLElement>>(ElementRef);
+  // The predicate lands in the static partial declaration, which a JIT consumer
+  // evaluates while this class is defined: ZTable has to be declared above.
   private readonly tabelle = contentChild(ZTable, { read: ElementRef });
   private beobachter?: ResizeObserver;
 
@@ -116,40 +152,6 @@ export class ZTableContainer {
     const el = this.el.nativeElement;
     this.ueberlauf.set(el.scrollWidth > el.clientWidth);
   }
-}
-
-/**
- * Table for files, invoices, backups and databases: everything with several
- * equal columns and bulk actions. Adds the class `z-table` to a native
- * `<table>` and renders nothing itself, so semantics, header cells and keyboard
- * behaviour stay the browser's.
- *
- * It also holds the sort state of the table, which the header cells marked with
- * `zSortHeader` read and write. The library does not sort: it reports what the
- * user asked for through {@link sort}, the caller orders the rows.
- *
- * @example
- * ```html
- * <table zTable [(sort)]="sortierung">
- *   <thead>…</thead>
- *   <tbody>…</tbody>
- * </table>
- * ```
- */
-@Directive({
-  selector: 'table[zTable]',
-  host: { class: 'z-table' },
-})
-export class ZTable {
-  /**
-   * Column the table is sorted by, two-way bindable. `null` means unsorted,
-   * which is also the third step of the cycle a `th[zSortHeader]` runs through.
-   * Only one column is sorted at a time, because the whole table shares this
-   * one value.
-   *
-   * @default null
-   */
-  readonly sort = model<ZSort | null>(null);
 }
 
 /**
