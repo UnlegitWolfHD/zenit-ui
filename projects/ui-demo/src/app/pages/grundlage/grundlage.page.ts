@@ -85,7 +85,7 @@ import {
       <div class="demo-row">
         <p class="demo-cap caption">Deaktiviert</p>
         <button zBtn="secondary" disabled>Stoppen</button>
-        <p class="demo-cap caption">Beispiel-Server 1 ist bereits gestoppt.</p>
+        <p class="demo-grund caption">Beispiel-Server 1 ist bereits gestoppt.</p>
       </div>
 
       <div class="demo-row">
@@ -93,7 +93,7 @@ import {
         <a zBtn="primary" href="#">Server erstellen</a>
         <a zBtn="secondary" href="#">Preis berechnen</a>
         <a zBtn="secondary" href="#" [disabled]="true">Aufladen</a>
-        <p class="demo-cap caption">Aufladen ist gesperrt, solange die Zahlung läuft.</p>
+        <p class="demo-grund caption">Aufladen ist gesperrt, solange die Zahlung läuft.</p>
       </div>
 
       <div class="demo-row">
@@ -205,7 +205,24 @@ import {
             </select>
           </z-select>
         </z-field>
+        <z-field
+          label="Zahlungsmittel"
+          for="sel-pay"
+          error="Wähle ein Zahlungsmittel, sonst lässt sich das Guthaben nicht aufladen."
+        >
+          <z-select>
+            <select id="sel-pay">
+              <option>Bitte wählen</option>
+              <option>PayPal</option>
+              <option>SEPA-Lastschrift</option>
+            </select>
+          </z-select>
+        </z-field>
       </div>
+      <p class="demo-grund caption">
+        Fehler am Select: der Satz steht in danger unter dem Feld und hängt über aria-describedby am
+        select. Einen roten Rahmen wie beim Input sieht die Referenz für das Select nicht vor.
+      </p>
     </section>
 
     <section class="demo-section">
@@ -279,7 +296,9 @@ import {
       <h2 class="heading-2">Serverstatus</h2>
       <p class="demo-cap caption">
         Beispiel-Server 1, PaperMC, 203.0.113.10:25565. Der Status sieht überall gleich aus:
-        Dashboard, Liste, Panel-Kopf, geteilte Server.
+        Dashboard, Liste, Panel-Kopf, geteilte Server. Zustandsübersicht: hier stehen alle sechs
+        Status untereinander, auf einer echten Seite steht immer nur ein Status mit seiner einen
+        Hauptaktion.
       </p>
 
       <div class="demo-status">
@@ -297,7 +316,7 @@ import {
             <button zBtn="primary" loading>Wird gestartet</button>
             <button zBtn="secondary" disabled><z-icon name="stop" />Stoppen</button>
           </div>
-          <p class="demo-cap caption">
+          <p class="demo-grund caption">
             Solange der Server startet, sind alle Aktionen gesperrt. Der auslösende Button zeigt den
             Spinner.
           </p>
@@ -314,7 +333,7 @@ import {
           <div class="demo-row">
             <z-badge status="info" dot>Wird installiert</z-badge>
           </div>
-          <p class="demo-cap caption">
+          <p class="demo-grund caption">
             Keine Aktion, bis die Installation fertig ist. Das dauert in etwa 60 Sekunden.
           </p>
         </div>
@@ -337,7 +356,7 @@ import {
               <z-icon name="account_balance_wallet" />Guthaben aufladen
             </button>
           </div>
-          <p class="demo-cap caption">
+          <p class="demo-grund caption">
             Dein Guthaben ist leer. Lade auf, dann läuft Beispiel-Server 1 weiter.
           </p>
         </div>

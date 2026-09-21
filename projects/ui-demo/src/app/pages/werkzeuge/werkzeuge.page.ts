@@ -92,7 +92,7 @@ const STARTZEILEN: ZConsoleLine[] = [
 
       <div class="demo-row">
         <button zBtn="secondary" (click)="anhaengen()">50 Zeilen anhängen</button>
-        <p class="demo-cap caption">
+        <p class="demo-grund caption">
           Das Log scrollt mit, solange du unten stehst. Scrollst du hoch, bleibt es stehen und der
           Button "Zum Ende" erscheint. Enter sendet den Befehl als eigene Zeile, Pfeil hoch holt den
           letzten Befehl zurück.
@@ -114,6 +114,10 @@ const STARTZEILEN: ZConsoleLine[] = [
       <h2 class="heading-2">Hero</h2>
       <p class="demo-cap caption">
         Kopf der Startseite. Der primäre Button der Seite steht hier. Preise sind Beispieltext.
+        z-hero rendert seinen Titel immer als h1 und stellt damit die Überschrift der Seite. Auf
+        dieser Komponentenseite steht er neben dem eigenen h1 "Werkzeuge", deshalb trägt das
+        Dokument hier ausnahmsweise zwei h1. Auf einer echten Seite gibt es genau einen Hero und
+        damit genau ein h1; siehe /muster/startseite.
       </p>
 
       <z-hero
@@ -219,33 +223,33 @@ export class WerkzeugePage {
   private uhr = 12 * 3600 + 7 * 60 + 15;
 
   protected readonly guenstigste = [
-    { titel: 'Terraria', preis: 'ab 1,98 €' },
-    { titel: 'Valheim', preis: 'ab 2,70 €' },
-    { titel: '7 Days to Die', preis: 'ab 3,95 €' },
+    { titel: 'Terraria', preis: 'ab 1,98\u00a0€' },
+    { titel: 'Valheim', preis: 'ab 2,70\u00a0€' },
+    { titel: '7 Days to Die', preis: 'ab 3,95\u00a0€' },
   ];
 
   protected readonly spiele = [
-    { titel: 'Terraria', preis: 'ab 1,98 € / Monat' },
-    { titel: 'Valheim', preis: 'ab 2,70 € / Monat' },
-    { titel: '7 Days to Die', preis: 'ab 3,95 € / Monat' },
-    { titel: 'Rust Dedicated Server', preis: 'ab 9,43 € / Monat' },
+    { titel: 'Terraria', preis: 'ab 1,98\u00a0€ / Monat' },
+    { titel: 'Valheim', preis: 'ab 2,70\u00a0€ / Monat' },
+    { titel: '7 Days to Die', preis: 'ab 3,95\u00a0€ / Monat' },
+    { titel: 'Rust Dedicated Server', preis: 'ab 9,43\u00a0€ / Monat' },
   ];
 
   protected readonly posten: ZPriceLine[] = [
-    { label: 'Arbeitsspeicher', value: '6 GB' },
-    { label: 'Speicher', value: '30 GB NVMe' },
-    { label: 'Laufzeit', value: '1 Monat' },
-    { label: 'Einrichtung', value: '0,00 €' },
+    { label: 'Arbeitsspeicher', value: '6\u00a0GB' },
+    { label: 'Speicher', value: '30\u00a0GB NVMe' },
+    { label: 'Laufzeit', value: '1\u00a0Monat' },
+    { label: 'Einrichtung', value: '0,00\u00a0€' },
   ];
 
   protected readonly technik: ZSpecItem[] = [
     { term: 'Standort', value: 'Nürnberg, Deutschland', note: 'DSGVO-konform' },
-    { term: 'Prozessor', value: 'AMD Ryzen 9 5950X', note: '16C / 32T, 4,9 GHz', mono: true },
-    { term: 'Arbeitsspeicher', value: 'DDR4 ECC', note: '3600 MHz', mono: true },
+    { term: 'Prozessor', value: 'AMD Ryzen 9 5950X', note: '16C / 32T, 4,9\u00a0GHz', mono: true },
+    { term: 'Arbeitsspeicher', value: 'DDR4 ECC', note: '3600\u00a0MHz', mono: true },
     { term: 'Speicher', value: 'NVMe SSD PCIe 4.0', note: 'RAID-Z1', mono: true },
     {
       term: 'Anbindung',
-      value: '1 Gbit/s',
+      value: '1\u00a0Gbit/s',
       note: 'DDoS-Schutz auf Layer 3/4 inklusive',
       mono: true,
     },

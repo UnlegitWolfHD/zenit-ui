@@ -128,7 +128,8 @@ import {
       <h2 class="heading-2">Toast</h2>
       <p class="demo-cap caption">
         5 Sekunden sichtbar, mit Aktion 8 Sekunden. Fehler bleiben, bis man sie schließt, und nutzen
-        role="alert". Höchstens drei gleichzeitig, der neueste unten.
+        role="alert". Höchstens drei gleichzeitig, der neueste unten. Auch ein Fehler kann eine
+        Aktion tragen, wie in der Vorschau: "Speicher ansehen".
       </p>
 
       <div class="demo-row">
@@ -138,6 +139,7 @@ import {
         <button zBtn="secondary" (click)="toast.error('Backup fehlgeschlagen: Speicher voll')">
           Fehler zeigen
         </button>
+        <button zBtn="secondary" (click)="fehlerMitAktion()">Fehler mit Aktion anzeigen</button>
         <button zBtn="secondary" (click)="mitAktion()">Mit Aktion zeigen</button>
         <button zBtn="secondary" (click)="dauerhaft()">Dauerhaft zeigen</button>
         <button zBtn="secondary" (click)="toast.dismiss()">Alle schließen</button>
@@ -169,7 +171,7 @@ import {
         >
           <z-icon name="stop" />Stoppen
         </button>
-        <p class="demo-cap caption">
+        <p class="demo-grund caption">
           Stoppen ist gesperrt: Beispiel-Server 1 ist bereits gestoppt.
         </p>
       </div>
@@ -192,6 +194,14 @@ export class RueckmeldungPage {
     this.toast.success('Eigenschaften gespeichert', {
       actionLabel: 'Rückgängig',
       action: () => this.toast.show('Änderung zurückgenommen', { icon: 'undo' }),
+    });
+  }
+
+  /** The second toast of Toast/preview.html: an error that carries an action. */
+  protected fehlerMitAktion(): void {
+    this.toast.error('Backup fehlgeschlagen: Speicher voll', {
+      actionLabel: 'Speicher ansehen',
+      action: () => this.toast.show('Speicher geöffnet', { icon: 'folder' }),
     });
   }
 
