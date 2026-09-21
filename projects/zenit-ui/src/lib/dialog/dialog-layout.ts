@@ -1,8 +1,10 @@
+import { CdkScrollable } from '@angular/cdk/scrolling';
 import {
   afterNextRender,
   ChangeDetectionStrategy,
   Component,
   contentChild,
+  DestroyRef,
   Directive,
   ElementRef,
   inject,
@@ -52,8 +54,19 @@ export function naechsteId(praefix: string): string {
 @Directive({ selector: '[zDialogActions]' })
 export class ZDialogActions {}
 
-/** Enough of a focusable element for the question "does Tab reach the body?". */
-const FOKUSSIERBAR = 'a[href], button, input, select, textarea, [tabindex]';
+/**
+ * Enough of a tabbable element for the question "does Tab reach the body?".
+ * A locked control, a hidden field and `tabindex="-1"` are no tab stops, so
+ * they do not count.
+ */
+const TABBAR = [
+  'a[href]',
+  'button:not([disabled])',
+  'input:not([disabled]):not([type="hidden"])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  '[tabindex]:not([tabindex="-1"])',
+].join(', ');
 
 /**
  * Layout of a dialog: header with the heading, body, footer with the actions.
@@ -67,8 +80,9 @@ const FOKUSSIERBAR = 'a[href], button, input, select, textarea, [tabindex]';
  *
  * Opened through `ZDialog`, the dialog is limited to the height of the screen
  * and the body is the part that scrolls: heading and actions stay in place, and
- * a body that scrolls without holding a focusable element becomes a tab stop of
- * its own.
+ * a body that scrolls without holding a tabbable element becomes a tab stop of
+ * its own, a `role="group"` named by the heading. Both are watched while the
+ * dialog stands, so a body that only grows later gets its stop as well.
  *
  * Accessibility: `role="dialog"`, `aria-modal`, the focus trap, Escape and
  * returning focus to the trigger all come from the container of
@@ -90,11 +104,24 @@ const FOKUSSIERBAR = 'a[href], button, input, select, textarea, [tabindex]';
  */
 @Component({
   selector: 'z-dialog',
+  // CdkScrollable registers the body with the ScrollDispatcher of the CDK, so
+  // an overlay anchored inside it, a menu or a tooltip, follows its trigger
+  // while the body scrolls instead of standing still.
+  imports: [CdkScrollable],
   template: `
     <div class="z-dialog__header">
       <h2 class="z-dialog__title" [id]="titleId">{{ title() }}</h2>
     </div>
-    <div #rumpf class="z-dialog__body" [attr.tabindex]="rumpfTabIndex()"><ng-content /></div>
+    <div
+      #rumpf
+      cdkScrollable
+      class="z-dialog__body"
+      [attr.tabindex]="rumpfTabIndex()"
+      [attr.role]="rumpfTabIndex() === null ? null : 'group'"
+      [attr.aria-labelledby]="rumpfTabIndex() === null ? null : titleId"
+    >
+      <ng-content />
+    </div>
     @if (aktionen()) {
       <div class="z-dialog__footer"><ng-content select="[zDialogActions]" /></div>
     }
@@ -127,21 +154,43 @@ export class ZDialogLayout {
   private readonly rumpf = viewChild.required<ElementRef<HTMLElement>>('rumpf');
 
   constructor() {
+    const zerstoerung = inject(DestroyRef);
     // A dialog longer than the screen scrolls in its body, and what scrolls has
     // to be reachable by keyboard (WCAG 2.1 SC 2.1.1). Controls inside the body
     // are reached by Tab and the browser scrolls them into view, so a form
-    // needs nothing. A body that scrolls without holding a single focusable
+    // needs nothing. A body that scrolls without holding a single tabbable
     // element does: a confirmation with a long text would otherwise be
     // unreadable without a mouse. Chrome and Firefox give such a scroller a tab
     // stop by themselves, Safari does not, and a second stop on the same
-    // element does no harm.
-    // ponytail: measured once after the first render; a body whose content only
-    // grows later keeps the answer of that moment. A ResizeObserver would be
-    // the upgrade if a dialog ever fills itself late.
+    // element does no harm. It carries `role="group"` with the dialog heading
+    // as its name, so it is not an unnamed stop on the way to the actions.
+    //
+    // Both halves of the question change while the dialog stands: the box with
+    // the window (ResizeObserver) and the content with what the caller renders
+    // into it (MutationObserver), a log that grows or a field that appears.
     afterNextRender(() => {
       const element = this.rumpf().nativeElement;
-      const scrollt = element.scrollHeight > element.clientHeight;
-      this.rumpfTabIndex.set(scrollt && !element.querySelector(FOKUSSIERBAR) ? 0 : null);
+      const pruefe = (): void => {
+        const scrollt = element.scrollHeight > element.clientHeight;
+        this.rumpfTabIndex.set(scrollt && !element.querySelector(TABBAR) ? 0 : null);
+      };
+      pruefe();
+      // ResizeObserver is missing on the server, where no box changes either.
+      const groesse =
+        typeof ResizeObserver === 'undefined' ? undefined : new ResizeObserver(pruefe);
+      groesse?.observe(element);
+      const inhalt = new MutationObserver(pruefe);
+      inhalt.observe(element, {
+        childList: true,
+        subtree: true,
+        characterData: true,
+        attributes: true,
+        attributeFilter: ['disabled', 'hidden', 'href', 'tabindex', 'type'],
+      });
+      zerstoerung.onDestroy(() => {
+        groesse?.disconnect();
+        inhalt.disconnect();
+      });
     });
   }
 }

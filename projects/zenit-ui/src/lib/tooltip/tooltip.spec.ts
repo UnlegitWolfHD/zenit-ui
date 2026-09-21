@@ -236,19 +236,37 @@ describe('ZTooltip', () => {
 
   /** Puts the trigger into a box of its own, which jsdom does not do. */
   function liegtBei(top: number, bottom: number): void {
-    ausloeser.getBoundingClientRect = () => ({ top, bottom, left: 10, right: 30 }) as DOMRect;
+    ausloeser.getBoundingClientRect = () =>
+      ({ top, bottom, left: 10, right: 30, width: 20, height: bottom - top }) as DOMRect;
   }
 
   // The reposition strategy builds on ScrollDispatcher, which only hears the
   // window and containers marked cdkScrollable; the directive therefore listens
   // on the document in the capture phase.
-  it('takes the panel back when anything around the trigger scrolls', () => {
+  it('takes the panel back when a scroller around the trigger moves it', () => {
+    liegtBei(100, 120);
     loese('mouseenter');
+    liegtBei(40, 60);
 
     scrolleAn(document);
 
     expect(flaeche()).toBeNull();
     expect(ausloeser.hasAttribute('aria-describedby')).toBe(false);
+  });
+
+  // A console that follows its own log scrolls on every line; the trigger does
+  // not sit in it, so nothing about the tooltip changes.
+  it('ignores a scroll of a container the trigger is not in', () => {
+    const fremder = document.createElement('div');
+    document.body.append(fremder);
+    liegtBei(100, 120);
+    loese('mouseenter');
+    liegtBei(40, 60);
+
+    scrolleAn(fremder);
+
+    expect(flaeche()).not.toBeNull();
+    fremder.remove();
   });
 
   it('ignores a scroll inside its own panel', () => {
@@ -259,26 +277,67 @@ describe('ZTooltip', () => {
     expect(flaeche()).not.toBeNull();
   });
 
-  // WCAG 2.1 SC 1.4.13 "Persistent": as long as the trigger holds the focus the
-  // panel stays and follows the scroll.
-  it('keeps the panel on a scroll while the trigger holds the focus', () => {
-    liegtBei(10, 30);
-    ausloeser.focus();
-    loese('focusin');
+  // The scroll that brought the trigger into view has already happened when the
+  // panel goes up; its event arrives afterwards and finds the trigger where it
+  // was, so it means nothing.
+  it('ignores a scroll that leaves the trigger where it was', () => {
+    liegtBei(100, 120);
+    loese('mouseenter');
 
     scrolleAn(document);
 
     expect(flaeche()).not.toBeNull();
   });
 
-  it('closes when the scroll pushes the focused trigger out of the scroller', () => {
-    liegtBei(-80, -60);
+  // WCAG 2.1 SC 1.4.13 "Persistent": as long as the trigger holds the focus the
+  // panel stays and follows the scroll.
+  it('keeps the panel on a scroll while the trigger holds the focus', () => {
+    liegtBei(100, 120);
     ausloeser.focus();
     loese('focusin');
+    liegtBei(40, 60);
 
     scrolleAn(document);
 
+    expect(flaeche()).not.toBeNull();
+  });
+
+  it('steps aside while the focused trigger is covered and comes back with it', () => {
+    liegtBei(100, 120);
+    ausloeser.focus();
+    loese('focusin');
+
+    // Scrolled out of the viewport: the panel would point at nothing.
+    liegtBei(-80, -60);
+    scrolleAn(document);
     expect(flaeche()).toBeNull();
+
+    // Scrolled back: the focus never left the trigger, so the panel returns.
+    liegtBei(100, 120);
+    scrolleAn(document);
+    expect(flaeche()).not.toBeNull();
+  });
+
+  // WAI-ARIA Practices: Escape dismisses the tooltip, and only the tooltip, so
+  // the dialog it may stand in needs a second one.
+  it('takes the Escape it uses away from everything below it', () => {
+    loese('mouseenter');
+    const taste = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+    const unten = vi.fn();
+    document.body.addEventListener('keydown', unten);
+
+    document.body.dispatchEvent(taste);
+    fixture.detectChanges();
+
+    expect(flaeche()).toBeNull();
+    expect(unten).not.toHaveBeenCalled();
+
+    // Without an open panel the key belongs to whatever is below.
+    document.body.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+    );
+    expect(unten).toHaveBeenCalledTimes(1);
+    document.body.removeEventListener('keydown', unten);
   });
 
   it('listens for scrolling only while the panel stands', () => {

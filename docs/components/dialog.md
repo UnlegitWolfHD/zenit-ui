@@ -203,10 +203,14 @@ submit button and `error` on its fields.
 - Focus lands on the first tabbable element when the dialog opens: the first field, or otherwise the
   cancel button.
 - A body that scrolls stays operable by keyboard (SC 2.1.1): its controls are reached by Tab and
-  scrolled into view, and a body that scrolls without holding a single focusable element, a long
+  scrolled into view, and a body that scrolls without holding a single tabbable element, a long
   confirmation for example, becomes a tab stop of its own so it can be scrolled with the arrow keys.
+  That stop is a `role="group"` named by the dialog heading, and a locked control does not count as
+  a tab stop. Both halves are watched while the dialog stands, so a body that only fills up later
+  gets its stop as well.
 - The scrolling body carries `scroll-padding`, so the focus ring of a control at its edge is not cut
-  off when the browser scrolls that control into view.
+  off when the browser scrolls that control into view, and its own ring lies inside its edge, which
+  `overflow: auto` would otherwise clip against header and footer.
 - With `requireText` the field is always labelled, through `requireLabel` or, failing that, through
   `requireText` as its `aria-label`.
 - The confirming button repeats the verb from the title, so the decision reads the same in both
@@ -229,7 +233,10 @@ own, because the chain from the overlay pane down to `z-dialog` carries the heig
 A tooltip or a menu opened inside the scrolling body answers that scroll: the tooltip goes, the menu
 closes (see the Tooltip and Menu pages). Both listen on the document in the capture phase, so they
 also hear a scroll container of your own around the dialog, which `cdkScrollable` would be needed
-for otherwise.
+for otherwise, and both ignore a scroller the trigger does not sit in.
+
+Escape inside the dialog goes to the tooltip first when one stands, and only the second Escape
+closes the dialog.
 
 ## Rendered classes and tokens
 

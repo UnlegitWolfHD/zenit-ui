@@ -69,8 +69,12 @@ z-menu-separator { display: block; }
 .z-dialog-panel .z-dialog { display: flex; flex-direction: column; }
 .z-dialog-panel .z-dialog__header, .z-dialog-panel .z-dialog__footer { flex: none; }
 /* `scroll-padding` keeps the 2px focus ring of a control at the edge of the
-   scrolling body from being cut off when the browser scrolls it into view. */
+   scrolling body from being cut off when the browser scrolls it into view. The
+   ring of the body itself lies inside for the same reason: `overflow: auto`
+   clips at its padding box, so a ring outside it would be cut off by the header
+   and the footer (same idiom as .z-game__cover in _werkzeuge.css). */
 .z-dialog-panel .z-dialog__body { min-height: 0; overflow: auto; scroll-padding: var(--space-1); }
+.z-dialog-panel .z-dialog__body:focus-visible { outline-offset: -2px; }
 /* dvh where the browser has it, so the URL bar of a phone does not cut the
    footer off; the vh rule of the reference stays as the fallback. */
 @supports (max-height: 100dvh) {

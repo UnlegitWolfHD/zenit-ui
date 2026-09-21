@@ -79,32 +79,38 @@ The panel closes on mouse leave, on focus loss, on Escape and on a scroll under 
 
 ## Scrolling
 
-A scroll anywhere around the trigger takes the panel back, the way the native `title` tooltip goes:
-a panel that lags behind its trigger is worse than none. That holds for the page as well as for an
-inner container, the body of a scrolling dialog or a scroll container of your own.
+A scroll of a container the trigger sits in takes the panel back, the way the native `title` tooltip
+goes: a panel that lags behind its trigger is worse than none. That holds for the page as well as
+for an inner container, the body of a scrolling dialog or a scroll container of your own. Another
+scroller on the same screen does not: a console that follows its own log scrolls on every line, and
+the tooltip in the panel header above it has to stay.
 
 While the trigger holds the focus the panel stays instead and follows the scroll, because WCAG 2.1
-SC 1.4.13 asks the content to stand as long as hover or focus is on the trigger; it goes once the
-trigger has left the scroller.
+SC 1.4.13 asks the content to stand as long as hover or focus is on the trigger. It steps aside
+while the scroller covers the trigger and comes back once the trigger can be seen again, which is
+what a keyboard user needs: the browser scrolls a control into view as it is focused, and with
+smooth scrolling that takes about a second.
 
 The directive listens for `scroll` on the document in the capture phase. `ScrollDispatcher` of the
 CDK, which the `reposition` strategy builds on, only hears the window and containers marked
 `cdkScrollable`, so a tooltip inside an unannotated container used to stand still while its trigger
 moved away under it. The capture listener runs only while the panel stands and needs no annotation
-on any container; a scroll inside the panel itself and a scroll that happened before the panel went
-up change nothing.
+on any container; an event that leaves the trigger box exactly where it was, the late report of the
+scroll that brought the trigger into view for example, changes nothing.
 
 ## Accessibility
 
 - The trigger carries `aria-describedby` only while the panel hangs in the DOM. A permanent
   reference would point at a missing id most of the time.
 - The panel appears on pointer **and** on focus, so it is reachable with the keyboard.
-- Escape closes it, as it closes every overlay in this system.
+- Escape closes it, and only it: the key stops at the tooltip, so a dialog behind it takes a second
+  Escape (WAI-ARIA Practices). Without an open panel the key belongs to whatever is below.
 - A disabled button fires no events, so put the tooltip on the surrounding element. Repeat the same
   reason as a visible sentence: a tooltip alone is not reachable on a touch device.
 - A tooltip never replaces the `aria-label` of an icon-only button. Set both.
-- A scroll takes the panel back, but not while the trigger holds the focus (SC 1.4.13 "Persistent"),
-  because the browser itself scrolls a focused control into view.
+- A scroll takes the panel back, but not while the trigger holds the focus (SC 1.4.13 "Persistent"):
+  there it follows the trigger and comes back after it, because the browser itself scrolls a focused
+  control into view.
 
 ## Responsive
 

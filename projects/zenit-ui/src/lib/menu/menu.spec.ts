@@ -193,11 +193,21 @@ describe('ZMenu', () => {
     fixture.detectChanges();
   }
 
+  /**
+   * Closing is armed once the scrolling that was running when the menu opened
+   * has come to rest. `scrollend` says so; the two quiet animation frames of
+   * the fallback are nothing a synchronous test can wait for.
+   */
+  function zurRuhe(): void {
+    document.dispatchEvent(new Event('scrollend'));
+  }
+
   // The scroll strategy of the CDK builds on ScrollDispatcher, which only hears
   // the window and containers marked cdkScrollable; the menu therefore listens
   // on the document in the capture phase.
   it('closes on a scroll under it and hands the focus back to the trigger', () => {
     oeffne();
+    zurRuhe();
     eintraege()[0].focus();
 
     scrolleAn(document);
@@ -208,6 +218,7 @@ describe('ZMenu', () => {
 
   it('leaves the focus where it is when it was not inside the menu', () => {
     oeffne();
+    zurRuhe();
     const feld = document.createElement('input');
     document.body.append(feld);
     feld.focus();
@@ -219,8 +230,38 @@ describe('ZMenu', () => {
     feld.remove();
   });
 
+  // A trigger reached with the keyboard is scrolled into view, and those events
+  // arrive after the menu has opened. They must not close it again.
+  it('ignores the scroll that was still running when it opened', () => {
+    oeffne();
+
+    scrolleAn(document);
+
+    expect(menue()).not.toBeNull();
+
+    zurRuhe();
+    scrolleAn(document);
+
+    expect(menue()).toBeNull();
+  });
+
+  // A console that follows its own log scrolls on every line; the trigger does
+  // not sit in it, so the menu stays where it is.
+  it('stays open when a container the trigger is not in scrolls', () => {
+    const fremder = document.createElement('div');
+    document.body.append(fremder);
+    oeffne();
+    zurRuhe();
+
+    scrolleAn(fremder);
+
+    expect(menue()).not.toBeNull();
+    fremder.remove();
+  });
+
   it('stays open when the scroll happens inside the menu itself', () => {
     oeffne();
+    zurRuhe();
 
     scrolleAn(menue()!);
 
@@ -354,18 +395,43 @@ describe('ZMenuItem as a link', () => {
     expect(menue()).toBeNull();
   });
 
-  it('swallows click and Space on a disabled link and keeps the menu', () => {
+  /** A click the way the browser sends it, so it can be cancelled. */
+  function klicke(ziel: HTMLElement, optionen: MouseEventInit = {}): MouseEvent {
+    const ereignis = new MouseEvent('click', { bubbles: true, cancelable: true, ...optionen });
+    ziel.dispatchEvent(ereignis);
+    fixture.detectChanges();
+    return ereignis;
+  }
+
+  // `CdkMenuItem` cancels the click of a locked entry, but `RouterLink` listens
+  // on the same element and navigates regardless of `defaultPrevented`, so the
+  // click has to be stopped before it ever reaches the entry.
+  it('stops click and Space on a disabled link before the link sees them', () => {
     host.gesperrt.set(true);
     fixture.detectChanges();
     const papierkorb = links()[1];
+    const amLink = vi.fn();
+    papierkorb.addEventListener('click', amLink);
 
     expect(papierkorb.getAttribute('aria-disabled')).toBe('true');
     expect(papierkorb.tabIndex).toBe(-1);
+    expect(papierkorb.getAttribute('href')).toBe('#papierkorb');
 
-    papierkorb.click();
+    const ereignis = klicke(papierkorb);
     taste(papierkorb, ' ', 32);
-    fixture.detectChanges();
 
+    expect(amLink).not.toHaveBeenCalled();
+    expect(ereignis.defaultPrevented).toBe(true);
+    expect(menue()).not.toBeNull();
+  });
+
+  // Ctrl, Cmd, Shift and Alt belong to the browser: it opens a new tab or
+  // downloads the target, and the menu stays open, as with a middle click.
+  it('leaves a click with a modifier to the browser and keeps the menu', () => {
+    const ereignis = klicke(links()[0], { ctrlKey: true });
+
+    expect(ereignis.defaultPrevented).toBe(false);
+    expect(host.geoeffnet).toBe(0);
     expect(menue()).not.toBeNull();
   });
 

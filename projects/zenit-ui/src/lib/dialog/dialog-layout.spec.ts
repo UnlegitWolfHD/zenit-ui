@@ -35,6 +35,15 @@ class MitFeldHost {}
 
 @Component({
   imports: [ZDialogLayout],
+  template: `<z-dialog title="Server umbenennen"
+    ><input id="gesperrt" disabled /><button disabled>Speichern</button></z-dialog
+  >`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class GesperrtHost {}
+
+@Component({
+  imports: [ZDialogLayout],
   template: `<z-dialog title="Server umbenennen" />`,
   providers: [{ provide: Z_DIALOG_TITLE_ID, useValue: 'z-dialog-title-von-aussen' }],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -138,9 +147,45 @@ describe('ZDialogLayout', () => {
     const fixture = TestBed.createComponent(OhneAktionenHost);
     fixture.detectChanges();
     await fixture.whenStable();
+    const rumpf: HTMLElement = fixture.nativeElement.querySelector('.z-dialog__body');
 
     // WCAG 2.1.1: the long text of a confirmation has to be readable without a
     // mouse, and nothing inside it takes the focus.
+    expect(rumpf.getAttribute('tabindex')).toBe('0');
+    // A stop on the way to the actions says what it is and what it belongs to.
+    expect(rumpf.getAttribute('role')).toBe('group');
+    expect(rumpf.getAttribute('aria-labelledby')).toBe(
+      fixture.nativeElement.querySelector('.z-dialog__title').id,
+    );
+  });
+
+  // The content of a dialog changes while it stands: a log grows, a field
+  // appears. The answer to "does Tab reach the body?" changes with it.
+  it('gives the tab stop later when the content grows into a scroller', async () => {
+    const fixture = TestBed.createComponent(OhneAktionenHost);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const rumpf: HTMLElement = fixture.nativeElement.querySelector('.z-dialog__body');
+
+    expect(rumpf.hasAttribute('tabindex')).toBe(false);
+
+    laengerAlsDerKasten();
+    rumpf.append(document.createElement('p'));
+    // The MutationObserver reports in a microtask of its own.
+    await new Promise((fertig) => setTimeout(fertig));
+    fixture.detectChanges();
+
+    expect(rumpf.getAttribute('tabindex')).toBe('0');
+  });
+
+  // A tabbable control is reached by Tab and scrolled into view by the browser;
+  // a locked one is not, so it does not answer the question.
+  it('gives the tab stop although the body holds a disabled control', async () => {
+    laengerAlsDerKasten();
+    const fixture = TestBed.createComponent(GesperrtHost);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
     expect(fixture.nativeElement.querySelector('.z-dialog__body').getAttribute('tabindex')).toBe(
       '0',
     );

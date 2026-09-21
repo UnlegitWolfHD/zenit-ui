@@ -21,13 +21,19 @@ const NACHLAUF = 100;
 
 let zaehler = 0;
 
+/** Two boxes at the same place on the screen: nothing moved the trigger. */
+function unbewegt(a: DOMRect, b: DOMRect): boolean {
+  return a.top === b.top && a.left === b.left && a.width === b.width && a.height === b.height;
+}
+
 /**
  * Short addition to a control. Opens the tooltip panel in a CDK overlay,
  * centered above the trigger with 8px gap, below it as the fallback position.
- * A scroll anywhere around the trigger takes the panel back, in the page as
- * well as in an inner container such as the body of a scrolling dialog; only
- * while the trigger holds the focus does the panel follow the scroll instead,
- * until the trigger has left the scroller.
+ * A scroll of a container the trigger sits in takes the panel back, in the page
+ * as well as in an inner container such as the body of a scrolling dialog;
+ * another scroller on the same screen leaves it alone. While the trigger holds
+ * the focus the panel follows that scroll instead, steps aside while the
+ * scroller covers the trigger and comes back once it can be seen again.
  *
  * Accessibility: the panel appears on pointer and focus. On leaving it does not
  * disappear at once but after 100ms, and entering the panel itself stops that
@@ -37,7 +43,8 @@ let zaehler = 0;
  * panel instead of nothing; the position therefore carries no offset. While the
  * trigger holds the focus, the pointer leaving keeps the panel standing, since
  * it belongs to the focus then; `focusout` closes it at once unless the pointer
- * rests on trigger or panel, and Escape always closes at once.
+ * rests on trigger or panel, and Escape always closes at once, and only the
+ * tooltip: the key stops there, so a dialog behind it needs a second Escape.
  * `aria-describedby` is only present while the panel hangs in the DOM, because
  * a permanent reference would point at a missing id most of the time. A
  * disabled button fires no events, so the surrounding element carries the
@@ -61,7 +68,6 @@ let zaehler = 0;
     '(mouseleave)': `aufZeiger(false)`,
     '(focusin)': `zeige()`,
     '(focusout)': `aufFokusVerlust()`,
-    '(document:keydown.escape)': `verstecke()`,
     '[attr.aria-describedby]': `sichtbar() ? tooltipId : null`,
   },
 })
@@ -90,10 +96,10 @@ export class ZTooltip {
   private timer?: ReturnType<typeof setTimeout>;
   /** Takes the panel listeners with it on destroy. */
   private readonly abbruch = new AbortController();
-  /** Lives only while the panel stands; see {@link horcheAufScrollen}. */
-  private scrollHorcher?: AbortController;
-  /** When the panel went up, on the clock of `Event.timeStamp`. */
-  private seit = 0;
+  /** Lives only while the panel stands; see {@link horcheWaehrendOffen}. */
+  private horcher?: AbortController;
+  /** The trigger box the panel was hung on; a scroll that leaves it is none. */
+  private verankert?: DOMRect;
 
   constructor() {
     // The text can change while the panel hangs in the overlay, for example
@@ -116,7 +122,7 @@ export class ZTooltip {
     inject(DestroyRef).onDestroy(() => {
       this.stoppeTimer();
       this.abbruch.abort();
-      this.scrollHorcher?.abort();
+      this.horcher?.abort();
       this.overlayRef?.dispose();
     });
   }
@@ -149,73 +155,117 @@ export class ZTooltip {
     if (this.sichtbar()) {
       return;
     }
-    this.overlayRef ??= this.erzeugeOverlay();
-    this.flaeche = this.overlayRef.attach(new ComponentPortal(ZTooltipPanel));
-    this.flaeche.instance.text.set(text);
-    this.flaeche.instance.id.set(this.tooltipId);
-    this.sichtbar.set(true);
-    this.horcheAufScrollen();
+    this.zeigeFlaeche(text);
+    this.horcheWaehrendOffen();
   }
 
   protected verstecke(): void {
     this.stoppeTimer();
+    this.horcher?.abort();
+    this.horcher = undefined;
+    this.verankert = undefined;
+    this.ueberPanel = false;
+    this.verbergeFlaeche();
+  }
+
+  /** Panel into the overlay; the trigger box it belongs to is noted with it. */
+  private zeigeFlaeche(text: string): void {
+    this.overlayRef ??= this.erzeugeOverlay();
+    this.flaeche = this.overlayRef.attach(new ComponentPortal(ZTooltipPanel));
+    this.flaeche.instance.text.set(text);
+    this.flaeche.instance.id.set(this.tooltipId);
+    this.verankert = this.host.nativeElement.getBoundingClientRect();
+    this.sichtbar.set(true);
+  }
+
+  /** Panel out of the overlay. Whoever keeps listening stays listening. */
+  private verbergeFlaeche(): void {
     if (!this.sichtbar()) {
       return;
     }
-    this.scrollHorcher?.abort();
-    this.scrollHorcher = undefined;
-    this.ueberPanel = false;
     this.overlayRef?.detach();
     this.flaeche = undefined;
     this.sichtbar.set(false);
   }
 
   /**
-   * While the panel stands, every scroller around the trigger is listened to.
-   * The listener hangs on the document in the CAPTURE phase, because a scroll
-   * event on an inner element does not bubble: the `reposition` strategy of the
-   * overlay builds on `ScrollDispatcher`, which only ever hears the window and
-   * the containers a caller marked `cdkScrollable`. A tooltip inside the body of
-   * a dialog therefore used to stand still while its trigger moved away under
-   * it. Capture hears every scroller without asking any caller to annotate one.
+   * While the panel stands, every scroller around the trigger is listened to,
+   * and Escape is caught before anything else sees it.
+   *
+   * Both listeners hang on the document in the CAPTURE phase. For the scroll
+   * because an event on an inner element does not bubble: the `reposition`
+   * strategy of the overlay builds on `ScrollDispatcher`, which only ever hears
+   * the window and the containers a caller marked `cdkScrollable`, so a tooltip
+   * inside the body of a dialog used to stand still while its trigger moved
+   * away under it. For Escape because the keyboard dispatcher of the CDK sits
+   * on `document.body` and would otherwise close the dialog behind the tooltip
+   * with the same key press (WAI-ARIA Practices: the first Escape dismisses the
+   * tooltip, the second the dialog).
    */
-  private horcheAufScrollen(): void {
-    this.seit = this.dokument.defaultView?.performance.now() ?? 0;
-    this.scrollHorcher = new AbortController();
+  private horcheWaehrendOffen(): void {
+    if (this.horcher) {
+      return;
+    }
+    this.horcher = new AbortController();
+    const signal = this.horcher.signal;
     this.dokument.addEventListener('scroll', (ereignis) => this.aufScrollen(ereignis), {
       capture: true,
       passive: true,
-      signal: this.scrollHorcher.signal,
+      signal,
     });
+    this.dokument.addEventListener(
+      'keydown',
+      (ereignis) => {
+        if (ereignis.key !== 'Escape' || !this.sichtbar()) {
+          return;
+        }
+        ereignis.stopPropagation();
+        this.verstecke();
+      },
+      { capture: true, signal },
+    );
   }
 
   /**
    * A scroll under the pointer takes the panel back, the way the native `title`
-   * tooltip goes: one that lags behind its trigger is worse than none. The
-   * focus is the exception, because WCAG 2.1 SC 1.4.13 "Hoverable" asks the
-   * content to stand as long as the trigger keeps hover or focus, and the
-   * browser itself scrolls a focused control into view. A focused trigger
-   * therefore keeps its panel, which follows along and only goes once the
-   * trigger has left the scroller. A scroll inside the panel is not a scroll of
-   * the trigger and changes nothing, and neither does one that happened before
-   * the panel went up: a browser scrolls a control into view as it is focused,
-   * and that event only arrives afterwards, so without the timestamp the panel
-   * would close under the very hand that opened it.
+   * tooltip goes: one that lags behind its trigger is worse than none.
+   *
+   * Only a scroller the trigger sits in counts. `document` contains it too,
+   * which is how a scroll of the page arrives, while the panel and every other
+   * scroller of the screen (a console that follows its own log, a table beside
+   * the trigger) do not move the trigger and are therefore ignored. An event
+   * that leaves the trigger box exactly where it was changes nothing either:
+   * the scroll that brought the trigger into view has already happened when the
+   * panel goes up, and its event only arrives afterwards.
+   *
+   * The focus is the exception to closing. WCAG 2.1 SC 1.4.13 asks the content
+   * to stand as long as the trigger keeps hover or focus, and the browser
+   * itself scrolls a focused control into view, so the panel of a focused
+   * trigger follows the scroll, steps aside while the scroller covers the
+   * trigger and comes back once it can be seen again.
    */
   private aufScrollen(ereignis: Event): void {
     const ziel = ereignis.target as Node | null;
-    if (
-      !this.overlayRef ||
-      ereignis.timeStamp < this.seit ||
-      (ziel && this.overlayRef.overlayElement.contains(ziel))
-    ) {
+    const wirt = this.host.nativeElement;
+    if (!this.overlayRef || !ziel?.contains(wirt)) {
       return;
     }
-    if (this.host.nativeElement.contains(this.dokument.activeElement) && !this.verdeckt(ziel)) {
+    const kasten = wirt.getBoundingClientRect();
+    if (this.verankert && unbewegt(this.verankert, kasten)) {
+      return;
+    }
+    this.verankert = kasten;
+    if (!wirt.contains(this.dokument.activeElement)) {
+      this.verstecke();
+      return;
+    }
+    if (this.verdeckt(ziel, kasten)) {
+      this.verbergeFlaeche();
+    } else if (!this.sichtbar()) {
+      this.zeigeFlaeche(this.zTooltip());
+    } else {
       this.overlayRef.updatePosition();
-      return;
     }
-    this.verstecke();
   }
 
   /**
@@ -223,7 +273,7 @@ export class ZTooltip {
    * The page reports its scroll on the document, and in some engines on the
    * root element or the body; all three mean the viewport.
    */
-  private verdeckt(ziel: Node | null): boolean {
+  private verdeckt(ziel: Node, kasten: DOMRect): boolean {
     const seite =
       !(ziel instanceof Element) ||
       ziel === this.dokument.documentElement ||
@@ -232,12 +282,11 @@ export class ZTooltip {
     const rolle = seite
       ? { top: 0, left: 0, bottom: fenster?.innerHeight ?? 0, right: fenster?.innerWidth ?? 0 }
       : ziel.getBoundingClientRect();
-    const trigger = this.host.nativeElement.getBoundingClientRect();
     return (
-      trigger.bottom <= rolle.top ||
-      trigger.top >= rolle.bottom ||
-      trigger.right <= rolle.left ||
-      trigger.left >= rolle.right
+      kasten.bottom <= rolle.top ||
+      kasten.top >= rolle.bottom ||
+      kasten.right <= rolle.left ||
+      kasten.left >= rolle.right
     );
   }
 

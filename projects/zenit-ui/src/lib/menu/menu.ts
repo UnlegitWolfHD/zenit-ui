@@ -24,11 +24,13 @@ import { ZIcon } from '../icon';
  * `surface-raised` with `shadow-overlay` and no scrim. The menu is opened from
  * a button carrying `[cdkMenuTriggerFor]`.
  *
- * A scroll anywhere under the open menu closes it, the way a menu of the
- * operating system goes: in the page as well as in an inner container such as
- * the body of a scrolling dialog. Focus returns to the trigger only when it was
- * inside the menu, so scrolling with the pointer does not pull it away from
- * whatever the visitor was typing in.
+ * A scroll of a container the trigger sits in closes the menu, the way a menu
+ * of the operating system goes: the page as well as an inner container such as
+ * the body of a scrolling dialog. Another scroller on the same screen leaves
+ * the menu alone, and so does the scroll that was still running when the menu
+ * opened. Focus returns to the trigger only when it was inside the menu, so
+ * scrolling with the pointer does not pull it away from whatever the visitor
+ * was typing in.
  *
  * @example
  * ```html
@@ -63,21 +65,76 @@ export class ZMenu {
     // and the containers a caller marked `cdkScrollable`. A menu in the body of
     // a dialog therefore used to stand still while its trigger moved away.
     const abbruch = new AbortController();
-    // A scroll that happened before the menu went up must not close it again:
-    // the browser scrolls a trigger into view as it is focused, and that event
-    // only arrives afterwards.
-    const seit = dokument.defaultView?.performance.now() ?? 0;
+    const signal = abbruch.signal;
+    const fenster = dokument.defaultView;
+
+    // The scroll that was still running when the menu opened must not close it
+    // again: a trigger reached with the keyboard is scrolled into view, and
+    // those events only arrive afterwards, a smooth scroll for a whole second.
+    // Closing is therefore armed once that scrolling has come to rest: at the
+    // `scrollend` of the browser, or after two animation frames without a
+    // scroll event, whichever comes first.
+    let scharf = !fenster;
+    let stille = 0;
+    const beobachte = (): void => {
+      if (scharf || signal.aborted) {
+        return;
+      }
+      stille += 1;
+      if (stille >= 2) {
+        scharf = true;
+        return;
+      }
+      fenster?.requestAnimationFrame(beobachte);
+    };
+    fenster?.requestAnimationFrame(beobachte);
+    dokument.addEventListener('scrollend', () => (scharf = true), { capture: true, signal });
+
     dokument.addEventListener(
       'scroll',
       (ereignis) => {
         const ziel = ereignis.target as Node | null;
-        // A scroll inside the menu itself is not a scroll under it.
-        if (ereignis.timeStamp < seit || (ziel && wirt.contains(ziel))) {
+        // Only a scroller the trigger sits in takes the menu away from it.
+        // `document` contains it too, which is how a scroll of the page
+        // arrives; the menu itself and any other scroller of the screen, a
+        // console following its own log for example, leave the trigger where it
+        // is. Right after opening, the trigger carries no `aria-controls` yet;
+        // until it does, every scroll counts, the way it did before.
+        const ausloeser = wirt.id ? dokument.querySelector(`[aria-controls="${wirt.id}"]`) : null;
+        if (!ziel || (ausloeser && !ziel.contains(ausloeser))) {
+          return;
+        }
+        if (!scharf) {
+          stille = 0;
           return;
         }
         menue.menuStack.closeAll({ focusParentTrigger: wirt.contains(dokument.activeElement) });
       },
-      { capture: true, passive: true, signal: abbruch.signal },
+      { capture: true, passive: true, signal },
+    );
+
+    // A locked link entry must not navigate. `CdkMenuItem` does call
+    // preventDefault() and stopPropagation() on the click, but `RouterLink`
+    // listens on the same element and navigates regardless of
+    // `defaultPrevented`, so the click is caught here in the CAPTURE phase of
+    // the menu, before any listener on the entry. A click with a modifier is
+    // the browser's: it opens the link in a new tab or downloads it, and the
+    // menu stays where it is, exactly as a middle click already does.
+    wirt.addEventListener(
+      'click',
+      (ereignis) => {
+        const ziel = (ereignis.target as HTMLElement | null)?.closest('a.z-menu__item');
+        if (!ziel) {
+          return;
+        }
+        if (ziel.getAttribute('aria-disabled') === 'true') {
+          ereignis.preventDefault();
+          ereignis.stopPropagation();
+        } else if (mitZusatztaste(ereignis)) {
+          ereignis.stopPropagation();
+        }
+      },
+      { capture: true, signal },
     );
 
     // Space activates an entry (ARIA menu pattern), but the browser clicks only
@@ -97,7 +154,7 @@ export class ZMenu {
         ereignis.stopPropagation();
         (ziel as HTMLElement).click();
       },
-      { capture: true, signal: abbruch.signal },
+      { capture: true, signal },
     );
 
     inject(DestroyRef).onDestroy(() => abbruch.abort());
@@ -114,11 +171,13 @@ export class ZMenu {
  * the projected text.
  *
  * A link entry keeps its `href` or `routerLink`: the library has no router and
- * touches neither. Enter and a click follow the link and close the menu, Space
- * does the same because `z-menu` turns it into a click, and a middle click or
- * Ctrl+click opens a new tab without closing the menu. `disabled` is
- * `aria-disabled="true"` on a link with its click swallowed, the same way
- * `a[zBtn]` is locked.
+ * touches neither. Enter and a plain click follow the link and close the menu,
+ * Space does the same because `z-menu` turns it into a click. A click with
+ * Ctrl, Cmd, Shift or Alt and a middle click belong to the browser: it opens a
+ * new tab or downloads the target, and the menu stays open. `disabled` renders
+ * `aria-disabled="true"`, and `z-menu` swallows the click before `RouterLink`
+ * or the `href` can act on it, so the entry leads nowhere while it is locked,
+ * the same way `a[zBtn]` is.
  *
  * Accessibility: role, focus and the `disabled` input come from `CdkMenuItem`
  * as a host directive, which also provides the `(triggered)` output. The CDK
@@ -198,10 +257,10 @@ export class ZMenuItem {
 }
 
 /**
- * A key pressed together with a modifier belongs to the browser: Ctrl+Space and
- * the like are not an activation of the entry.
+ * A key or a click with a modifier belongs to the browser: Ctrl+Space, and
+ * Ctrl+click which opens a new tab, are not an activation of the entry.
  */
-function mitZusatztaste(ereignis: KeyboardEvent): boolean {
+function mitZusatztaste(ereignis: KeyboardEvent | MouseEvent): boolean {
   return ereignis.altKey || ereignis.ctrlKey || ereignis.metaKey || ereignis.shiftKey;
 }
 

@@ -262,6 +262,50 @@ test.describe('Menu on /overlays', () => {
     await expect(page.getByRole('menu')).toHaveCount(0);
   });
 
+  // The CDK cancels the click of a locked entry, but RouterLink listens on the
+  // same element and navigates regardless of defaultPrevented, so the menu has
+  // to stop the click before the link ever sees it.
+  test('a locked link entry leads nowhere, by click and by keyboard', async ({ page }) => {
+    await seite(page, 'overlays');
+    await page.getByRole('button', { name: 'Weitere Seiten' }).click();
+    const gesperrt = eintrag(page, 'Rechnungen');
+
+    await expect(gesperrt).toHaveAttribute('aria-disabled', 'true');
+    // The address stays on the entry; only the click is swallowed.
+    await expect(gesperrt).toHaveAttribute('href', '/daten');
+
+    // force, because Playwright refuses to click what carries aria-disabled;
+    // a visitor's mouse has no such scruples.
+    await gesperrt.click({ force: true });
+    await expect(page).toHaveURL(/\/overlays$/);
+    await expect(page.getByRole('menu')).toBeVisible();
+
+    await gesperrt.focus();
+    await page.keyboard.press('Enter');
+    await page.keyboard.press('Space');
+
+    await expect(page).toHaveURL(/\/overlays$/);
+    await expect(page.getByRole('menu')).toBeVisible();
+  });
+
+  test('Ctrl+click on a link entry opens a new tab and leaves the menu open', async ({
+    page,
+    context,
+  }) => {
+    await seite(page, 'overlays');
+    await page.getByRole('button', { name: 'Weitere Seiten' }).click();
+    const neuerTab = context.waitForEvent('page');
+
+    await eintrag(page, 'Daten').click({ modifiers: ['ControlOrMeta'] });
+    const tab = await neuerTab;
+    await tab.waitForLoadState();
+
+    expect(new URL(tab.url()).pathname).toBe('/daten');
+    await expect(page, 'der eigene Tab bleibt stehen').toHaveURL(/\/overlays$/);
+    await expect(page.getByRole('menu'), 'und das Menü bleibt offen').toBeVisible();
+    await tab.close();
+  });
+
   test('a link entry looks like a button entry, at rest and on hover', async ({ page }) => {
     await seite(page, 'overlays');
     await page.getByRole('button', { name: 'Weitere Seiten' }).click();

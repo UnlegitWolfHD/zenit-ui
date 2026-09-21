@@ -301,7 +301,8 @@ export class LangerDialog {
       <p class="demo-cap caption">
         Einträge, die irgendwohin führen, sind Links. Rolle, Pfeiltasten und Anfangsbuchstaben
         bleiben gleich; Enter, Leertaste und Klick öffnen die Seite und schließen das Menü,
-        Strg-Klick öffnet einen neuen Tab und lässt das Menü offen.
+        Strg-Klick öffnet einen neuen Tab und lässt das Menü offen. Rechnungen ist gesperrt, solange
+        der Monat läuft: der Eintrag behält seine Adresse und führt trotzdem nirgendwohin.
       </p>
       <div class="demo-row">
         <button zBtn="secondary" [cdkMenuTriggerFor]="seiten">Weitere Seiten</button>
@@ -311,6 +312,7 @@ export class LangerDialog {
         <z-menu>
           <a zMenuItem icon="dns" routerLink="/daten">Daten</a>
           <a zMenuItem icon="description" routerLink="/formulare">Formulare</a>
+          <a zMenuItem icon="receipt_long" [disabled]="true" routerLink="/daten">Rechnungen</a>
           <z-menu-separator />
           <button zMenuItem icon="content_copy" (triggered)="gewaehlt('Link kopieren')">
             Link kopieren
