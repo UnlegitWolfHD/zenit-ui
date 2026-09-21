@@ -15,8 +15,9 @@ that needs different wording still overrides the matching input, as before.
 | `ZLabels` | The interface, one key per default text. |
 | `Z_LABELS_DE` | The German defaults, used when nothing is provided. |
 | `Z_LABELS_EN` | The English equivalents, complete. |
-| `Z_LABELS` | The injection token the components read. |
-| `provideZenitLabels(partial)` | Merges an override over `Z_LABELS_DE`. |
+| `Z_LABELS` | The injection token that holds the registry. |
+| `provideZenitLabels(partial)` | Merges an override over the enclosing injector's labels, or over `Z_LABELS_DE` at the root. |
+| `injectZLabels()` | Reads the registry, complete. The components call this, and so should your own. |
 
 A key is a plain `string` when the text is fixed and a function when it takes
 parameters.
@@ -34,7 +35,7 @@ parameters.
 | `consoleJumpToEnd` | `z-console`, caption of the jump-to-end button | `Zum Ende` | `Jump to end` |
 | `headerMenu` | `z-app-header`, `aria-label` of the menu button below 900px | `Menü` | `Menu` |
 | `toastClose` | `z-toast-outlet`, `aria-label` of the close button | `Schließen` | `Close` |
-| `tableRegion` | `z-table-container`, accessible name of the scrollable region | `Tabelle, seitlich scrollbar` | `Table, scrolls sideways` |
+| `tableRegion` | `z-table-container`, accessible name of the scrollable region | `Tabelle, seitlich scrollbar` | `Table, scrollable horizontally` |
 
 `paginationRange` is the only function. Its signature is
 `(from: number, to: number, total: number, itemLabel: string) => string`, where
@@ -42,8 +43,8 @@ parameters.
 
 ## Application-wide
 
-`provideZenitLabels` merges over the German defaults, so a partial override
-stays valid: keys that are left out keep their German text.
+`provideZenitLabels` at the root merges over the German defaults, so a partial
+override stays valid: keys that are left out keep their German text.
 
 ```ts
 import { bootstrapApplication } from '@angular/platform-browser';
@@ -60,7 +61,17 @@ A single key, the rest German:
 providers: [provideZenitLabels({ tableRegion: 'Rechnungen, seitlich scrollbar' })];
 ```
 
-It returns `EnvironmentProviders`, so it also belongs on a lazy route:
+It returns `EnvironmentProviders`, so it also belongs on a route. There it
+merges over the labels of the enclosing injector, not over German: a route
+that overrides one key inside an English application stays English otherwise.
+
+```ts
+// root: provideZenitLabels(Z_LABELS_EN)
+{ path: 'billing', providers: [provideZenitLabels({ tableRegion: 'Invoices, scrollable horizontally' })] }
+// inside /billing: toastClose is still 'Close', not 'Schließen'
+```
+
+A whole language for one lazy route:
 
 ```ts
 export const routes: Routes = [
@@ -82,8 +93,8 @@ over the registry. Unset, it falls back to the registry value.
 <z-pagination [(page)]="seite" [total]="118" itemLabel="Rechnungen" ariaLabelNext="Eine Seite weiter" />
 ```
 
-The inputs per component: `ariaLabelPrev`, `ariaLabelNext` and `rangeLabel` on
-`z-pagination`, `logLabel`, `inputLabel` and `endLabel` on `z-console`,
+The inputs per component: `ariaLabel`, `ariaLabelPrev`, `ariaLabelNext` and
+`rangeLabel` on `z-pagination`, `logLabel`, `inputLabel` and `endLabel` on `z-console`,
 `menuLabel` on `z-app-header`, `closeLabel` on `z-toast-outlet` and `ariaLabel`
 on `z-table-container`.
 
@@ -104,9 +115,19 @@ class EnglischePagination {
 }
 ```
 
-`useValue` takes a complete `ZLabels`, not a partial one. To change single keys
-for a subtree, spread the defaults yourself:
+`useValue` is typed as a complete `ZLabels`. To change single keys for a
+subtree, spread the defaults yourself:
 
 ```ts
 providers: [{ provide: Z_LABELS, useValue: { ...Z_LABELS_DE, headerMenu: 'Menu' } }];
+```
+
+A value that is incomplete anyway (a cast, a JSON file) does not break the
+components: they read the registry through `injectZLabels()`, which lays the
+provided value over `Z_LABELS_DE`, so a missing key falls back to German
+instead of leaving an icon-only button without `aria-label`. Use the same
+function in your own components instead of `inject(Z_LABELS)`:
+
+```ts
+private readonly labels = injectZLabels();
 ```

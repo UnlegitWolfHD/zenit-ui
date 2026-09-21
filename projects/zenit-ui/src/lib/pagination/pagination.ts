@@ -3,14 +3,13 @@ import {
   Component,
   computed,
   effect,
-  inject,
   input,
   model,
   numberAttribute,
   untracked,
 } from '@angular/core';
 import { ZIcon } from '../icon';
-import { Z_LABELS } from '../labels';
+import { injectZLabels } from '../labels';
 
 /**
  * Pages through lists with more than {@link pageSize} entries and sits as the
@@ -146,7 +145,7 @@ export class ZPagination {
    */
   readonly ariaLabelNext = input<string>();
 
-  private readonly labels = inject(Z_LABELS);
+  private readonly labels = injectZLabels();
 
   protected readonly bereich = computed(() => this.rangeLabel() ?? this.labels.paginationRange);
   protected readonly navText = computed(() => this.ariaLabel() ?? this.labels.paginationNav);

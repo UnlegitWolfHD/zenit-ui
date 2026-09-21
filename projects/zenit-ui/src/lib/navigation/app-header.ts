@@ -4,13 +4,12 @@ import {
   Component,
   computed,
   Directive,
-  inject,
   input,
   signal,
 } from '@angular/core';
 import { ZButton } from '../button';
 import { ZIcon } from '../icon';
-import { Z_LABELS } from '../labels';
+import { injectZLabels } from '../labels';
 
 /** Counts up once per header so that `aria-controls` stays unique. */
 let laufendeNummer = 0;
@@ -145,7 +144,7 @@ export class ZAppHeader {
    */
   readonly menuLabel = input<string>();
 
-  private readonly labels = inject(Z_LABELS);
+  private readonly labels = injectZLabels();
 
   protected readonly menuText = computed(() => this.menuLabel() ?? this.labels.headerMenu);
   protected readonly offen = signal(false);

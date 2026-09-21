@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { ZButton } from '../button';
 import { ZIcon } from '../icon';
-import { Z_LABELS } from '../labels';
+import { injectZLabels } from '../labels';
 import { ZToast, ZToastItem } from './toast';
 
 /**
@@ -93,7 +93,7 @@ export class ZToastOutlet {
    */
   readonly closeLabel = input<string>();
 
-  private readonly labels = inject(Z_LABELS);
+  private readonly labels = injectZLabels();
 
   protected readonly schliessenText = computed(() => this.closeLabel() ?? this.labels.toastClose);
   protected readonly dienst = inject(ZToast);
