@@ -1,4 +1,11 @@
-import { booleanAttribute, ChangeDetectionStrategy, Component, input } from '@angular/core';
+import {
+  booleanAttribute,
+  ChangeDetectionStrategy,
+  Component,
+  HostAttributeToken,
+  inject,
+  input,
+} from '@angular/core';
 
 /**
  * Grid of the game tiles: `auto-fill` from 128px width, so the number of
@@ -41,7 +48,8 @@ export class ZGameGrid {}
  * is announced either way. The cover image has an empty `alt`, because the
  * title stands right below it as text. The native `title` attribute is
  * suppressed on the host, so the browser does not show its own tooltip because
- * of the {@link title} input.
+ * of the {@link title} input. The host gets `type="button"`, so a tile inside a
+ * form does not submit it; a static `type` written by the caller stays.
  *
  * @example
  * ```html
@@ -70,6 +78,7 @@ export class ZGameGrid {}
     <span class="z-game__price">{{ price() }}</span>`,
   host: {
     class: 'z-game',
+    '[attr.type]': `typ`,
     '[attr.aria-pressed]': `selected() ? "true" : "false"`,
     '[attr.title]': `null`,
   },
@@ -108,4 +117,11 @@ export class ZGameTile {
    * @default false
    */
   readonly selected = input(false, { transform: booleanAttribute });
+
+  /**
+   * The tile picks a game, it never submits: without a `type` a `<button>`
+   * inside a form is a submit button. A static `type` from the caller is read
+   * here and written back, because the host binding would otherwise delete it.
+   */
+  protected readonly typ = inject(new HostAttributeToken('type'), { optional: true }) ?? 'button';
 }

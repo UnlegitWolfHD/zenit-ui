@@ -1,6 +1,15 @@
 import { Overlay, OverlayRef } from '@angular/cdk/overlay';
 import { ComponentPortal } from '@angular/cdk/portal';
-import { Directive, ElementRef, inject, input, OnDestroy, signal } from '@angular/core';
+import {
+  ComponentRef,
+  Directive,
+  effect,
+  ElementRef,
+  inject,
+  input,
+  OnDestroy,
+  signal,
+} from '@angular/core';
 import { ZTooltipPanel } from './tooltip-panel';
 
 /** Gap between trigger and panel, matches `space-2`. */
@@ -44,8 +53,9 @@ let zaehler = 0;
 })
 export class ZTooltip implements OnDestroy {
   /**
-   * The tooltip text, given as the value of the attribute. Empty means no
-   * tooltip: the panel is not opened at all.
+   * The tooltip text, given as the value of the attribute. A change while the
+   * panel is open reaches the panel. Empty means no tooltip: the panel is not
+   * opened at all, and an open one closes.
    *
    * @default ''
    */
@@ -57,6 +67,24 @@ export class ZTooltip implements OnDestroy {
   private readonly overlay = inject(Overlay);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private overlayRef?: OverlayRef;
+  private flaeche?: ComponentRef<ZTooltipPanel>;
+
+  constructor() {
+    // The text can change while the panel hangs in the overlay, for example
+    // when the reason for a disabled button changes. Empty closes the panel,
+    // because an empty tooltip opens none either.
+    effect(() => {
+      const text = this.zTooltip();
+      if (!this.sichtbar()) {
+        return;
+      }
+      if (text) {
+        this.flaeche?.instance.text.set(text);
+      } else {
+        this.verstecke();
+      }
+    });
+  }
 
   protected zeige(): void {
     const text = this.zTooltip();
@@ -64,9 +92,9 @@ export class ZTooltip implements OnDestroy {
       return;
     }
     this.overlayRef ??= this.erzeugeOverlay();
-    const flaeche = this.overlayRef.attach(new ComponentPortal(ZTooltipPanel));
-    flaeche.instance.text.set(text);
-    flaeche.instance.id.set(this.tooltipId);
+    this.flaeche = this.overlayRef.attach(new ComponentPortal(ZTooltipPanel));
+    this.flaeche.instance.text.set(text);
+    this.flaeche.instance.id.set(this.tooltipId);
     this.sichtbar.set(true);
   }
 
@@ -75,6 +103,7 @@ export class ZTooltip implements OnDestroy {
       return;
     }
     this.overlayRef?.detach();
+    this.flaeche = undefined;
     this.sichtbar.set(false);
   }
 

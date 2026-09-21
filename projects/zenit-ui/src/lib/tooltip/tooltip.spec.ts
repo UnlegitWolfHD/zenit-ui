@@ -93,6 +93,29 @@ describe('ZTooltip', () => {
     expect(ausloeser.hasAttribute('aria-describedby')).toBe(false);
   });
 
+  it('follows a text change while the panel is open', () => {
+    loese('mouseenter');
+
+    expect(flaeche()?.textContent?.trim()).toBe('Server neu starten');
+
+    fixture.componentInstance.text.set('Server läuft bereits');
+    fixture.detectChanges();
+
+    expect(flaeche()?.textContent?.trim()).toBe('Server läuft bereits');
+  });
+
+  it('closes the panel when the text becomes empty while open', () => {
+    loese('mouseenter');
+
+    expect(flaeche()).not.toBeNull();
+
+    fixture.componentInstance.text.set('');
+    fixture.detectChanges();
+
+    expect(flaeche()).toBeNull();
+    expect(ausloeser.hasAttribute('aria-describedby')).toBe(false);
+  });
+
   it('never holds more than one panel', () => {
     loese('mouseenter');
     loese('focusin');

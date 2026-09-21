@@ -22,6 +22,16 @@ class GameHost {
   readonly gewaehlt = signal(false);
 }
 
+@Component({
+  imports: [ZGameTile],
+  template: `<form>
+    <button zGameTile title="Valheim"></button>
+    <button zGameTile type="submit" title="Rust"></button>
+  </form>`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class FormHost {}
+
 describe('ZGameTile', () => {
   function baue(): { kachel: HTMLButtonElement; host: GameHost; rendere: () => void } {
     const fixture = TestBed.createComponent(GameHost);
@@ -46,15 +56,31 @@ describe('ZGameTile', () => {
     expect(kachel.className).toBe('z-game');
   });
 
-  // Finding: the API table and the preview expect a plain action button, but
-  // ZGameTile never sets `type`. Inside a form the tile therefore submits.
-  // CdkMenuItem does set it (`_setType`), ZGameTile does not. The test records
-  // the current behaviour and has to be flipped once the type is added.
-  it('leaves the native type unset instead of forcing type="button"', () => {
+  it('sets type="button" so the tile never submits a surrounding form', () => {
     const { kachel } = baue();
 
-    expect(kachel.hasAttribute('type')).toBe(false);
-    expect(kachel.type).toBe('submit');
+    expect(kachel.getAttribute('type')).toBe('button');
+
+    const fixture = TestBed.createComponent(FormHost);
+    fixture.detectChanges();
+    const formular: HTMLFormElement = fixture.nativeElement.querySelector('form');
+    let abgeschickt = 0;
+    formular.addEventListener('submit', (ereignis) => {
+      ereignis.preventDefault();
+      abgeschickt += 1;
+    });
+
+    fixture.nativeElement.querySelector('button[zGameTile]').click();
+
+    expect(abgeschickt).toBe(0);
+  });
+
+  it('keeps a static type written by the caller', () => {
+    const fixture = TestBed.createComponent(FormHost);
+    fixture.detectChanges();
+    const kacheln = fixture.nativeElement.querySelectorAll('button[zGameTile]');
+
+    expect(kacheln[1].getAttribute('type')).toBe('submit');
   });
 
   it('mirrors selected in aria-pressed and uses no extra modifier class', () => {

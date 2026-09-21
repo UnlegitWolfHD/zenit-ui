@@ -1,5 +1,5 @@
 import {
-  afterRenderEffect,
+  afterEveryRender,
   booleanAttribute,
   ChangeDetectionStrategy,
   Component,
@@ -156,8 +156,8 @@ export class ZSidebarGroup {
  *
  * Accessibility: {@link ariaLabel} names both the `nav` and the select, so the
  * navigation is announced with a name at either width. The entry labels are
- * projected text and can only be read after rendering, so they are collected in
- * an `afterRenderEffect`.
+ * projected text and can only be read after rendering, so they are collected
+ * after every render and follow a label that changes at runtime.
  *
  * @example
  * ```html
@@ -200,9 +200,18 @@ export class ZSidebar {
 
   constructor() {
     // The labels are projected text in the DOM and can only be read after
-    // rendering, hence the detour through a signal.
-    afterRenderEffect(() => {
-      this.beschriftungen.set(this.eintraege().map((eintrag) => eintrag.beschriftung()));
+    // rendering, hence the detour through a signal. An interpolated label
+    // changes without the item query changing, so the text is read after every
+    // render and only written back when it really differs; without that check
+    // every write would schedule the next render.
+    afterEveryRender({
+      read: () => {
+        const neu = this.eintraege().map((eintrag) => eintrag.beschriftung());
+        const alt = this.beschriftungen();
+        if (neu.length !== alt.length || neu.some((text, i) => text !== alt[i])) {
+          this.beschriftungen.set(neu);
+        }
+      },
     });
   }
 
