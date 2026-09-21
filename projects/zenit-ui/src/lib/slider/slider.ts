@@ -22,12 +22,15 @@ let laufendeNummer = 0;
   selector: 'z-slider',
   template: `
     <div class="z-range__head">
-      <label class="z-field__label" [attr.for]="id">{{ label() }}</label>
+      @if (label()) {
+        <label class="z-field__label" [attr.for]="id">{{ label() }}</label>
+      }
       <span class="z-range__value">{{ anzeige() }}</span>
     </div>
     <input
       type="range"
       [id]="id"
+      [attr.aria-label]="label() ? null : ariaLabel() || null"
       [min]="min()"
       [max]="max()"
       [step]="step()"
@@ -55,6 +58,8 @@ let laufendeNummer = 0;
 })
 export class ZSlider implements ControlValueAccessor {
   readonly label = input('');
+  /** Ersetzt das sichtbare Label, wenn `label` leer bleibt. */
+  readonly ariaLabel = input('');
   readonly min = input(0, { transform: numberAttribute });
   readonly max = input(100, { transform: numberAttribute });
   readonly step = input(1, { transform: numberAttribute });

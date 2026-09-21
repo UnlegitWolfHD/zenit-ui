@@ -59,6 +59,11 @@ z-slider { display: block; }
 /* Eine Checkbox ohne sichtbaren Text (aria-label, zum Beispiel in einer
    Tabellenzeile) hat ein leeres span. Ohne diese Regel bliebe die Luecke. */
 .z-check span:empty { display: none; }
+/* Deaktiviert wie bei Checkbox, Toggle und Button in bundle.css. Der Hover
+   haelt seine Farbe an, die gewaehlte Sicht behaelt dabei ihr text. */
+.z-segment button:disabled { opacity: 0.45; cursor: not-allowed; }
+.z-segment button:disabled:not([aria-pressed="true"]):hover { color: var(--text-muted); }
+.z-range input[type="range"]:disabled { opacity: 0.45; cursor: not-allowed; }
 
 /* Klickziele mobil mindestens 40px (Abnahme A9). Die Masse aus den
    Vorschauen bleiben sichtbar, nur die Trefferflaeche waechst. */
