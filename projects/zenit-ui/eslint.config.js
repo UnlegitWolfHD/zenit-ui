@@ -15,28 +15,16 @@ module.exports = defineConfig([
           style: 'camelCase',
         },
       ],
+      // Die API-Tabelle schreibt fuer die ganze Library beide Selektor-Arten vor:
+      // Element (z-badge, z-panel) und Attribut (button[zBtn], button[zMenuItem],
+      // button[zGameTile], a[zRow]). Die Regel nimmt dafuer je Art eine Konfiguration,
+      // weil "style" sonst nur zu einer der beiden passt.
       '@angular-eslint/component-selector': [
         'error',
-        {
-          type: 'element',
-          prefix: 'z',
-          style: 'kebab-case',
-        },
-      ],
-    },
-  },
-  {
-    // Button ist laut API-Tabelle eine Komponente mit Attribut-Selektor
-    // (button[zBtn], a[zBtn]).
-    files: ['**/button.ts'],
-    rules: {
-      '@angular-eslint/component-selector': [
-        'error',
-        {
-          type: 'attribute',
-          prefix: 'z',
-          style: 'camelCase',
-        },
+        [
+          { type: 'element', prefix: 'z', style: 'kebab-case' },
+          { type: 'attribute', prefix: 'z', style: 'camelCase' },
+        ],
       ],
     },
   },
