@@ -55,3 +55,14 @@
 .demo-status__row { display: grid; gap: var(--space-2); padding-top: var(--space-4); border-top: 1px solid var(--border); }
 .demo-status__row:first-child { padding-top: 0; border-top: 0; }
 .demo-narrow { max-width: var(--sidebar); }
+
+/* Seitenmuster (10-seitenmuster.md). Nur Tokens, nur was die Bausteine nicht schon tragen. */
+
+/* Kundenbereich: PageHeader, dann space-6, dann die Panels mit space-5 Luecke. */
+.demo-kundenbereich { display: grid; gap: var(--space-6); }
+/* Panel-Kopf des Server-Panels: links Name, Status und Adresse, rechts die Aktionen. */
+.demo-panelkopf { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); padding-bottom: var(--space-4); border-bottom: 1px solid var(--border); }
+/* Abschluss-CTA oeffentlicher Seiten, der einzige zentrierte Block. */
+.demo-cta { display: grid; justify-items: center; gap: var(--space-5); text-align: center; }
+/* Ueberschriften und Saetze der Musterseiten: der Abstand kommt aus dem Raster. */
+.demo-flach { margin: 0; }

@@ -31,4 +31,19 @@ export const routes: Routes = [
     path: 'werkzeuge',
     loadComponent: () => import('./pages/werkzeuge/werkzeuge.page').then((m) => m.WerkzeugePage),
   },
+  {
+    path: 'muster/dashboard',
+    loadComponent: () =>
+      import('./pages/muster/dashboard.page').then((m) => m.MusterDashboardPage),
+  },
+  {
+    path: 'muster/server-panel',
+    loadComponent: () =>
+      import('./pages/muster/server-panel.page').then((m) => m.MusterServerPanelPage),
+  },
+  {
+    path: 'muster/startseite',
+    loadComponent: () =>
+      import('./pages/muster/startseite.page').then((m) => m.MusterStartseitePage),
+  },
 ];

@@ -33,5 +33,8 @@ export class App {
     { pfad: '/rueckmeldung', name: 'Rückmeldung' },
     { pfad: '/overlays', name: 'Overlays' },
     { pfad: '/werkzeuge', name: 'Werkzeuge' },
+    { pfad: '/muster/dashboard', name: 'Dashboard' },
+    { pfad: '/muster/server-panel', name: 'Server-Panel' },
+    { pfad: '/muster/startseite', name: 'Startseite' },
   ];
 }
