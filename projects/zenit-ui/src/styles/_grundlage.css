@@ -10,12 +10,39 @@
   line-height: 20px;
   -webkit-font-smoothing: antialiased;
 }
+/* Deviation from the reference: the rule above is written for the page, but the
+   documented setup puts z-root on <html> as well as on <body>. On <html> its
+   14px also move 1rem from 16px to 14px for everything else in the document and
+   override the size the visitor set in the browser. An application that adopts
+   the library page by page keeps its old styles in rem, and all of them shrink
+   by 12.5% the moment z-root is set.
+   The library needs neither value on <html>: it computes in px, styles/_*.css
+   contains no rem at all, and the only relative lengths in it are em on
+   letter-spacing and text-underline-offset, which refer to the element's own
+   font size. body.z-root carries the class itself and therefore keeps 14px/20px
+   from the rule above; every component inherits from there, and the CDK overlay
+   container hangs on <body> too, so overlays are unaffected.
+   100%, not 16px: a visitor who raised the browser font size keeps it. */
+html.z-root { font-size: 100%; line-height: normal; }
 /* Deviation from the reference: bundle.css lists the four elements one by one
    (specificity 0,1,1) and thereby beats .z-btn--primary/--ghost/--danger
    (0,1,0). :where() lowers the rule to 0,1,0, the values stay the same. */
 .z-root :where(button, input, select, textarea) { font: inherit; color: inherit; }
 .z-root :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
-.z-root a:hover { text-decoration: underline; }
+/* Deviation from the reference: bundle.css writes .z-root a (0,1,1), which beats
+   every class an application can put on a link (0,1,0). In the first real
+   integration that made the application's own skip link red on red (1.29:1) and
+   recoloured every link of the pages not migrated yet, the moment z-root went
+   onto <html>. :where() lowers the two rules to (0,1,0) and (0,2,0), so a later
+   application rule wins on specificity; the values are unchanged. It is the
+   same fix the rule above got for :where(button, input, select, textarea).
+   Nothing in the library changes with it: every link rule here weighs (0,2,1)
+   or more and already won before. They are a.z-btn with its five variants and
+   the Minecraft primary, a.z-skip-link, a.z-tab, a.z-side__item,
+   a.z-header__link, a.z-row, a.z-row__link, .z-footer__list a,
+   .z-footer__base a and the underline for links in running text below. */
+.z-root :where(a) { color: var(--accent-text); text-decoration: none; }
+.z-root :where(a):hover { text-decoration: underline; }
 /* Deviation from the reference: bundle.css underlines a link on hover only. A
    link inside running text then differs from the words around it by colour
    alone, and accent-text against text stays below 3:1 in 11 of the 12 scheme

@@ -59,7 +59,7 @@ Both files can be pulled in via `@import` just as well, if you use your own entr
 
 ### 2. Set `z-root`
 
-The class `z-root` belongs on `<html>` and on `<body>`. It sets background, text color, font, `font: inherit` for controls and the focus ring. Overlays attach to `body` and inherit the same variables.
+The class `z-root` belongs on `<html>` and on `<body>`. It sets background, text color, font, `font: inherit` for controls and the focus ring. Overlays attach to `body` and inherit the same variables. On `<html>` it no longer changes the rem base, and its link rules no longer beat your own classes, so legacy styles keep working while you migrate page by page.
 
 ```html
 <!doctype html>
@@ -243,6 +243,8 @@ It registers the stylesheets in `angular.json` in the prescribed order, merges `
 `spec/components/bundle.css` in the repository of the design system is the reference for all styles. These deviations are deliberate:
 
 - The base rule for `font` and `color` on controls uses `:where(button, input, select, textarea)`. The reference selector has a specificity that beats component classes; `:where()` lowers it to the class level, the values are unchanged.
+- The link base rules are `.z-root :where(a)` and `.z-root :where(a):hover`, for the same reason. At the reference specificity (0,1,1) they beat every class an application can put on a link (0,1,0): an application's own skip link came out red on red (1.29:1), and every link on a page that is not migrated yet changed colour and underline the moment `z-root` was set. The values are unchanged, and none of the library's own link rules moves: they all weigh (0,2,1) or more.
+- `html.z-root` resets `font-size` to `100%` and `line-height` to `normal`. The reference rule is written for the page, and the documented setup puts `z-root` on `<html>` as well: its 14px would move `1rem` from 16px to 14px for the whole document and override the size the visitor set in the browser. `body.z-root` carries the class itself and keeps 14px/20px, which is what every component and every overlay inherits. The library itself contains no `rem` at all.
 - Below 640px small controls are 40px high (`.z-btn--sm`, `.z-input--sm`, `.z-select--sm select`, `.z-menu__item`), because touch targets on mobile are at least 40px.
 - Below 640px the alert wraps its action button onto its own line, so that title, text and button stay readable at 360px.
 - `div[zRow]` resets `cursor` to `auto`. A row is only clickable as `a[zRow]`; the non-interactive variant must not look clickable.
