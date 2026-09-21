@@ -52,6 +52,20 @@ export class LegacyMigriert {
 }
 
 /**
+ * The old page itself. The markup is a string shared with e2e/legacy.spec.ts,
+ * so it is handed over as it is and not written into a template here. The host
+ * generates no box; the old rules are descendant selectors and do not see it.
+ */
+@Component({
+  selector: 'demo-altlast',
+  template: ALTLAST_HTML,
+  host: { style: 'display: contents' },
+  encapsulation: ViewEncapsulation.None,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class Altlast {}
+
+/**
  * Simulates an application that moves to zenit-ui route by route: `z-root` on
  * `<html>` and `<body>`, `.z-legacy` on the content host, `z-root` again on
  * the container of a migrated page.
@@ -62,7 +76,16 @@ export class LegacyMigriert {
  */
 @Component({
   selector: 'demo-legacy',
-  imports: [CdkMenuTrigger, Z_MENU, LegacyMigriert, ZAlert, ZButton, ZToastOutlet, ZTooltip],
+  imports: [
+    CdkMenuTrigger,
+    Z_MENU,
+    Altlast,
+    LegacyMigriert,
+    ZAlert,
+    ZButton,
+    ZToastOutlet,
+    ZTooltip,
+  ],
   encapsulation: ViewEncapsulation.None,
   styles: ALTLAST_CSS,
   template: `
@@ -89,7 +112,7 @@ export class LegacyMigriert {
     <!-- Outside .demo-section: its "h2 { margin: 0 }" is a rule of the demo shell
          and would reach the old h2, which no library rule does. -->
     <div class="z-legacy demo-alt demo-legacy-host" data-legacy="insel">
-      ${ALTLAST_HTML}
+      <demo-altlast />
 
       <h3>Overlays von einer alten Seite aus</h3>
       <p data-legacy="ausloeser-insel">
