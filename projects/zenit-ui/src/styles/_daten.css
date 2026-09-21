@@ -93,3 +93,46 @@
   .z-row > .z-row__action { display: inline-flex; }
   .z-row:has(> .z-row__action) { grid-template-columns: minmax(0, 1fr) auto auto; }
 }
+
+/* Addition to the reference: the page size select in the pager. The reference
+   fixes 25 entries and has no picker; every paginator of the application has
+   one, so z-pagination renders one as soon as pageSizeOptions is set. Label and
+   select stand on one line and form a flex item of .z-pager, which already
+   wraps. The select itself is the z-select shell in size sm, so it takes the
+   40px height below 640px from _grundlage.css together with every other small
+   control. Below 640px the group takes the full width and therefore a row of
+   its own, so the arrows keep theirs at 360px. */
+.z-pager__size { display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
+@media (max-width: 640px) {
+  .z-pager__size { width: 100%; }
+}
+
+/* Addition to the reference: sortable column headers. FileTable/README.md asks
+   for "Sortieren über Klick auf den Spaltenkopf", bundle.css has no rule for
+   it. The button is a reset control that inherits the caption style of the
+   .z-table th rule, so a sortable header looks exactly like a plain one until
+   it is sorted; then the header text steps up from text-subtle to text. The
+   focus ring is the global one. */
+.z-table__sort {
+  display: inline-flex; align-items: center; gap: var(--space-2);
+  padding: 0; border: 0; background: none; color: inherit; font: inherit;
+  text-align: inherit; cursor: pointer;
+}
+.z-table__sort:enabled:hover { color: var(--text); }
+.z-table__sort:disabled { cursor: default; }
+.z-table__sort .z-icon { color: var(--text-muted); }
+/* [zNum] on a header cell borrows the right alignment of the data cells only.
+   The mono face and text-muted belong to the values below it, the header keeps
+   the caption style of the reference. The button follows the text-align of the
+   cell, and the arrow moves in front of the text, so the right edge of the
+   column stays the edge of the header text. */
+.z-table th.z-table__num { font-family: inherit; color: var(--text-subtle); }
+.z-table th.z-table__num .z-icon { order: -1; }
+.z-table th[aria-sort="ascending"], .z-table th[aria-sort="descending"] { color: var(--text); }
+@media (prefers-reduced-motion: no-preference) {
+  .z-table__sort { transition: color 150ms; }
+}
+/* Click targets at least 40px on mobile (CLAUDE.md, Abstand und Layout). */
+@media (max-width: 640px) {
+  .z-table__sort { min-height: var(--control-md); }
+}
