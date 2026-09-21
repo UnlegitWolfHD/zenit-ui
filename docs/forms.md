@@ -15,6 +15,7 @@ supports all three:
 | `z-toggle`                          | `boolean` | the component                                |
 | `z-slider`                          | `number`  | the component                                |
 | `z-segment`                         | `string`  | the component                                |
+| `z-combobox`                        | `string`  | the component                                |
 | `input[zInput]`, `textarea[zInput]` | `string`  | the native element, next to `zInput`         |
 | `z-select`                          | `string`  | the native `<select>` inside, not `z-select` |
 
@@ -26,13 +27,28 @@ used to be spread over the template: required, scale, lock.
 ```ts
 import { Component, signal } from '@angular/core';
 import { disabled, form, FormField, max, min, required, submit } from '@angular/forms/signals';
-import { ZButton, ZCheckbox, ZField, ZInput, ZSegment, ZSelect, ZSlider, ZToggle } from 'zenit-ui';
+import {
+  ZButton,
+  ZCheckbox,
+  ZField,
+  ZInput,
+  ZSegment,
+  ZSegmentOption,
+  ZSelect,
+  ZSlider,
+  ZToggle,
+} from 'zenit-ui';
 
 @Component({
   imports: [FormField, ZButton, ZCheckbox, ZField, ZInput, ZSegment, ZSelect, ZSlider, ZToggle],
   templateUrl: './bestellung.html',
 })
 export class Bestellung {
+  protected readonly laufzeiten: ZSegmentOption[] = [
+    { value: '1', label: '1 Monat' },
+    { value: '12', label: '12 Monate' },
+  ];
+
   protected readonly modell = signal({
     name: '',
     standort: 'nbg',
@@ -62,6 +78,11 @@ export class Bestellung {
   protected bestellen(): void {
     // submit() touches every field, so all errors show, and runs the action only when valid.
     void submit(this.formular, async () => this.sende(this.modell()));
+  }
+
+  /** Your own call. It returns nothing, so submit() treats it as successful. */
+  private async sende(werte: unknown): Promise<void> {
+    await Promise.resolve(werte);
   }
 }
 ```

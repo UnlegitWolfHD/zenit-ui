@@ -44,7 +44,7 @@ The generated files are **not committed** (`projects/zenit-ui/llms/` is git-igno
 `npm run build:lib` regenerates them before `ng build zenit-ui`, and `ng-package.json` copies them
 into the package root as assets, so they can never be stale in a build.
 
-`check:llms` is part of `npm run check`. It asserts that every component, directive, service and
+`check:llms` is part of `npm run check`, behind `build:lib`, because the fence check needs the built package. It asserts that every component, directive, service and
 provider function of the public API has a section in `llms-full.txt`, that every `input()`,
 `model()` and `output()` member appears there with its default, that every public service method
 appears with its signature, and that every selector appears in `llms.txt`. A new member without
@@ -56,8 +56,11 @@ Two further assertions came out of the blind test (`llms-blindtest.md`):
   `spec/` path or a "see … .md". A pointer to a file that does not ship is a dead end, so the fact
   belongs in the JSDoc it came from.
 - **Every whole-file `ts` fence** (one with an `@Component` and an import from `zenit-ui`) is
-  parsed, and every identifier it imports has to exist in the public API. Fragments are counted
-  and skipped; the run prints both numbers.
+  written to `tmp/llms-fences/` and type-checked against `dist/zenit-ui` with the TypeScript
+  compiler API, resolving `zenit-ui` through `paths` the way the example application does.
+  Measured at 1.9 s. Without a built package the step falls back to checking that every imported
+  identifier exists in the public API and says so. Fragments are counted and skipped; the run
+  prints both numbers.
 
 ## Pointing an assistant at it
 

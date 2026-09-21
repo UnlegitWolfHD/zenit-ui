@@ -24,7 +24,7 @@
  * no timestamps, stable ordering, so a check can diff the output.
  */
 
-import { readdirSync, readFileSync, statSync, writeFileSync, mkdirSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
@@ -1714,42 +1714,84 @@ function keinePfade(text) {
 }
 
 /**
- * Every `ts` fence that looks like a whole file (an `@Component` and an import
- * from `zenit-ui`) is parsed, and every identifier it imports from `zenit-ui`
- * has to be in the public API. Fragments are counted and skipped.
+ * Every `ts` fence that is a whole file (an `@Component` and an import from
+ * `zenit-ui`) is written to `tmp/llms-fences/` and type-checked against the
+ * built package with the TypeScript compiler API, the same way the example
+ * application resolves `zenit-ui` through `paths`. Fragments are counted and
+ * skipped. Measured at 1.9 s for the whole step.
  *
- * ponytail: the identifier check, not `tsc --noEmit` against `dist/zenit-ui`.
- * The real type check needs the built package, and `check:llms` runs before
- * `build:lib` in `npm run check`, so on a clean tree it would have nothing to
- * check against. Upgrade path: move `check:llms` behind `build:lib`, then
- * write the fences to `tmp/` and run `tsc` with the `beispiel-app` paths.
+ * Without `dist/zenit-ui` there is nothing to check against; the run then
+ * falls back to parsing the imports and asserting every identifier is in the
+ * public API, and says so. `npm run check` therefore runs `check:llms` behind
+ * `build:lib`.
+ *
+ * A `templateUrl` becomes an empty inline template: the file next to it does
+ * not exist, and plain `tsc` does not type-check Angular templates anyway.
  */
 function pruefeFences(text, eintraege) {
-  const bekannt = new Set(eintraege.map((e) => e.name));
   const fehler = [];
-  let ganze = 0;
+  const ganze = [];
   let teile = 0;
   for (const m of text.matchAll(/```ts\n([\s\S]*?)```/g)) {
     const code = m[1];
-    const importe = [...code.matchAll(/import\s+(?:type\s+)?\{([^}]*)\}\s+from\s+'zenit-ui'/g)];
-    if (!/@Component\s*\(/.test(code) || !importe.length) {
+    if (!/@Component\s*\(/.test(code) || !/from 'zenit-ui'/.test(code)) {
       teile++;
       continue;
     }
-    ganze++;
-    for (const treffer of importe) {
-      for (const roh of treffer[1].split(',')) {
-        const ident = roh
-          .replace(/^\s*type\s+/, '')
-          .split(/\s+as\s+/)[0]
-          .trim();
-        if (ident && !bekannt.has(ident)) {
-          fehler.push(`a ts fence imports ${ident} from 'zenit-ui', which is not exported`);
+    ganze.push(code.replace(/templateUrl: '[^']*'/, "template: ''"));
+  }
+
+  const dist = join(WURZEL, 'dist/zenit-ui');
+  let art = 'type-checked against dist/zenit-ui';
+  if (!existsSync(join(dist, 'package.json'))) {
+    art = 'imports checked against the public API (dist/zenit-ui not built)';
+    const bekannt = new Set(eintraege.map((e) => e.name));
+    for (const code of ganze) {
+      for (const treffer of code.matchAll(
+        /import\s+(?:type\s+)?\{([^}]*)\}\s+from\s+'zenit-ui'/g,
+      )) {
+        for (const roh of treffer[1].split(',')) {
+          const ident = roh
+            .replace(/^\s*type\s+/, '')
+            .split(/\s+as\s+/)[0]
+            .trim();
+          if (ident && !bekannt.has(ident)) {
+            fehler.push(`a ts fence imports ${ident} from 'zenit-ui', which is not exported`);
+          }
         }
       }
     }
+    return { fehler, ganze: ganze.length, teile, art };
   }
-  return { fehler, ganze, teile };
+
+  const ordner = join(WURZEL, 'tmp/llms-fences');
+  mkdirSync(ordner, { recursive: true });
+  const dateien = ganze.map((code, i) => {
+    const pfad = join(ordner, `fence-${i + 1}.ts`);
+    writeFileSync(pfad, code, 'utf8');
+    return pfad;
+  });
+  const optionen = {
+    strict: true,
+    target: ts.ScriptTarget.ES2022,
+    module: ts.ModuleKind.Preserve,
+    moduleResolution: ts.ModuleResolutionKind.Bundler,
+    skipLibCheck: true,
+    noEmit: true,
+    lib: ['lib.es2022.d.ts', 'lib.dom.d.ts'],
+    pathsBasePath: ordner,
+    paths: { 'zenit-ui': [dist] },
+  };
+  const programm = ts.createProgram(dateien, optionen);
+  for (const d of ts.getPreEmitDiagnostics(programm)) {
+    const wo = d.file
+      ? `${d.file.fileName.split(/[\\/]/).pop()}:${
+          d.file.getLineAndCharacterOfPosition(d.start ?? 0).line + 1
+        }`
+      : 'fences';
+    fehler.push(`${wo}: ${ts.flattenDiagnosticMessageText(d.messageText, ' ')}`);
+  }
+  return { fehler, ganze: ganze.length, teile, art };
 }
 
 /* -------------------------------------------------------------------- main */
@@ -1784,7 +1826,7 @@ console.log(
     `${mitglieder} inputs/models/outputs.`,
 );
 console.log(
-  `ts fences: ${fences.ganze} whole files checked against the public API, ${fences.teile} fragments skipped.`,
+  `ts fences: ${fences.ganze} whole files ${fences.art}, ${fences.teile} fragments skipped.`,
 );
 console.log(`llms.txt ${kb(ergebnis.kurz)}, llms-full.txt ${kb(ergebnis.voll)}`);
 
