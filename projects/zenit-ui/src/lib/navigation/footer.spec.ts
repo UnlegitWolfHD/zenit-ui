@@ -25,6 +25,13 @@ class FooterHost {}
 })
 class NurBasisHost {}
 
+@Component({
+  imports: [ZFooter],
+  template: `<z-footer [landmark]="false"></z-footer>`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class VorschauHost {}
+
 describe('ZFooter', () => {
   it('renders a column with its heading and its list', () => {
     const fixture = TestBed.createComponent(FooterHost);
@@ -52,6 +59,20 @@ describe('ZFooter', () => {
 
     expect(basis.querySelector('[zFooterBase]').textContent.trim()).toBe('© 2026 Zenit-Hosting');
     expect(fixture.nativeElement.querySelector('z-footer').classList).toContain('z-footer');
+  });
+
+  it('is the contentinfo landmark, and none with [landmark]="false"', () => {
+    const fixture = TestBed.createComponent(FooterHost);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('z-footer').getAttribute('role')).toBe(
+      'contentinfo',
+    );
+
+    const vorschau = TestBed.createComponent(VorschauHost);
+    vorschau.detectChanges();
+
+    expect(vorschau.nativeElement.querySelector('z-footer').hasAttribute('role')).toBe(false);
   });
 
   it('renders only the base row for a footer without columns', () => {

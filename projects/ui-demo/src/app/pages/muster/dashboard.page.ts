@@ -76,7 +76,7 @@ const PRO_SEITE = 4;
         <z-segment [options]="zustaende" [(value)]="zustand" ariaLabel="Zustand der Serverliste" />
       </div>
 
-      <z-app-header navLabel="Hauptnavigation">
+      <z-app-header navLabel="Hauptnavigation" [landmark]="false">
         <span zBrand>Zenit</span>
         @for (link of kundenLinks; track link) {
           <a zHeaderLink href="#" [active]="link === 'Dashboard'" (click)="$event.preventDefault()">
@@ -116,7 +116,7 @@ const PRO_SEITE = 4;
               </button>
             </z-alert>
 
-            <z-panel title="Meine Server" flush [busy]="zustand() === 'laedt'">
+            <z-panel title="Meine Server" headingLevel="2" flush [busy]="zustand() === 'laedt'">
               @switch (zustand()) {
                 @case ('laedt') {
                   <z-rows>
@@ -180,7 +180,7 @@ const PRO_SEITE = 4;
               }
             </z-panel>
 
-            <z-panel title="Auslastung der laufenden Server" flush>
+            <z-panel title="Auslastung der laufenden Server" headingLevel="2" flush>
               <z-metrics>
                 <z-metric label="CPU" value="0,2" unit="%" [percent]="0.2" />
                 <z-metric label="RAM" value="1,16" unit="/ 8,4&nbsp;GB" [percent]="14" />

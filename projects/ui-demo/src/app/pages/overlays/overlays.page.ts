@@ -137,7 +137,12 @@ export class NotizDialog {
       </p>
 
       <div class="demo-row">
-        <button zBtn="ghost" iconOnly aria-label="Weitere Aktionen" [cdkMenuTriggerFor]="mehr">
+        <button
+          zBtn="ghost"
+          iconOnly
+          aria-label="Weitere Aktionen für Beispiel-Server 1"
+          [cdkMenuTriggerFor]="mehr"
+        >
           <z-icon name="more_vert" />
         </button>
       </div>

@@ -59,7 +59,7 @@ import {
       <div class="demo-row">
         <p class="demo-cap caption">Nur Icon, Beschriftung über aria-label</p>
         <button zBtn="ghost" iconOnly aria-label="Aktualisieren"><z-icon name="refresh" /></button>
-        <button zBtn="secondary" iconOnly aria-label="Weitere Aktionen">
+        <button zBtn="secondary" iconOnly aria-label="Weitere Aktionen für Beispiel-Server 1">
           <z-icon name="more_vert" />
         </button>
         <button zBtn="ghost" iconOnly size="sm" aria-label="Einstellungen">
@@ -71,7 +71,7 @@ import {
         <p class="demo-cap caption">Panel-Kopf: eine Hauptaktion je Zustand, Rest neutral</p>
         <button zBtn="secondary"><z-icon name="restart_alt" />Neustart</button>
         <button zBtn="secondary"><z-icon name="stop" />Stoppen</button>
-        <button zBtn="ghost" iconOnly aria-label="Weitere Aktionen">
+        <button zBtn="ghost" iconOnly aria-label="Weitere Aktionen für Test">
           <z-icon name="more_vert" />
         </button>
       </div>

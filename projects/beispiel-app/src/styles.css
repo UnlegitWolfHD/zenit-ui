@@ -21,23 +21,21 @@
    this example. Values come from tokens.css only, no hex, no pixel literals,
    no radius of its own. */
 
-/* Skip link: visually hidden until it takes focus, then a real 40px target
-   above the header (15-zustaende.md, "Tastatur"). */
+/* Skip link: the library's .z-visually-hidden holds it out of sight, so the
+   1px box is not written a second time here; this rule only places it and
+   unfolds it into a real 40px target above the header once it takes focus
+   (15-zustaende.md, "Tastatur"). */
 .app-skip {
-  position: absolute;
   left: var(--space-4);
   top: var(--space-4);
   z-index: var(--z-header);
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
 }
 .app-skip:focus {
   display: inline-flex;
   align-items: center;
   width: auto;
   height: auto;
+  margin: 0;
   min-height: var(--control-md);
   padding: 0 var(--space-3);
   border-radius: var(--radius-sm);

@@ -26,6 +26,12 @@ This produces `zenit-ui-0.1.0.tgz`. In your application:
 npm i ./zenit-ui-0.1.0.tgz
 ```
 
+> **Install from the tarball, never from the public registry.** `zenit-ui` is an unscoped name that
+> nobody has claimed on npmjs.com, so `npm i zenit-ui` or `ng add zenit-ui` would fetch whatever
+> somebody else publishes under it and, in the case of `ng add`, run its schematics against your
+> workspace. Point every command at the local file, as the sections below do, until the name is
+> claimed or the package is scoped.
+
 ## Setup
 
 ### 1. Register the styles in `angular.json`
@@ -88,7 +94,7 @@ The library loads no font. Your application brings four, all self-hosted, so tha
 @import "@fontsource/jetbrains-mono/600.css";
 ```
 
-The `layer(schriften)` is required: `material-icons` sets its own `font-size` on `.material-icons` and is loaded after `zenit-ui.css`. The layer makes sure `.z-icon` from the library wins. Without it the icon would be 24px inside a 20px box. A complete example is in `projects/ui-demo/src/styles.css`.
+The `layer(schriften)` is required: `material-icons` sets its own `font-size` on `.material-icons` and is loaded after `zenit-ui.css`. The layer makes sure `.z-icon` from the library wins. Without it the icon would be 24px inside a 20px box. A complete example is in `projects/ui-demo/src/styles.css` in the repository of the design system.
 
 ### 4. Mount the toast outlet
 
@@ -137,7 +143,7 @@ export class ServerName {}
 
 Selectors and inputs are binding, so that pages and building blocks can be built in parallel. Inputs are signals. Two-way binding via `model()`.
 
-Entries marked "(addition)" are not part of the reference table in `spec/guidelines/40-bibliothek.md`. They exist in the code today, mostly to keep ARIA labels overridable from the application.
+Entries marked "(addition)" are not part of the reference table (`spec/guidelines/40-bibliothek.md` in the repository of the design system). They exist in the code today, mostly to keep ARIA labels overridable from the application.
 
 | Component | Selector | Inputs, outputs, slots |
 | --- | --- | --- |
@@ -180,11 +186,10 @@ Entries marked "(addition)" are not part of the reference table in `spec/guideli
 | Theme | service `ZTheme`, `provideZenitTheme(config)` | `scheme()`, `resolvedScheme()`, `accent()`, `setScheme(id)`, `setAccent(id)`, `reset()`; config `schemes`, `accents`, `defaultScheme`, `defaultAccent`, `storageKey`, `target` |
 | Labels | `provideZenitLabels(partial)`, `Z_LABELS`, `Z_LABELS_DE`, `Z_LABELS_EN` | one key per built-in text; the inputs of the components still win |
 
-The generated reference with every signature, type and default is produced by `npm run docs:api` into `docs/api/`.
+The generated reference with every signature, type and default is produced inside the repository of the design system by `npm run docs:api`; it is not part of this package.
 
-Two things are worth knowing before you build a page from this table. Both turned up while building `projects/beispiel-app` against the packed library:
+One thing is worth knowing before you build a page from this table. It turned up while building `projects/beispiel-app` against the packed library:
 
-- **Menu: import the three classes, not `Z_MENU`.** In the emitted types the bundle collapses to `declare const Z_MENU: (typeof ZMenu)[]`, because the three classes are structurally compatible. The Angular compiler then sees only `ZMenu` and rejects the array with `NG1010`. Put `ZMenu`, `ZMenuItem` and `ZMenuSeparator` into `imports` instead.
 - **Slots and control flow.** `z-panel` picks `z-pagination` out of the projected content, and Alert, EmptyState, AppHeader and Footer have slots of their own. A node inside `@if`, `@for` or `@switch` only reaches its slot while it is the single root node of that block; otherwise it stays in the default content. Give such a node an `@if` of its own.
 
 ## Themes
@@ -221,29 +226,30 @@ providers: [provideZenitLabels(Z_LABELS_EN)];
 
 ## `ng add`
 
-The setup above is a schematic as well:
+The setup above is a schematic as well. Name the tarball, not the package: `ng add zenit-ui` would resolve the unclaimed name on the public registry and run a stranger's schematics.
 
 ```bash
-ng add zenit-ui --themes
+ng add ./zenit-ui-0.1.0.tgz --themes
 ```
 
-It registers the stylesheets in `angular.json` in the prescribed order, merges `z-root` into `<html>` and `<body>`, adds `@angular/cdk` and the four font packages with their `@import` rules, and mounts `<z-toast-outlet />` in the root component. Every step is idempotent. What it changes exactly, which options it takes and how to run it against the local tarball is in [`docs/ng-add.md`](../../docs/ng-add.md).
+It registers the stylesheets in `angular.json` in the prescribed order, merges `z-root` into `<html>` and `<body>`, adds `@angular/cdk` and the four font packages with their `@import` rules, and mounts `<z-toast-outlet />` in the root component. With `--themes` it also registers `themes.css`, puts the theme init script into `index.html`, adds `provideZenitTheme()` and sets `inlineCritical: false` for production. Every step is idempotent, and a source file is either fully patched or left untouched with the manual step in the log (NgModule applications, `imports` that are not an array literal). An existing `lang` on `<html>` is kept. To run it again after the package is installed: `ng generate zenit-ui:ng-add --project my-app`. What it changes exactly, which options it takes and its limits are in [`docs/ng-add.md`](../../docs/ng-add.md).
 
 ## Documented deviations from the reference styles
 
-`spec/components/bundle.css` is the reference for all styles. Five deviations are deliberate:
+`spec/components/bundle.css` in the repository of the design system is the reference for all styles. These deviations are deliberate:
 
 - The base rule for `font` and `color` on controls uses `:where(button, input, select, textarea)`. The reference selector has a specificity that beats component classes; `:where()` lowers it to the class level, the values are unchanged.
 - Below 640px small controls are 40px high (`.z-btn--sm`, `.z-input--sm`, `.z-select--sm select`, `.z-menu__item`), because touch targets on mobile are at least 40px.
 - Below 640px the alert wraps its action button onto its own line, so that title, text and button stay readable at 360px.
 - `div[zRow]` resets `cursor` to `auto`. A row is only clickable as `a[zRow]`; the non-interactive variant must not look clickable.
 - The CDK backdrop runs without a fade (`transition: none`). Transitions are limited to `color`, `background-color` and `border-color`.
+- Below 640px a `[zRowAction]` keeps its cell and its row gets a third column. The reference hides every cell of a row from the third on, which also hid the menu button of a row, so its entries were unreachable on a phone.
 
 ## Rules
 
 Color, spacing, radius, typography and shadow come only from `tokens.css`. `tokens.css` is the single place with hex and pixel values. Your own styles reference `var(--…)` and set no literal values of their own.
 
-Not allowed are `@angular/material`, `linear-gradient`, `radial-gradient`, `backdrop-filter`, `text-shadow`, colored `box-shadow`, grid backgrounds, pill badges above headings, all-caps labels, icon backplates, cards with a colored border, metric tiles for marketing numbers, and hex or pixel values outside the tokens. The complete list is in the section "Verboten" of the system overview (`CLAUDE.md`).
+Not allowed are `@angular/material`, `linear-gradient`, `radial-gradient`, `backdrop-filter`, `text-shadow`, colored `box-shadow`, grid backgrounds, pill badges above headings, all-caps labels, icon backplates, cards with a colored border, metric tiles for marketing numbers, and hex or pixel values outside the tokens. The complete list is in the section "Verboten" of the system overview, `CLAUDE.md` in the repository of the design system.
 
 Stylelint enforces the rules automatically. Without that layer, generated code drifts again. Copy the configuration into your application:
 
@@ -275,7 +281,7 @@ Plus an ESLint entry `no-restricted-imports` for the pattern `@angular/material*
     patterns: [
       {
         group: ['@angular/material', '@angular/material/*', '@angular/material*'],
-        message: 'Angular Material wird in zenit-ui nicht verwendet. Nur @angular/cdk.',
+        message: 'zenit-ui does not use Angular Material. Only @angular/cdk.',
       },
     ],
   },
@@ -295,7 +301,7 @@ npm run lint           # ESLint over library, demo and example app
 npm run lint:css       # Stylelint over projects/**/*.css
 npm run e2e            # Playwright with axe over the demo pages
 npm run e2e:beispiel   # the same checks over the example app, in all three schemes
-npm run docs:api       # TypeDoc reference into docs/api
+npm run docs:api       # TypeDoc reference into docs/api, not committed
 npm run check          # everything above except the Playwright runs
 ng serve ui-demo       # demo app with every building block in all states
 npm run start:beispiel # example app: one complete page against dist/zenit-ui

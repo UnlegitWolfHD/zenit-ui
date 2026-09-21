@@ -40,6 +40,13 @@ class RegistryHost {}
 })
 class ZweiHeaderHost {}
 
+@Component({
+  imports: [ZAppHeader],
+  template: `<z-app-header [landmark]="false" />`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class VorschauHost {}
+
 function menueKnopf(fixture: { nativeElement: HTMLElement }): HTMLButtonElement {
   return fixture.nativeElement.querySelector('button.z-header__menu')!;
 }
@@ -136,6 +143,18 @@ describe('ZAppHeader', () => {
     fixture.detectChanges();
 
     expect(menueKnopf(fixture).getAttribute('aria-label')).toBe('Bereiche zeigen');
+  });
+
+  it('is the banner landmark, and none with [landmark]="false"', () => {
+    const fixture = TestBed.createComponent(HeaderHost);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('z-app-header').getAttribute('role')).toBe('banner');
+
+    const vorschau = TestBed.createComponent(VorschauHost);
+    vorschau.detectChanges();
+
+    expect(vorschau.nativeElement.querySelector('z-app-header').hasAttribute('role')).toBe(false);
   });
 
   it('gives two headers on one page distinct nav ids', () => {

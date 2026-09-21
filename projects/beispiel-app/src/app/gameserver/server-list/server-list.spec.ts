@@ -39,6 +39,93 @@ describe('ServerList', () => {
     expect(element.querySelector('.z-pager')).not.toBeNull();
   });
 
+  it('macht die Zeile zum Link und hält die Aktion daneben', async () => {
+    const element = await zeige('liste');
+    const zeile = element.querySelector('.z-row')!;
+    const link = zeile.querySelector('a.z-row__link')!;
+    const aktion = zeile.querySelector('button.z-row__action')!;
+
+    expect(zeile.tagName).toBe('DIV');
+    expect(link.textContent?.trim()).toBe('Beispiel-Server 1');
+    // Ein button in einem a wäre ungültiges Markup und ein einziger Tab-Stopp.
+    expect(link.querySelector('button')).toBeNull();
+    expect(aktion.getAttribute('aria-label')).toBe('Weitere Aktionen für Beispiel-Server 1');
+    // Die Id trägt der Dialog als restoreFocusTo.
+    expect(aktion.id).toBe('aktionen-beispiel-server-1');
+  });
+
+  it('setzt Adresse und Port in mono, den Rest der Meta-Zeile nicht', async () => {
+    const element = await zeige('liste');
+    const meta = element.querySelector('.z-row__meta')!;
+
+    expect(meta.querySelector('.z-mono')?.textContent).toBe('203.0.113.10:25565');
+    expect(meta.textContent).toContain('Minecraft · PaperMC 26.3');
+  });
+
+  it('meldet den Ladezustand in einer Live-Region, die immer dasteht', async () => {
+    const element = await zeige('liste');
+    const bereich = element.querySelector('[role="status"]')!;
+
+    expect(bereich.classList).toContain('z-visually-hidden');
+    expect(bereich.textContent?.trim()).toBe('');
+
+    fixture.componentRef.setInput('zustand', 'skelett');
+    await fixture.whenStable();
+
+    expect(element.querySelector('[role="status"]')?.textContent?.trim()).toBe(
+      'Server werden geladen',
+    );
+  });
+
+  it('behält die Seite, solange es sie gibt, und kappt sie sonst', async () => {
+    const element = await zeige('liste');
+    const weiter = element.querySelectorAll<HTMLButtonElement>('.z-pager__nav button')[1];
+    const seitenzahl = () => element.querySelector('.z-pager__nav .z-mono')?.textContent;
+
+    weiter.click();
+    await fixture.whenStable();
+    expect(seitenzahl()).toBe('2 / 2');
+    expect(element.querySelector('.z-row__title')?.textContent).toContain('Beispiel-Server 6');
+
+    // Ein Server weniger: sieben passen noch auf zwei Seiten, also bleibt Seite 2.
+    fixture.componentRef.setInput('server', BEISPIEL_SERVER.slice(1));
+    await fixture.whenStable();
+    expect(seitenzahl()).toBe('2 / 2');
+
+    // Sechs passen auf eine Seite: die Seite wird gekappt, nicht zurückgesetzt.
+    fixture.componentRef.setInput('server', BEISPIEL_SERVER.slice(0, 6));
+    await fixture.whenStable();
+    expect(element.querySelectorAll('.z-row').length).toBe(6);
+    expect(element.querySelector('.z-pager')).toBeNull();
+  });
+
+  it('setzt den Fokus auf die nachrückende Zeile, wenn eine Zeile verschwindet', async () => {
+    await zeige('liste');
+    const geloescht = BEISPIEL_SERVER[0];
+
+    fixture.componentInstance.fokusNachEntfernen(geloescht);
+    fixture.componentRef.setInput(
+      'server',
+      BEISPIEL_SERVER.filter((eintrag) => eintrag.id !== geloescht.id),
+    );
+    await fixture.whenStable();
+
+    expect(document.activeElement?.id).toBe('aktionen-beispiel-server-2');
+  });
+
+  it('setzt den Fokus auf die letzte Zeile, wenn die letzte verschwindet', async () => {
+    const sechs = BEISPIEL_SERVER.slice(0, 6);
+    const element = await zeige('liste', sechs);
+    const geloescht = sechs[5];
+
+    fixture.componentInstance.fokusNachEntfernen(geloescht);
+    fixture.componentRef.setInput('server', sechs.slice(0, 5));
+    await fixture.whenStable();
+
+    expect(element.querySelectorAll('.z-row').length).toBe(5);
+    expect(document.activeElement?.id).toBe(`aktionen-${sechs[4].id}`);
+  });
+
   it('zeigt weniger Zeilen, wenn der Filter weniger Server liefert', async () => {
     const element = await zeige('liste', filtern(BEISPIEL_SERVER, '', 'Online'));
 

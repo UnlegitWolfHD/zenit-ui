@@ -105,6 +105,28 @@ export class ZRow {}
 export class ZRowTitle {}
 
 /**
+ * Slot for the meta line of a row when that line is more than plain text. It
+ * carries the class `z-row__meta` and lands under the title, in place of the
+ * {@link ZRowMain.meta} input, so that an address, a port or a file name inside
+ * it can take `z-mono` while the rest of the line stays in the body face.
+ *
+ * Use a block element: the meta line clips with an ellipsis, which an inline
+ * element cannot do. Without it the row falls back to the `meta` input.
+ *
+ * @example
+ * ```html
+ * <z-row-main title="Beispiel-Server 1">
+ *   <div zRowMeta>Minecraft · PaperMC 26.3 · <span class="z-mono">203.0.113.10:25565</span></div>
+ * </z-row-main>
+ * ```
+ */
+@Directive({
+  selector: '[zRowMeta]',
+  host: { class: 'z-row__meta' },
+})
+export class ZRowMeta {}
+
+/**
  * Link inside a `div[zRow]` that makes the whole row clickable: the link sits
  * on the title and carries the class `z-row__link`, whose stretched `::after`
  * covers the row. The row keeps its hover colour, and the focus ring of the
@@ -164,8 +186,10 @@ export class ZRowAction {}
  * accessible text of the row comes from title and meta.
  *
  * A `[zRowTitle]` element takes the place of the title text, which is how a
- * link gets into the title of a row. {@link title} still feeds the initial of
- * the thumbnail, so it stays set either way.
+ * link gets into the title of a row, and a {@link ZRowMeta} element takes the
+ * place of the meta text, which is how an address reaches the mono face.
+ * {@link title} still feeds the initial of the thumbnail, so it stays set
+ * either way.
  *
  * @example
  * ```html
@@ -186,6 +210,7 @@ export class ZRowAction {}
       <div class="z-row__title">
         <ng-content select="[zRowTitle]">{{ title() }}</ng-content>
       </div>
+      <ng-content select="[zRowMeta]" />
       @if (meta()) {
         <div class="z-row__meta">{{ meta() }}</div>
       }
@@ -208,7 +233,8 @@ export class ZRowMain {
 
   /**
    * One line under the title with the details of the entry, for example game,
-   * version and address. Empty leaves the line out.
+   * version and address. Empty leaves the line out. A projected
+   * {@link ZRowMeta} element replaces it, for a line that mixes faces.
    *
    * @default ''
    */
