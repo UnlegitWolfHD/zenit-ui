@@ -1,3 +1,3 @@
-export * from './dialog';
-export * from './dialog-layout';
-export * from './confirm-dialog';
+export { ZDialog } from './dialog';
+export { ZDialogActions, ZDialogLayout } from './dialog-layout';
+export type { ZConfirmConfig } from './confirm-dialog';

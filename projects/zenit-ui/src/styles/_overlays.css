@@ -33,6 +33,8 @@
 .z-menu__item:focus-visible { background: var(--surface-hover); }
 
 /* Angular-Hosts */
+/* Ergänzung zur Referenz: CDK-Backdrop ohne Einblenden (CLAUDE.md, Bewegung). */
+.z-backdrop.cdk-overlay-backdrop { transition: none; }
 /* Die Trennlinie ist ein eigenes Element und deshalb sonst inline. */
 z-menu-separator { display: block; }
 /* Der Koerper des Dialogs faerbt seinen Text text-muted, das Label eines

@@ -1,5 +1,13 @@
 import { CdkMenu, CdkMenuItem } from '@angular/cdk/menu';
-import { booleanAttribute, ChangeDetectionStrategy, Component, input } from '@angular/core';
+import {
+  afterEveryRender,
+  booleanAttribute,
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  inject,
+  input,
+} from '@angular/core';
 import { ZIcon } from '../icon';
 
 /**
@@ -39,6 +47,32 @@ export class ZMenu {}
 export class ZMenuItem {
   readonly icon = input('');
   readonly danger = input(false, { transform: booleanAttribute });
+
+  constructor() {
+    const eintrag = inject(CdkMenuItem);
+    const wirt = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+    // Ohne das nimmt die Tastensuche des CDK den textContent, und darin steht
+    // die Ligatur des Icons vor dem Text ("content_copyAdresse kopieren").
+    // Der Text kann sich jederzeit aendern, deshalb nach jedem Render.
+    afterEveryRender({ read: () => (eintrag.typeaheadLabel = beschriftung(wirt)) });
+  }
+}
+
+/**
+ * Text des Eintrags ohne die Ligatur des Icons. Kommentarknoten bleiben
+ * draussen, weil Angular dort seine Anker ablegt und `textContent` deren
+ * Inhalt mitliefert ("container").
+ */
+function beschriftung(wirt: HTMLElement): string {
+  return Array.from(wirt.childNodes)
+    .filter(
+      (knoten) =>
+        knoten.nodeType !== Node.COMMENT_NODE && (knoten as Element).localName !== 'z-icon',
+    )
+    .map((knoten) => knoten.textContent ?? '')
+    .join(' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 /** Trennlinie vor den destruktiven Eintraegen. */

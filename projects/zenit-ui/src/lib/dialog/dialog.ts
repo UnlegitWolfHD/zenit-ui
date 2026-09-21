@@ -5,6 +5,14 @@ import { map, Observable } from 'rxjs';
 import { ZConfirmConfig, ZConfirmDialog } from './confirm-dialog';
 import { naechsteId, Z_DIALOG_TITLE_ID } from './dialog-layout';
 
+/** Klassen des Aufrufers als Liste, damit die eigenen davor stehen bleiben. */
+function alsListe(klassen: string | string[] | undefined): string[] {
+  if (!klassen) {
+    return [];
+  }
+  return Array.isArray(klassen) ? klassen : [klassen];
+}
+
 /**
  * Duenne Huelle um `Dialog` aus `@angular/cdk/dialog`. Fokusfalle, Escape und
  * Fokus-Rueckgabe kommen von dort, hier stehen nur die festen Klassen und die
@@ -29,8 +37,8 @@ export class ZDialog {
       // autoFocus 'first-tabbable' (erstes Feld, sonst "Abbrechen"),
       // restoreFocus und Escape sind die Standardwerte des CDK.
       ...config,
-      panelClass: 'z-dialog-panel',
-      backdropClass: 'z-backdrop',
+      panelClass: ['z-dialog-panel', ...alsListe(config?.panelClass)],
+      backdropClass: ['z-backdrop', ...alsListe(config?.backdropClass)],
       ariaModal: true,
       ariaLabelledBy: config?.ariaLabelledBy ?? titelId,
       providers:
