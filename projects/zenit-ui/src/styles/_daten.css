@@ -61,3 +61,5 @@
 .z-row__text { min-width: 0; }
 /* Wie .z-game__cover img in bundle.css: das Bild fuellt die Flaeche des Thumbs. */
 .z-row__thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* Ergänzung zur Referenz: div[zRow] ist nicht klickbar. */
+.z-root div.z-row { cursor: auto; }

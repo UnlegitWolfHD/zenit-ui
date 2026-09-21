@@ -21,7 +21,7 @@ import { ZIcon } from '../icon';
   template: `
     @if (sichtbar()) {
       <div class="z-pager">
-        <span>{{ von() }} bis {{ bis() }} von {{ total() }} {{ itemLabel() }}</span>
+        <span>{{ rangeLabel()(von(), bis(), total(), itemLabel()) }}</span>
         <div class="z-pager__nav">
           <button
             zBtn="ghost"
@@ -57,6 +57,10 @@ export class ZPagination {
   readonly total = input(0, { transform: numberAttribute });
   /** Gegenstand der Liste, zum Beispiel "Rechnungen". */
   readonly itemLabel = input('');
+  /** Satz ueber dem Blaetterwerk. Ueberschreibbar, damit der Text von aussen kommt. */
+  readonly rangeLabel = input<(von: number, bis: number, total: number, itemLabel: string) => string>(
+    (von, bis, total, label) => `${von} bis ${bis} von ${total} ${label}`,
+  );
   readonly ariaLabelPrev = input('Vorherige Seite');
   readonly ariaLabelNext = input('Nächste Seite');
 

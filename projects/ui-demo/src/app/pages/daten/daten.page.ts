@@ -87,7 +87,7 @@ interface DemoServer {
             value="23,6"
             unit="/ 24&nbsp;GB"
             [percent]="98"
-            sub="98&nbsp;% belegt"
+            sub="98&nbsp;% belegt, kritisch"
           />
           <z-metric
             label="RAM"
@@ -190,7 +190,10 @@ interface DemoServer {
         </div>
       </z-panel>
 
-      <p class="demo-cap caption">Fehler: Ursache und nächster Schritt in einem Satz.</p>
+      <p class="demo-cap caption">
+        Fehler: Ursache und nächster Schritt in einem Satz. Nach dem Zusammenfügen steht hier
+        z-alert aus dem Paket rueckmeldung.
+      </p>
       <z-panel title="Meine Server">
         <p class="demo-sub">
           Die Liste ist nicht geladen, das Panel hat nicht geantwortet. Lade die Seite neu.
@@ -279,6 +282,17 @@ interface DemoServer {
         <z-pagination [(page)]="letzteSeite" [total]="118" itemLabel="Transaktionen" />
       </z-panel>
 
+      <p class="demo-cap caption">Text von außen überschrieben</p>
+      <z-panel>
+        <p class="demo-sub">Dieselbe Liste mit einem eigenen Format über rangeLabel.</p>
+        <z-pagination
+          [(page)]="englischeSeite"
+          [total]="118"
+          itemLabel="transactions"
+          [rangeLabel]="englischerBereich"
+        />
+      </z-panel>
+
       <p class="demo-cap caption">
         Passt alles auf eine Seite, rendert die Pagination nichts. Das Panel darunter enthält eine
         Pagination mit 0 Einträgen.
@@ -343,18 +357,18 @@ export class DatenPage {
     { name: 'plugins', icon: 'folder', groesse: '', geaendert: '04.09.2026, 05:53', gewaehlt: false },
     { name: 'world', icon: 'folder', groesse: '', geaendert: '21.09.2026, 13:55', gewaehlt: false },
     {
-      name: 'server.properties',
-      icon: 'description',
-      groesse: '1,74 KB',
-      geaendert: '18.09.2026, 15:55',
-      gewaehlt: true,
-    },
-    {
       name: 'server.jar',
       icon: 'description',
       groesse: '61,25 MB',
       geaendert: '18.09.2026, 14:45',
       gewaehlt: false,
+    },
+    {
+      name: 'server.properties',
+      icon: 'description',
+      groesse: '1,74 KB',
+      geaendert: '18.09.2026, 15:55',
+      gewaehlt: true,
     },
   ];
 
@@ -369,6 +383,14 @@ export class DatenPage {
   protected readonly ersteSeite = signal(1);
   protected readonly letzteSeite = signal(5);
   protected readonly leereSeite = signal(1);
+  protected readonly englischeSeite = signal(1);
+
+  protected readonly englischerBereich = (
+    von: number,
+    bis: number,
+    total: number,
+    label: string,
+  ) => `${von} to ${bis} of ${total} ${label}`;
 
   protected readonly seitenInhalt = computed(() => {
     const start = (this.seite() - 1) * 25;
