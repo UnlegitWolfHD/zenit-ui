@@ -1,2 +1,3 @@
-/* Paket werkzeuge: wird in Welle 1 gefuellt. */
-export {};
+/* Paket werkzeuge: Console, Hero, GameTile, PriceSummary, SpecList, Faq. */
+export * from '../console';
+export * from '../marketing';
