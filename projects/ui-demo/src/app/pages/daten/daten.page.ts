@@ -351,6 +351,7 @@ interface DemoDatei {
             </button>
           </div>
         }
+        <!-- #region sortierbar -->
         <z-table-container ariaLabel="Dateien, seitlich scrollbar">
           <table zTable [(sort)]="sortierung">
             <thead>
@@ -387,6 +388,7 @@ interface DemoDatei {
             </tbody>
           </table>
         </z-table-container>
+        <!-- #endregion -->
       </z-panel>
       <p class="demo-grund caption">
         "Löschen" ist unumkehrbar und steht deshalb nach Button/README nicht als danger neben den
@@ -653,6 +655,7 @@ export class DatenPage {
     },
   ]);
 
+  // #region sortierung
   /** Which column the file table is sorted by, written by `th[zSortHeader]`. */
   protected readonly sortierung = signal<ZSort | null>({ key: 'name', direction: 'asc' });
 
@@ -682,6 +685,7 @@ export class DatenPage {
       return richtung * links.localeCompare(rechts, 'de');
     });
   });
+  // #endregion
 
   /** Widths of the placeholders in the loading state of the table. */
   protected readonly dateiPlatzhalter = [{ name: '40%' }, { name: '55%' }, { name: '30%' }];

@@ -163,6 +163,103 @@ Native elements have no `model()`; bind `[value]` and `(input)` or use one of th
 Every custom control implements `ControlValueAccessor`. `setDisabledState` and the `disabled` input
 are independent; either one locks the control. Native elements use Angular's own accessors.
 
+A whole form, as a file that compiles: `z-field` around the input, the native `<select>` inside
+`z-select`, `Validators.requiredTrue` on the checkbox, a slider and a toggle, and a submit button
+that shows its spinner through `loading` while the request runs.
+
+```ts
+import { Component, signal } from '@angular/core';
+import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ZButton, ZCheckbox, ZField, ZInput, ZSelect, ZSlider, ZToggle } from 'zenit-ui';
+
+@Component({
+  selector: 'app-bestellung',
+  imports: [ReactiveFormsModule, ZButton, ZCheckbox, ZField, ZInput, ZSelect, ZSlider, ZToggle],
+  templateUrl: './bestellung.html',
+})
+export class Bestellung {
+  protected readonly laeuft = signal(false);
+
+  protected readonly formular = new FormGroup({
+    name: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+    standort: new FormControl('nbg', { nonNullable: true }),
+    ramGb: new FormControl(4, { nonNullable: true }),
+    backups: new FormControl(false, { nonNullable: true }),
+    agb: new FormControl(false, { nonNullable: true, validators: [Validators.requiredTrue] }),
+  });
+
+  /** The sentence for `z-field`, once the field was left. Empty keeps the hint. */
+  protected fehler(control: FormControl<string>, satz: string): string {
+    return control.touched && control.invalid ? satz : '';
+  }
+
+  protected bestellen(): void {
+    this.formular.markAllAsTouched();
+    if (this.formular.invalid) {
+      return;
+    }
+    this.laeuft.set(true);
+    void this.sende(this.formular.getRawValue()).finally(() => this.laeuft.set(false));
+  }
+
+  private async sende(werte: unknown): Promise<void> {
+    await Promise.resolve(werte);
+  }
+}
+```
+
+```html
+<form [formGroup]="formular" (ngSubmit)="bestellen()">
+  <z-field
+    label="Servername"
+    for="name"
+    [error]="fehler(formular.controls.name, 'Gib dem Server einen Namen.')"
+  >
+    <input
+      zInput
+      id="name"
+      formControlName="name"
+      [invalid]="formular.controls.name.touched && formular.controls.name.invalid"
+    />
+  </z-field>
+
+  <z-field label="Standort" for="standort" hint="Nürnberg ist der einzige Standort.">
+    <z-select>
+      <select id="standort" formControlName="standort">
+        <option value="nbg">Nürnberg</option>
+      </select>
+    </z-select>
+  </z-field>
+
+  <z-slider
+    label="Arbeitsspeicher"
+    unit="GB"
+    [min]="2"
+    [max]="16"
+    [step]="2"
+    formControlName="ramGb"
+  />
+  <z-toggle formControlName="backups" ariaLabel="Backup jede Nacht" />
+
+  <z-checkbox
+    formControlName="agb"
+    [invalid]="formular.controls.agb.touched && formular.controls.agb.invalid"
+    ariaDescribedby="agb-fehler"
+  >
+    Ich stimme den <a href="/agb">Bedingungen</a> zu
+  </z-checkbox>
+  @if (formular.controls.agb.touched && formular.controls.agb.invalid) {
+    <span class="z-field__error" id="agb-fehler" role="alert">
+      Bestätige die Bedingungen, um zu bestellen.
+    </span>
+  }
+
+  <button zBtn="primary" type="submit" [loading]="laeuft()">Kostenpflichtig bestellen</button>
+</form>
+```
+
+The single controls again, each on its own:
+
 ```html
 <z-checkbox [formControl]="agb" [invalid]="agb.invalid && agb.touched" ariaDescribedby="agb-fehler">
   Ich stimme den Bedingungen zu

@@ -72,9 +72,9 @@ The summary of the price calculator:
 import { ZPriceLine } from 'zenit-ui';
 
 const posten: ZPriceLine[] = [
-  { label: '8 GB Arbeitsspeicher', value: '4,40 €' },
-  { label: '20 Steckplätze', value: '1,49 €' },
-  { label: 'Laufzeitrabatt', value: '−0,49 €' },
+  { label: '8\u00a0GB Arbeitsspeicher', value: '4,40\u00a0€' },
+  { label: '20 Steckplätze', value: '1,49\u00a0€' },
+  { label: 'Laufzeitrabatt', value: '−0,49\u00a0€' },
 ];
 ```
 
