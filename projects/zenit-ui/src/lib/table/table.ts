@@ -10,9 +10,22 @@ import {
   ElementRef,
   inject,
   input,
+  model,
   signal,
 } from '@angular/core';
 import { injectZLabels } from '../labels';
+
+/**
+ * Which column a table is sorted by and in which direction, the value of
+ * {@link ZTable.sort}.
+ */
+export interface ZSort {
+  /** Key of the sorted column: the value of `zSortHeader` on its header cell. */
+  key: string;
+
+  /** Direction of the sort, ascending or descending. */
+  direction: 'asc' | 'desc';
+}
 
 /**
  * Wrapper around `table[zTable]`. Below 640px the table scrolls sideways in
@@ -111,9 +124,13 @@ export class ZTableContainer {
  * `<table>` and renders nothing itself, so semantics, header cells and keyboard
  * behaviour stay the browser's.
  *
+ * It also holds the sort state of the table, which the header cells marked with
+ * `zSortHeader` read and write. The library does not sort: it reports what the
+ * user asked for through {@link sort}, the caller orders the rows.
+ *
  * @example
  * ```html
- * <table zTable>
+ * <table zTable [(sort)]="sortierung">
  *   <thead>…</thead>
  *   <tbody>…</tbody>
  * </table>
@@ -123,7 +140,17 @@ export class ZTableContainer {
   selector: 'table[zTable]',
   host: { class: 'z-table' },
 })
-export class ZTable {}
+export class ZTable {
+  /**
+   * Column the table is sorted by, two-way bindable. `null` means unsorted,
+   * which is also the third step of the cycle a `th[zSortHeader]` runs through.
+   * Only one column is sorted at a time, because the whole table shares this
+   * one value.
+   *
+   * @default null
+   */
+  readonly sort = model<ZSort | null>(null);
+}
 
 /**
  * Right-aligned cell in the mono face: size, date, amount. Adds the class
