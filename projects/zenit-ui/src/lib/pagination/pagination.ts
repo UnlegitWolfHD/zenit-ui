@@ -8,8 +8,12 @@ import {
   numberAttribute,
   untracked,
 } from '@angular/core';
+import { ZSelect } from '../field';
 import { ZIcon } from '../icon';
 import { injectZLabels } from '../labels';
+
+/** Counter for the id that ties the size selector to its label. */
+let zaehler = 0;
 
 /**
  * Pages through lists with more than {@link pageSize} entries and sits as the
@@ -21,6 +25,10 @@ import { injectZLabels } from '../labels';
  * icon-only ghost buttons in size `sm` with an `aria-label`. As long as
  * everything fits on one page the component renders nothing at all, so an empty
  * list shows no pager.
+ *
+ * With {@link pageSizeOptions} a labelled `<select>` for the page size stands
+ * in front of the range sentence. Without it nothing changes, so a pager that
+ * does not want a picker renders exactly as before.
  *
  * Accessibility: on the first and the last page the matching arrow carries
  * `aria-disabled="true"` instead of the native `disabled`, and its click is
@@ -42,33 +50,49 @@ import { injectZLabels } from '../labels';
  */
 @Component({
   selector: 'z-pagination',
-  imports: [ZIcon],
+  imports: [ZIcon, ZSelect],
   template: `
     @if (sichtbar()) {
       <nav [attr.aria-label]="navText()">
         <div class="z-pager">
-          <span aria-live="polite">{{ bereich()(von(), bis(), total(), itemLabel()) }}</span>
-          <div class="z-pager__nav">
-            <button
-              type="button"
-              class="z-btn z-btn--ghost z-btn--icon z-btn--sm"
-              [attr.aria-label]="zurueckText()"
-              [attr.aria-disabled]="seite() <= 1 ? 'true' : null"
-              (click)="zuSeite(seite() - 1)"
-            >
-              <z-icon name="chevron_left" />
-            </button>
-            <span class="z-mono">{{ seite() }} / {{ seiten() }}</span>
-            <button
-              type="button"
-              class="z-btn z-btn--ghost z-btn--icon z-btn--sm"
-              [attr.aria-label]="weiterText()"
-              [attr.aria-disabled]="seite() >= seiten() ? 'true' : null"
-              (click)="zuSeite(seite() + 1)"
-            >
-              <z-icon name="chevron_right" />
-            </button>
-          </div>
+          @if (groesseSichtbar()) {
+            <div class="z-pager__size">
+              <label [attr.for]="groesseId">{{ groesseText() }}</label>
+              <z-select size="sm">
+                <select [id]="groesseId" (change)="aufGroesse($event)">
+                  @for (option of optionen(); track option) {
+                    <option [value]="option" [selected]="option === proSeite()">
+                      {{ option }}
+                    </option>
+                  }
+                </select>
+              </z-select>
+            </div>
+          }
+          @if (blaettern()) {
+            <span aria-live="polite">{{ bereich()(von(), bis(), total(), itemLabel()) }}</span>
+            <div class="z-pager__nav">
+              <button
+                type="button"
+                class="z-btn z-btn--ghost z-btn--icon z-btn--sm"
+                [attr.aria-label]="zurueckText()"
+                [attr.aria-disabled]="seite() <= 1 ? 'true' : null"
+                (click)="zuSeite(seite() - 1)"
+              >
+                <z-icon name="chevron_left" />
+              </button>
+              <span class="z-mono">{{ seite() }} / {{ seiten() }}</span>
+              <button
+                type="button"
+                class="z-btn z-btn--ghost z-btn--icon z-btn--sm"
+                [attr.aria-label]="weiterText()"
+                [attr.aria-disabled]="seite() >= seiten() ? 'true' : null"
+                (click)="zuSeite(seite() + 1)"
+              >
+                <z-icon name="chevron_right" />
+              </button>
+            </div>
+          }
         </div>
       </nav>
     }
@@ -86,13 +110,34 @@ export class ZPagination {
   readonly page = model(1);
 
   /**
-   * Entries per page. The spec fixes this at 25 and offers no per-page picker.
-   * A value below 1 and a value that is not a finite number both count as 1,
-   * everywhere: in the page count as well as in the range sentence.
+   * Entries per page, two-way bindable. A one-way `[pageSize]` keeps working
+   * exactly as before; `[(pageSize)]` additionally receives what the user
+   * picks from {@link pageSizeOptions}. A value below 1 and a value that is
+   * not a finite number both count as 1, everywhere: in the page count as well
+   * as in the range sentence.
    *
    * @default 25
    */
-  readonly pageSize = input(25, { transform: numberAttribute });
+  readonly pageSize = model(25);
+
+  /**
+   * Sizes the user may choose from. Empty, the default, means no picker at
+   * all. The rendered list is these options plus the current {@link pageSize},
+   * de-duplicated and sorted, so the select never shows a size the pager is
+   * not actually using.
+   *
+   * @default []
+   */
+  readonly pageSizeOptions = input<number[]>([]);
+
+  /**
+   * Visible label in front of the size select. Unset, the component uses
+   * {@link ZLabels.paginationPageSize} from the label registry ("Einträge pro
+   * Seite" in German).
+   *
+   * @default undefined
+   */
+  readonly pageSizeLabel = input<string>();
 
   /**
    * Number of entries in the whole list, not just on the current page.
@@ -155,9 +200,15 @@ export class ZPagination {
   protected readonly weiterText = computed(
     () => this.ariaLabelNext() ?? this.labels.paginationNext,
   );
+  protected readonly groesseText = computed(
+    () => this.pageSizeLabel() ?? this.labels.paginationPageSize,
+  );
+
+  /** Ties the size select to its label; unique per instance on the page. */
+  protected readonly groesseId = `z-pager-size-${++zaehler}`;
 
   /** {@link pageSize} as a whole number of at least 1, used by every count. */
-  private readonly proSeite = computed(() => {
+  protected readonly proSeite = computed(() => {
     const roh = Math.trunc(this.pageSize());
     return Number.isFinite(roh) ? Math.max(1, roh) : 1;
   });
@@ -169,7 +220,37 @@ export class ZPagination {
   protected readonly seite = computed(() =>
     Math.min(Math.max(1, Math.trunc(this.page())), this.seiten()),
   );
-  protected readonly sichtbar = computed(() => this.total() > 0 && this.total() > this.proSeite());
+
+  /**
+   * The sizes the select offers: the given options plus the size in use,
+   * de-duplicated and sorted, so a `pageSize` outside the options still shows
+   * the right value instead of a wrong one.
+   */
+  protected readonly optionen = computed(() => {
+    const gegeben = this.pageSizeOptions();
+    if (gegeben.length === 0) {
+      return [];
+    }
+    return [...new Set([...gegeben, this.proSeite()])].sort((a, b) => a - b);
+  });
+
+  /** Arrows and range sentence, the rule of the reference: more than one page. */
+  protected readonly blaettern = computed(() => this.total() > 0 && this.total() > this.proSeite());
+
+  /**
+   * The size select, which follows a rule of its own: it stands while the list
+   * is longer than the smallest option, that is while at least one of the
+   * offered sizes would split it into pages. Tying it to {@link blaettern}
+   * instead would strand the user on a size that fits everything onto one page:
+   * the arrows go, the select goes with them, and there is no way back to a
+   * smaller size.
+   */
+  protected readonly groesseSichtbar = computed(() => {
+    const optionen = this.optionen();
+    return optionen.length > 0 && this.total() > optionen[0];
+  });
+
+  protected readonly sichtbar = computed(() => this.blaettern() || this.groesseSichtbar());
   protected readonly von = computed(() => (this.seite() - 1) * this.proSeite() + 1);
   protected readonly bis = computed(() => Math.min(this.seite() * this.proSeite(), this.total()));
 
@@ -193,5 +274,20 @@ export class ZPagination {
       return;
     }
     this.page.set(ziel);
+  }
+
+  /**
+   * Takes the size the user picked and keeps the first entry of the current
+   * page in view: the new page is the one that entry falls on. Both models are
+   * written once, so a caller bound to either sees one change.
+   */
+  protected aufGroesse(ereignis: Event): void {
+    const neu = Math.trunc(Number((ereignis.target as HTMLSelectElement).value));
+    if (!Number.isFinite(neu) || neu < 1) {
+      return;
+    }
+    const ersterEintrag = (this.seite() - 1) * this.proSeite();
+    this.pageSize.set(neu);
+    this.page.set(Math.floor(ersterEintrag / neu) + 1);
   }
 }

@@ -38,8 +38,60 @@ class EigenerTextHost {
     `${label} ${von}-${bis} (${total})`;
 }
 
+@Component({
+  imports: [ZPagination],
+  template: `<z-pagination
+    [(page)]="seite"
+    [(pageSize)]="proSeite"
+    [total]="gesamt()"
+    [pageSizeOptions]="optionen()"
+    itemLabel="Transaktionen"
+  />`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class GroessenHost {
+  readonly seite = signal(1);
+  readonly proSeite = signal(25);
+  readonly gesamt = signal(118);
+  readonly optionen = signal([10, 25, 50]);
+}
+
+@Component({
+  imports: [ZPagination],
+  template: `<z-pagination
+    [(page)]="seite"
+    [total]="118"
+    [pageSizeOptions]="[10, 25]"
+    pageSizeLabel="Zeilen je Seite"
+    itemLabel="Transaktionen"
+  />`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class EigeneGroesseHost {
+  readonly seite = signal(1);
+}
+
 function bereich(fixture: { nativeElement: HTMLElement }): string {
   return fixture.nativeElement.querySelector('.z-pager > span')?.textContent?.trim() ?? '';
+}
+
+function auswahl(fixture: { nativeElement: HTMLElement }): HTMLSelectElement | null {
+  return fixture.nativeElement.querySelector('.z-pager__size select');
+}
+
+function groessen(fixture: { nativeElement: HTMLElement }): string[] {
+  return Array.from(auswahl(fixture)?.options ?? [], (option) => option.value);
+}
+
+/** Picks a size the way a user does: change the value, fire the native event. */
+async function waehle(
+  fixture: { nativeElement: HTMLElement; whenStable: () => Promise<unknown> },
+  wert: number,
+): Promise<void> {
+  const select = auswahl(fixture)!;
+  select.value = String(wert);
+  select.dispatchEvent(new Event('change'));
+  await fixture.whenStable();
 }
 
 function nav(fixture: { nativeElement: HTMLElement }): HTMLButtonElement[] {
@@ -262,5 +314,137 @@ describe('ZPagination', () => {
 
     expect(bereich(mitEingabe)).toBe('Transaktionen 1-25 (118)');
     expect(nav(mitEingabe)[0].getAttribute('aria-label')).toBe('Eine Seite zurueck');
+  });
+
+  describe('page size selection', () => {
+    it('renders the pager exactly as before without pageSizeOptions', () => {
+      const fixture = TestBed.createComponent(PagerHost);
+      fixture.detectChanges();
+      const kinder = Array.from(
+        fixture.nativeElement.querySelector('.z-pager').children,
+        (kind) => {
+          const el = kind as HTMLElement;
+          return el.className
+            ? `${el.tagName.toLowerCase()}.${el.className}`
+            : el.tagName.toLowerCase();
+        },
+      );
+
+      expect(kinder).toEqual(['span', 'div.z-pager__nav']);
+      expect(auswahl(fixture)).toBeNull();
+    });
+
+    it('offers the options sorted and de-duplicated', () => {
+      const fixture = TestBed.createComponent(GroessenHost);
+      fixture.componentInstance.optionen.set([50, 10, 25, 10]);
+      fixture.detectChanges();
+
+      expect(groessen(fixture)).toEqual(['10', '25', '50']);
+      expect(auswahl(fixture)?.value).toBe('25');
+    });
+
+    it('adds a pageSize that is not among the options, so the select never lies', () => {
+      const fixture = TestBed.createComponent(GroessenHost);
+      fixture.componentInstance.proSeite.set(30);
+      fixture.detectChanges();
+
+      expect(groessen(fixture)).toEqual(['10', '25', '30', '50']);
+      expect(auswahl(fixture)?.value).toBe('30');
+    });
+
+    it('names the select with a visible label of its own, unique per instance', () => {
+      const fixture = TestBed.createComponent(GroessenHost);
+      fixture.detectChanges();
+      const label: HTMLLabelElement = fixture.nativeElement.querySelector('.z-pager__size label');
+
+      expect(label.textContent?.trim()).toBe('Einträge pro Seite');
+      expect(label.getAttribute('for')).toBe(auswahl(fixture)?.id);
+      expect(auswahl(fixture)?.id).toBeTruthy();
+
+      const zweite = TestBed.createComponent(GroessenHost);
+      zweite.detectChanges();
+
+      expect(auswahl(zweite)?.id).not.toBe(auswahl(fixture)?.id);
+    });
+
+    it('keeps the first entry of the page in view and writes both models', async () => {
+      const fixture = TestBed.createComponent(GroessenHost);
+      fixture.componentInstance.seite.set(3);
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      expect(bereich(fixture)).toBe('51 bis 75 von 118 Transaktionen');
+
+      // Entry 51 is the first one shown, so it has to stay shown: with 10 per
+      // page that is page 6.
+      await waehle(fixture, 10);
+
+      expect(fixture.componentInstance.proSeite()).toBe(10);
+      expect(fixture.componentInstance.seite()).toBe(6);
+      expect(bereich(fixture)).toBe('51 bis 60 von 118 Transaktionen');
+    });
+
+    it('clamps the page when a larger size leaves fewer pages', async () => {
+      const fixture = TestBed.createComponent(GroessenHost);
+      fixture.componentInstance.seite.set(5);
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      await waehle(fixture, 50);
+
+      expect(fixture.componentInstance.proSeite()).toBe(50);
+      expect(fixture.componentInstance.seite()).toBe(3);
+      expect(bereich(fixture)).toBe('101 bis 118 von 118 Transaktionen');
+    });
+
+    it('keeps the select while a smaller size would still page, without arrows', () => {
+      const fixture = TestBed.createComponent(GroessenHost);
+      fixture.componentInstance.gesamt.set(20);
+      fixture.detectChanges();
+
+      // 20 entries at 25 per page: nothing to page through, but 10 per page
+      // would, so the way back to the smaller size stays open.
+      expect(fixture.nativeElement.querySelector('.z-pager__nav')).toBeNull();
+      expect(bereich(fixture)).toBe('');
+      expect(auswahl(fixture)).not.toBeNull();
+    });
+
+    it('renders nothing while even the smallest option fits on one page', () => {
+      const fixture = TestBed.createComponent(GroessenHost);
+      fixture.componentInstance.gesamt.set(10);
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('.z-pager')).toBeNull();
+    });
+
+    it('labels the select in German and takes an own pageSizeLabel', () => {
+      const ausRegistry = TestBed.createComponent(GroessenHost);
+      ausRegistry.detectChanges();
+      const eigenes = TestBed.createComponent(EigeneGroesseHost);
+      eigenes.detectChanges();
+
+      expect(
+        ausRegistry.nativeElement.querySelector('.z-pager__size label').textContent.trim(),
+      ).toBe('Einträge pro Seite');
+      expect(eigenes.nativeElement.querySelector('.z-pager__size label').textContent.trim()).toBe(
+        'Zeilen je Seite',
+      );
+    });
+
+    it('takes the label from the registry, and pageSizeLabel still wins', () => {
+      TestBed.configureTestingModule({ providers: [provideZenitLabels(Z_LABELS_EN)] });
+
+      const ausRegistry = TestBed.createComponent(GroessenHost);
+      ausRegistry.detectChanges();
+      const mitEingabe = TestBed.createComponent(EigeneGroesseHost);
+      mitEingabe.detectChanges();
+
+      expect(
+        ausRegistry.nativeElement.querySelector('.z-pager__size label').textContent.trim(),
+      ).toBe('Items per page');
+      expect(
+        mitEingabe.nativeElement.querySelector('.z-pager__size label').textContent.trim(),
+      ).toBe('Zeilen je Seite');
+    });
   });
 });

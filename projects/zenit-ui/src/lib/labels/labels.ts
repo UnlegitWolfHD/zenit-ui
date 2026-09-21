@@ -41,6 +41,9 @@ export interface ZLabels {
    */
   paginationRange: (from: number, to: number, total: number, itemLabel: string) => string;
 
+  /** Visible label of the page size select in `z-pagination`. */
+  paginationPageSize: string;
+
   /** `aria-label` of the log region in `z-console`. */
   consoleLog: string;
 
@@ -193,6 +196,7 @@ export const Z_LABELS_DE = {
   paginationNext: 'Nächste Seite',
   paginationNav: 'Seitennavigation',
   paginationRange: (from, to, total, itemLabel) => `${from} bis ${to} von ${total} ${itemLabel}`,
+  paginationPageSize: 'Einträge pro Seite',
   consoleLog: 'Serverlog',
   consoleInput: 'Befehl',
   consoleJumpToEnd: 'Zum Ende',
@@ -237,6 +241,7 @@ export const Z_LABELS_EN = {
   paginationNext: 'Next page',
   paginationNav: 'Pagination',
   paginationRange: (from, to, total, itemLabel) => `${from} to ${to} of ${total} ${itemLabel}`,
+  paginationPageSize: 'Items per page',
   consoleLog: 'Server log',
   consoleInput: 'Command',
   consoleJumpToEnd: 'Jump to end',

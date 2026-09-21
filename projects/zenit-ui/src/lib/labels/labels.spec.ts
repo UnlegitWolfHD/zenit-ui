@@ -99,6 +99,11 @@ describe('Z_LABELS', () => {
     }
   });
 
+  it('holds the page size label of the pager, in both languages', () => {
+    expect(Z_LABELS_DE.paginationPageSize).toBe('Einträge pro Seite');
+    expect(Z_LABELS_EN.paginationPageSize).toBe('Items per page');
+  });
+
   it('covers the same keys in German and English', () => {
     // The `satisfies ZLabels` on both constants already rules out a missing or
     // a stray key at compile time; this compares them at runtime as well.
