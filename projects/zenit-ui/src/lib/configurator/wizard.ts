@@ -31,43 +31,6 @@ export type ZWizardState = 'done' | 'current' | 'locked';
 export class ZWizardActions {}
 
 /**
- * The steps of an order, one below the other, with the summary next to it in a
- * `z-config`. Two to four steps, a noun as the title of each.
- *
- * Renders the class `z-wizard` on the host and projects the steps. The wizard
- * itself is the progress of the order, so there is no separate progress list
- * next to it, and it numbers its steps itself.
- *
- * Accessibility: the host is a `role="list"` and every `z-wizard-step` a
- * `role="listitem"`, which is what the `<ol>` and `<li>` of the reference
- * stand for. The current step carries `aria-current="step"`.
- *
- * @example
- * ```html
- * <z-wizard>
- *   <z-wizard-step title="Inhalt" summary="Vanilla, neueste Version" state="done" />
- *   <z-wizard-step title="Größe" state="current">…</z-wizard-step>
- *   <z-wizard-step title="Bezahlen" summary="Name, Laufzeit" state="locked" />
- * </z-wizard>
- * ```
- */
-@Component({
-  selector: 'z-wizard',
-  template: `<ng-content />`,
-  host: { class: 'z-wizard', role: 'list' },
-  changeDetection: ChangeDetectionStrategy.OnPush,
-})
-export class ZWizard {
-  /**
-   * The projected steps in document order.
-   *
-   * @internal Wiring between `z-wizard` and its steps, not meant to be read by
-   * applications.
-   */
-  readonly schritte = contentChildren(ZWizardStep);
-}
-
-/**
  * One step of a `z-wizard`: head with number and title, and the fields as
  * projected content while it is the current one.
  *
@@ -213,4 +176,43 @@ export class ZWizardStep {
     const alle = this.wizard?.schritte() ?? [];
     return Math.max(alle.indexOf(this), 0) + 1;
   });
+}
+
+/**
+ * The steps of an order, one below the other, with the summary next to it in a
+ * `z-config`. Two to four steps, a noun as the title of each.
+ *
+ * Renders the class `z-wizard` on the host and projects the steps. The wizard
+ * itself is the progress of the order, so there is no separate progress list
+ * next to it, and it numbers its steps itself.
+ *
+ * Accessibility: the host is a `role="list"` and every `z-wizard-step` a
+ * `role="listitem"`, which is what the `<ol>` and `<li>` of the reference
+ * stand for. The current step carries `aria-current="step"`.
+ *
+ * @example
+ * ```html
+ * <z-wizard>
+ *   <z-wizard-step title="Inhalt" summary="Vanilla, neueste Version" state="done" />
+ *   <z-wizard-step title="Größe" state="current">…</z-wizard-step>
+ *   <z-wizard-step title="Bezahlen" summary="Name, Laufzeit" state="locked" />
+ * </z-wizard>
+ * ```
+ */
+@Component({
+  selector: 'z-wizard',
+  template: `<ng-content />`,
+  host: { class: 'z-wizard', role: 'list' },
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class ZWizard {
+  // The predicate lands in the static partial declaration, which a JIT consumer
+  // evaluates while this class is defined: ZWizardStep has to be declared above.
+  /**
+   * The projected steps in document order.
+   *
+   * @internal Wiring between `z-wizard` and its steps, not meant to be read by
+   * applications.
+   */
+  readonly schritte = contentChildren(ZWizardStep);
 }

@@ -46,8 +46,17 @@ jobs:
       # generated copy no longer matches the files.
       - run: npm run check:snippets
 
+      # Source scan: nothing that is evaluated at load time may reference a class
+      # that the same file declares further down, and no import cycles.
+      - run: npm run check:order
+
       # Library plus the compiled schematics that `ng add` needs.
       - run: npm run build:lib
+
+      # The built bundle has to load in plain Node with the JIT compiler, the way
+      # a consumer whose unit tests run with `aot: false` loads it. AOT builds and
+      # the library's own tests never evaluate the partial declarations like that.
+      - run: npm run check:bundle
 
       - run: npx ng build ui-demo
 
@@ -59,6 +68,11 @@ jobs:
       - run: npx ng test zenit-ui --watch=false
 
       - run: npx ng test beispiel-app --watch=false
+
+      # The same specs the way an installed consumer runs them: zenit-ui stays
+      # outside the test bundle, so no linker touches it and the JIT compiler
+      # compiles its partial declarations while the module loads.
+      - run: npm run test:beispiel:jit
 
       - run: npm run test:schematics
 
