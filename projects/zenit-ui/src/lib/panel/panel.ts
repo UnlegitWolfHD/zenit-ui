@@ -17,7 +17,9 @@ export class ZPanelActions {}
   template: `
     @if (title() || aktionen()) {
       <div class="z-panel__header">
-        <h3 class="z-panel__title">{{ title() }}</h3>
+        @if (title()) {
+          <h3 class="z-panel__title">{{ title() }}</h3>
+        }
         <ng-content select="[zPanelActions]" />
       </div>
     }

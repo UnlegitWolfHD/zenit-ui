@@ -33,6 +33,7 @@ export type ZButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
     '[attr.aria-disabled]': `istLink && gesperrt() ? "true" : null`,
     '[attr.tabindex]': `istLink && gesperrt() ? "-1" : null`,
     '[attr.aria-busy]': `loading() ? "true" : null`,
+    '(click)': `aufKlick($event)`,
   },
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -49,4 +50,16 @@ export class ZButton {
     inject<ElementRef<HTMLElement>>(ElementRef).nativeElement.nodeName === 'A';
   protected readonly variante = computed<ZButtonVariant>(() => this.zBtn() || 'secondary');
   protected readonly gesperrt = computed(() => this.disabled() || this.loading());
+
+  /**
+   * Ein `<a>` bleibt trotz aria-disabled klickbar. Der Klick wird deshalb
+   * abgefangen, bevor ihn ein anderer Listener auf demselben Element sieht
+   * (zum Beispiel routerLink). `href` bleibt unangetastet.
+   */
+  protected aufKlick(ereignis: Event): void {
+    if (this.istLink && this.gesperrt()) {
+      ereignis.preventDefault();
+      ereignis.stopImmediatePropagation();
+    }
+  }
 }

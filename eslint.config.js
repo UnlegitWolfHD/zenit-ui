@@ -23,7 +23,7 @@ module.exports = defineConfig([
         {
           patterns: [
             {
-              group: ['@angular/material', '@angular/material/*'],
+              group: ['@angular/material', '@angular/material/*', '@angular/material*'],
               message: 'Angular Material wird in zenit-ui nicht verwendet. Nur @angular/cdk.',
             },
           ],

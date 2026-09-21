@@ -18,7 +18,7 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
         </nav>
       </div>
     </header>
-    <main id="inhalt" class="z-container demo-main">
+    <main id="inhalt" class="z-container demo-main" tabindex="-1">
       <router-outlet />
     </main>
   `,
