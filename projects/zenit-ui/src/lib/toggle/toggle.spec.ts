@@ -168,6 +168,23 @@ describe('ZToggle', () => {
     expect(steuerung.value).toBe(false);
   });
 
+  // Der Klick setzt die Checkedness am Element selbst. Nimmt eine Steuerung
+  // die Eingabe zurueck, bevor eine Change Detection gelaufen ist, muss der
+  // Schalter ihr trotzdem folgen.
+  it('folgt der Steuerung, wenn setValue die Eingabe sofort zuruecknimmt', async () => {
+    const fixture = TestBed.createComponent(FormControlHost);
+    fixture.detectChanges();
+    const feld: HTMLInputElement = fixture.nativeElement.querySelector('input');
+    const steuerung = fixture.componentInstance.steuerung;
+
+    feld.click();
+    steuerung.setValue(false);
+    await fixture.whenStable();
+
+    expect(steuerung.value).toBe(false);
+    expect(feld.checked).toBe(false);
+  });
+
   it('meldet touched nach dem blur', () => {
     const fixture = TestBed.createComponent(FormControlHost);
     fixture.detectChanges();

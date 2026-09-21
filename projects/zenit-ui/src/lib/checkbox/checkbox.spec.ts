@@ -177,12 +177,11 @@ describe('ZCheckbox', () => {
     expect(feld.disabled).toBe(false);
   });
 
-  // Fund: writeValue schreibt nur das Signal `checked`, ins DOM kommt der Wert
-  // ueber die Property-Bindung [checked] in checkbox.ts:24. Nimmt eine Steuerung
-  // die Nutzereingabe zurueck, bevor eine Change Detection gelaufen ist, sieht
-  // die Bindung denselben Wert wie zuletzt gerendert und schreibt nicht. Haken
-  // und Steuerung laufen auseinander. Erwartet waere feld.checked === false.
-  it('laesst Feld und Steuerung auseinanderlaufen, wenn setValue die Eingabe sofort zuruecknimmt', async () => {
+  // Der Klick setzt die Checkedness am Element selbst. Nimmt eine Steuerung
+  // die Eingabe zurueck, bevor eine Change Detection gelaufen ist, muss der
+  // Haken ihr trotzdem folgen: der Baustein schreibt den Haken direkt auf das
+  // Element und nicht ueber eine Bindung [checked].
+  it('folgt der Steuerung, wenn setValue die Eingabe sofort zuruecknimmt', async () => {
     const fixture = TestBed.createComponent(FormControlHost);
     fixture.detectChanges();
     const feld: HTMLInputElement = fixture.nativeElement.querySelector('input');
@@ -193,7 +192,7 @@ describe('ZCheckbox', () => {
     await fixture.whenStable();
 
     expect(steuerung.value).toBe(false);
-    expect(feld.checked).toBe(true);
+    expect(feld.checked).toBe(false);
   });
 
   it('sperrt ueber den Input disabled und laesst den Klick dann wirkungslos', () => {

@@ -67,7 +67,28 @@ function schiebe(schiene: HTMLInputElement, auf: number): void {
   schiene.dispatchEvent(new Event('input'));
 }
 
+@Component({
+  imports: [ZSlider],
+  template: `<z-slider [(value)]="menge" label="Speicher" [min]="200" [max]="800" [step]="100" />`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class SkalaHost {
+  readonly menge = signal(500);
+}
+
 describe('ZSlider', () => {
+  // min, max und step setzt der Baustein zusammen mit dem Wert direkt am
+  // Element. Kaemen sie als Bindung, begrenzte der Browser den Wert beim
+  // ersten Aufbau auf die Standardskala 0 bis 100.
+  it('haelt den Wert auf einer Skala ausserhalb von 0 bis 100', () => {
+    const fixture = TestBed.createComponent(SkalaHost);
+    fixture.detectChanges();
+    const schiene: HTMLInputElement = fixture.nativeElement.querySelector('input');
+
+    expect(schiene.value).toBe('500');
+    expect(fixture.componentInstance.menge()).toBe(500);
+  });
+
   it('setzt min, max und step am nativen input[type=range]', () => {
     const fixture = TestBed.createComponent(ModellHost);
     fixture.detectChanges();
@@ -235,6 +256,23 @@ describe('ZSlider', () => {
 
     expect(steuerung.dirty).toBe(true);
     expect(steuerung.value).toBe(3);
+  });
+
+  // Die Zeigereingabe setzt den Wert am Element selbst. Nimmt eine Steuerung
+  // sie zurueck, bevor eine Change Detection gelaufen ist, muss die Schiene
+  // ihr trotzdem folgen.
+  it('folgt der Steuerung, wenn setValue die Eingabe sofort zuruecknimmt', async () => {
+    const fixture = TestBed.createComponent(FormControlHost);
+    fixture.detectChanges();
+    const schiene: HTMLInputElement = fixture.nativeElement.querySelector('input');
+    const steuerung = fixture.componentInstance.steuerung;
+
+    schiebe(schiene, 12);
+    steuerung.setValue(8);
+    await fixture.whenStable();
+
+    expect(steuerung.value).toBe(8);
+    expect(schiene.value).toBe('8');
   });
 
   it('meldet touched nach dem blur', () => {
