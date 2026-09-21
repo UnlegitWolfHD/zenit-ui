@@ -1,0 +1,48 @@
+# The repository is not pushed anywhere yet. This workflow is inert until it is:
+# GitHub Actions only runs it once the repository has a remote on GitHub.
+# Node 24 is the active LTS. Local development ran on Node 25, which builds and
+# tests fine but prints engine warnings, because odd-numbered releases never
+# enter LTS.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run lint
+
+      - run: npm run lint:css
+
+      - run: npx ng build zenit-ui
+
+      - run: npx ng build ui-demo
+
+      - run: npx ng test zenit-ui --watch=false
+
+      - run: npx playwright install --with-deps chromium
+
+      - run: npm run e2e
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 7

@@ -1,0 +1,24 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["projects/zenit-ui/src/public-api.ts"],
+  "tsconfig": "projects/zenit-ui/tsconfig.lib.json",
+  "out": "docs/api",
+  "name": "zenit-ui",
+  "lang": "en",
+  "excludeInternal": true,
+  "excludePrivate": true,
+  "excludeProtected": true,
+  "readme": "projects/zenit-ui/README.md",
+  "categorizeByGroup": true,
+  "navigation": {
+    "includeCategories": true,
+    "includeGroups": true
+  },
+  "skipErrorChecking": true,
+  "disableSources": true,
+  "validation": {
+    "notExported": false,
+    "invalidLink": true,
+    "notDocumented": false
+  }
+}
