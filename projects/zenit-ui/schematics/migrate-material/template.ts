@@ -417,6 +417,13 @@ class Planner extends TmplAstRecursiveVisitor {
           `The inline style was kept (${this.text(attr)}). Sizes and colours of an icon come from the tokens.`,
           'Remove it; use size="sm" for the 16px icon.',
         );
+      } else if (key === 'class' && /\bmaterial-(icons|symbols)-/.test(attr.value ?? '')) {
+        group.note(
+          'review',
+          'icon-font-class',
+          `${this.text(attr)} selects another icon font. It was kept, next to the "material-icons" class z-icon sets itself.`,
+          'zenit-ui ships the filled Material Icons only: remove the class, or load that font and check which one wins.',
+        );
       } else if (attr.kind === 'output' && key === 'click') {
         group.note(
           'review',
@@ -1042,11 +1049,19 @@ class Usage extends TmplAstRecursiveVisitor {
   override visitElement(element: TmplAstElement): void {
     const offset = offsetOf(element);
     const names = [element.name, ...attributesOf(element, this.source).map((attr) => attr.key)];
+    const classes = attributesOf(element, this.source).find(
+      (attr) => attr.key === 'class' && attr.kind === 'text',
+    );
+    for (const token of classes?.value?.split(/\s+/) ?? []) {
+      if (/^(mat|mdc)-/.test(token)) {
+        names.push(`.${token}`);
+      }
+    }
     for (const name of new Set(names)) {
       if (this.consumed.has(`${offset}:${name}`)) {
         continue;
       }
-      if (MATERIAL_NAME.test(name)) {
+      if (MATERIAL_NAME.test(name) || name.startsWith('.')) {
         this.material[name] = (this.material[name] ?? 0) + 1;
       } else if (Object.hasOwn(ZENIT_SYMBOLS, name)) {
         this.zenit.add(ZENIT_SYMBOLS[name]);

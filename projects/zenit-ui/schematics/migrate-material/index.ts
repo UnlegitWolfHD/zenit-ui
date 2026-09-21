@@ -42,7 +42,9 @@ export function migrateMaterial(options: Schema): Rule {
     const dryRun = isDryRun(context);
     const run = new Run(tree, scope, new Set(rules), dryRun);
 
-    const files = scope.isFile ? [scope.path] : filesBelow(tree, scope.path);
+    const files = (scope.isFile ? [scope.path] : filesBelow(tree, scope.path)).filter(
+      (file) => /\.(ts|html)$/.test(file) || STYLESHEET.test(file),
+    );
     for (const path of files.filter((file) => file.endsWith('.ts') && !file.endsWith('.d.ts'))) {
       run.typescript(path);
     }
@@ -60,7 +62,8 @@ export function migrateMaterial(options: Schema): Rule {
     // A run that changed nothing must not overwrite the report of the run that did:
     // that one holds the review items, which cannot be found again afterwards.
     const keep = report.totals.filesChanged === 0 && tree.exists(target);
-    if (!dryRun && !keep) {
+    // In a dry run the CLI discards the tree, and lists what would have been written.
+    if (!keep) {
       write(tree, target, markdown);
       write(tree, twin, renderJson(report));
     }
@@ -74,7 +77,7 @@ export function migrateMaterial(options: Schema): Rule {
         `${totals.converted} spots converted, ${count('manual')} left for manual migration, ` +
         `${count('review')} to review.\n` +
         (dryRun
-          ? '  Dry run: no file and no report was written, the report follows.'
+          ? '  Dry run: nothing is written to disk, so the report follows here.'
           : keep
             ? `  Nothing changed, so the existing report ${target} was kept. Use --print-report or --report <other file> to see the current state.`
             : `  Report: ${target} and ${twin}`),
@@ -280,7 +283,7 @@ class Run {
     }
 
     const output = applyEdits(text, sorted);
-    if (output !== text && !this.dryRun) {
+    if (output !== text) {
       this.tree.overwrite(`/${path}`, output);
     }
 

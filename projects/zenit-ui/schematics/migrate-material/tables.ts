@@ -82,6 +82,10 @@ export const ZENIT_SYMBOLS: Record<string, string> = {
  * mapping table of `docs/migration-from-material.md`; the first match wins.
  */
 const REPLACEMENTS: [RegExp, string][] = [
+  [
+    /^\./,
+    'a CSS class of Material: remove it, the look comes from the zenit-ui component and the tokens',
+  ],
   [/^mat-toolbar/, 'z-app-header (3.1)'],
   [/^mat-icon$/, 'z-icon (3.2)'],
   [/^(mat-(mini-)?fab|mat(Mini)?Fab)$/, 'no counterpart: a button[zBtn] in the page flow (3.3)'],

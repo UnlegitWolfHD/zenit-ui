@@ -163,6 +163,10 @@ describe('icon', () => {
       text: '<z-icon name="home" style="font-size: 18px" />',
       codes: ['review:icon-style'],
     });
+    expect(run('<mat-icon class="material-icons-outlined big">home</mat-icon>')).toMatchObject({
+      text: '<z-icon name="home" class="material-icons-outlined big" />',
+      codes: ['review:icon-font-class'],
+    });
     expect(run('<mat-icon [style.font-size.px]="s">home</mat-icon>').codes).toEqual([
       'review:icon-style',
     ]);
@@ -662,6 +666,7 @@ describe('template as a whole', () => {
 <table mat-table [dataSource]="rows" matSort><ng-container matColumnDef="a"><td mat-cell *matCellDef="let row">{{ row }}</td></ng-container>
 <tr mat-row *matRowDef="let row; columns: cols"></tr></table>
 <ng-template matTabContent></ng-template><mat-divider></mat-divider>
+<div class="card mat-elevation-z4 mat-typography" [class.mat-app-background]="x"></div>
 <z-icon name="a" /><button zBtn zTooltip="x" type="button">b</button><z-spinner /><z-badge>c</z-badge>`);
     expect(result.remaining).toEqual({
       'mat-form-field': 1,
@@ -677,6 +682,9 @@ describe('template as a whole', () => {
       matRowDef: 1,
       matTabContent: 1,
       'mat-divider': 1,
+      // Static Material classes count as well; a class binding is not looked at.
+      '.mat-elevation-z4': 1,
+      '.mat-typography': 1,
     });
     expect(result.zenit).toEqual(['ZBadge', 'ZButton', 'ZIcon', 'ZSpinner', 'ZTooltip']);
     expect(result.edits).toEqual([]);

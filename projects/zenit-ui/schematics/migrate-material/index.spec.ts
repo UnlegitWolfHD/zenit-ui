@@ -475,16 +475,21 @@ describe('report', () => {
     expect(out.readContent(REPORT)).toContain('- info `tooltip-option` x1, lines 1');
   });
 
-  it('writes nothing in a dry run and prints the report, with the lines of the untouched files', async () => {
+  it('prints the report in a dry run, with the lines of the files as they are on disk', async () => {
+    // The CLI keeps --dry-run to itself and discards the tree afterwards; the schematic still
+    // fills the tree, so that the CLI can list the files that would change.
     process.argv.push('--dry-run');
-    const tree = treeWith({ '/src/a.html': html, '/src/a.ts': componentTs('a') });
-    const before = snapshot(tree);
-    const { tree: out, logs } = await migrate(tree, { path: 'src' });
-    expect(snapshot(out)).toEqual(before);
+    const { tree: out, logs } = await migrate(
+      treeWith({ '/src/a.html': html, '/src/a.ts': componentTs('a') }),
+      { path: 'src' },
+    );
+    expect(report(out).dryRun).toBe(true);
     expect(logs).toContain('2 would change');
     expect(logs).toContain('# zenit-ui migration report');
     expect(logs).toContain('Dry run: nothing was written');
+    // Line 5 of the untouched file; after a real run the same icon is on line 3.
     expect(logs).toContain('| 5:1 | icon | manual | icon-registry |');
+    expect(out.readContent(REPORT)).toContain('| 5:1 | icon | manual | icon-registry |');
   });
 
   it('is written where --report says, and printed on request', async () => {
