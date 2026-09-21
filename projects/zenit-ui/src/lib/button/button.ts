@@ -4,6 +4,7 @@ import {
   Component,
   computed,
   ElementRef,
+  HostAttributeToken,
   inject,
   input,
 } from '@angular/core';
@@ -30,7 +31,7 @@ export type ZButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
     '[class.z-btn--icon]': `iconOnly()`,
     '[class.z-btn--block]': `block()`,
     '[attr.disabled]': `istLink || !gesperrt() ? null : ""`,
-    '[attr.aria-disabled]': `istLink && gesperrt() ? "true" : null`,
+    '[attr.aria-disabled]': `ariaGesperrt || (istLink && gesperrt()) ? "true" : null`,
     '[attr.tabindex]': `istLink && gesperrt() ? "-1" : null`,
     '[attr.aria-busy]': `loading() ? "true" : null`,
     '(click)': `aufKlick($event)`,
@@ -48,16 +49,24 @@ export class ZButton {
 
   protected readonly istLink =
     inject<ElementRef<HTMLElement>>(ElementRef).nativeElement.nodeName === 'A';
+  /**
+   * Statisches `aria-disabled="true"` des Aufrufers. So bleibt ein `<button>`
+   * fokussierbar und kann den Grund per Tooltip zeigen, was ein echtes
+   * `disabled` verhindert. Ohne diese Abfrage loescht die Bindung das Attribut.
+   */
+  protected readonly ariaGesperrt =
+    inject(new HostAttributeToken('aria-disabled'), { optional: true }) === 'true';
   protected readonly variante = computed<ZButtonVariant>(() => this.zBtn() || 'secondary');
   protected readonly gesperrt = computed(() => this.disabled() || this.loading());
 
   /**
-   * Ein `<a>` bleibt trotz aria-disabled klickbar. Der Klick wird deshalb
-   * abgefangen, bevor ihn ein anderer Listener auf demselben Element sieht
-   * (zum Beispiel routerLink). `href` bleibt unangetastet.
+   * Ein `<a>` und ein `<button aria-disabled="true">` bleiben klickbar. Der
+   * Klick wird deshalb abgefangen, bevor ihn ein anderer Listener auf
+   * demselben Element sieht (zum Beispiel routerLink). `href` bleibt
+   * unangetastet.
    */
   protected aufKlick(ereignis: Event): void {
-    if (this.istLink && this.gesperrt()) {
+    if (this.ariaGesperrt || (this.istLink && this.gesperrt())) {
       ereignis.preventDefault();
       ereignis.stopImmediatePropagation();
     }

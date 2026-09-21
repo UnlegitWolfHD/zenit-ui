@@ -1,8 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
 import {
+  ZAlert,
   ZBadge,
   ZBadgeStatus,
   ZButton,
+  ZCheckbox,
+  ZEmptyAction,
+  ZEmptyState,
   ZIcon,
   ZMetric,
   ZMetrics,
@@ -15,6 +19,7 @@ import {
   ZRowNum,
   ZRows,
   ZRowsHead,
+  ZSkeleton,
   ZTable,
   ZTableContainer,
   ZTableName,
@@ -31,8 +36,12 @@ interface DemoServer {
 @Component({
   selector: 'demo-daten-page',
   imports: [
+    ZAlert,
     ZBadge,
     ZButton,
+    ZCheckbox,
+    ZEmptyAction,
+    ZEmptyState,
     ZIcon,
     ZMetric,
     ZMetrics,
@@ -45,6 +54,7 @@ interface DemoServer {
     ZRowNum,
     ZRows,
     ZRowsHead,
+    ZSkeleton,
     ZTable,
     ZTableContainer,
     ZTableName,
@@ -160,10 +170,10 @@ interface DemoServer {
       </z-panel>
 
       <p class="demo-cap caption">
-        Lädt: Platzhalterzeilen, das Panel meldet aria-busy. Skelettzeilen kommen aus dem Paket
-        rueckmeldung.
+        Lädt: Skelettzeilen im selben Grid wie die echten Zeilen, damit beim Eintreffen der Daten
+        nichts springt. Das Panel meldet aria-busy.
       </p>
-      <z-panel title="Meine Server" flush busy>
+      <z-panel title="Meine Server" flush busy aria-label="Server werden geladen">
         <z-rows>
           <z-rows-head>
             <span>Server</span>
@@ -172,32 +182,38 @@ interface DemoServer {
             <span style="text-align:right">Bisher</span>
             <span></span>
           </z-rows-head>
-          @for (platz of platzhalter; track platz) {
-            <div zRow><span class="z-subtle">Lädt</span></div>
+          @for (platz of platzhalter; track platz.titel) {
+            <div zRow>
+              <div class="z-row__main">
+                <z-skeleton thumb />
+                <div class="demo-skel-lines">
+                  <z-skeleton [width]="platz.titel" />
+                  <z-skeleton [width]="platz.meta" />
+                </div>
+              </div>
+              <z-skeleton width="64px" />
+              <z-skeleton width="70%" />
+              <z-skeleton width="48px" class="demo-skel-end" />
+              <span></span>
+            </div>
           }
         </z-rows>
       </z-panel>
 
-      <p class="demo-cap caption">
-        Leer: ein Satz und eine Aktion. Der EmptyState kommt aus dem Paket rueckmeldung.
-      </p>
-      <z-panel title="Meine Server">
-        <div class="demo-row">
-          <p class="demo-sub">
-            Du hast noch keinen Server. Der erste steht in etwa 60 Sekunden bereit.
-          </p>
-          <button zBtn="secondary"><z-icon name="add" />Server erstellen</button>
-        </div>
+      <p class="demo-cap caption">Leer: ein Satz und eine Aktion, keine Filter und keine Pagination.</p>
+      <z-panel title="Meine Server" flush>
+        <z-empty-state title="Noch kein Server">
+          Der erste steht in etwa 60 Sekunden bereit.
+          <button zEmptyAction zBtn="secondary"><z-icon name="add" />Server erstellen</button>
+        </z-empty-state>
       </z-panel>
 
-      <p class="demo-cap caption">
-        Fehler: Ursache und nächster Schritt in einem Satz. Nach dem Zusammenfügen steht hier
-        z-alert aus dem Paket rueckmeldung.
-      </p>
+      <p class="demo-cap caption">Fehler: Ursache und nächster Schritt.</p>
       <z-panel title="Meine Server">
-        <p class="demo-sub">
-          Die Liste ist nicht geladen, das Panel hat nicht geantwortet. Lade die Seite neu.
-        </p>
+        <z-alert status="danger" title="Liste nicht geladen" icon="error">
+          Das Panel hat nach 10 Sekunden nicht geantwortet. Lade die Seite neu oder öffne ein
+          Ticket.
+        </z-alert>
       </z-panel>
     </section>
 
@@ -205,7 +221,7 @@ interface DemoServer {
       <h2 class="heading-2">FileTable</h2>
       <p class="demo-cap caption">
         Unter 640px scrollt die Tabelle seitlich in ihrem eigenen Container, die Seite nie. Der
-        Container ist per Tab erreichbar. Die Kästchen bekommen ihre Form aus dem Paket formulare.
+        Container ist per Tab erreichbar. Die Kästchen sind z-checkbox, beschriftet über ariaLabel.
       </p>
       <z-panel title="Dateien" flush>
         <z-table-container ariaLabel="Dateien, seitlich scrollbar">
@@ -213,9 +229,7 @@ interface DemoServer {
             <thead>
               <tr>
                 <th class="z-table__check">
-                  <label class="z-check"
-                    ><input type="checkbox" aria-label="Alle auswählen"
-                  /></label>
+                  <z-checkbox ariaLabel="Alle auswählen" />
                 </th>
                 <th>Name</th>
                 <th style="text-align:right">Größe</th>
@@ -226,12 +240,7 @@ interface DemoServer {
               @for (datei of dateien; track datei.name) {
                 <tr>
                   <td>
-                    <label class="z-check"
-                      ><input
-                        type="checkbox"
-                        [attr.aria-label]="datei.name"
-                        [checked]="datei.gewaehlt"
-                    /></label>
+                    <z-checkbox [ariaLabel]="datei.name" [checked]="datei.gewaehlt" />
                   </td>
                   <td>
                     <span zTableName><z-icon [name]="datei.icon" />{{ datei.name }}</span>
@@ -351,7 +360,11 @@ export class DatenPage {
     },
   ];
 
-  protected readonly platzhalter = [1, 2, 3];
+  /** Breiten der Platzhalter wie in spec/components/Skeleton/preview.html. */
+  protected readonly platzhalter = [
+    { titel: '40%', meta: '60%' },
+    { titel: '30%', meta: '50%' },
+  ];
 
   protected readonly dateien = [
     { name: 'plugins', icon: 'folder', groesse: '', geaendert: '04.09.2026, 05:53', gewaehlt: false },

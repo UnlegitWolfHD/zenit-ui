@@ -3,6 +3,8 @@ import {
   ZButton,
   ZConsole,
   ZConsoleLine,
+  ZEmptyAction,
+  ZEmptyState,
   ZFaq,
   ZGameGrid,
   ZGameTile,
@@ -41,6 +43,8 @@ const STARTZEILEN: ZConsoleLine[] = [
   imports: [
     ZButton,
     ZConsole,
+    ZEmptyAction,
+    ZEmptyState,
     ZFaq,
     ZGameGrid,
     ZGameTile,
@@ -79,7 +83,9 @@ const STARTZEILEN: ZConsoleLine[] = [
         placeholder="Befehl eingeben, Enter sendet"
         (command)="aufBefehl($event)"
       >
-        Das Log ist leer. Neue Ausgaben erscheinen hier.
+        <z-empty-state title="Das Log ist leer">
+          Neue Ausgaben erscheinen hier, sobald Beispiel-Server 1 etwas schreibt.
+        </z-empty-state>
       </z-console>
 
       <div class="demo-row">
@@ -95,10 +101,12 @@ const STARTZEILEN: ZConsoleLine[] = [
         Deaktiviert: Beispiel-Server 1 ist gestoppt, deshalb nimmt die Konsole keine Befehle an.
       </p>
       <z-console disabled placeholder="Befehl eingeben, Enter sendet">
-        <span class="demo-row"
-          >Server ist gestoppt
-          <button zBtn="secondary"><z-icon name="play_arrow" />Server starten</button>
-        </span>
+        <z-empty-state title="Server ist gestoppt">
+          Starte Beispiel-Server 1, dann nimmt die Konsole wieder Befehle an.
+          <button zEmptyAction zBtn="secondary">
+            <z-icon name="play_arrow" />Server starten
+          </button>
+        </z-empty-state>
       </z-console>
     </section>
 

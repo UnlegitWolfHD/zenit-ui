@@ -25,9 +25,7 @@ export class ZMenu {}
 
 /** Ein Eintrag aus Icon und Verb plus Gegenstand. */
 @Component({
-  // Laut API-Tabelle ist der Eintrag ein Button mit Attribut-Selektor. Die
-  // Regel im Projekt erlaubt das nur fuer button.ts.
-  // eslint-disable-next-line @angular-eslint/component-selector
+  // Laut API-Tabelle ist der Eintrag ein Button mit Attribut-Selektor.
   selector: 'button[zMenuItem]',
   imports: [ZIcon],
   template: `@if (icon()) {<z-icon [name]="icon()" />}<ng-content />`,

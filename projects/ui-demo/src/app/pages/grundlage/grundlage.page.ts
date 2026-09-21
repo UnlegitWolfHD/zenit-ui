@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import {
+  ZAlert,
   ZBadge,
   ZButton,
   ZField,
@@ -15,6 +16,7 @@ import {
 @Component({
   selector: 'demo-grundlage-page',
   imports: [
+    ZAlert,
     ZBadge,
     ZButton,
     ZField,
@@ -322,10 +324,10 @@ import {
             <z-badge status="danger" dot>Fehlgeschlagen</z-badge>
             <button zBtn="primary"><z-icon name="refresh" />Erneut installieren</button>
           </div>
-          <p class="demo-cap caption">
-            Der Download von PaperMC ist abgebrochen. Starte die Installation erneut. Der Alert
-            dazu kommt im Paket rueckmeldung.
-          </p>
+          <z-alert status="danger" title="Installation fehlgeschlagen" icon="error">
+            SteamCMD hat nach 120 Sekunden nicht geantwortet. Starte die Installation erneut oder
+            öffne ein Ticket.
+          </z-alert>
         </div>
 
         <div class="demo-status__row">

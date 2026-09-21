@@ -39,6 +39,13 @@ class LinkHost {
   readonly gesperrt = signal(false);
 }
 
+@Component({
+  imports: [ZButton],
+  template: `<button zBtn aria-disabled="true">Stoppen</button>`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class AriaHost {}
+
 describe('ZButton', () => {
   it('ist ohne Wert und mit leerem zBtn secondary', () => {
     const fixture = TestBed.createComponent(StandardHost);
@@ -166,5 +173,32 @@ describe('ZButton', () => {
     const klick = new MouseEvent('click', { bubbles: true, cancelable: true });
     link.dispatchEvent(klick);
     expect(klick.defaultPrevented).toBe(false);
+  });
+
+  it('behaelt ein statisches aria-disabled am button und laesst ihn fokussierbar', () => {
+    const fixture = TestBed.createComponent(AriaHost);
+    fixture.detectChanges();
+    const button = fixture.nativeElement.querySelector('button');
+
+    expect(button.getAttribute('aria-disabled')).toBe('true');
+    // Kein echtes disabled und kein tabindex: der Button bleibt erreichbar,
+    // damit sein Tooltip den Grund zeigen kann.
+    expect(button.hasAttribute('disabled')).toBe(false);
+    expect(button.hasAttribute('tabindex')).toBe(false);
+  });
+
+  it('faengt den Klick auf einem button mit aria-disabled ab', () => {
+    const fixture = TestBed.createComponent(AriaHost);
+    fixture.detectChanges();
+    const button = fixture.nativeElement.querySelector('button');
+
+    let gesehen = 0;
+    button.addEventListener('click', () => gesehen++);
+
+    const klick = new MouseEvent('click', { bubbles: true, cancelable: true });
+    button.dispatchEvent(klick);
+
+    expect(klick.defaultPrevented).toBe(true);
+    expect(gesehen).toBe(0);
   });
 });

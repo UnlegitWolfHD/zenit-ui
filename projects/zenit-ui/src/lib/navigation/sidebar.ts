@@ -20,7 +20,6 @@ import { ZIcon } from '../icon';
   // Die API-Tabelle schreibt den Selektor `[zSidebarItem]` ohne Element vor:
   // der Eintrag ist ein `<button>` oder ein `<a>`. Icon und Zaehler braucht
   // eine Vorlage, deshalb eine Komponente statt einer Direktive.
-  // eslint-disable-next-line @angular-eslint/component-selector
   selector: '[zSidebarItem]',
   imports: [ZIcon],
   // Kein Leerraum zwischen den Teilen: .z-side__item ist flex mit gap, jeder
