@@ -44,3 +44,31 @@ z-menu-separator { display: block; }
 @media (max-width: 640px) {
   .z-menu__item { height: var(--control-md); }
 }
+/* Addition to the reference: a long dialog scrolls inside instead of growing
+   past the screen. Two links of the chain were missing. The CDK loads the
+   styles of `.cdk-overlay-pane` at runtime, so they stand after this stylesheet
+   and its `max-height: 100%` beat the reference rule of the same specificity;
+   the limit is therefore repeated with the pane class in front of it. And the
+   reference hands the limit down to `.z-dialog` with `max-height: inherit`,
+   while through `ZDialog.open()` the CDK container and the host element of the
+   opened component stand in between: `inherit` only arrives when every one of
+   them passes the limit on. Both become flex columns, so the limit reaches the
+   dialog and, inside it, only the body moves: header and footer with the
+   actions stay put. */
+.cdk-overlay-pane.z-dialog-panel { max-height: calc(100vh - 2 * var(--space-5)); }
+.z-dialog-panel > cdk-dialog-container,
+.z-dialog-panel > cdk-dialog-container > * { display: flex; flex-direction: column; width: 100%; min-height: 0; max-height: inherit; }
+.z-dialog-panel .z-dialog { display: flex; flex-direction: column; }
+.z-dialog-panel .z-dialog__header, .z-dialog-panel .z-dialog__footer { flex: none; }
+/* `scroll-padding` keeps the 2px focus ring of a control at the edge of the
+   scrolling body from being cut off when the browser scrolls it into view. */
+.z-dialog-panel .z-dialog__body { min-height: 0; overflow: auto; scroll-padding: var(--space-1); }
+/* dvh where the browser has it, so the URL bar of a phone does not cut the
+   footer off; the vh rule of the reference stays as the fallback. */
+@supports (max-height: 100dvh) {
+  .cdk-overlay-pane.z-dialog-panel { max-height: calc(100dvh - 2 * var(--space-5)); }
+}
+/* Docked at the bottom on mobile, so the footer keeps clear of the home bar. */
+@media (max-width: 640px) {
+  .z-dialog-panel .z-dialog__footer { padding-bottom: calc(var(--space-4) + env(safe-area-inset-bottom)); }
+}

@@ -28,6 +28,13 @@ class OhneAktionenHost {}
 
 @Component({
   imports: [ZDialogLayout],
+  template: `<z-dialog title="Server umbenennen"><input id="neuer-name" /></z-dialog>`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class MitFeldHost {}
+
+@Component({
+  imports: [ZDialogLayout],
   template: `<z-dialog title="Server umbenennen" />`,
   providers: [{ provide: Z_DIALOG_TITLE_ID, useValue: 'z-dialog-title-von-aussen' }],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -35,6 +42,10 @@ class OhneAktionenHost {}
 class FremdeIdHost {}
 
 describe('ZDialogLayout', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   function baue(): { dialog: HTMLElement; host: LayoutHost; rendere: () => void } {
     const fixture = TestBed.createComponent(LayoutHost);
     fixture.detectChanges();
@@ -111,6 +122,50 @@ describe('ZDialogLayout', () => {
 
     expect(id(erste.nativeElement)).toMatch(/^z-dialog-title-\d+$/);
     expect(id(zweite.nativeElement)).not.toBe(id(erste.nativeElement));
+  });
+
+  /**
+   * jsdom lays nothing out, so the one measurement the component makes is
+   * faked: a body taller than its box scrolls.
+   */
+  function laengerAlsDerKasten(): void {
+    vi.spyOn(Element.prototype, 'scrollHeight', 'get').mockReturnValue(400);
+    vi.spyOn(Element.prototype, 'clientHeight', 'get').mockReturnValue(200);
+  }
+
+  it('gives a scrolling body without a control a tab stop of its own', async () => {
+    laengerAlsDerKasten();
+    const fixture = TestBed.createComponent(OhneAktionenHost);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    // WCAG 2.1.1: the long text of a confirmation has to be readable without a
+    // mouse, and nothing inside it takes the focus.
+    expect(fixture.nativeElement.querySelector('.z-dialog__body').getAttribute('tabindex')).toBe(
+      '0',
+    );
+  });
+
+  it('leaves a scrolling body with a control alone', async () => {
+    laengerAlsDerKasten();
+    const fixture = TestBed.createComponent(MitFeldHost);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    // Tab reaches the field, and the browser scrolls it into view.
+    expect(fixture.nativeElement.querySelector('.z-dialog__body').hasAttribute('tabindex')).toBe(
+      false,
+    );
+  });
+
+  it('leaves a body that does not scroll alone', async () => {
+    const fixture = TestBed.createComponent(OhneAktionenHost);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(fixture.nativeElement.querySelector('.z-dialog__body').hasAttribute('tabindex')).toBe(
+      false,
+    );
   });
 
   it('takes the id of the h2 from Z_DIALOG_TITLE_ID when it is provided', () => {
