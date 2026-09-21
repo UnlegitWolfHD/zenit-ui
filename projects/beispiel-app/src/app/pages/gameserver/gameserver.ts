@@ -1,5 +1,14 @@
 import { Clipboard } from '@angular/cdk/clipboard';
-import { Component, computed, inject, input, linkedSignal, resource, signal } from '@angular/core';
+import {
+  Component,
+  computed,
+  inject,
+  input,
+  linkedSignal,
+  resource,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { form, FormField } from '@angular/forms/signals';
 import { firstValueFrom } from 'rxjs';
 import {
@@ -136,6 +145,7 @@ const KEIN_FILTER = { suche: '', status: STATUS_FILTER[0] };
       <app-server-list
         [server]="gefiltert()"
         [zustand]="zustandDerListe()"
+        (oeffnen)="oeffnen($event)"
         (kopieren)="adresseKopieren($event)"
         (neustart)="neustart($event)"
         (loeschen)="loeschen($event)"
@@ -213,6 +223,9 @@ export class Gameserver {
   private readonly toast = inject(ZToast);
   private readonly dialog = inject(ZDialog);
   private readonly clipboard = inject(Clipboard);
+
+  /** The list, asked to move the focus when a row disappears under it. */
+  private readonly listenElement = viewChild.required(ServerList);
 
   /**
    * Query parameter `?zustand=laden|leer|fehler`, handed over by the router
@@ -328,6 +341,11 @@ export class Gameserver {
     this.toast.show('Der Assistent gehört in deine Anwendung', { icon: 'info' });
   }
 
+  /** Same for the detail page the row links to; this example has one page. */
+  protected oeffnen(server: BeispielServer): void {
+    this.toast.show(`Die Seite zu ${server.name} gehört in deine Anwendung`, { icon: 'info' });
+  }
+
   protected adresseKopieren(server: BeispielServer): void {
     this.clipboard.copy(server.adresse);
     this.toast.show('Adresse kopiert', { icon: 'content_copy' });
@@ -344,17 +362,15 @@ export class Gameserver {
 
   /**
    * Deleting cannot be undone, so it goes through a confirmation that asks for
-   * the server name. Escape and "Abbrechen" return the focus to the menu
-   * button; that comes from the CDK.
+   * the server name.
+   *
+   * `restoreFocusTo` names the menu button of the row by its id, so cancelling
+   * and Escape put the focus back there even though the menu has already
+   * closed and taken the CDK's own memory of the trigger with it. After a
+   * confirmed delete that button no longer exists, so the list is told first
+   * where the focus goes instead; without that it would fall to `<body>`.
    */
-  protected loeschen(server: BeispielServer): void {
-    // The menu closes only after (triggered) has run and hands the focus back
-    // to the row button. Opening one microtask later makes that button the
-    // element the dialog returns the focus to when it closes.
-    queueMicrotask(() => this.dialogFragen(server));
-  }
-
-  private async dialogFragen(server: BeispielServer): Promise<void> {
+  protected async loeschen(server: BeispielServer): Promise<void> {
     // confirm() answers exactly once with an Observable<boolean>. One value is
     // a promise, so the page awaits it and holds no subscription.
     const bestaetigt = await firstValueFrom(
@@ -366,9 +382,11 @@ export class Gameserver {
         danger: true,
         requireText: server.name,
         requireLabel: 'Name des Servers',
+        restoreFocusTo: `#aktionen-${server.id}`,
       }),
     );
     if (bestaetigt) {
+      this.listenElement().fokusNachEntfernen(server);
       // Writing to a resource puts it into the state 'local'. Deleting the
       // last server leaves the list empty.
       this.liste.update((alt) => alt.filter((eintrag) => eintrag.id !== server.id));

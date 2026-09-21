@@ -2,21 +2,33 @@
 
 ## Commands
 
+The workspace holds three projects: the library `zenit-ui` (with the `ng add` schematics under `projects/zenit-ui/schematics`), the demo `ui-demo` with one page per package, and the example application `beispiel-app`, which consumes the built package from `dist/zenit-ui`.
+
 ```bash
-npm ci                # install exactly what package-lock.json pins
-npm run check         # lint, lint:css, both builds and the unit tests in one run
-npm run lint          # ESLint over library and demo
-npm run lint:css      # Stylelint over projects/**/*.css
-ng build zenit-ui     # build the library, output in dist/zenit-ui
-ng build ui-demo      # build the demo application
-ng test zenit-ui      # unit tests of the library
-npm run e2e           # Playwright with axe over the demo pages
-npm run e2e:update    # accept new reference screenshots
-npm run docs:api      # TypeDoc reference into docs/api (git-ignored)
-ng serve ui-demo      # demo app at http://localhost:4200/
+npm ci                 # install exactly what package-lock.json pins
+npm run check          # everything below except the Playwright runs
+npm run lint           # ESLint over library, demo and example app
+npm run lint:css       # Stylelint over projects/**/*.css
+npm run format         # Prettier over projects/**/*.{ts,css,html}
+npm run format:check   # the same as a check, part of npm run check
+npm run build:lib      # library into dist/zenit-ui plus the compiled schematics
+ng build ui-demo       # build the demo application
+npm run build:beispiel # library, snippets and the example application
+ng test zenit-ui       # unit tests of the library
+npm run test:schematics # the ng add schematic against generated fixtures
+npm run check:themes   # contrast gate over every scheme and accent
+npm run check:snippets # the example app still shows its own sources
+npm run e2e            # Playwright with axe over the demo pages
+npm run e2e:beispiel   # the same checks over the example application
+npm run e2e:update     # accept new reference screenshots
+npm run docs:api       # TypeDoc reference into docs/api (git-ignored)
+ng serve ui-demo       # demo app at http://localhost:4200/
+npm run start:beispiel # example app, library build included
 ```
 
-`npm run check` has to be green before anything is handed over. Node 24 is what CI uses; newer odd-numbered releases print engine warnings but work.
+`npm run check` runs `lint`, `lint:css`, `check:themes`, `check:snippets`, `build:lib`, both application builds, the unit tests of `zenit-ui` and of `beispiel-app`, `test:schematics` and `format:check`. It has to be green before anything is handed over, and so do the two Playwright runs. Node 24 is what CI uses; newer odd-numbered releases print engine warnings but work.
+
+CI runs on `windows-latest`. The reference screenshots in `e2e/screenshots` were recorded on Windows and their path carries no platform, while the comparison runs with zero tolerance, so a Linux runner would fail every screenshot test. Re-record with `npm run e2e:update` on Windows, and look at the new images before committing them.
 
 ## Rules
 
@@ -27,7 +39,7 @@ ng serve ui-demo      # demo app at http://localhost:4200/
 - **Form fields are native elements.** `<input>`, `<textarea>`, `<select>`, `<input type="checkbox">`, `<input type="range">`, `<details>`/`<summary>`, carrying the library classes. Controls that hold a value implement `ControlValueAccessor`.
 - **Overlays come from the CDK.** `@angular/cdk/dialog`, `/menu`, `/overlay`, `/a11y`. Focus trap, Escape and focus return are not rebuilt.
 - **Components have no styles of their own.** No `styles` or `styleUrls`. Every class lives in a partial under `projects/zenit-ui/src/styles/`.
-- **Documentation and JSDoc are English.** UI copy inside code examples stays German, because German is the product's language, for example `Server erstellen`. The design system under `spec/`, `CLAUDE.md` and `docs/pakete.md` stay German and are not translated.
+- **Documentation, JSDoc and comments are English.** That includes the Playwright configs and the specs under `e2e/`: `playwright.beispiel.config.ts` and `e2e/beispiel.spec.ts` are English, the older suites next to them are still German and get translated when they are next touched. UI copy inside code examples stays German, because German is the product's language, for example `Server erstellen`. The design system under `spec/`, `CLAUDE.md` and `docs/pakete.md` stay German and are not translated.
 - **Copy comes from the caller.** The library holds no German strings except default `aria-label` values, and those are overridable via inputs.
 
 ## Adding a building block
@@ -37,7 +49,7 @@ ng serve ui-demo      # demo app at http://localhost:4200/
 3. Put the styles into the matching partial `projects/zenit-ui/src/styles/_<paket>.css`, taken verbatim from the section in `spec/components/bundle.css`. New partials are imported from `zenit-ui.css`.
 4. Add a section to the demo page `projects/ui-demo/src/app/pages/<paket>/` showing the block in every state from `spec/guidelines/15-zustaende.md`: idle, hover, focus, active, disabled, loading, error, empty, success.
 5. Write the unit test next to the source as `<name>.spec.ts` if the block holds state, a value or a calculation. The e2e suite picks up the new demo section automatically; run `npm run e2e:update` once to record its screenshots.
-6. Add the row to the API table in `projects/zenit-ui/README.md` and an entry to `CHANGELOG.md`.
+6. Add the row to the API table in `projects/zenit-ui/README.md`, a guide under `docs/components/` and an entry to `CHANGELOG.md`. `node tools/check-docs-examples.mjs` checks every example in those guides against the real selectors and inputs.
 
 ## Review checklist
 
@@ -55,7 +67,7 @@ Taken from the acceptance points in `spec/guidelines/00-auftrag.md` and `docs/pa
 - Page title and navigation link carry the same name. No all-caps label, no pill badge above a heading.
 - Selector, inputs and slots match the API table.
 - No change to business logic, services or routes: check `git diff --stat`.
-- `npm run check` green, `npm run e2e` green, `npm run docs:api` without errors.
+- `npm run check` green, `npm run e2e` and `npm run e2e:beispiel` green, `npm run docs:api` without warnings, `node tools/check-docs-examples.mjs` without mismatches.
 
 ## Release
 

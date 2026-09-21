@@ -14,10 +14,16 @@ export interface BeispielServer {
   /** Stable key for @for and for the detail route of a real application. */
   id: string;
   name: string;
-  /** Address with port. Shown in mono wherever it appears. */
+  /**
+   * Address with port. It stands in the meta line of the row and in the
+   * clipboard, always in mono: CLAUDE.md asks for the mono face on IP addresses
+   * and ports, so it is its own element and never part of a sentence.
+   */
   adresse: string;
-  /** Second line of the first column: game, version and address. */
-  meta: string;
+  /** Game and version, the part of the meta line before the address. */
+  spiel: string;
+  /** What follows the address in the meta line, if anything. */
+  hinweis?: string;
   /** Color of the status badge. */
   status: ZBadgeStatus;
   /** The status as a word. The color alone carries no meaning (Badge README). */
@@ -85,7 +91,7 @@ export const BEISPIEL_SERVER: readonly BeispielServer[] = [
     id: 'beispiel-server-1',
     name: 'Beispiel-Server 1',
     adresse: '203.0.113.10:25565',
-    meta: 'Minecraft · PaperMC 26.3 · 203.0.113.10',
+    spiel: 'Minecraft · PaperMC 26.3',
     status: 'success',
     statusText: 'Online',
     tarif: 'Flex',
@@ -95,7 +101,7 @@ export const BEISPIEL_SERVER: readonly BeispielServer[] = [
     id: 'beispiel-server-2',
     name: 'Beispiel-Server 2',
     adresse: '203.0.113.11:25565',
-    meta: 'Minecraft · Vanilla · 203.0.113.11',
+    spiel: 'Minecraft · Vanilla',
     status: 'warning',
     statusText: 'Startet',
     tarif: 'Flex',
@@ -105,7 +111,8 @@ export const BEISPIEL_SERVER: readonly BeispielServer[] = [
     id: 'beispiel-server-3',
     name: 'Beispiel-Server 3',
     adresse: '203.0.113.12:27015',
-    meta: 'Counter-Strike 2 · 203.0.113.12 · zuletzt am 18.09.2026, 15:55',
+    spiel: 'Counter-Strike 2',
+    hinweis: 'zuletzt am 18.09.2026, 15:55',
     status: 'neutral',
     statusText: 'Gestoppt',
     tarif: 'Flex',
@@ -115,7 +122,8 @@ export const BEISPIEL_SERVER: readonly BeispielServer[] = [
     id: 'beispiel-server-4',
     name: 'Beispiel-Server 4',
     adresse: '203.0.113.13:25565',
-    meta: 'Minecraft · Fabric · in etwa 60 Sekunden bereit',
+    spiel: 'Minecraft · Fabric',
+    hinweis: 'in etwa 60 Sekunden bereit',
     status: 'info',
     statusText: 'Wird installiert',
     tarif: 'Flex',
@@ -125,7 +133,8 @@ export const BEISPIEL_SERVER: readonly BeispielServer[] = [
     id: 'test',
     name: 'Test',
     adresse: '203.0.113.14:27015',
-    meta: 'Counter-Strike 2 · 203.0.113.14 · noch nie gestartet',
+    spiel: 'Counter-Strike 2',
+    hinweis: 'noch nie gestartet',
     status: 'danger',
     statusText: 'Fehlgeschlagen',
     tarif: 'Flex',
@@ -135,7 +144,8 @@ export const BEISPIEL_SERVER: readonly BeispielServer[] = [
     id: 'beispiel-server-5',
     name: 'Beispiel-Server 5',
     adresse: '203.0.113.15:25565',
-    meta: 'Minecraft · PaperMC 26.3 · 203.0.113.15 · Guthaben leer',
+    spiel: 'Minecraft · PaperMC 26.3',
+    hinweis: 'Guthaben leer',
     status: 'danger',
     statusText: 'Gesperrt',
     tarif: 'Flex',
@@ -145,7 +155,7 @@ export const BEISPIEL_SERVER: readonly BeispielServer[] = [
     id: 'beispiel-server-6',
     name: 'Beispiel-Server 6',
     adresse: '203.0.113.16:2456',
-    meta: 'Valheim · 203.0.113.16',
+    spiel: 'Valheim',
     status: 'success',
     statusText: 'Online',
     tarif: 'Flex',
@@ -155,7 +165,7 @@ export const BEISPIEL_SERVER: readonly BeispielServer[] = [
     id: 'beispiel-server-7',
     name: 'Beispiel-Server 7',
     adresse: '203.0.113.17:7777',
-    meta: 'Terraria · 203.0.113.17',
+    spiel: 'Terraria',
     status: 'neutral',
     statusText: 'Gestoppt',
     tarif: 'Flex',

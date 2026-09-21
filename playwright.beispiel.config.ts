@@ -1,10 +1,11 @@
 import { defineConfig, devices } from '@playwright/test';
 
 /**
- * Eigener Lauf fuer die Beispiel-App auf Port 4350, damit die Demo-Suite auf
- * 4310 und die Interaktionstests auf 4320 ungestoert daneben laufen. Der
- * Webserver baut zuerst die Library, weil die App gegen dist/zenit-ui
- * kompiliert, und schreibt danach die Quelltexte neu, die die Seiten anzeigen.
+ * Run of its own for the example application on port 4350, so that the demo
+ * suite on 4310 and the interaction tests on 4320 can run next to it
+ * undisturbed. The web server builds the library first, because the
+ * application compiles against dist/zenit-ui, and then rewrites the sources
+ * the pages display.
  */
 const PORT = Number(process.env['E2E_PORT'] ?? 4350);
 const BASE_URL = `http://localhost:${PORT}`;
@@ -12,7 +13,9 @@ const BASE_URL = `http://localhost:${PORT}`;
 export default defineConfig({
   testDir: 'e2e',
   testMatch: 'beispiel.spec.ts',
-  // Bilder liegen als e2e/screenshots/beispiel-<zustand>-<breite>.png.
+  // Images live as e2e/screenshots/beispiel-<state>-<width>.png. There is no
+  // platform in the path, so the baselines belong to one platform only; the CI
+  // workflow runs this job on the platform they were recorded on.
   snapshotPathTemplate: 'e2e/screenshots/{arg}{ext}',
   fullyParallel: false,
   workers: 1,
@@ -24,9 +27,9 @@ export default defineConfig({
     baseURL: BASE_URL,
     reducedMotion: 'reduce',
     deviceScaleFactor: 1,
-    // Die App startet mit defaultScheme: 'system'. Ohne diese Vorgabe meldet
-    // Playwright "light", und die Standard-Bilder waeren hell; das dunkle
-    // Schema ist die Voreinstellung des Systems (tokens.css).
+    // The application starts with defaultScheme: 'system'. Without this
+    // setting Playwright reports "light" and the default images would be
+    // light; the dark scheme is the default of the system (tokens.css).
     colorScheme: 'dark',
   },
   projects: [{ name: 'chromium' }],
