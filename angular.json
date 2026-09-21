@@ -155,6 +155,7 @@
             "styles": [
               "dist/zenit-ui/styles/tokens.css",
               "@angular/cdk/overlay-prebuilt.css",
+              "dist/zenit-ui/styles/themes.css",
               "dist/zenit-ui/styles/zenit-ui.css",
               "projects/beispiel-app/src/styles.css"
             ]
