@@ -104,10 +104,22 @@
 
 html.z-root, body.z-root { margin: 0; min-height: 100%; }
 .z-root a.z-btn, .z-root a.z-btn:hover { text-decoration: none; }
+/* Gap in the reference: .z-root a (0,1,1) beats .z-btn (0,1,0), so every button
+   written as a link fell back to accent-text. bundle.css closes the gap for
+   --primary and --secondary only; the base button and the ghost and danger
+   variants stayed red. The rule below restores text for the bare a.z-btn and
+   with it for the sizes, which carry no colour of their own (--sm, --lg,
+   --icon, --block).
+   It has to stand first: it and the four variant rules all weigh (0,2,1), so
+   only source order decides. What still wins after it, in this order:
+   --primary (on-accent), --secondary (text), --ghost (text-muted, text on
+   hover), --danger (danger) and, at (0,3,1), the Minecraft primary link
+   .z-root .z-theme-mc a.z-btn--primary (on-mc). The underline is handled one
+   line above, for the resting and the hover state together, so a.z-btn:hover
+   stays free of it in every variant. */
+.z-root a.z-btn { color: var(--text); }
 .z-root a.z-btn--primary { color: var(--on-accent); }
 .z-root a.z-btn--secondary { color: var(--text); }
-/* Gap in the reference: .z-root a (0,1,1) beats .z-btn--ghost/--danger (0,1,0);
-   for primary and secondary the counter rule is already in bundle.css. */
 .z-root a.z-btn--ghost { color: var(--text-muted); }
 .z-root a.z-btn--ghost:hover { color: var(--text); }
 .z-root a.z-btn--danger { color: var(--danger); }
@@ -145,3 +157,17 @@ textarea.z-input { height: auto; min-height: 96px; padding: var(--space-2) var(-
   .z-input--sm, .z-select--sm select { height: var(--control-md); }
   .z-panel__header a:not(.z-btn) { display: inline-flex; align-items: center; min-height: var(--control-md); }
 }
+
+/* Addition to the reference: the control border of the secondary button inside
+   an alert. border-control is dimensioned for surface and reaches 3:1 there,
+   but not on a tinted alert. With the markup the Alert README prescribes (a
+   secondary sm button in the alert) the dark scheme measures 2.88 (info), 2.87
+   (warning) and 2.98 (danger) against an alert on bg, and 2.65 to 2.77 against
+   one inside a panel on surface. text-muted is the next token up and clears
+   3:1 on every tint in every scheme, worst case 6.29 (dark, warning on
+   surface); .z-input:hover already uses it as a control border. The neutral
+   alert is opaque surface-raised, where text-muted is guarded at 7:1 already.
+   The rule belongs to the Alert component and would sit in _rueckmeldung.css;
+   that file is being changed elsewhere at the same time, so it lives here.
+   tools/check-theme-contrast.mjs guards the pairs for every scheme x accent. */
+.z-alert .z-btn--secondary { border-color: var(--text-muted); }

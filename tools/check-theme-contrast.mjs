@@ -206,12 +206,20 @@ const PAARE = [
   ['--focus', '--surface-raised', 3],
   ['--focus', '--surface-hover', 3],
   ['--focus', '--accent', 3],
+  // .z-side__count in the active sidebar entry: surface-hover is the one
+  // ground text-subtle may not be read on, so the count takes text-muted.
+  ['--text-muted', '--surface-hover', 4.5],
 ];
 for (const status of ['success', 'warning', 'danger', 'info']) {
   PAARE.push([`--${status}`, '--bg', 4.5]);
   PAARE.push([`--${status}`, '--surface', 4.5]);
   PAARE.push([`--${status}`, [`--${status}-subtle`, '--surface-raised'], 4.5]);
   PAARE.push([`--${status}`, [`--${status}-subtle`, '--surface'], 4.5]);
+  // Control border inside a tinted alert: .z-alert .z-btn--secondary takes
+  // text-muted, because border-control misses the 3:1 on the tints. An alert
+  // stands either free on bg or inside a panel on surface.
+  PAARE.push(['--text-muted', [`--${status}-subtle`, '--bg'], 3]);
+  PAARE.push(['--text-muted', [`--${status}-subtle`, '--surface'], 3]);
 }
 
 /* -------------------------------------------------------------- Ausfuehren -- */
