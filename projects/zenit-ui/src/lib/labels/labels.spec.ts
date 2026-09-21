@@ -63,6 +63,10 @@ describe('Z_LABELS', () => {
     expect(Z_LABELS_DE.comboboxResults(3)).toBe('3 Treffer');
     expect(Z_LABELS_EN.comboboxResults(1)).toBe('1 result');
     expect(Z_LABELS_EN.comboboxResults(3)).toBe('3 results');
+    expect(Z_LABELS_DE.comboboxUseCustom('Wiki')).toBe('„Wiki“ übernehmen');
+    expect(Z_LABELS_EN.comboboxUseCustom('Wiki')).toBe('Use “Wiki”');
+    expect(Z_LABELS_DE.comboboxMinQuery(2)).toBe('Mindestens 2 Zeichen eingeben');
+    expect(Z_LABELS_EN.comboboxMinQuery(2)).toBe('Type at least 2 characters');
     expect(Z_LABELS_DE.chartDescOpen(1.5, 0.088)).toContain('ohne Deckel');
     expect(Z_LABELS_EN.chartDescOpen(1.5, 0.088)).toContain('no cap');
     expect(Z_LABELS_DE.chartBaseLabel(1.5)).toBe('1,50\u00a0€ Grundbetrag');
@@ -77,6 +81,9 @@ describe('Z_LABELS', () => {
       'wizardEdit',
       'comboboxEmpty',
       'comboboxResults',
+      'comboboxLoading',
+      'comboboxUseCustom',
+      'comboboxMinQuery',
       'summaryRetry',
       'chartTitle',
       'chartDesc',

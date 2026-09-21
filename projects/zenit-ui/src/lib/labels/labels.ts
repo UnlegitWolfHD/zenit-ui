@@ -77,6 +77,27 @@ export interface ZLabels {
    */
   comboboxResults: (count: number) => string;
 
+  /** The row and the announcement of `z-combobox` while `loading` is set. */
+  comboboxLoading: string;
+
+  /**
+   * The row of `z-combobox` that commits the typed text as the value, shown
+   * with `allowCustom` when the text matches no entry.
+   *
+   * @param text What the visitor typed, trimmed.
+   * @returns The rendered row, for example `„Hardware“ übernehmen`.
+   */
+  comboboxUseCustom: (text: string) => string;
+
+  /**
+   * The row of `z-combobox` that stands in for the list while the typed text
+   * is shorter than `minQueryLength`.
+   *
+   * @param count The least number of characters, `minQueryLength`.
+   * @returns The rendered row, for example `Mindestens 2 Zeichen eingeben`.
+   */
+  comboboxMinQuery: (count: number) => string;
+
   /** Caption of the retry button in `z-price-summary`, used when `retryLabel` is empty. */
   summaryRetry: string;
 
@@ -206,6 +227,9 @@ export const Z_LABELS_DE = {
   wizardEdit: 'Ändern',
   comboboxEmpty: 'Kein Treffer',
   comboboxResults: (count) => (count === 1 ? '1 Treffer' : `${count} Treffer`),
+  comboboxLoading: 'Lädt',
+  comboboxUseCustom: (text) => `„${text}“ übernehmen`,
+  comboboxMinQuery: (count) => `Mindestens ${count} Zeichen eingeben`,
   summaryRetry: 'Erneut versuchen',
   chartTitle: 'Monatliche Kosten nach gespielten Stunden',
   chartDesc: (base, rate, cap, capHours) =>
@@ -251,6 +275,9 @@ export const Z_LABELS_EN = {
   wizardEdit: 'Change',
   comboboxEmpty: 'No match',
   comboboxResults: (count) => (count === 1 ? '1 result' : `${count} results`),
+  comboboxLoading: 'Loading',
+  comboboxUseCustom: (text) => `Use “${text}”`,
+  comboboxMinQuery: (count) => `Type at least ${count} characters`,
   summaryRetry: 'Try again',
   chartTitle: 'Monthly cost by hours played',
   chartDesc: (base, rate, cap, capHours) =>

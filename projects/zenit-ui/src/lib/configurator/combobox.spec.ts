@@ -72,6 +72,80 @@ class SignalFormsHost {
   readonly formular = form(this.modell);
 }
 
+/** Example directory of the server search; the labels are not the values. */
+const NUTZER: readonly ZComboOption[] = [
+  { value: 'u-1', label: 'Beispiel-Nutzer 1', note: 'nutzer1@example.org' },
+  { value: 'u-2', label: 'Beispiel-Nutzer 2', note: 'nutzer2@example.org' },
+  { value: 'u-3', label: 'Beispiel-Nutzer 3', note: 'nutzer3@example.org' },
+];
+
+/** The server search: the caller filters, the component only shows and reports. */
+@Component({
+  imports: [ZCombobox],
+  template: `<z-combobox
+    ariaLabel="Nutzer"
+    [options]="treffer()"
+    [filterLocally]="false"
+    [loading]="laedt()"
+    [minQueryLength]="mindestens()"
+    [selectedLabel]="etikett()"
+    [(value)]="nutzer"
+    (queryChange)="anfragen.push($event)"
+    emptyText="Kein Nutzer gefunden"
+  />`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class SucheHost {
+  readonly treffer = signal<readonly ZComboOption[]>(NUTZER);
+  readonly laedt = signal(false);
+  readonly mindestens = signal(0);
+  readonly etikett = signal('');
+  readonly nutzer = signal('');
+  readonly anfragen: string[] = [];
+}
+
+/** Free text: the tags that exist, plus whatever is typed. */
+@Component({
+  imports: [ZCombobox],
+  template: `<z-combobox ariaLabel="Tag" [options]="tags" [(value)]="tag" allowCustom />`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class EigeneHost {
+  readonly tags: readonly ZComboOption[] = [
+    { value: 't-hw', label: 'hardware' },
+    { value: 't-nw', label: 'netzwerk' },
+  ];
+  readonly tag = signal('');
+}
+
+/** Free text through a reactive form, starting on a value no entry carries. */
+@Component({
+  imports: [ZCombobox, ReactiveFormsModule],
+  template: `<z-combobox ariaLabel="Tag" [options]="tags" allowCustom [formControl]="steuerung" />`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class EigeneFormControlHost {
+  readonly tags: readonly ZComboOption[] = [{ value: 't-hw', label: 'hardware' }];
+  readonly steuerung = new FormControl('eigenes');
+}
+
+/** Free text through Signal Forms. */
+@Component({
+  imports: [ZCombobox, FormField],
+  template: `<z-combobox
+    ariaLabel="Tag"
+    [options]="tags"
+    allowCustom
+    [formField]="formular.tag"
+  />`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class EigeneSignalFormsHost {
+  readonly tags: readonly ZComboOption[] = [{ value: 't-hw', label: 'hardware' }];
+  readonly modell = signal({ tag: '' });
+  readonly formular = form(this.modell);
+}
+
 function feld(fixture: ComponentFixture<unknown>): HTMLInputElement {
   return fixture.nativeElement.querySelector('input[role="combobox"]');
 }
@@ -95,6 +169,22 @@ function tippe(fixture: ComponentFixture<unknown>, text: string): void {
 /** Names of the entries in the open panel, in display order. */
 function namen(): (string | undefined)[] {
   return zeilen().map((zeile) => zeile.querySelector('.z-mono')?.textContent?.trim());
+}
+
+/** The whole text of every entry, which is what the own row has instead of a value. */
+function texte(): string[] {
+  return zeilen().map((zeile) => zeile.textContent?.trim() ?? '');
+}
+
+/** The locked rows: empty, loading and the minimum-length hint. */
+function meldungen(): HTMLElement[] {
+  return Array.from(document.querySelectorAll('.z-listbox__empty'));
+}
+
+/** Dispatches a blur the way leaving the field does. */
+function verlasse(fixture: ComponentFixture<unknown>): void {
+  feld(fixture).dispatchEvent(new Event('blur'));
+  fixture.detectChanges();
 }
 
 /** ListKeyManager of the CDK reads event.keyCode, which a synthetic event has to carry. */
@@ -497,5 +587,277 @@ describe('ZCombobox', () => {
 
     expect(panel()).toBeNull();
     expect(document.querySelector('.z-combo-pane')).toBeNull();
+  });
+
+  describe('search on the server', () => {
+    it('reports the typed text and nothing the component writes itself', () => {
+      const fixture = TestBed.createComponent(SucheHost);
+      fixture.detectChanges();
+      const host = fixture.componentInstance;
+
+      // A value set from outside rewrites the field, and that is not a query.
+      host.nutzer.set('u-2');
+      fixture.detectChanges();
+
+      expect(feld(fixture).value).toBe('Beispiel-Nutzer 2');
+      expect(host.anfragen).toEqual([]);
+
+      tippe(fixture, 'Bei');
+      tippe(fixture, 'Beispiel');
+
+      expect(host.anfragen).toEqual(['Bei', 'Beispiel']);
+
+      // Taking an entry puts its label in the field; that write is not a query.
+      taste(fixture, 'ArrowDown');
+      taste(fixture, 'Enter');
+
+      expect(host.nutzer()).toBe('u-3');
+      expect(feld(fixture).value).toBe('Beispiel-Nutzer 3');
+      expect(host.anfragen).toEqual(['Bei', 'Beispiel']);
+
+      tippe(fixture, '');
+
+      expect(host.anfragen).toEqual(['Bei', 'Beispiel', '']);
+    });
+
+    it('shows exactly the options it is given, unfiltered', () => {
+      const fixture = TestBed.createComponent(SucheHost);
+      fixture.detectChanges();
+      tippe(fixture, 'gibt es nicht');
+
+      // Local filtering would have left nothing; the caller decides here.
+      expect(namen()).toEqual(['Beispiel-Nutzer 1', 'Beispiel-Nutzer 2', 'Beispiel-Nutzer 3']);
+
+      fixture.componentInstance.treffer.set([NUTZER[2]]);
+      fixture.detectChanges();
+
+      expect(namen()).toEqual(['Beispiel-Nutzer 3']);
+    });
+
+    it('keeps the active entry when the options are replaced under the open panel', () => {
+      const fixture = TestBed.createComponent(SucheHost);
+      fixture.detectChanges();
+      oeffne(fixture);
+      taste(fixture, 'ArrowDown');
+      taste(fixture, 'ArrowDown');
+      const id = feld(fixture).getAttribute('aria-controls');
+
+      expect(feld(fixture).getAttribute('aria-activedescendant')).toBe(`${id}-2`);
+
+      // The third entry is now the second one: the keyboard follows the entry,
+      // not the position it used to sit at.
+      fixture.componentInstance.treffer.set([NUTZER[0], NUTZER[2]]);
+      fixture.detectChanges();
+
+      expect(feld(fixture).getAttribute('aria-activedescendant')).toBe(`${id}-1`);
+      expect(zeilen()[1].classList.contains('z-listbox__option--active')).toBe(true);
+    });
+
+    it('falls back to the first entry and never names a row that is gone', () => {
+      const fixture = TestBed.createComponent(SucheHost);
+      fixture.detectChanges();
+      oeffne(fixture);
+      taste(fixture, 'End');
+      const id = feld(fixture).getAttribute('aria-controls');
+
+      expect(feld(fixture).getAttribute('aria-activedescendant')).toBe(`${id}-2`);
+
+      fixture.componentInstance.treffer.set([{ value: 'u-9', label: 'Beispiel-Nutzer 9' }]);
+      fixture.detectChanges();
+
+      const aktiv = feld(fixture).getAttribute('aria-activedescendant');
+      expect(aktiv).toBe(`${id}-0`);
+      expect(document.getElementById(aktiv as string)).not.toBeNull();
+
+      // Nothing left at all: the reference goes rather than pointing nowhere.
+      fixture.componentInstance.treffer.set([]);
+      fixture.detectChanges();
+
+      expect(feld(fixture).hasAttribute('aria-activedescendant')).toBe(false);
+    });
+
+    it('draws one waiting row, keeps the options above it and marks the list busy', () => {
+      const fixture = TestBed.createComponent(SucheHost);
+      fixture.detectChanges();
+      oeffne(fixture);
+
+      expect(panel()?.hasAttribute('aria-busy')).toBe(false);
+
+      fixture.componentInstance.laedt.set(true);
+      fixture.detectChanges();
+
+      expect(panel()?.getAttribute('aria-busy')).toBe('true');
+      // The options that are already there stay, so the list does not blank
+      // under the hand that is typing.
+      expect(zeilen()).toHaveLength(3);
+      const laden = document.querySelector('.z-listbox__loading') as HTMLElement;
+      expect(laden.textContent?.trim()).toBe('Lädt');
+      expect(laden.querySelector('.z-spinner')).not.toBeNull();
+      // It is a locked row and no entry: the keyboard cannot reach it.
+      expect(laden.getAttribute('aria-disabled')).toBe('true');
+      expect(laden.classList.contains('z-listbox__option')).toBe(false);
+      expect(fixture.nativeElement.querySelector('[role="status"]').textContent?.trim()).toBe(
+        'Lädt',
+      );
+    });
+
+    it('shows no empty row while it is loading', () => {
+      const fixture = TestBed.createComponent(SucheHost);
+      fixture.componentInstance.treffer.set([]);
+      fixture.componentInstance.laedt.set(true);
+      fixture.detectChanges();
+      oeffne(fixture);
+
+      expect(meldungen().map((m) => m.textContent?.trim())).toEqual(['Lädt']);
+
+      fixture.componentInstance.laedt.set(false);
+      fixture.detectChanges();
+
+      expect(meldungen().map((m) => m.textContent?.trim())).toEqual(['Kein Nutzer gefunden']);
+    });
+
+    it('holds the list back below minQueryLength and reports the query anyway', () => {
+      const fixture = TestBed.createComponent(SucheHost);
+      fixture.componentInstance.mindestens.set(2);
+      fixture.detectChanges();
+      oeffne(fixture);
+
+      expect(zeilen()).toHaveLength(0);
+      expect(meldungen().map((m) => m.textContent?.trim())).toEqual([
+        'Mindestens 2 Zeichen eingeben',
+      ]);
+      expect(fixture.nativeElement.querySelector('[role="status"]').textContent?.trim()).toBe(
+        'Mindestens 2 Zeichen eingeben',
+      );
+
+      tippe(fixture, 'B');
+
+      expect(zeilen()).toHaveLength(0);
+      expect(fixture.componentInstance.anfragen).toEqual(['B']);
+
+      tippe(fixture, 'Be');
+
+      expect(zeilen()).toHaveLength(3);
+      expect(meldungen()).toHaveLength(0);
+    });
+
+    it('names the chosen value through selectedLabel while no entry carries it', () => {
+      const fixture = TestBed.createComponent(SucheHost);
+      const host = fixture.componentInstance;
+      host.nutzer.set('u-9');
+      host.etikett.set('Beispiel-Nutzer 9');
+      host.treffer.set([]);
+      fixture.detectChanges();
+
+      expect(feld(fixture).value).toBe('Beispiel-Nutzer 9');
+
+      // An entry that is in the list again is the fresher name of the two.
+      host.treffer.set([{ value: 'u-9', label: 'Beispiel-Nutzer neun' }]);
+      fixture.detectChanges();
+
+      expect(feld(fixture).value).toBe('Beispiel-Nutzer neun');
+    });
+  });
+
+  describe('free text', () => {
+    it('offers the typed text as the first row and takes it on Enter', () => {
+      const fixture = TestBed.createComponent(EigeneHost);
+      fixture.detectChanges();
+      tippe(fixture, 'neuer-tag');
+
+      expect(texte()).toEqual(['„neuer-tag“ übernehmen']);
+      expect(meldungen()).toHaveLength(0);
+
+      taste(fixture, 'Enter');
+
+      expect(fixture.componentInstance.tag()).toBe('neuer-tag');
+      expect(feld(fixture).value).toBe('neuer-tag');
+      expect(panel()).toBeNull();
+    });
+
+    it('puts the own row above the matches and lets the arrows walk past it', () => {
+      const fixture = TestBed.createComponent(EigeneHost);
+      fixture.detectChanges();
+      tippe(fixture, 'e');
+      const id = feld(fixture).getAttribute('aria-controls');
+
+      expect(texte()).toEqual(['„e“ übernehmen', 'hardware', 'netzwerk']);
+      expect(feld(fixture).getAttribute('aria-activedescendant')).toBe(`${id}-0`);
+
+      taste(fixture, 'ArrowDown');
+      taste(fixture, 'Enter');
+
+      expect(fixture.componentInstance.tag()).toBe('t-hw');
+      expect(feld(fixture).value).toBe('hardware');
+    });
+
+    it('drops the own row where the text is already the label of an entry', () => {
+      const fixture = TestBed.createComponent(EigeneHost);
+      fixture.detectChanges();
+      tippe(fixture, 'hardware');
+
+      expect(texte()).toEqual(['hardware']);
+
+      // Leaving the field takes the entry's value, not its label: one row, one
+      // value, however it was reached.
+      verlasse(fixture);
+
+      expect(fixture.componentInstance.tag()).toBe('t-hw');
+    });
+
+    it('takes the typed text when the field is left', () => {
+      const fixture = TestBed.createComponent(EigeneHost);
+      fixture.detectChanges();
+      tippe(fixture, '  wiki  ');
+      verlasse(fixture);
+
+      expect(fixture.componentInstance.tag()).toBe('wiki');
+      expect(feld(fixture).value).toBe('wiki');
+      expect(document.activeElement).not.toBe(feld(fixture));
+    });
+
+    it('gives the text up on Escape, as it always did', () => {
+      const fixture = TestBed.createComponent(EigeneHost);
+      fixture.detectChanges();
+      tippe(fixture, 'verworfen');
+      taste(fixture, 'Escape');
+
+      expect(fixture.componentInstance.tag()).toBe('');
+      expect(feld(fixture).value).toBe('');
+    });
+
+    it('shows a value that is in no entry, coming from a reactive form', () => {
+      const fixture = TestBed.createComponent(EigeneFormControlHost);
+      fixture.detectChanges();
+
+      expect(feld(fixture).value).toBe('eigenes');
+
+      tippe(fixture, 'noch eins');
+      taste(fixture, 'Enter');
+
+      expect(fixture.componentInstance.steuerung.value).toBe('noch eins');
+      expect(feld(fixture).value).toBe('noch eins');
+    });
+
+    it('writes a value that is in no entry through Signal Forms', () => {
+      const fixture = TestBed.createComponent(EigeneSignalFormsHost);
+      fixture.detectChanges();
+      tippe(fixture, 'eigener tag');
+      verlasse(fixture);
+
+      expect(fixture.componentInstance.modell().tag).toBe('eigener tag');
+    });
+
+    it('stays as it was without allowCustom', () => {
+      const fixture = TestBed.createComponent(ModellHost);
+      fixture.detectChanges();
+      tippe(fixture, 'Unsinn');
+
+      expect(texte()).toEqual([]);
+
+      taste(fixture, 'Enter');
+
+      expect(fixture.componentInstance.version()).toBe('1.21.4');
+    });
   });
 });
