@@ -48,6 +48,14 @@
 /* Tooltip */
 .z-tooltip { max-width: 240px; padding: var(--space-1) var(--space-2); border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-raised); box-shadow: var(--shadow-overlay); color: var(--text); font-size: 12px; line-height: 16px; }
 
+/* Addition to the reference: the tooltip has to stay reachable with the
+   pointer (WCAG 2.1 SC 1.4.13 "Hoverable"). The panel hangs in the overlay on
+   the body, space-2 away from the trigger, and the pointer would cross nothing
+   on the way. The transparent padding of the pane covers exactly that gap, so
+   the directive positions the pane flush against the trigger and this padding
+   is the visible distance. */
+.cdk-overlay-pane.z-tooltip-pane { padding-block: var(--space-2); }
+
 /* Addition to the reference: click targets at least 40px on mobile (CLAUDE.md,
    Abstand und Layout). The height of the close button comes from the rule for
    z-btn--sm in _grundlage.css; all that remains here is that the buttons in

@@ -1,4 +1,5 @@
 import {
+  afterNextRender,
   booleanAttribute,
   ChangeDetectionStrategy,
   Component,
@@ -10,9 +11,13 @@ import {
   model,
   numberAttribute,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
+
+/** Set by the Angular build; a production build drops the branch around it. */
+declare const ngDevMode: boolean | undefined;
 
 let laufendeNummer = 0;
 
@@ -33,11 +38,18 @@ let laufendeNummer = 0;
  * `aria-valuetext` carries the value with its unit, so a screen reader reads
  * "8 GB" and not just "8". {@link hint} is referenced through
  * `aria-describedby`, while the tick row is `aria-hidden="true"`, since it only
- * repeats the scale the input already reports.
+ * repeats the scale the input already reports. Without {@link label} and
+ * without {@link ariaLabel} the slider has no name at all, which a development
+ * build reports once per instance as a `console.warn`.
  *
  * Scale and value are written straight onto the native element in an `effect`,
  * `min`, `max` and `step` included, because the browser would otherwise clamp
- * the value to the default scale 0 to 100.
+ * the value to the default scale 0 to 100. The same effect reads the value back
+ * from the element afterwards: the element clamps to the scale and snaps to the
+ * step, and that corrected value becomes the model and is reported to the form,
+ * so thumb, display and value never drift apart. A {@link max} below
+ * {@link min} is written onto the element as `min`, the way the browsers read
+ * it anyway, so the scale collapses onto `min` and the value is `min`.
  *
  * Forms: implements `ControlValueAccessor`, so `ngModel` and `formControl`
  * work. `setDisabledState` from forms and the {@link disabled} input are
@@ -159,8 +171,9 @@ export class ZSlider implements ControlValueAccessor {
 
   /**
    * Current value, two-way bindable. Also the value seen by `ngModel` and
-   * `formControl`. The browser keeps it on the scale between {@link min} and
-   * {@link max}.
+   * `formControl`. A value outside {@link min} and {@link max} or between two
+   * steps is corrected to the value the element really holds, and that
+   * correction is written back here and reported to the form.
    *
    * @default 0
    */
@@ -202,10 +215,36 @@ export class ZSlider implements ControlValueAccessor {
     effect(() => {
       const schiene = this.feld().nativeElement;
       schiene.min = String(this.min());
-      schiene.max = String(this.max());
+      // A max below min is an authoring mistake. The browsers resolve it as
+      // "the maximum is at least the minimum", so the scale collapses onto min;
+      // it is written that way, because the engines disagree on which of the
+      // two clamps wins otherwise and the value would then keep flipping
+      // between min and max.
+      schiene.max = String(Math.max(this.min(), this.max()));
       schiene.step = String(this.step());
       schiene.value = String(this.value());
+      // The element keeps itself on the scale: it clamps to min and max and
+      // rounds onto the step. Without reading that back, thumb, aria-valuetext
+      // and model would name three different numbers. The correction runs at
+      // most once, because the next pass reads back exactly the value it has
+      // just written.
+      const echt = schiene.valueAsNumber;
+      if (!Number.isNaN(echt) && echt !== untracked(this.value)) {
+        this.value.set(echt);
+        this.melde?.(echt);
+      }
     });
+
+    if (typeof ngDevMode === 'undefined' || ngDevMode) {
+      // After the first render, so a name arriving through a binding is there.
+      afterNextRender(() => {
+        if (!this.label() && !this.ariaLabel()) {
+          console.warn(
+            'ZSlider: Der Regler hat keinen zugänglichen Namen. Setze label="…" für ein sichtbares Label oder ariaLabel="…" ohne sichtbares Label.',
+          );
+        }
+      });
+    }
   }
 
   protected aufEingabe(ereignis: Event): void {

@@ -1,9 +1,10 @@
 import {
-  afterEveryRender,
+  afterNextRender,
   booleanAttribute,
   ChangeDetectionStrategy,
   Component,
   contentChildren,
+  DestroyRef,
   ElementRef,
   inject,
   input,
@@ -157,7 +158,9 @@ export class ZSidebarGroup {
  * Accessibility: {@link ariaLabel} names both the `nav` and the select, so the
  * navigation is announced with a name at either width. The entry labels are
  * projected text and can only be read after rendering, so they are collected
- * after every render and follow a label that changes at runtime.
+ * once after the first render and from then on whenever a `MutationObserver`
+ * reports a change below the sidebar, which is how a label that changes at
+ * runtime still reaches the select.
  *
  * @example
  * ```html
@@ -199,19 +202,29 @@ export class ZSidebar {
   protected readonly beschriftungen = signal<string[]>([]);
 
   constructor() {
+    const wirt = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+    const zerstoerung = inject(DestroyRef);
     // The labels are projected text in the DOM and can only be read after
     // rendering, hence the detour through a signal. An interpolated label
-    // changes without the item query changing, so the text is read after every
-    // render and only written back when it really differs; without that check
-    // every write would schedule the next render.
-    afterEveryRender({
-      read: () => {
+    // changes without the item query changing, and the only thing that can
+    // change it is text or child nodes below the sidebar: a MutationObserver
+    // reports exactly that and costs nothing in between, while a callback after
+    // every render of the application would walk every item every time. The
+    // result is only written back when it really differs, otherwise every write
+    // would schedule the next render. afterNextRender gives the first read once
+    // the items stand and keeps the observer out of the server.
+    afterNextRender(() => {
+      const lies = (): void => {
         const neu = this.eintraege().map((eintrag) => eintrag.beschriftung());
         const alt = this.beschriftungen();
         if (neu.length !== alt.length || neu.some((text, i) => text !== alt[i])) {
           this.beschriftungen.set(neu);
         }
-      },
+      };
+      lies();
+      const beobachter = new MutationObserver(lies);
+      beobachter.observe(wirt, { characterData: true, childList: true, subtree: true });
+      zerstoerung.onDestroy(() => beobachter.disconnect());
     });
   }
 

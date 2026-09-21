@@ -13,6 +13,9 @@ import { ZSidebar, ZSidebarGroup, ZSidebarItem } from './sidebar';
     </z-sidebar-group>
     <z-sidebar-group label="Betrieb">
       <button type="button" zSidebarItem [active]="aktiv() === 2" [count]="3">Backups</button>
+      @if (mitSpielern()) {
+        <button type="button" zSidebarItem>Spieler</button>
+      }
     </z-sidebar-group>
   </z-sidebar>`,
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -21,6 +24,7 @@ class SidebarHost {
   readonly bereich = signal('Serverbereiche');
   readonly aktiv = signal(0);
   readonly uebersicht = signal('Übersicht');
+  readonly mitSpielern = signal(false);
 }
 
 function eintraege(fixture: { nativeElement: HTMLElement }): HTMLButtonElement[] {
@@ -112,9 +116,32 @@ describe('ZSidebar', () => {
 
     fixture.componentInstance.uebersicht.set('Zusammenfassung');
     fixture.detectChanges();
+    // The MutationObserver reports the new text in a microtask, and only the
+    // change detection after it carries the label into the option.
+    await fixture.whenStable();
     await fixture.whenStable();
 
     expect(select(fixture).options[0].textContent!.trim()).toBe('Zusammenfassung');
+  });
+
+  it('takes an item that appears at runtime into the select', async () => {
+    const fixture = TestBed.createComponent(SidebarHost);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(select(fixture).options).toHaveLength(3);
+
+    fixture.componentInstance.mitSpielern.set(true);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    await fixture.whenStable();
+
+    expect(Array.from(select(fixture).options).map((o) => o.textContent.trim())).toEqual([
+      'Übersicht',
+      'Konsole',
+      'Backups',
+      'Spieler',
+    ]);
   });
 
   it('lets the selected option follow the active item', async () => {

@@ -76,6 +76,27 @@ class SkalaHost {
   readonly menge = signal(500);
 }
 
+@Component({
+  imports: [ZSlider],
+  template: `<z-slider
+    [(value)]="menge"
+    [label]="beschriftung()"
+    [ariaLabel]="marke()"
+    [min]="untere()"
+    [max]="obere()"
+    [step]="schritt()"
+  />`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class GrenzenHost {
+  readonly menge = signal(8);
+  readonly untere = signal(2);
+  readonly obere = signal(16);
+  readonly schritt = signal(2);
+  readonly beschriftung = signal('Arbeitsspeicher');
+  readonly marke = signal('');
+}
+
 describe('ZSlider', () => {
   // The component sets min, max and step straight onto the element together
   // with the value. If they came as bindings, the browser would clamp the value
@@ -303,6 +324,109 @@ describe('ZSlider', () => {
     fixture.detectChanges();
 
     expect(schiene.disabled).toBe(false);
+  });
+
+  // The element keeps itself on the scale. Whatever it corrects has to reach
+  // the model as well, otherwise thumb, display and value drift apart.
+  it('takes the value above max back to max, in the model too', async () => {
+    const fixture = TestBed.createComponent(GrenzenHost);
+    fixture.componentInstance.menge.set(99);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const schiene: HTMLInputElement = fixture.nativeElement.querySelector('input');
+
+    expect(schiene.value).toBe('16');
+    expect(fixture.componentInstance.menge()).toBe(16);
+    expect(schiene.getAttribute('aria-valuetext')).toBe('16');
+  });
+
+  it('takes the value below min up to min, in the model too', async () => {
+    const fixture = TestBed.createComponent(GrenzenHost);
+    fixture.componentInstance.menge.set(-5);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const schiene: HTMLInputElement = fixture.nativeElement.querySelector('input');
+
+    expect(schiene.value).toBe('2');
+    expect(fixture.componentInstance.menge()).toBe(2);
+  });
+
+  // The browsers round a range onto its step, jsdom does not. What holds in
+  // both is the invariant the readback buys: whatever the element makes of the
+  // value is what model, display and aria-valuetext show.
+  it('keeps model, track and display on one value between two steps', async () => {
+    const fixture = TestBed.createComponent(GrenzenHost);
+    fixture.componentInstance.menge.set(7);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const schiene: HTMLInputElement = fixture.nativeElement.querySelector('input');
+
+    expect(fixture.componentInstance.menge()).toBe(schiene.valueAsNumber);
+    expect(schiene.getAttribute('aria-valuetext')).toBe(schiene.value);
+    expect(fixture.nativeElement.querySelector('.z-range__value').textContent).toBe(schiene.value);
+  });
+
+  // A max below min is written onto the element as min, so the scale collapses
+  // onto min and the value is min.
+  it('delivers min when min is greater than max', async () => {
+    const fixture = TestBed.createComponent(GrenzenHost);
+    fixture.componentInstance.untere.set(10);
+    fixture.componentInstance.obere.set(4);
+    fixture.componentInstance.schritt.set(1);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const schiene: HTMLInputElement = fixture.nativeElement.querySelector('input');
+
+    expect(schiene.value).toBe('10');
+    expect(fixture.componentInstance.menge()).toBe(10);
+  });
+
+  it('reports the corrected value to the form exactly once', async () => {
+    const fixture = TestBed.createComponent(FormControlHost);
+    const steuerung = fixture.componentInstance.steuerung;
+    fixture.detectChanges();
+    const gemeldet: (number | null)[] = [];
+    steuerung.valueChanges.subscribe((wert) => gemeldet.push(wert));
+
+    steuerung.setValue(99);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(fixture.nativeElement.querySelector('input').value).toBe('16');
+    expect(steuerung.value).toBe(16);
+    expect(gemeldet).toEqual([99, 16]);
+  });
+
+  it('warns once when neither label nor ariaLabel names the slider', async () => {
+    const warnung = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const fixture = TestBed.createComponent(GrenzenHost);
+    fixture.componentInstance.beschriftung.set('');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(warnung).toHaveBeenCalledTimes(1);
+    expect(warnung.mock.calls[0][0]).toContain('ZSlider');
+
+    warnung.mockRestore();
+  });
+
+  it('stays quiet as soon as a name is there', async () => {
+    const warnung = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const mitLabel = TestBed.createComponent(GrenzenHost);
+    mitLabel.detectChanges();
+    await mitLabel.whenStable();
+
+    const nurAria = TestBed.createComponent(GrenzenHost);
+    nurAria.componentInstance.beschriftung.set('');
+    nurAria.componentInstance.marke.set('Arbeitsspeicher');
+    nurAria.detectChanges();
+    await nurAria.whenStable();
+
+    expect(warnung).not.toHaveBeenCalled();
+
+    warnung.mockRestore();
   });
 
   it('locks through the disabled input', () => {

@@ -11,7 +11,7 @@ import { Z_MENU } from './menu';
     <ng-template #menue>
       <z-menu>
         <button zMenuItem icon="content_copy" (triggered)="kopiert = kopiert + 1">
-          Adresse kopieren
+          {{ ersterText() }}
         </button>
         <button zMenuItem [disabled]="gesperrt()" (triggered)="geteilt = geteilt + 1">
           Zugriff teilen
@@ -27,6 +27,7 @@ import { Z_MENU } from './menu';
 })
 class MenuHost {
   readonly gesperrt = signal(true);
+  readonly ersterText = signal('Adresse kopieren');
   kopiert = 0;
   geteilt = 0;
   geloescht = 0;
@@ -168,6 +169,21 @@ describe('ZMenu', () => {
     // Without the own typeaheadLabel the CDK would read the textContent, and
     // that starts with the ligature "content_copy" instead of with "Adresse".
     menue()?.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', keyCode: 65, bubbles: true }));
+    await new Promise((fertig) => setTimeout(fertig, 250));
+
+    expect(document.activeElement).toBe(kopieren);
+  });
+
+  // The label is read from the DOM, so a text that changes at runtime has to
+  // reach the typeahead as well.
+  it('follows an entry text that changes at runtime in the typeahead', async () => {
+    oeffne();
+    host.ersterText.set('Endpunkt kopieren');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const kopieren = eintraege()[0];
+
+    menue()?.dispatchEvent(new KeyboardEvent('keydown', { key: 'e', keyCode: 69, bubbles: true }));
     await new Promise((fertig) => setTimeout(fertig, 250));
 
     expect(document.activeElement).toBe(kopieren);

@@ -6,6 +6,9 @@
     "outDir": "../../out-tsc/lib",
     "declaration": true,
     "declarationMap": true,
+    // Members marked @internal are for the library's own components and must
+    // not appear in the published types.
+    "stripInternal": true,
     "types": []
   },
   "include": ["src/**/*.ts"],
