@@ -12,9 +12,12 @@ npm run lint:css       # Stylelint over projects/**/*.css
 npm run format         # Prettier over projects/**/*.{ts,css,html}
 npm run format:check   # the same as a check, part of npm run check
 npm run build:lib      # library into dist/zenit-ui plus the compiled schematics
+npm run check:order    # source scan: no load-time reference to a class declared further down, no import cycles
+npm run check:bundle   # the built bundle loads in plain Node with the JIT compiler, run after build:lib
 ng build ui-demo       # build the demo application
 npm run build:beispiel # library, snippets and the example application
 ng test zenit-ui       # unit tests of the library
+npm run test:beispiel:jit # example app specs against the unlinked package, as an installed consumer runs them
 npm run test:schematics # the ng add schematic against generated fixtures
 npm run check:themes   # contrast gate over every scheme and accent
 npm run check:snippets # the example app still shows its own sources
@@ -26,7 +29,7 @@ ng serve ui-demo       # demo app at http://localhost:4200/
 npm run start:beispiel # example app, library build included
 ```
 
-`npm run check` runs `lint`, `lint:css`, `check:themes`, `check:snippets`, `build:lib`, both application builds, the unit tests of `zenit-ui` and of `beispiel-app`, `test:schematics` and `format:check`. It has to be green before anything is handed over, and so do the two Playwright runs. Node 24 is what CI uses; newer odd-numbered releases print engine warnings but work.
+`npm run check` runs `lint`, `lint:css`, `check:themes`, `check:snippets`, `check:order`, `build:lib`, `check:llms`, `check:bundle`, both application builds, the unit tests of `zenit-ui` and of `beispiel-app`, `test:beispiel:jit`, `test:schematics` and `format:check`. It has to be green before anything is handed over, and so do the two Playwright runs. Node 24 is what CI uses; newer odd-numbered releases print engine warnings but work.
 
 CI runs on `windows-latest`. The reference screenshots in `e2e/screenshots` were recorded on Windows and their path carries no platform, while the comparison runs with zero tolerance, so a Linux runner would fail every screenshot test. Re-record with `npm run e2e:update` on Windows, and look at the new images before committing them.
 
@@ -40,6 +43,7 @@ CI runs on `windows-latest`. The reference screenshots in `e2e/screenshots` were
 - **Overlays come from the CDK.** `@angular/cdk/dialog`, `/menu`, `/overlay`, `/a11y`. Focus trap, Escape and focus return are not rebuilt.
 - **Components have no styles of their own.** No `styles` or `styleUrls`. Every class lives in a partial under `projects/zenit-ui/src/styles/`.
 - **Documentation, JSDoc and comments are English.** That includes the Playwright configs and the specs under `e2e/`: `playwright.beispiel.config.ts` and `e2e/beispiel.spec.ts` are English, the older suites next to them are still German and get translated when they are next touched. UI copy inside code examples stays German, because German is the product's language, for example `Server erstellen`. The design system under `spec/`, `CLAUDE.md` and `docs/pakete.md` stay German and are not translated.
+- **Declare a class before anything in the same file references it in decorator metadata or in a signal query.** `contentChild(ZTable)` in a class above `ZTable`, a later class in `hostDirectives`, `imports` or `providers`, a static field: all of that is evaluated while the file loads. An AOT build never notices, because the linker moves the reference into a function. A consumer's Vitest run loads the package unlinked and compiles it with the JIT compiler, so the reference hits the temporal dead zone and every spec that imports anything from `zenit-ui` fails with `Cannot access 'X' before initialization`. Order the classes; `forwardRef(() => X)` is for a true cycle only. `inject(X)` in a field initialiser is fine, it runs later. Three checks enforce it: `check:order` scans the sources and names file and line, `check:bundle` imports `dist/zenit-ui/fesm2022/zenit-ui.mjs` in plain Node with `@angular/compiler` loaded and touches every `ɵcmp`, `ɵdir`, `ɵfac` and `ɵprov`, and `test:beispiel:jit` runs the example application's specs with `aot: false` against the package kept outside the test bundle.
 - **Copy comes from the caller.** The library holds no German strings except default `aria-label` values, and those are overridable via inputs.
 
 ## Adding a building block

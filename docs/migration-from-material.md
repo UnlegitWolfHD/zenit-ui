@@ -31,13 +31,15 @@ Phases 4 to 6 of `00-auftrag.md` and "Einbau in die App" in `40-bibliothek.md` a
 6. **Stylelint for `src/` from warning to error**, once the last route is migrated.
 7. **Remove Material**: the package, the theme, every `Mat*` import, and `provideAnimations` if it was only there for Material.
 
+The mechanical part of step 5 is a schematic: `ng generate zenit-ui:migrate-material --path src/app/<route> --dry-run` rewrites `mat-icon`, the button attributes, `matTooltip`, standalone `mat-spinner`, static `mat-chip` and the matching `imports`, and writes a report (file, line, rule, reason, suggested fix) for everything it leaves to you, which is every other row of the table below. Rules, options and limits are in [`migrate-material.md`](migrate-material.md).
+
 Phase 4 is done when the application builds and Arial is gone. Phase 6 is done when `grep -r "@angular/material" src` finds nothing and `npm ls @angular/material` is empty.
 
 ## 3. Mapping table
 
 One row per row of the table "Material ablösen" in `spec/guidelines/30-angular.md`. The "before" column is ordinary Angular Material usage written from general knowledge — the real templates were not read. The "after" column uses the selectors and inputs that exist in `projects/zenit-ui/src/lib`.
 
-### 3.1 `mat-toolbar` → AppHeader
+### 3.1 `mat-toolbar` → `z-app-header`
 
 ```html
 <!-- before -->
@@ -58,7 +60,7 @@ One row per row of the table "Material ablösen" in `spec/guidelines/30-angular.
 </z-app-header>
 ```
 
-`z-app-header` brings its own burger button below 900px (`aria-label` from `menuLabel`, `aria-expanded`, `aria-controls`). There is no `color` input: the header is always `bg` with a 1px bottom border.
+`z-app-header` brings its own burger button below 900px (`aria-label` from `menuLabel`, `aria-expanded`, `aria-controls`). It closes that menu itself when a projected link is clicked and on Escape, so the `MatSidenav` that used to hold the mobile navigation, its `close()` on every route change included, falls away; `[(open)]` is there when the state is needed from outside. There is no `color` input: the header is always `bg` with a 1px bottom border.
 
 ### 3.2 `mat-icon` → `z-icon`
 
@@ -153,7 +155,7 @@ Watch the acceptance rule: at most one primary button per screen height. A Mater
 
 This is the biggest behavioural change in the list; see section 4.1.
 
-### 3.6 `mat-checkbox`, `mat-slide-toggle` → Checkbox, Toggle
+### 3.6 `mat-checkbox`, `mat-slide-toggle` → `z-checkbox`, `z-toggle`
 
 ```html
 <!-- before -->
@@ -198,7 +200,7 @@ Both implement `ControlValueAccessor`, so `[(ngModel)]` and `[formControl]` keep
 
 `z-slider` is a native `<input type="range">` with its own label, value readout, unit and tick marks. `ticks` is a list of strings or numbers printed under the track, not a Material-style value bubble.
 
-### 3.8 `mat-tab-group`, `mat-tab-nav-bar` → Tabs
+### 3.8 `mat-tab-group`, `mat-tab-nav-bar` → `z-tab-group`, `nav[zTabs]` with `a[zTab]`
 
 ```html
 <!-- before -->
@@ -290,7 +292,7 @@ The bigger change is where panels are used at all: per `CLAUDE.md`, "Rahmen nur 
 
 `status` is one of `neutral | success | warning | danger | info`, `dot` adds the leading dot. A badge is not interactive and has no remove button; a removable `mat-chip` has no counterpart and needs a different pattern. Per the acceptance list a status is always also a word, so the label stays.
 
-### 3.12 `mat-table`, `mat-sort` → FileTable
+### 3.12 `mat-table`, `mat-sort` → `table[zTable]` with `th[zSortHeader]`
 
 ```html
 <!-- before -->
@@ -496,7 +498,7 @@ See section 4.4.
 
 The directive takes the text as its own value and has no position, delay or class inputs. See section 4.8.
 
-### 3.18 `mat-progress-spinner`, `mat-progress-bar` → Spinner, Meter, Skeleton
+### 3.18 `mat-progress-spinner`, `mat-progress-bar` → `z-spinner`, `z-metric` with `[percent]`, `z-skeleton`
 
 ```html
 <!-- before -->
@@ -593,7 +595,51 @@ html {
 
 Everything Material generated — `--mat-sys-*`, `--mat-app-*`, the reddish-brown default palette noted in `30-angular.md` — is replaced by the tokens. `styles.scss` can become `styles.css`: nothing in the design system needs Sass. Any application rule still reading a `--mat-*` variable has to be rewritten against a token; there is no compatibility shim.
 
-### 3.22 `mat-datepicker` → `input[zInput] type="date"`
+### 3.22 `mat-autocomplete` → `z-combobox`
+
+```html
+<!-- before -->
+<mat-form-field>
+  <mat-label>Nutzer</mat-label>
+  <input matInput [formControl]="suche" [matAutocomplete]="auto" />
+  <mat-autocomplete
+    #auto="matAutocomplete"
+    [displayWith]="zeigeName"
+    (optionSelected)="waehle($event.option.value)"
+  >
+    @for (n of treffer(); track n.id) {
+    <mat-option [value]="n">{{ n.name }}</mat-option>
+    }
+  </mat-autocomplete>
+</mat-form-field>
+```
+
+```html
+<!-- after -->
+<z-field label="Nutzer" for="cb-nutzer">
+  <z-combobox
+    inputId="cb-nutzer"
+    [options]="treffer()"
+    [filterLocally]="false"
+    [loading]="laedt()"
+    [value]="gewaehlt()?.value ?? ''"
+    [selectedLabel]="gewaehlt()?.label ?? ''"
+    (valueChange)="waehle($event)"
+    (queryChange)="anfrage.set($event)"
+  />
+</z-field>
+```
+
+One element instead of three: the input, the trigger and the panel are the component. `mat-option`
+children become the `options` array of `{ value, label, note?, group? }`, `[displayWith]` becomes
+the entry's `label` plus `selectedLabel` for a value the current answer no longer holds,
+`(optionSelected)` becomes `(valueChange)` with a plain string, and the search runs off
+`(queryChange)`, not off the control's `valueChanges`. `requireSelection` is the default here;
+`allowCustom` is how a free tag is allowed. The full mapping table, the `resource()` and RxJS
+recipes and the four behaviour differences are in
+[Combobox](components/combobox.md), section "Coming from `mat-autocomplete`".
+
+### 3.23 `mat-datepicker` → `input[zInput] type="date"`
 
 Not a row of the "Material ablösen" table — `30-angular.md` does not name the datepicker, and section 10 lists it as one of the components that would need a decision of its own. This is that decision: the browser's own picker, because it is a native platform feature that costs no bytes, needs no locale module and is keyboard and screen reader accessible everywhere.
 
@@ -811,7 +857,7 @@ A clean run means: the first two commands find nothing, and every hit from the l
 
 The existing frontend was deliberately not inspected — `00-auftrag.md` forbids reading it, and this document was written from the design system and the built library only. The following therefore rest on the specification's own observations or on general Angular Material knowledge, and all of them need to be checked against the real code when the job starts:
 
-- **Which Material components are actually in use.** `00-auftrag.md` ("Offene Punkte") lists what was seen in the DOM: `mat-toolbar`, `mat-icon`, form fields, select, slide-toggle, paginator. The mapping table in section 3 covers the whole "Material ablösen" table regardless, so it may contain rows for components that do not exist in the application at all — and it may be missing a component that is in use but was never seen (a `mat-autocomplete`, `mat-tree` or `mat-list` would each need a decision of its own, and none has a counterpart in `zenit-ui`; `mat-datepicker` got its decision in section 3.22, the native `type="date"`).
+- **Which Material components are actually in use.** `00-auftrag.md` ("Offene Punkte") lists what was seen in the DOM: `mat-toolbar`, `mat-icon`, form fields, select, slide-toggle, paginator. The mapping table in section 3 covers the whole "Material ablösen" table regardless, so it may contain rows for components that do not exist in the application at all — and it may be missing a component that is in use but was never seen (a `mat-tree` or `mat-list` would each need a decision of its own, and neither has a counterpart in `zenit-ui`; `mat-autocomplete` got its counterpart in section 3.22, `z-combobox` with `filterLocally`, `loading` and `allowCustom`, and `mat-datepicker` its decision in section 3.23, the native `type="date"`).
 - **The real file and folder structure.** `30-angular.md` states plainly that the source is not known and that its filenames are suggestions. The component names in `00-auftrag.md` (`app-public-header`, `app-public-footer`, `app-pricing`, `app-flex-calculator`, `app-minecraft-landing`, `app-hardware-page`, `app-toast-container`, `app-cookie-banner`, `app-tutorial-overlay`) come from the DOM, not from the repository.
 - **The exact Material version and API shape.** The "before" snippets are written for a recent Angular Material. If the application is on an older version, the details differ — `mat-raised-button` instead of `mat-flat-button`, `MatDialogRef.afterClosed()` versus `closed`, the pre-M3 theming API.
 - **Whether `provideAnimations` is only there for Material.** Section 5 makes the removal conditional for exactly this reason.

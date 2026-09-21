@@ -1,7 +1,10 @@
 {
   "$schema": "../../node_modules/ng-packagr/ng-package.schema.json",
   "dest": "../../dist/zenit-ui",
-  "assets": [{ "glob": "**/*", "input": "src/styles", "output": "styles" }],
+  "assets": [
+    { "glob": "**/*", "input": "src/styles", "output": "styles" },
+    { "glob": "llms*.txt", "input": "llms", "output": "." }
+  ],
   "lib": {
     "entryFile": "src/public-api.ts"
   }

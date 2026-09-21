@@ -10,13 +10,72 @@
   line-height: 20px;
   -webkit-font-smoothing: antialiased;
 }
+/* Deviation from the reference: the rule above is written for the page, but the
+   documented setup puts z-root on <html> as well as on <body>. On <html> its
+   14px also move 1rem from 16px to 14px for everything else in the document and
+   override the size the visitor set in the browser. An application that adopts
+   the library page by page keeps its old styles in rem, and all of them shrink
+   by 12.5% the moment z-root is set.
+   The library needs neither value on <html>: it computes in px, styles/_*.css
+   contains no rem at all, and the only relative lengths in it are em on
+   letter-spacing and text-underline-offset, which refer to the element's own
+   font size. body.z-root carries the class itself and therefore keeps 14px/20px
+   from the rule above; every component inherits from there, and the CDK overlay
+   container hangs on <body> too, so overlays are unaffected.
+   The class therefore has to sit on BOTH elements, as the README prescribes.
+   With z-root on <html> alone the page now renders at 16px/normal instead of
+   14px/20px, because nothing sets the page size any more. That is a behaviour
+   change for a setup that was already wrong before; it used to be hidden.
+   100%, not 16px: a visitor who raised the browser font size keeps it. */
+html.z-root { font-size: 100%; line-height: normal; }
 /* Deviation from the reference: bundle.css lists the four elements one by one
    (specificity 0,1,1) and thereby beats .z-btn--primary/--ghost/--danger
    (0,1,0). :where() lowers the rule to 0,1,0, the values stay the same. */
 .z-root :where(button, input, select, textarea) { font: inherit; color: inherit; }
 .z-root :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
-.z-root a { color: var(--accent-text); text-decoration: none; }
-.z-root a:hover { text-decoration: underline; }
+/* Deviation from the reference: bundle.css writes .z-root a (0,1,1), which beats
+   every class an application can put on a link (0,1,0). In the first real
+   integration that made the application's own skip link red on red (1.29:1) and
+   recoloured every link of the pages not migrated yet, the moment z-root went
+   onto <html>. :where() lowers the two rules to (0,1,0) and (0,2,0); the values
+   are unchanged. It is the same fix the rule above got for
+   :where(button, input, select, textarea).
+
+   What that buys, exactly. At (0,1,0) an application class on a link now TIES
+   with this rule, and a tie is decided by source order, not by specificity: the
+   application stylesheet has to be loaded AFTER zenit-ui.css. The style order
+   the README and ng-add prescribe does that (tokens, cdk, zenit-ui, then
+   src/styles.css). Measured: a rule .lg { color: … } placed before zenit-ui.css
+   still loses and the link stays accent-text with an underline on hover; placed
+   after it, it wins. The hover rule weighs (0,2,0), so an application that wants
+   to change the hover needs .lg:hover, not .lg.
+
+   The price. An application rule at (0,1,1), such as .app a, now also reaches
+   plain links INSIDE library components: panel, alert, row, table, empty state,
+   the sub line of the page header, header, tabs, sidebar, stepper, toast, the
+   body of a dialog, tooltip and menu. It does not reach the footer lists
+   (.z-root .z-footer__list a and .z-footer__base a, both (0,2,1)) and no link
+   that carries a library class, because each of those has an a. counter-rule at
+   (0,2,1) or more: a.z-btn with its five variants and the Minecraft primary,
+   a.z-skip-link, a.z-tab, a.z-side__item, a.z-header__link, a.z-row and
+   a.z-row__link.
+
+   That counter-rule is the pattern to keep. No anchor the library renders today
+   carries a class without one, which is why lowering the base rule changes
+   nothing here (measured: identical computed color, text-decoration-line and
+   text-decoration-color for all 299 anchors of the demo and all 26 of the
+   example application, in dark, light and contrast). A new directive that hosts
+   on an anchor needs the same: its class rule has to be written .z-root a.z-xyz,
+   not .z-xyz, or an application rule at (0,1,1) will beat it.
+
+   The underline for links in running text below stays at (0,2,1) and therefore
+   cannot be switched off from an application stylesheet. Its own escape hatch is
+   a:not([class*="z-"]), so any class whose name contains "z-" opts a link out,
+   including by accident ("quiz-link"). That is a side effect of the selector,
+   not a documented API; a separate package is to add a documented .z-legacy
+   subtree class for that job. */
+.z-root :where(a) { color: var(--accent-text); text-decoration: none; }
+.z-root :where(a):hover { text-decoration: underline; }
 /* Deviation from the reference: bundle.css underlines a link on hover only. A
    link inside running text then differs from the words around it by colour
    alone, and accent-text against text stays below 3:1 in 11 of the 12 scheme
@@ -149,7 +208,9 @@ html.z-root, body.z-root { margin: 0; min-height: 100%; }
 .z-icon { line-height: 1; user-select: none; }
 textarea.z-input { height: auto; min-height: 96px; padding: var(--space-2) var(--space-3); resize: vertical; }
 .z-input--mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
-.z-visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+/* .z-skip-link shares the technique: it is out of sight until it takes focus,
+   and the block at the end of this file unfolds it again. */
+.z-visually-hidden, .z-skip-link { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
 
 /* Spinner */
 .z-spinner { display: inline-block; flex: none; width: 16px; height: 16px; border: 2px solid currentColor; border-right-color: transparent; border-radius: var(--radius-full); opacity: 0.8; }
@@ -211,6 +272,38 @@ textarea.z-input { height: auto; min-height: 96px; padding: var(--space-2) var(-
    that file is being changed elsewhere at the same time, so it lives here.
    tools/check-theme-contrast.mjs guards the pairs for every scheme x accent. */
 .z-alert .z-btn--secondary { border-color: var(--text-muted); }
+
+/* Addition to the reference: the skip link, the first tab stop of every page
+   (15-zustaende.md, "Tastatur"). The reference ships no block for it, and an
+   application cannot supply one either: .z-root a (0,1,1) used to beat any
+   application class (0,1,0), which is how the first integration ended up with a
+   red link on the red accent surface at 1.29:1. Both ends are fixed now, the
+   base rule with :where() and this rule at (0,2,1) / (0,3,1), which wins in
+   either direction.
+   Hidden state: the .z-visually-hidden declarations above, so the technique is
+   written once.
+   z-index: the link has to clear everything a page may stack over it, header
+   (100), overlay and scrim (1000) and toast (1100). --z-toast is the highest
+   token tokens.css defines, and a literal above it is not allowed, so it is the
+   top of the documented stacking order. A toast can only tie with it, and the
+   two never meet: the link is visible while it has focus, and focusing it is
+   the first thing that happens on a page.
+   :focus, not :focus, :focus-visible: :focus-visible only ever matches an
+   element that also matches :focus, so the one selector covers the keyboard tab
+   and a focus set from code alike. The global 2px focus ring stays untouched.
+   Colour: text on surface-raised, a pair the contrast gate already measures in
+   all three schemes (14.77:1 light, 16.26:1 dark, 17.85:1 contrast, gated at
+   12:1, tools/check-theme-contrast.mjs). The hover state keeps the
+   colour and drops the underline, so there is no fight with .z-root a:hover. */
+.z-root a.z-skip-link, .z-root a.z-skip-link:hover { color: var(--text); text-decoration: none; }
+.z-root a.z-skip-link:focus {
+  position: fixed; top: var(--space-2); left: var(--space-4); z-index: var(--z-toast);
+  display: inline-flex; align-items: center;
+  width: auto; height: auto; min-height: var(--control-md); margin: 0; padding: 0 var(--space-4);
+  border: 1px solid var(--border-control); border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  clip-path: none;
+}
 
 /* Addition to the reference: the error frame of a native select. bundle.css
    styles .z-input[aria-invalid="true"] only, while 15-zustaende.md asks every

@@ -29,10 +29,10 @@ let panelZaehler = 0;
  *
  * The content is wrapped in an `ng-template` and rendered through
  * `ngTemplateOutlet`, so only the active panel's content stands in the
- * document. What that does and does not save is written out in
- * `docs/components/tabs.md`, "Lazy panels": the elements are removed from the
- * document, the component instances behind them are not destroyed, because
- * Angular creates projected nodes together with the view that declares them.
+ * document. What that saves and what it does not: the elements are removed
+ * from the document, the component instances behind them are not destroyed,
+ * because Angular creates projected nodes together with the view that declares
+ * them. So this saves DOM and layout work, never a request or a constructor.
  * Set {@link ZTabGroup.keepAlive} when the elements themselves have to survive
  * a tab change, for example a scroll position, a playing `<video>` or an
  * `<iframe>` that must not reload.
@@ -82,9 +82,9 @@ export class ZTabPanel {
 
   /**
    * Locks the tab: it is a natively `disabled` button, so it cannot be clicked
-   * and the arrow keys skip it. Name the reason next to the group, as
-   * `spec/guidelines/15-zustaende.md` asks. Boolean attribute, so `disabled`
-   * alone counts as `true`.
+   * and the arrow keys skip it. A locked control never says why by itself, so
+   * write the reason next to the group as visible text. Boolean attribute, so
+   * `disabled` alone counts as `true`.
    *
    * @default false
    */
@@ -153,7 +153,7 @@ export class ZTabPanel {
 /**
  * Tabs for views that have no address of their own: the WAI-ARIA Tabs pattern
  * as `role="tablist"` with `role="tab"` buttons and one `role="tabpanel"` per
- * view. This is the variant `spec/components/Tabs/preview.html` shows.
+ * view.
  *
  * Use `ZTabs` with `a[zTab]` instead whenever each view can have its own URL.
  * Links are the better tabs: they can be bookmarked, opened in a new tab and

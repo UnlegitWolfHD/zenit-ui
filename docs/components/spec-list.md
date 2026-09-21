@@ -50,7 +50,7 @@ Hardware facts on a public page:
 import { ZSpecItem } from 'zenit-ui';
 
 const technik: ZSpecItem[] = [
-  { term: 'CPU', value: 'AMD Ryzen 9 7950X', note: '16 Kerne, 4,5 GHz' },
+  { term: 'CPU', value: 'AMD Ryzen 9 7950X', note: '16\u00a0Kerne, 4,5\u00a0GHz' },
   { term: 'Speicher', value: 'DDR5 ECC' },
   { term: 'Datenträger', value: 'NVMe SSD' },
   { term: 'Anbindung', value: '1 Gbit/s', mono: true },

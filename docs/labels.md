@@ -10,54 +10,58 @@ that needs different wording still overrides the matching input, as before.
 
 ## The registry
 
-| Symbol | What it is |
-| --- | --- |
-| `ZLabels` | The interface, one key per default text. |
-| `Z_LABELS_DE` | The German defaults, used when nothing is provided. |
-| `Z_LABELS_EN` | The English equivalents, complete. |
-| `Z_LABELS` | The injection token that holds the registry. |
+| Symbol                        | What it is                                                                                  |
+| ----------------------------- | ------------------------------------------------------------------------------------------- |
+| `ZLabels`                     | The interface, one key per default text.                                                    |
+| `Z_LABELS_DE`                 | The German defaults, used when nothing is provided.                                         |
+| `Z_LABELS_EN`                 | The English equivalents, complete.                                                          |
+| `Z_LABELS`                    | The injection token that holds the registry.                                                |
 | `provideZenitLabels(partial)` | Merges an override over the enclosing injector's labels, or over `Z_LABELS_DE` at the root. |
-| `injectZLabels()` | Reads the registry, complete. The components call this, and so should your own. |
+| `injectZLabels()`             | Reads the registry, complete. The components call this, and so should your own.             |
 
 A key is a plain `string` when the text is fixed and a function when it takes
 parameters.
 
 ## Keys
 
-| Key | Where it shows up | German (`Z_LABELS_DE`) | English (`Z_LABELS_EN`) |
-| --- | --- | --- | --- |
-| `paginationPrev` | `z-pagination`, `aria-label` of the back button | `Vorherige Seite` | `Previous page` |
-| `paginationNext` | `z-pagination`, `aria-label` of the forward button | `Nächste Seite` | `Next page` |
-| `paginationNav` | `z-pagination`, accessible name of the `<nav>` around the pager | `Seitennavigation` | `Pagination` |
-| `paginationRange` | `z-pagination`, the sentence in front of the buttons | `` `${from} bis ${to} von ${total} ${itemLabel}` `` | `` `${from} to ${to} of ${total} ${itemLabel}` `` |
-| `paginationPageSize` | `z-pagination`, visible label of the page size select | `Einträge pro Seite` | `Items per page` |
-| `consoleLog` | `z-console`, `aria-label` of the log region | `Serverlog` | `Server log` |
-| `consoleInput` | `z-console`, `aria-label` of the command input | `Befehl` | `Command` |
-| `consoleJumpToEnd` | `z-console`, caption of the jump-to-end button | `Zum Ende` | `Jump to end` |
-| `headerMenu` | `z-app-header`, `aria-label` of the menu button below 900px | `Menü` | `Menu` |
-| `toastClose` | `z-toast-outlet`, `aria-label` of the close button | `Schließen` | `Close` |
-| `tableRegion` | `z-table-container`, accessible name of the scrollable region | `Tabelle, seitlich scrollbar` | `Table, scrollable horizontally` |
-| `wizardEdit` | `z-wizard-step`, caption of the button on a finished step | `Ändern` | `Change` |
-| `comboboxEmpty` | `z-combobox`, the row shown when nothing matches, if `emptyText` is empty | `Kein Treffer` | `No match` |
-| `comboboxResults` | `z-combobox`, the live region with the number of matches | `` `${count} Treffer` `` | `` `${count} results` `` |
-| `summaryRetry` | `z-price-summary`, caption of the retry button, if `retryLabel` is empty | `Erneut versuchen` | `Try again` |
-| `chartTitle` | `z-cost-chart`, the SVG `<title>` and the name of the plot | `Monatliche Kosten nach gespielten Stunden` | `Monthly cost by hours played` |
-| `chartDesc` | `z-cost-chart`, the SVG `<desc>` | `` `Start bei … plus … ab … Stunden gedeckelt bei ….` `` | `` `Starts at … plus … capped at … from … hours on.` `` |
-| `chartDescOpen` | `z-cost-chart`, the SVG `<desc>` where no cap lies on the axis | `` `… ohne Deckel auf dieser Achse.` `` | `` `… with no cap on this axis.` `` |
-| `chartPerHour` | `z-cost-chart`, label of the first figure | `Pro Stunde` | `Per hour` |
-| `chartCapPerMonth` | `z-cost-chart`, label of the second figure | `Höchstens im Monat` | `At most per month` |
-| `chartMoney` | `z-cost-chart`, an amount in full | `` `5,90 €` `` | `` `€5.90` `` |
-| `chartAxisMoney` | `z-cost-chart`, an amount on the value axis | `` `10 €` `` | `` `€10` `` |
-| `chartAxisHours` | `z-cost-chart`, an hour on the time axis | `` `100 h` `` | `` `100 h` `` |
-| `chartBaseLabel` | `z-cost-chart`, the direct label at the start of the line | `` `1,50 € Grundbetrag` `` | `` `€1.50 base` `` |
-| `chartCapLabel` | `z-cost-chart`, the direct label at the cap point | `` `ab 100 h gedeckelt` `` | `` `capped from 100 h` `` |
-| `chartPlayed` | `z-cost-chart`, the hours in tooltip and `aria-valuetext` | `` `50 h gespielt` `` | `` `50 h played` `` |
-| `chartTable` | `z-cost-chart`, caption of the table disclosure | `Als Tabelle` | `As a table` |
-| `chartTableHours` | `z-cost-chart`, header of the hours column | `Gespielte Stunden` | `Hours played` |
-| `chartTableCost` | `z-cost-chart`, header of the cost column | `Kosten im Monat` | `Cost per month` |
-| `chartTableCapRow` | `z-cost-chart`, the last row of that table | `` `100 und mehr` `` | `` `100 and more` `` |
+| Key                  | Where it shows up                                                          | German (`Z_LABELS_DE`)                                   | English (`Z_LABELS_EN`)                                 |
+| -------------------- | -------------------------------------------------------------------------- | -------------------------------------------------------- | ------------------------------------------------------- |
+| `paginationPrev`     | `z-pagination`, `aria-label` of the back button                            | `Vorherige Seite`                                        | `Previous page`                                         |
+| `paginationNext`     | `z-pagination`, `aria-label` of the forward button                         | `Nächste Seite`                                          | `Next page`                                             |
+| `paginationNav`      | `z-pagination`, accessible name of the `<nav>` around the pager            | `Seitennavigation`                                       | `Pagination`                                            |
+| `paginationRange`    | `z-pagination`, the sentence in front of the buttons                       | `` `${from} bis ${to} von ${total} ${itemLabel}` ``      | `` `${from} to ${to} of ${total} ${itemLabel}` ``       |
+| `paginationPageSize` | `z-pagination`, visible label of the page size select                      | `Einträge pro Seite`                                     | `Items per page`                                        |
+| `consoleLog`         | `z-console`, `aria-label` of the log region                                | `Serverlog`                                              | `Server log`                                            |
+| `consoleInput`       | `z-console`, `aria-label` of the command input                             | `Befehl`                                                 | `Command`                                               |
+| `consoleJumpToEnd`   | `z-console`, caption of the jump-to-end button                             | `Zum Ende`                                               | `Jump to end`                                           |
+| `headerMenu`         | `z-app-header`, `aria-label` of the menu button below 900px                | `Menü`                                                   | `Menu`                                                  |
+| `toastClose`         | `z-toast-outlet`, `aria-label` of the close button                         | `Schließen`                                              | `Close`                                                 |
+| `tableRegion`        | `z-table-container`, accessible name of the scrollable region              | `Tabelle, seitlich scrollbar`                            | `Table, scrollable horizontally`                        |
+| `wizardEdit`         | `z-wizard-step`, caption of the button on a finished step                  | `Ändern`                                                 | `Change`                                                |
+| `comboboxEmpty`      | `z-combobox`, the row shown when nothing matches, if `emptyText` is empty  | `Kein Treffer`                                           | `No match`                                              |
+| `comboboxResults`    | `z-combobox`, the live region with the number of matches                   | `` `${count} Treffer` ``                                 | `` `${count} results` ``                                |
+| `comboboxLoading`    | `z-combobox`, the waiting row and its announcement, while `loading` is set | `Lädt`                                                   | `Loading`                                               |
+| `comboboxUseCustom`  | `z-combobox`, the row that commits the typed text, with `allowCustom`      | `` `„${text}“ übernehmen` ``                             | `` `Use “${text}”` ``                                   |
+| `comboboxMinQuery`   | `z-combobox`, the row that stands in for the list below `minQueryLength`   | `` `Mindestens ${count} Zeichen eingeben` ``             | `` `Type at least ${count} characters` ``               |
+| `summaryRetry`       | `z-price-summary`, caption of the retry button, if `retryLabel` is empty   | `Erneut versuchen`                                       | `Try again`                                             |
+| `chartTitle`         | `z-cost-chart`, the SVG `<title>` and the name of the plot                 | `Monatliche Kosten nach gespielten Stunden`              | `Monthly cost by hours played`                          |
+| `chartDesc`          | `z-cost-chart`, the SVG `<desc>`                                           | `` `Start bei … plus … ab … Stunden gedeckelt bei ….` `` | `` `Starts at … plus … capped at … from … hours on.` `` |
+| `chartDescOpen`      | `z-cost-chart`, the SVG `<desc>` where no cap lies on the axis             | `` `… ohne Deckel auf dieser Achse.` ``                  | `` `… with no cap on this axis.` ``                     |
+| `chartPerHour`       | `z-cost-chart`, label of the first figure                                  | `Pro Stunde`                                             | `Per hour`                                              |
+| `chartCapPerMonth`   | `z-cost-chart`, label of the second figure                                 | `Höchstens im Monat`                                     | `At most per month`                                     |
+| `chartMoney`         | `z-cost-chart`, an amount in full                                          | `` `5,90 €` ``                                           | `` `€5.90` ``                                           |
+| `chartAxisMoney`     | `z-cost-chart`, an amount on the value axis                                | `` `10 €` ``                                             | `` `€10` ``                                             |
+| `chartAxisHours`     | `z-cost-chart`, an hour on the time axis                                   | `` `100 h` ``                                            | `` `100 h` ``                                           |
+| `chartBaseLabel`     | `z-cost-chart`, the direct label at the start of the line                  | `` `1,50 € Grundbetrag` ``                               | `` `€1.50 base` ``                                      |
+| `chartCapLabel`      | `z-cost-chart`, the direct label at the cap point                          | `` `ab 100 h gedeckelt` ``                               | `` `capped from 100 h` ``                               |
+| `chartPlayed`        | `z-cost-chart`, the hours in tooltip and `aria-valuetext`                  | `` `50 h gespielt` ``                                    | `` `50 h played` ``                                     |
+| `chartTable`         | `z-cost-chart`, caption of the table disclosure                            | `Als Tabelle`                                            | `As a table`                                            |
+| `chartTableHours`    | `z-cost-chart`, header of the hours column                                 | `Gespielte Stunden`                                      | `Hours played`                                          |
+| `chartTableCost`     | `z-cost-chart`, header of the cost column                                  | `Kosten im Monat`                                        | `Cost per month`                                        |
+| `chartTableCapRow`   | `z-cost-chart`, the last row of that table                                 | `` `100 und mehr` ``                                     | `` `100 and more` ``                                    |
 
-The keys that take parameters are functions: `comboboxResults` (`(count) => string`), `paginationRange`
+The keys that take parameters are functions: `comboboxResults` (`(count) => string`),
+`comboboxUseCustom` (`(text) => string`), `comboboxMinQuery` (`(count) => string`), `paginationRange`
 (`(from, to, total, itemLabel) => string`, where `from` and `to` are the entry numbers of the
 current page, 1-based), `chartDesc`
 (`(base, rate, cap, capHours) => string`) and the number formats of `z-cost-chart`
@@ -117,7 +121,12 @@ over the registry. Unset, it falls back to the registry value.
 
 ```html
 <z-table-container ariaLabel="Rechnungen, seitlich scrollbar">…</z-table-container>
-<z-pagination [(page)]="seite" [total]="118" itemLabel="Rechnungen" ariaLabelNext="Eine Seite weiter" />
+<z-pagination
+  [(page)]="seite"
+  [total]="118"
+  itemLabel="Rechnungen"
+  ariaLabelNext="Eine Seite weiter"
+/>
 ```
 
 The inputs per component: `ariaLabel`, `ariaLabelPrev`, `ariaLabelNext`,

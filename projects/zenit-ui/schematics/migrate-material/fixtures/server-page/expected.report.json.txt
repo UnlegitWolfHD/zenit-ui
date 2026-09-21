@@ -1,0 +1,426 @@
+{
+  "schema": 1,
+  "path": "src/app/server",
+  "rules": [
+    "icon",
+    "button",
+    "tooltip",
+    "spinner",
+    "chip",
+    "imports"
+  ],
+  "dryRun": false,
+  "totals": {
+    "filesScanned": 3,
+    "filesChanged": 2,
+    "converted": 19,
+    "findings": 17
+  },
+  "summary": {
+    "icon": {
+      "converted": 6,
+      "manual": 1,
+      "review": 1,
+      "info": 1
+    },
+    "button": {
+      "converted": 7,
+      "manual": 0,
+      "review": 5,
+      "info": 3
+    },
+    "tooltip": {
+      "converted": 3,
+      "manual": 0,
+      "review": 1,
+      "info": 1
+    },
+    "spinner": {
+      "converted": 1,
+      "manual": 1,
+      "review": 1,
+      "info": 1
+    },
+    "chip": {
+      "converted": 1,
+      "manual": 0,
+      "review": 1,
+      "info": 0
+    },
+    "imports": {
+      "converted": 1,
+      "manual": 0,
+      "review": 0,
+      "info": 0
+    }
+  },
+  "remaining": [
+    {
+      "name": "mat-cell",
+      "count": 3,
+      "replacement": "z-table-container with table[zTable], cdk-table where a data source is needed (3.12)"
+    },
+    {
+      "name": "mat-dialog-actions",
+      "count": 1,
+      "replacement": "z-dialog with [zDialogActions], opened through ZDialog (3.14)"
+    },
+    {
+      "name": "mat-dialog-close",
+      "count": 1,
+      "replacement": "z-dialog with [zDialogActions], opened through ZDialog (3.14)"
+    },
+    {
+      "name": "mat-dialog-content",
+      "count": 1,
+      "replacement": "z-dialog with [zDialogActions], opened through ZDialog (3.14)"
+    },
+    {
+      "name": "mat-dialog-title",
+      "count": 1,
+      "replacement": "z-dialog with [zDialogActions], opened through ZDialog (3.14)"
+    },
+    {
+      "name": "mat-divider",
+      "count": 1,
+      "replacement": "a 1px border in `border`, z-menu-separator inside a menu (never edited)"
+    },
+    {
+      "name": "mat-error",
+      "count": 1,
+      "replacement": "z-field with input[zInput]; icons in fields through z-input-group (3.4)"
+    },
+    {
+      "name": "mat-form-field",
+      "count": 2,
+      "replacement": "z-field with input[zInput]; icons in fields through z-input-group (3.4)"
+    },
+    {
+      "name": "mat-header-cell",
+      "count": 3,
+      "replacement": "z-table-container with table[zTable], cdk-table where a data source is needed (3.12)"
+    },
+    {
+      "name": "mat-header-row",
+      "count": 1,
+      "replacement": "z-table-container with table[zTable], cdk-table where a data source is needed (3.12)"
+    },
+    {
+      "name": "mat-icon",
+      "count": 1,
+      "replacement": "z-icon (3.2)"
+    },
+    {
+      "name": "mat-label",
+      "count": 2,
+      "replacement": "z-field with input[zInput]; icons in fields through z-input-group (3.4)"
+    },
+    {
+      "name": "mat-menu",
+      "count": 1,
+      "replacement": "z-menu with button[zMenuItem] and [cdkMenuTriggerFor] (3.15)"
+    },
+    {
+      "name": "mat-menu-item",
+      "count": 1,
+      "replacement": "z-menu with button[zMenuItem] and [cdkMenuTriggerFor] (3.15)"
+    },
+    {
+      "name": "mat-option",
+      "count": 1,
+      "replacement": "z-select around a native <select> (3.5)"
+    },
+    {
+      "name": "mat-paginator",
+      "count": 1,
+      "replacement": "z-pagination, 1-based (3.13)"
+    },
+    {
+      "name": "mat-row",
+      "count": 1,
+      "replacement": "z-table-container with table[zTable], cdk-table where a data source is needed (3.12)"
+    },
+    {
+      "name": "mat-select",
+      "count": 1,
+      "replacement": "z-select around a native <select> (3.5)"
+    },
+    {
+      "name": "mat-spinner",
+      "count": 1,
+      "replacement": "z-spinner, or [loading] on the button (3.18)"
+    },
+    {
+      "name": "mat-table",
+      "count": 1,
+      "replacement": "z-table-container with table[zTable], cdk-table where a data source is needed (3.12)"
+    },
+    {
+      "name": "matCellDef",
+      "count": 3,
+      "replacement": "z-table-container with table[zTable], cdk-table where a data source is needed (3.12)"
+    },
+    {
+      "name": "matColumnDef",
+      "count": 3,
+      "replacement": "z-table-container with table[zTable], cdk-table where a data source is needed (3.12)"
+    },
+    {
+      "name": "matHeaderCellDef",
+      "count": 3,
+      "replacement": "z-table-container with table[zTable], cdk-table where a data source is needed (3.12)"
+    },
+    {
+      "name": "matHeaderRowDef",
+      "count": 1,
+      "replacement": "z-table-container with table[zTable], cdk-table where a data source is needed (3.12)"
+    },
+    {
+      "name": "matInput",
+      "count": 1,
+      "replacement": "z-field with input[zInput]; icons in fields through z-input-group (3.4)"
+    },
+    {
+      "name": "matMenuTriggerFor",
+      "count": 1,
+      "replacement": "z-menu with button[zMenuItem] and [cdkMenuTriggerFor] (3.15)"
+    },
+    {
+      "name": "matPrefix",
+      "count": 1,
+      "replacement": "z-field with input[zInput]; icons in fields through z-input-group (3.4)"
+    },
+    {
+      "name": "matRowDef",
+      "count": 1,
+      "replacement": "z-table-container with table[zTable], cdk-table where a data source is needed (3.12)"
+    },
+    {
+      "name": "matSuffix",
+      "count": 1,
+      "replacement": "z-field with input[zInput]; icons in fields through z-input-group (3.4)"
+    }
+  ],
+  "files": [
+    {
+      "path": "src/app/server/server-page.html",
+      "status": "changed",
+      "converted": {
+        "icon": 6,
+        "button": 7,
+        "tooltip": 3,
+        "spinner": 1,
+        "chip": 1
+      },
+      "remaining": {
+        "mat-dialog-title": 1,
+        "mat-dialog-content": 1,
+        "mat-form-field": 2,
+        "mat-label": 2,
+        "mat-icon": 1,
+        "matPrefix": 1,
+        "matInput": 1,
+        "matSuffix": 1,
+        "mat-error": 1,
+        "mat-select": 1,
+        "mat-option": 1,
+        "matMenuTriggerFor": 1,
+        "mat-menu": 1,
+        "mat-menu-item": 1,
+        "mat-table": 1,
+        "matColumnDef": 3,
+        "matHeaderCellDef": 3,
+        "mat-header-cell": 3,
+        "matCellDef": 3,
+        "mat-cell": 3,
+        "matHeaderRowDef": 1,
+        "mat-header-row": 1,
+        "matRowDef": 1,
+        "mat-row": 1,
+        "mat-divider": 1,
+        "mat-paginator": 1,
+        "mat-dialog-actions": 1,
+        "mat-dialog-close": 1,
+        "mat-spinner": 1
+      },
+      "findings": [
+        {
+          "line": 7,
+          "column": 7,
+          "rule": "icon",
+          "kind": "manual",
+          "code": "icon-in-field",
+          "reason": "The icon is projected into a mat-form-field through matPrefix.",
+          "fix": "Migrate the field to z-field and use the icon of z-input-group."
+        },
+        {
+          "line": 9,
+          "column": 7,
+          "rule": "button",
+          "kind": "review",
+          "code": "button-no-name",
+          "reason": "The icon-only button has no accessible name: z-icon is aria-hidden and a tooltip is a description, not a label.",
+          "fix": "Add an aria-label, usually the tooltip text: aria-label=\"Feld leeren\"."
+        },
+        {
+          "line": 30,
+          "column": 5,
+          "rule": "button",
+          "kind": "info",
+          "code": "button-colour",
+          "reason": "color=\"primary\" was dropped: zenit-ui has no colour input, colour must come from the context.",
+          "fix": "Colour comes from the context in zenit-ui (text-muted; coloured only in the active sidebar entry and in an alert). Remove the emphasis or express it with a z-badge/z-alert status."
+        },
+        {
+          "line": 30,
+          "column": 5,
+          "rule": "tooltip",
+          "kind": "info",
+          "code": "tooltip-option",
+          "reason": "matTooltipPosition=\"above\" was dropped: zTooltip has no position, delay, class or touch options, the overlay places it above the trigger with below as fallback.",
+          "fix": "Nothing to do, unless the page relied on the option."
+        },
+        {
+          "line": 40,
+          "column": 5,
+          "rule": "button",
+          "kind": "review",
+          "code": "button-type",
+          "reason": "The button has no type attribute, so inside a <form> it submits. It was not added, because that would change what the button does.",
+          "fix": "Add type=\"button\", or type=\"submit\" where the button is meant to submit."
+        },
+        {
+          "line": 45,
+          "column": 9,
+          "rule": "icon",
+          "kind": "review",
+          "code": "icon-in-menu-item",
+          "reason": "The icon sits in a mat-menu-item, which projects <mat-icon> into its own slot.",
+          "fix": "When the menu is migrated the icon becomes the \"icon\" input of button[zMenuItem]."
+        },
+        {
+          "line": 51,
+          "column": 5,
+          "rule": "spinner",
+          "kind": "review",
+          "code": "spinner-no-label",
+          "reason": "The spinner has no accessible label; without one z-spinner is decorative and aria-hidden.",
+          "fix": "Add label=\"Wird geladen\" (or what is loading) for a standalone loading state; leave it out only where text next to it says the same. A list that loads shows z-skeleton rows instead of a spinner."
+        },
+        {
+          "line": 51,
+          "column": 5,
+          "rule": "spinner",
+          "kind": "info",
+          "code": "spinner-option",
+          "reason": "diameter=\"32\" was dropped: z-spinner has one size and one stroke, set by the tokens.",
+          "fix": "Nothing to do."
+        },
+        {
+          "line": 57,
+          "column": 11,
+          "rule": "icon",
+          "kind": "info",
+          "code": "icon-aria-hidden",
+          "reason": "aria-hidden was dropped, z-icon sets it itself.",
+          "fix": "Nothing to do."
+        },
+        {
+          "line": 66,
+          "column": 15,
+          "rule": "chip",
+          "kind": "review",
+          "code": "chip-status",
+          "reason": "The chip became a neutral z-badge.",
+          "fix": "Where it shows a state, set status=\"success|warning|danger|info\" and dot, and keep the state as a word."
+        },
+        {
+          "line": 74,
+          "column": 11,
+          "rule": "button",
+          "kind": "review",
+          "code": "button-no-name",
+          "reason": "The icon-only button has no accessible name: z-icon is aria-hidden and a tooltip is a description, not a label.",
+          "fix": "Add an aria-label, usually the tooltip text: [attr.aria-label]=\"'Server ' + server.name + ' löschen'\"."
+        },
+        {
+          "line": 74,
+          "column": 11,
+          "rule": "button",
+          "kind": "review",
+          "code": "button-warn",
+          "reason": "color=\"warn\" was dropped: zenit-ui has no colour input, colour must come from the context.",
+          "fix": "Candidate for zBtn=\"danger\": use it only where the action destroys something, and confirm it with a dialog."
+        },
+        {
+          "line": 74,
+          "column": 11,
+          "rule": "tooltip",
+          "kind": "review",
+          "code": "tooltip-disabled-merged",
+          "reason": "[matTooltipDisabled]=\"!server.deletable\" was merged into the text: an empty zTooltip shows nothing.",
+          "fix": "Check the expression."
+        },
+        {
+          "line": 94,
+          "column": 3,
+          "rule": "button",
+          "kind": "info",
+          "code": "button-colour",
+          "reason": "color=\"primary\" was dropped: zenit-ui has no colour input, colour must come from the context.",
+          "fix": "Colour comes from the context in zenit-ui (text-muted; coloured only in the active sidebar entry and in an alert). Remove the emphasis or express it with a z-badge/z-alert status."
+        },
+        {
+          "line": 100,
+          "column": 5,
+          "rule": "spinner",
+          "kind": "manual",
+          "code": "spinner-in-button",
+          "reason": "The spinner sits inside a <button> and was left alone: zBtn shows its own spinner.",
+          "fix": "Replace it with [loading] on the button: [loading]=\"saving\", and remove the spinner and the label swap around it. loading also disables the button."
+        },
+        {
+          "line": 103,
+          "column": 3,
+          "rule": "button",
+          "kind": "info",
+          "code": "button-colour",
+          "reason": "color=\"accent\" was dropped: zenit-ui has no colour input, colour must come from the context.",
+          "fix": "Colour comes from the context in zenit-ui (text-muted; coloured only in the active sidebar entry and in an alert). Remove the emphasis or express it with a z-badge/z-alert status."
+        },
+        {
+          "line": 103,
+          "column": 3,
+          "rule": "button",
+          "kind": "review",
+          "code": "several-primaries",
+          "reason": "This template now has 2 buttons with zBtn=\"primary\". The design system allows at most one primary per screen height.",
+          "fix": "Keep the one action the screen exists for as primary and make the others zBtn (secondary) or zBtn=\"ghost\"."
+        }
+      ]
+    },
+    {
+      "path": "src/app/server/server-page.scss",
+      "status": "unchanged",
+      "converted": {},
+      "findings": [],
+      "remaining": {},
+      "styleDebt": {
+        "mat-* element selectors": 2,
+        ".mat-* / .mdc-* classes": 2,
+        "--mat-* / --mdc-* properties": 2,
+        "::ng-deep": 2,
+        "@use '@angular/material'": 1
+      }
+    },
+    {
+      "path": "src/app/server/server-page.ts",
+      "status": "changed",
+      "converted": {
+        "imports": 1
+      },
+      "remaining": {},
+      "findings": []
+    }
+  ]
+}

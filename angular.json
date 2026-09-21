@@ -198,6 +198,13 @@
               "optimization": false,
               "extractLicenses": false,
               "sourceMap": true
+            },
+            "testing-jit": {
+              "aot": false,
+              "externalDependencies": ["zenit-ui"],
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true
             }
           },
           "defaultConfiguration": "production"
@@ -216,6 +223,13 @@
         },
         "test": {
           "builder": "@angular/build:unit-test"
+        },
+        "test-jit": {
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "buildTarget": "beispiel-app:build:testing-jit",
+            "runnerConfig": "projects/beispiel-app/vitest.jit.config.ts"
+          }
         },
         "lint": {
           "builder": "@angular-eslint/builder:lint",

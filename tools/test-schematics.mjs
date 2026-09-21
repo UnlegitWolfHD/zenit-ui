@@ -1,5 +1,5 @@
 /**
- * Runs the unit tests of the `ng add` schematic.
+ * Runs the unit tests of the schematics (`ng add`, `migrate-material`).
  *
  * The schematics engine loads factories through `require()`, so the collection
  * has to be compiled first; the specs themselves run straight from TypeScript

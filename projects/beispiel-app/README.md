@@ -16,6 +16,7 @@ Copy is German (du-form), code, comments and this file are English.
 npm run start:beispiel   # builds the library, then serves the app
 npm run build:beispiel   # builds library and application
 npx ng test beispiel-app --watch=false
+npm run test:beispiel:jit # the same specs against the unlinked package (JIT), as an installed consumer runs them
 npm run e2e:beispiel     # Playwright: screenshots, axe, style rules, interactions
 ```
 

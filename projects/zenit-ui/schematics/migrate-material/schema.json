@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "SchematicsZenitUiMigrateMaterial",
+  "title": "zenit-ui migrate-material schema",
+  "type": "object",
+  "properties": {
+    "path": {
+      "type": "string",
+      "description": "Workspace-relative folder or file to migrate. Only files under it are written.",
+      "x-prompt": "Which folder or file should be migrated (workspace-relative, for example src/app/billing)?"
+    },
+    "project": {
+      "type": "string",
+      "description": "Project the path belongs to. The path may then also be given relative to the project's sourceRoot, and a path outside the project is refused."
+    },
+    "report": {
+      "type": "string",
+      "default": "zenit-migration-report.md",
+      "description": "Workspace-relative path of the Markdown report. A JSON twin with the same name and the extension .json is written next to it."
+    },
+    "rules": {
+      "type": "string",
+      "default": "icon,button,tooltip,spinner,chip,imports",
+      "description": "Comma-separated subset of the rules to run: icon, button, tooltip, spinner, chip, imports."
+    },
+    "printReport": {
+      "type": "boolean",
+      "description": "Print the full Markdown report to the console. Default: only in a dry run, where no file is written."
+    }
+  },
+  "required": ["path"]
+}

@@ -7,6 +7,7 @@ import {
   ZFooterBase,
   ZHeaderEnd,
   ZHeaderLink,
+  ZSkipLink,
   ZToastOutlet,
 } from 'zenit-ui';
 import { GUTHABEN, KUNDEN_LINKS, NUTZER } from '../../gameserver/beispieldaten';
@@ -31,11 +32,13 @@ import { ThemeControl } from '../theme-control/theme-control';
     ZFooterBase,
     ZHeaderLink,
     ZHeaderEnd,
+    ZSkipLink,
     ZToastOutlet,
   ],
   template: `
-    <!-- First tab stop of the page, visible only while focused. -->
-    <a class="app-skip body-sm z-visually-hidden" href="#inhalt">Zum Hauptinhalt springen</a>
+    <!-- First tab stop of the page, visible only while focused. The directive
+         brings the whole appearance; the application supplies text and target. -->
+    <a zSkipLink class="body-sm" href="#inhalt">Zum Hauptinhalt springen</a>
 
     <!-- Header, content and footer share the same z-container, so brand,
          page title and copyright stand on one line at every width. -->
@@ -62,7 +65,7 @@ import { ThemeControl } from '../theme-control/theme-control';
           }
         }
         <!-- Credit in mono without a red pill, and a link to the billing page
-             (AppHeader README). The label says what the number is and where the
+             The label says what the number is and where the
              link goes, because "25,00 €" alone says nothing when read out loud;
              the amount comes from the same value the link shows, so the two
              cannot drift apart. -->
@@ -93,7 +96,7 @@ import { ThemeControl } from '../theme-control/theme-control';
       <!-- #region fusszeile -->
       <z-footer>
         <!-- Customer area: only the bottom row, copyright left and the legal
-             links right, no link columns (Footer README). Both parts carry
+             links right, no link columns. Both parts carry
              zFooterBase, because the row spreads its own children. -->
         <span zFooterBase>© 2026 Zenit-Hosting</span>
         <span zFooterBase class="z-cluster">
@@ -106,7 +109,7 @@ import { ThemeControl } from '../theme-control/theme-control';
     </div>
 
     <!-- #region toastauslass -->
-    <!-- Once per application, at the end of the layout (README, step 4). -->
+    <!-- Once per application, at the end of the layout. ZToast writes into it. -->
     <z-toast-outlet />
     <!-- #endregion -->
   `,
