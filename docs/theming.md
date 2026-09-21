@@ -72,6 +72,14 @@ byte identical to `spec/tokens.css`; `color-scheme: dark` for the default
 scheme therefore cannot live in it. Without `color-scheme`, a dark page opens a
 white `<select>` drop-down and draws light scrollbars.
 
+**The default no longer depends on `themes.css`.** `_grundlage.css` carries
+`:where(:root) { color-scheme: dark; }`, so the documented minimum
+(`tokens.css` plus `zenit-ui.css`) already gets dark native UI. `:where()`
+keeps it at specificity (0,0,0), below every `[data-theme=…]` block, so the
+scheme files win in either include order. `base.css` keeps the declaration for
+`[data-theme="dark"]`, which puts a dark subtree back into the dark palette
+inside a light page.
+
 ## `provideZenitTheme`
 
 ```ts

@@ -168,6 +168,28 @@ textarea.z-input { height: auto; min-height: 96px; padding: var(--space-2) var(-
 .z-panel-shell { display: grid; gap: var(--space-5); grid-template-columns: minmax(0, 1fr); }
 @media (min-width: 900px) { .z-panel-shell { grid-template-columns: var(--sidebar) minmax(0, 1fr); align-items: start; } }
 
+/* Addition to the reference: the dark colour scheme as the default of the base
+   styles. It tells the engine which palette to use for the parts a page cannot
+   style itself: the popup of a native <select>, the calendar and clock popups
+   and their indicators, the spin buttons of a number field, scrollbars, the
+   caret and autofill. Without it a page that follows the documented minimum
+   (tokens.css plus zenit-ui.css) draws light native UI on the dark ground.
+   tokens.css is compiled from spec/tokens.json and stays byte identical to
+   spec/tokens.css, so the declaration cannot live there; themes/base.css is
+   opt-in and does not reach that minimum either.
+
+   :where() keeps the rule at specificity (0,0,0), which is what makes it safe
+   in both include orders the repository uses: themes.css before zenit-ui.css
+   (docs/theming.md, beispiel-app) and after it (ui-demo styles.css, where the
+   application stylesheet is loaded last). A bare :root would weigh (0,1,0),
+   the same as [data-theme="light"], and would then beat the light scheme
+   wherever it happened to come later. At (0,0,0) every scheme block wins on
+   specificity alone, in any order.
+
+   themes/base.css keeps its own declaration: it carries [data-theme="dark"],
+   which this rule cannot cover, for a dark subtree inside a light page. */
+:where(:root) { color-scheme: dark; }
+
 /* Addition to the reference: click targets at least 40px on mobile (CLAUDE.md, Abstand und Layout). */
 @media (max-width: 640px) {
   .z-btn--sm { height: var(--control-md); }

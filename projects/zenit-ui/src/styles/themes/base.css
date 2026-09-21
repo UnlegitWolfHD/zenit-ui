@@ -13,5 +13,14 @@
    The value follows the chosen scheme, never the operating system: `dark` is
    the default of the design system, and [data-theme="light"] overrides it in
    light.css. Because :root and [data-theme=...] have the same specificity
-   (0,1,0), this file has to be imported BEFORE light.css and contrast.css. */
+   (0,1,0), this file has to be imported BEFORE light.css and contrast.css.
+
+   The default for a page without data-theme no longer depends on this file:
+   _grundlage.css carries it as :where(:root) at specificity (0,0,0), so an
+   application that only includes tokens.css and zenit-ui.css gets dark native
+   UI as well. [data-theme="dark"] stays here and is the reason the file
+   remains: a dark subtree inside a light page inherits color-scheme: light
+   from the root, and only this selector puts it back. The :root here is
+   therefore a duplicate of the base styles' default, kept so that themes.css
+   reads completely on its own. */
 :root, [data-theme="dark"] { color-scheme: dark; }

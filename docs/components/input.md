@@ -87,6 +87,79 @@ The search box through the input group:
 </z-field>
 ```
 
+## Native input types
+
+`zInput` styles the element, not one `type`. Every text-like type keeps the field height
+(`control-md`, `control-sm`), the border, the hover and focus states, the `danger` frame from
+`invalid` and the 45 percent of `disabled`. What the browser adds on top is its own: the calendar
+and clock popups, the spin buttons of a number field and the clear button of a search field.
+
+| `type`                                 | Verdict            | What the browser adds                                            |
+| -------------------------------------- | ------------------ | ---------------------------------------------------------------- |
+| `text`, `email`, `url`, `password`      | use freely         | nothing                                                          |
+| `search`                                | use freely         | a clear button, drawn under the pointer only                     |
+| `number`                                | use with `mono`    | spin buttons, drawn under the pointer only                       |
+| `date`, `time`, `datetime-local`, `month` | use freely       | the segmented editor, the indicator and the platform's own picker |
+| `file`                                  | not covered        | a button with a label the browser writes, in English on an English browser |
+
+`file` is deliberately outside the design system: the button is drawn and labelled by the browser,
+which breaks both the German copy and the token colours. Build an upload as a `button[zBtn]` next to
+a visually hidden `<input type="file">`.
+
+The dark colour scheme reaches these controls because the base styles declare `color-scheme: dark`
+on the root; see [theming](../theming.md). Without it the calendar indicator is drawn black on the
+dark field (measured 1.09:1) instead of white (19.27:1).
+
+### The value of a date field is a string
+
+This is the one thing that breaks a migration from `mat-datepicker`. `MatDatepicker` binds a
+`Date`; `input[type="date"]` binds an **ISO string**, `yyyy-MM-dd` (`time` gives `HH:mm`,
+`datetime-local` gives `yyyy-MM-ddTHH:mm`, `month` gives `yyyy-MM`). Assigning a `Date` to `value`
+leaves the field empty, without an error.
+
+A form model that holds a `Date` does not have to change. Adapt at the binding, with `DatePipe` in
+and `valueAsDate` out:
+
+```html
+<z-field label="Gültig bis" for="valid-to" hint="Bis zu diesem Tag läuft der Server.">
+  <input
+    zInput
+    type="date"
+    id="valid-to"
+    min="2026-09-22"
+    [value]="validTo() | date: 'yyyy-MM-dd'"
+    (change)="onDate($event)"
+  />
+</z-field>
+```
+
+```ts
+protected readonly validTo = signal(new Date(2026, 11, 31));
+
+protected onDate(event: Event): void {
+  // valueAsDate is null while the value is incomplete or out of range.
+  const gewaehlt = (event.target as HTMLInputElement).valueAsDate;
+  if (gewaehlt) this.validTo.set(gewaehlt);
+}
+```
+
+`DatePipe` has to be imported in the component (`imports: [DatePipe]`). `valueAsDate` returns a
+`Date` at UTC midnight, so a model that stores local midnight needs the same conversion it needed
+under `MatNativeDateModule`.
+
+With `[(ngModel)]` or `[formControl]` the control value is the string. Keep the string in the form
+model and convert at the API boundary, or use a `ControlValueAccessor`-free adapter as above.
+
+`min` and `max` take the same ISO format and are what the picker greys out; they also feed the
+native `rangeUnderflow`/`rangeOverflow` validity. They do not replace the `error` sentence on the
+field: set `invalid` and `error` as with every other field.
+
+The picker itself replaces `MatDatepicker`, `MatDatepickerToggle` and `MatNativeDateModule`. There
+is no toggle element to place, no `dateFilter`, no range picker and no locale option: the browser
+formats after the user's locale, and the popup is not styleable. The empty field shows the
+browser's own placeholder (`dd.mm.yyyy`) in `text`, not in `text-subtle` as a real placeholder
+would be; Chromium offers no hook for that colour.
+
 ## States
 
 | State    | How it looks                                      | How to trigger it                   |

@@ -583,6 +583,40 @@ html {
 
 Everything Material generated — `--mat-sys-*`, `--mat-app-*`, the reddish-brown default palette noted in `30-angular.md` — is replaced by the tokens. `styles.scss` can become `styles.css`: nothing in the design system needs Sass. Any application rule still reading a `--mat-*` variable has to be rewritten against a token; there is no compatibility shim.
 
+### 3.22 `mat-datepicker` → `input[zInput] type="date"`
+
+Not a row of the "Material ablösen" table — `30-angular.md` does not name the datepicker, and section 10 lists it as one of the components that would need a decision of its own. This is that decision: the browser's own picker, because it is a native platform feature that costs no bytes, needs no locale module and is keyboard and screen reader accessible everywhere.
+
+```html
+<!-- before -->
+<mat-form-field>
+  <mat-label>Gültig bis</mat-label>
+  <input matInput [matDatepicker]="picker" [min]="heute" [formControl]="gueltigBis" />
+  <mat-datepicker-toggle matIconSuffix [for]="picker" />
+  <mat-datepicker #picker />
+</mat-form-field>
+```
+
+```html
+<!-- after -->
+<z-field label="Gültig bis" for="gueltig-bis" hint="Bis zu diesem Tag läuft der Server.">
+  <input
+    zInput
+    type="date"
+    id="gueltig-bis"
+    min="2026-09-22"
+    [value]="gueltigBis() | date: 'yyyy-MM-dd'"
+    (change)="aufDatum($event)"
+  />
+</z-field>
+```
+
+`MatDatepickerToggle` and `MatDatepicker` have no counterpart and no markup of their own: the indicator belongs to the input, and clicking it opens the platform picker. `MatNativeDateModule`, `MAT_DATE_LOCALE` and `provideNativeDateAdapter()` fall away with them.
+
+**The value is an ISO string, not a `Date`.** `type="date"` reads and writes `yyyy-MM-dd`. A form model holding a `Date` keeps it and adapts at the binding, as above; the `DatePipe` writes the value, `valueAsDate` reads it back. Assigning a `Date` to `value` leaves the field empty without an error. `min` and `max` take the same format. The full note, including `time`, `datetime-local` and `month`, is in [Input](components/input.md), section "Native input types".
+
+What is lost: `dateFilter`, the range picker, `startView`, the touch UI and any styling of the popup. A route that needs one of those keeps its own component; nothing in `zenit-ui` replaces it.
+
 ## 4. Behaviour differences to watch
 
 These are the places where a one-to-one template swap changes what the page actually does. Each one needs a deliberate decision, not a find-and-replace.
@@ -765,7 +799,7 @@ A clean run means: the first two commands find nothing, and every hit from the l
 
 The existing frontend was deliberately not inspected — `00-auftrag.md` forbids reading it, and this document was written from the design system and the built library only. The following therefore rest on the specification's own observations or on general Angular Material knowledge, and all of them need to be checked against the real code when the job starts:
 
-- **Which Material components are actually in use.** `00-auftrag.md` ("Offene Punkte") lists what was seen in the DOM: `mat-toolbar`, `mat-icon`, form fields, select, slide-toggle, paginator. The mapping table in section 3 covers the whole "Material ablösen" table regardless, so it may contain rows for components that do not exist in the application at all — and it may be missing a component that is in use but was never seen (a `mat-autocomplete`, `mat-datepicker`, `mat-tree` or `mat-list` would each need a decision of its own, and none has a counterpart in `zenit-ui`).
+- **Which Material components are actually in use.** `00-auftrag.md` ("Offene Punkte") lists what was seen in the DOM: `mat-toolbar`, `mat-icon`, form fields, select, slide-toggle, paginator. The mapping table in section 3 covers the whole "Material ablösen" table regardless, so it may contain rows for components that do not exist in the application at all — and it may be missing a component that is in use but was never seen (a `mat-autocomplete`, `mat-tree` or `mat-list` would each need a decision of its own, and none has a counterpart in `zenit-ui`; `mat-datepicker` got its decision in section 3.22, the native `type="date"`).
 - **The real file and folder structure.** `30-angular.md` states plainly that the source is not known and that its filenames are suggestions. The component names in `00-auftrag.md` (`app-public-header`, `app-public-footer`, `app-pricing`, `app-flex-calculator`, `app-minecraft-landing`, `app-hardware-page`, `app-toast-container`, `app-cookie-banner`, `app-tutorial-overlay`) come from the DOM, not from the repository.
 - **The exact Material version and API shape.** The "before" snippets are written for a recent Angular Material. If the application is on an older version, the details differ — `mat-raised-button` instead of `mat-flat-button`, `MatDialogRef.afterClosed()` versus `closed`, the pre-M3 theming API.
 - **Whether `provideAnimations` is only there for Material.** Section 5 makes the removal conditional for exactly this reason.

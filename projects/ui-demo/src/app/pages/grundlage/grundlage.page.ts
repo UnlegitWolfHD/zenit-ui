@@ -169,6 +169,33 @@ import {
         <textarea zInput id="in-note" placeholder="Was hast du zuletzt geändert?"></textarea>
       </z-field>
 
+      <p class="demo-cap caption">
+        Native Typen: date, time und number kommen mit dem Kalender, der Uhr und den Pfeilen des
+        Browsers. Der Wert eines Datumsfeldes ist ein Text im Format 2026-09-22, kein Date.
+      </p>
+      <div class="demo-grid demo-grid--narrow">
+        <z-field
+          label="Gültig bis"
+          for="in-date"
+          hint="Bis zu diesem Tag läuft Beispiel-Server 1, danach wird er gestoppt."
+        >
+          <input zInput type="date" id="in-date" value="2026-12-31" min="2026-09-22" />
+        </z-field>
+        <z-field label="Wartung ab" for="in-time" hint="Uhrzeit in Nürnberg, 24 Stunden.">
+          <input zInput type="time" id="in-time" value="03:30" />
+        </z-field>
+        <z-field label="Steckplätze" for="in-num" hint="Zwischen 2 und 64 Spielern.">
+          <input zInput mono type="number" id="in-num" value="12" min="2" max="64" />
+        </z-field>
+        <z-field
+          label="Kündigung zum"
+          for="in-date-err"
+          error="Das Datum liegt in der Vergangenheit. Wähle ein Datum ab dem 22.09.2026."
+        >
+          <input zInput invalid type="date" id="in-date-err" value="2026-09-01" min="2026-09-22" />
+        </z-field>
+      </div>
+
       <div class="demo-grid demo-grid--narrow">
         <z-field label="Status" for="sel-status">
           <z-select>
