@@ -61,8 +61,11 @@ function unbewegt(a: DOMRect, b: DOMRect): boolean {
  * it belongs to the focus then; `focusout` closes it at once unless the pointer
  * rests on trigger or panel, and Escape always closes at once, and only the
  * tooltip: the key stops there, so a dialog behind it needs a second Escape.
- * `aria-describedby` is only present while the panel hangs in the DOM, because
- * a permanent reference would point at a missing id most of the time. A
+ * The id of the panel is added to `aria-describedby` of the trigger while the
+ * panel hangs in the DOM and taken out again afterwards, because a permanent
+ * reference would point at a missing id most of the time. Whatever the trigger
+ * already carries there, a hint or an error of a `z-field` for example, stays
+ * untouched. A
  * disabled button fires no events, so the surrounding element carries the
  * tooltip, and the same reason also stands as a sentence for keyboard users.
  *
@@ -84,7 +87,6 @@ function unbewegt(a: DOMRect, b: DOMRect): boolean {
     '(mouseleave)': `aufZeiger(false)`,
     '(focusin)': `zeige()`,
     '(focusout)': `aufFokusVerlust()`,
-    '[attr.aria-describedby]': `sichtbar() ? tooltipId : null`,
   },
 })
 export class ZTooltip {
@@ -116,6 +118,8 @@ export class ZTooltip {
   private horcher?: AbortController;
   /** The trigger box the panel was hung on; a scroll that leaves it is none. */
   private verankert?: DOMRect;
+  /** Watches `aria-describedby` while the panel stands; see {@link beschreibe}. */
+  private beobachter?: MutationObserver;
 
   constructor() {
     // The text can change while the panel hangs in the overlay, for example
@@ -139,6 +143,10 @@ export class ZTooltip {
       this.stoppeTimer();
       this.abbruch.abort();
       this.horcher?.abort();
+      this.beobachter?.disconnect();
+      // The trigger may outlive the directive, so it keeps its own description
+      // and loses only the id of the panel.
+      this.beschreibe(false);
       this.overlayRef?.dispose();
     });
   }
@@ -192,6 +200,15 @@ export class ZTooltip {
     this.flaeche.instance.id.set(this.tooltipId);
     this.verankert = this.host.nativeElement.getBoundingClientRect();
     this.sichtbar.set(true);
+    this.beschreibe(true);
+    // The caller may rewrite the attribute while the panel stands: a binding of
+    // its own, or the hint and the error of a `z-field` around the control.
+    // Adding is idempotent, so answering the change cannot loop.
+    this.beobachter ??= new MutationObserver(() => this.beschreibe(true));
+    this.beobachter.observe(this.host.nativeElement, {
+      attributes: true,
+      attributeFilter: ['aria-describedby'],
+    });
   }
 
   /** Panel out of the overlay. Whoever keeps listening stays listening. */
@@ -199,9 +216,33 @@ export class ZTooltip {
     if (!this.sichtbar()) {
       return;
     }
+    this.beobachter?.disconnect();
+    this.beschreibe(false);
     this.overlayRef?.detach();
     this.flaeche = undefined;
     this.sichtbar.set(false);
+  }
+
+  /**
+   * Puts the id of the panel into `aria-describedby` of the trigger, or takes
+   * it out again. The attribute is a list of ids and belongs to the caller: a
+   * static one, a binding, or the hint and the error that a `z-field` links to
+   * its control. Overwriting it would silently cut the control off from its own
+   * description, so only this one token is added and removed.
+   */
+  private beschreibe(dazu: boolean): void {
+    const wirt = this.host.nativeElement;
+    const werte = (wirt.getAttribute('aria-describedby') ?? '')
+      .split(/\s+/)
+      .filter((wert) => wert && wert !== this.tooltipId);
+    if (dazu) {
+      werte.push(this.tooltipId);
+    }
+    if (werte.length) {
+      wirt.setAttribute('aria-describedby', werte.join(' '));
+    } else {
+      wirt.removeAttribute('aria-describedby');
+    }
   }
 
   /**

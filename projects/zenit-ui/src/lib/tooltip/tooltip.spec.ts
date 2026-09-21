@@ -12,6 +12,22 @@ class TooltipHost {
   readonly text = signal('Server neu starten');
 }
 
+/** A control that already has a description of its own, as in a `z-field`. */
+@Component({
+  imports: [ZTooltip],
+  template: `<input
+      zTooltip="Nur Buchstaben und Ziffern"
+      aria-describedby="hinweis"
+      [attr.aria-describedby]="beschreibung()"
+    />
+    <p id="hinweis">Der Name steht später in der Adresse.</p>
+    <p id="fehler">Der Name ist schon vergeben.</p>`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class BeschriebenerHost {
+  readonly beschreibung = signal('hinweis');
+}
+
 /** Grace period of the directive between leaving and closing. */
 const NACHLAUF = 100;
 
@@ -76,6 +92,63 @@ describe('ZTooltip', () => {
     loese('focusout');
 
     expect(flaeche()).toBeNull();
+  });
+
+  // The attribute is a list and belongs to the caller: the id of the panel is
+  // one token in it, never the whole value.
+  describe('aria-describedby', () => {
+    let feld: HTMLInputElement;
+    let beschrieben: ComponentFixture<BeschriebenerHost>;
+
+    function ids(): string[] {
+      return (feld.getAttribute('aria-describedby') ?? '').split(/\s+/).filter(Boolean);
+    }
+
+    function loeseAmFeld(name: string): void {
+      feld.dispatchEvent(new Event(name, { bubbles: name.startsWith('focus') }));
+      beschrieben.detectChanges();
+    }
+
+    beforeEach(() => {
+      beschrieben = TestBed.createComponent(BeschriebenerHost);
+      beschrieben.detectChanges();
+      feld = beschrieben.nativeElement.querySelector('input');
+    });
+
+    it('keeps the description the control already had', () => {
+      expect(ids()).toEqual(['hinweis']);
+
+      loeseAmFeld('mouseenter');
+      const panel = behaelter.getContainerElement().querySelector('.z-tooltip');
+
+      expect(ids()).toEqual(['hinweis', panel!.id]);
+
+      loeseAmFeld('mouseleave');
+      vi.advanceTimersByTime(NACHLAUF);
+      beschrieben.detectChanges();
+
+      expect(ids()).toEqual(['hinweis']);
+    });
+
+    it('survives a value that changes while the panel stands', async () => {
+      loeseAmFeld('mouseenter');
+      const panel = behaelter.getContainerElement().querySelector('.z-tooltip');
+
+      beschrieben.componentInstance.beschreibung.set('hinweis fehler');
+      beschrieben.detectChanges();
+      // The MutationObserver answers in a microtask.
+      await Promise.resolve();
+
+      expect(ids()).toEqual(['hinweis', 'fehler', panel!.id]);
+    });
+
+    it('takes only its own id with it when the directive is destroyed', () => {
+      loeseAmFeld('mouseenter');
+
+      beschrieben.destroy();
+
+      expect(ids()).toEqual(['hinweis']);
+    });
   });
 
   it('gives the panel role tooltip and an id and points at it with aria-describedby', () => {
