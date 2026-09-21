@@ -23,12 +23,15 @@ import { ZToggle } from 'zenit-ui';
 
 Selector: `z-toggle`
 
-| Input            | Type      | Default | Description                                                                                                                |
-| ---------------- | --------- | ------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `checked`        | `boolean` | `false` | Switch state, two-way bindable through `[(checked)]`. `true` is on. Also the value seen by forms.                          |
-| `disabled`       | `boolean` | `false` | Locks the toggle. Independent of the disabled state from forms; either one is enough. Boolean attribute.                   |
-| `ariaLabel`      | `string`  | `''`    | `aria-label` of the switch, for a toggle without a row title. Empty writes no attribute.                                   |
-| `ariaLabelledby` | `string`  | `''`    | `aria-labelledby` of the switch, normally the `titleId` of the surrounding `z-setting`. Takes precedence over `ariaLabel`. |
+| Input             | Type      | Default | Description                                                                                                                            |
+| ----------------- | --------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `checked`         | `boolean` | `false` | Switch state, two-way bindable through `[(checked)]`. `true` is on. Also the value seen by forms.                                      |
+| `disabled`        | `boolean` | `false` | Locks the toggle. Independent of the disabled state from forms; either one is enough. Boolean attribute.                               |
+| `ariaLabel`       | `string`  | `''`    | `aria-label` of the switch, for a toggle without a row title. Empty writes no attribute.                                               |
+| `ariaLabelledby`  | `string`  | `''`    | `aria-labelledby` of the switch, normally the `titleId` of the surrounding `z-setting`. Takes precedence over `ariaLabel`.             |
+| `ariaDescribedby` | `string`  | `''`    | `aria-describedby` of the switch: the `id`s of the error or hint sentence, separated by spaces. Empty writes no attribute.             |
+| `invalid`         | `boolean` | `false` | Writes `aria-invalid="true"` while `touched` holds too; no error colour. Set by `[formField]` from the field state. Boolean attribute. |
+| `touched`         | `boolean` | `true`  | Gates `invalid`. Set by `[formField]`; outside Signal Forms it stays `true`. Boolean attribute.                                        |
 
 | Output          | Payload   | Fires when                                  |
 | --------------- | --------- | ------------------------------------------- |
@@ -37,7 +40,9 @@ Selector: `z-toggle`
 No content projection: the component renders one native `<input type="checkbox" role="switch">` and
 nothing else. The label belongs to the `z-setting` row around it.
 
-Forms: implements `ControlValueAccessor`, so `ngModel` and `formControl` work. A `null` or
+Forms: has the shape of a Signal Forms `FormCheckboxControl`, so `[formField]` works and feeds
+`disabled`, `invalid` and `touched`. See [Forms](../forms.md) for the three ways to bind it. It
+implements `ControlValueAccessor`, so `ngModel` and `formControl` work. A `null` or
 `undefined` value counts as off.
 
 ## Examples
