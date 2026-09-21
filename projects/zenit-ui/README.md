@@ -32,6 +32,32 @@ npm i ./zenit-ui-0.1.0.tgz
 > workspace. Point every command at the local file, as the sections below do, until the name is
 > claimed or the package is scoped.
 
+### Working against a linked build
+
+While you develop against the library, `npm link` or a junction is faster than repacking. Two
+settings belong to that setup, not to a real install:
+
+```json
+"preserveSymlinks": true
+```
+
+in the build target, and in the runner config of the test target:
+
+```ts
+test: {
+  server: { deps: { inline: [/zenit-ui/] } },
+}
+```
+
+Without the first one the bundler resolves the linked package to its real path and takes
+`@angular/core` from the library workspace: two Angular instances, `NG0203: inject() must be called
+from an injection context`. The second one is needed because a package in `node_modules` is external
+to the test bundle, so Vitest lets Node load it, and Node follows the link regardless of what Vite
+is told. Both halves are needed together, and both workspaces should be on the same Angular patch
+version. A tarball or registry install has none of this: the package then lives inside your own
+`node_modules` and resolves `@angular/core` from there. The measurements and the alternative via
+`resolve.dedupe` are in [`docs/ng-add.md`](../../docs/ng-add.md), "Working against a linked build".
+
 ## Setup
 
 ### 1. Register the styles in `angular.json`

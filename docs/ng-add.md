@@ -144,6 +144,66 @@ the schematic's. The init script carries a `<!-- prettier-ignore -->`.
 | `--fonts` | boolean | `true` | Add the font packages and their imports. |
 | `--toast-outlet` | boolean | `true` | Mount `<z-toast-outlet />` in the root component. |
 
+## Working against a linked build
+
+`npm link` (or a junction into `node_modules`) is the fastest way to try a change from the library
+in a real application, and it is the one setup that needs a second option. The build already has it:
+
+```json
+"preserveSymlinks": true
+```
+
+Without it the bundler resolves the linked package to its real path and pulls `@angular/core` out of
+the **library workspace** instead of the application, which gives two Angular instances and
+`NG0203: inject() must be called from an injection context` at runtime.
+
+**The unit tests need one more line.** `preserveSymlinks` does reach Vitest — the
+`@angular/build:unit-test` builder reads it from the build target and passes it on as
+`resolve.preserveSymlinks` — but it has nothing to work on: a package under `node_modules` is
+*external* to the test bundle, so Vitest hands it to Node's own loader, and Node resolves a
+symlinked package to its real path no matter what Vite is configured to do. From there
+`@angular/core` comes out of the library workspace again, and every spec that touches a zenit-ui
+component fails with `NG0203` or a duplicated `@angular/core`.
+
+Pull the package into the Vite graph, where `preserveSymlinks` applies:
+
+```ts
+// vitest-base.config.ts, the runner config of the test target
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  test: {
+    server: { deps: { inline: [/zenit-ui/] } },
+  },
+});
+```
+
+A consumer went from 2 of 2 specs red to 8 of 8 green with this one block.
+
+What is worth knowing before you copy it:
+
+- **It only works together with `preserveSymlinks: true` on the build target.** Inlining alone moves
+  the resolution from Node to Vite; Vite realpaths a symlink as well unless it is told not to. Both
+  halves were measured here with a throwaway Vitest project (a junctioned package plus two copies of
+  one dependency, one in each workspace): externalised, the package got the other workspace's copy;
+  inlined without `preserveSymlinks`, still the other workspace's copy; inlined with it, the same
+  instance as the application. `server.deps.inline: true` for everything changes nothing on its own.
+- **`resolve.dedupe` is the alternative** and needs no build option: `resolve: { dedupe: ['@angular/core', '@angular/common'] }`
+  merged the instances in the same probe. Contrary to a widespread note, the builder does not take
+  only the `test` section of the runner config: it carries the top-level `resolve`, `optimizeDeps`
+  and `plugins` over as well (`@angular/build` 22.1.8,
+  `src/builders/unit-test/runners/vitest/plugins.js`). `test.include`, `test.projects` and
+  `test.watch` are the options it overrides and warns about.
+- **Keep both workspaces on the same Angular patch version.** It does not fix `NG0203` by itself —
+  two directories are two instances even at equal versions — but a library built against a newer
+  patch than the application runs on is a second, harder class of bug.
+- **A real install is not affected.** Unpacked from the tarball or fetched from a registry, the
+  package sits inside the application's own `node_modules`, with no link to follow, and resolves
+  `@angular/core` from there. Measured the same way: `dist/zenit-ui` junctioned into a throwaway
+  consumer resolved `@angular/core` to the library workspace's copy, the same `dist/zenit-ui`
+  copied into it resolved to the consumer's own copy. So `server.deps.inline` is scaffolding for
+  the link phase; it does no harm afterwards, but it is not needed.
+
 ## Running it against the local build
 
 The library is not published, so the schematic runs from a local package:

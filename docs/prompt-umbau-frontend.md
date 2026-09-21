@@ -44,7 +44,11 @@ EINBINDUNG ÜBER NPM LINK (vorerst)
   `npm link zenit-ui`. Schreib dafür ein Skript "link:ui" in package.json.
 - angular.json, build.options des Projekts: "preserveSymlinks": true, sonst
   wird @angular/core doppelt aufgelöst (NG0203, inject() außerhalb des
-  Kontexts). Prüfe auch die Test-Konfiguration.
+  Kontexts). Die Unit-Tests brauchen zusätzlich
+  `test: { server: { deps: { inline: [/zenit-ui/] } } }` in der Runner-Config:
+  ein Paket aus node_modules ist extern, Vitest lässt es von Node laden, und
+  Node folgt dem Link. Beides gilt nur zusammen. Siehe docs/ng-add.md,
+  "Working against a linked build".
 - @angular/cdk in derselben Major-Version wie Angular installieren. Prüfe
   zuerst die Angular-Version dieses Repos. zenit-ui verlangt Angular 22. Ist
   das Repo älter, brich ab und sag es mir.
