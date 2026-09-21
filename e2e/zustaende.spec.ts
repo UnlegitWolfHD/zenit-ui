@@ -1,0 +1,937 @@
+import { expect, test, type Locator, type Page } from '@playwright/test';
+
+/**
+ * Per-component check of the states in spec/guidelines/15-zustaende.md: rest,
+ * hover, keyboard focus, pressed, active, disabled, loading, error and the
+ * transitions of "Bewegung" in CLAUDE.md.
+ *
+ * Everything is measured on the single component: computed styles plus element
+ * screenshots (focus: bounding box plus 6px of air). No screenshot shows the
+ * page shell, so a change of the demo header leaves these baselines alone.
+ * The page level is covered by e2e/demo.spec.ts.
+ */
+
+/** Nothing here may change between rest, hover and pressed. */
+const GEOMETRIE = [
+  'width',
+  'height',
+  'transform',
+  'boxShadow',
+  'fontSize',
+  'marginTop',
+  'marginRight',
+  'marginBottom',
+  'marginLeft',
+  'paddingTop',
+  'paddingRight',
+  'paddingBottom',
+  'paddingLeft',
+] as const;
+
+/** Hover is allowed to move exactly these. */
+const FARBEN = ['backgroundColor', 'color', 'borderTopColor'] as const;
+
+/** The only transition the design system allows, 150ms on three properties. */
+const UEBERGANG = ['color', 'background-color', 'border-color'];
+
+/** Air around the element in the focus screenshot, so the 2px ring fits in. */
+const LUFT = 6;
+
+async function seiteOeffnen(page: Page, route: string): Promise<void> {
+  await page.goto(`/${route}`);
+  await page.locator('main h1').first().waitFor();
+  await page.evaluate(() => document.fonts.ready.then(() => true));
+}
+
+/** Resolved value of a token, read from the running page instead of hard-coded. */
+async function tokenFarbe(page: Page, token: string): Promise<string> {
+  return page.evaluate((name) => {
+    const probe = document.createElement('span');
+    probe.style.color = `var(${name})`;
+    document.body.appendChild(probe);
+    const farbe = getComputedStyle(probe).color;
+    probe.remove();
+    return farbe;
+  }, token);
+}
+
+async function stil(ziel: Locator, namen: readonly string[]): Promise<Record<string, string>> {
+  return ziel.evaluate(
+    (el, eigenschaften) => {
+      const berechnet = getComputedStyle(el) as unknown as Record<string, string>;
+      return Object.fromEntries(eigenschaften.map((name) => [name, berechnet[name]]));
+    },
+    [...namen],
+  );
+}
+
+interface Kasten {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+async function kasten(ziel: Locator): Promise<Kasten> {
+  const box = await ziel.boundingBox();
+  if (!box) {
+    throw new Error('Element hat keine Box');
+  }
+  const runden = (wert: number) => Math.round(wert * 100) / 100;
+  return {
+    x: runden(box.x),
+    y: runden(box.y),
+    width: runden(box.width),
+    height: runden(box.height),
+  };
+}
+
+/** Section of a demo page, found through its h2. */
+const abschnitt = (page: Page, titel: string) =>
+  page
+    .locator('section.demo-section')
+    .filter({ has: page.getByRole('heading', { level: 2, name: titel, exact: true }) });
+
+/** One row inside a section, found through the text of its caption. */
+const reihe = (page: Page, titel: string, text: string) =>
+  abschnitt(page, titel).locator('.demo-row').filter({ hasText: text });
+
+interface Baustein {
+  /** Prefix of the screenshots, e. g. button-primary. */
+  name: string;
+  route: string;
+  ziel: (page: Page) => Locator;
+  /** Opens a dialog or a menu, or scrolls the console, before the element exists. */
+  vorbereiten?: (page: Page) => Promise<void>;
+  /** Closes again what `vorbereiten` opened; only the transition test needs it. */
+  aufraeumen?: (page: Page) => Promise<void>;
+  /** spec/components/bundle.css gives this element a :hover rule. */
+  hoverFarbe: boolean;
+  /** Element that carries the hover colour, when it is not the element itself. */
+  farbeAn?: (page: Page) => Locator;
+  farbProps?: readonly string[];
+  /** Mouse down would open a native popup (select), so it is left out. */
+  ohneDruck?: boolean;
+  /** Focus without Tab, because Tab closes the CDK menu. */
+  fokussieren?: (page: Page, ziel: Locator) => Promise<void>;
+}
+
+/** Opens the menu of the overlays page by keyboard, so the items are reachable. */
+const menuOeffnen = async (page: Page) => {
+  await page.getByRole('button', { name: 'Weitere Aktionen' }).press('Enter');
+  await page.getByRole('menu').waitFor();
+};
+
+const schliessen = async (page: Page) => {
+  await page.keyboard.press('Escape');
+};
+
+const dialogOeffnen = async (page: Page) => {
+  await abschnitt(page, 'Dialog').getByRole('button', { name: 'Hart beenden' }).click();
+  await page.getByRole('dialog').waitFor();
+};
+
+const BAUSTEINE: Baustein[] = [
+  // Grundlage: Button in all four variants, as a link, icon only and in the
+  // Minecraft subtheme, plus Input, Textarea and Select.
+  {
+    name: 'button-primary',
+    route: 'grundlage',
+    ziel: (p) =>
+      abschnitt(p, 'Button')
+        .locator('.demo-row')
+        .first()
+        .getByRole('button', { name: 'Server erstellen' }),
+    hoverFarbe: true,
+  },
+  {
+    name: 'button-secondary',
+    route: 'grundlage',
+    ziel: (p) =>
+      abschnitt(p, 'Button')
+        .locator('.demo-row')
+        .first()
+        .getByRole('button', { name: 'Preis berechnen' }),
+    hoverFarbe: true,
+  },
+  {
+    name: 'button-ghost',
+    route: 'grundlage',
+    ziel: (p) =>
+      abschnitt(p, 'Button')
+        .locator('.demo-row')
+        .first()
+        .getByRole('button', { name: 'Abbrechen' }),
+    hoverFarbe: true,
+  },
+  {
+    name: 'button-danger',
+    route: 'grundlage',
+    ziel: (p) =>
+      abschnitt(p, 'Button')
+        .locator('.demo-row')
+        .first()
+        .getByRole('button', { name: 'Hart beenden' }),
+    hoverFarbe: true,
+  },
+  {
+    name: 'button-icon',
+    route: 'grundlage',
+    ziel: (p) => reihe(p, 'Button', 'Nur Icon').getByRole('button', { name: 'Aktualisieren' }),
+    hoverFarbe: true,
+  },
+  {
+    name: 'button-link',
+    route: 'grundlage',
+    ziel: (p) => reihe(p, 'Button', 'Als Link').getByRole('link', { name: 'Server erstellen' }),
+    hoverFarbe: true,
+  },
+  {
+    name: 'button-mc-primary',
+    route: 'grundlage',
+    ziel: (p) =>
+      abschnitt(p, 'Button')
+        .locator('.z-theme-mc')
+        .getByRole('button', { name: 'Server konfigurieren' }),
+    hoverFarbe: true,
+  },
+  {
+    name: 'input',
+    route: 'grundlage',
+    ziel: (p) => p.getByLabel('Servername'),
+    hoverFarbe: true,
+  },
+  {
+    name: 'textarea',
+    route: 'grundlage',
+    ziel: (p) => p.getByLabel('Notiz'),
+    hoverFarbe: true,
+  },
+  {
+    // Mouse down on a native select opens the browser popup, which no
+    // computed style can be read behind; the pressed check is left out.
+    name: 'select',
+    route: 'grundlage',
+    ziel: (p) => p.getByLabel('Status', { exact: true }),
+    hoverFarbe: true,
+    ohneDruck: true,
+  },
+
+  // Formulare: the checkbox is measured unchecked, because :checked overrides
+  // the hover border in the reference.
+  {
+    name: 'checkbox',
+    route: 'formulare',
+    ziel: (p) => p.getByRole('checkbox', { name: 'whitelist.json' }),
+    hoverFarbe: true,
+  },
+  {
+    name: 'toggle',
+    route: 'formulare',
+    ziel: (p) => p.getByRole('switch', { name: 'Hardcore' }),
+    hoverFarbe: false,
+  },
+  {
+    name: 'slider',
+    route: 'formulare',
+    ziel: (p) => p.getByRole('slider', { name: 'Arbeitsspeicher' }),
+    hoverFarbe: false,
+  },
+  {
+    name: 'segment',
+    route: 'formulare',
+    ziel: (p) =>
+      p
+        .getByRole('group', { name: 'Zeitraum', exact: true })
+        .getByRole('button', { name: '3 Monate' }),
+    hoverFarbe: true,
+  },
+
+  // Navigation: tab, sidebar entry, header link and footer link, each the one
+  // that is not the current page.
+  {
+    name: 'tab',
+    route: 'navigation',
+    ziel: (p) => p.getByRole('navigation', { name: 'Hosting' }).getByRole('link', { name: 'Apps' }),
+    hoverFarbe: true,
+  },
+  {
+    name: 'sidebar-item',
+    route: 'navigation',
+    ziel: (p) => p.locator('z-sidebar').getByRole('button', { name: 'Konsole' }),
+    hoverFarbe: true,
+  },
+  {
+    name: 'header-link',
+    route: 'navigation',
+    ziel: (p) => p.locator('z-app-header').first().getByRole('link', { name: 'Dashboard' }),
+    hoverFarbe: true,
+  },
+  {
+    name: 'footer-link',
+    route: 'navigation',
+    ziel: (p) => p.locator('z-footer').first().getByRole('link', { name: 'Impressum' }),
+    hoverFarbe: true,
+  },
+
+  // Daten: row link, the table container (tab stop) and the pagination.
+  {
+    name: 'row-link',
+    route: 'daten',
+    ziel: (p) => p.getByRole('link', { name: /Beispiel-Server 1/ }).first(),
+    hoverFarbe: true,
+  },
+  {
+    name: 'table-container',
+    route: 'daten',
+    ziel: (p) => p.getByRole('region', { name: 'Dateien, seitlich scrollbar' }),
+    hoverFarbe: false,
+  },
+  {
+    name: 'pagination-next',
+    route: 'daten',
+    ziel: (p) => p.getByRole('button', { name: 'Nächste Seite' }).first(),
+    hoverFarbe: true,
+  },
+
+  // Rückmeldung: alert action, the two buttons of a toast and a tooltip host.
+  {
+    name: 'alert-action',
+    route: 'rueckmeldung',
+    ziel: (p) => p.getByRole('button', { name: 'Vorschläge ansehen' }),
+    hoverFarbe: true,
+  },
+  {
+    name: 'toast-action',
+    route: 'rueckmeldung',
+    vorbereiten: async (p) => {
+      await p.getByRole('button', { name: 'Mit Aktion zeigen' }).click();
+      await p.getByRole('button', { name: 'Rückgängig' }).waitFor();
+    },
+    aufraeumen: async (p) => p.getByRole('button', { name: 'Alle schließen' }).click(),
+    ziel: (p) => p.getByRole('button', { name: 'Rückgängig' }),
+    hoverFarbe: false,
+  },
+  {
+    name: 'toast-close',
+    route: 'rueckmeldung',
+    vorbereiten: async (p) => {
+      await p.getByRole('button', { name: 'Dauerhaft zeigen' }).click();
+      await p.getByRole('button', { name: 'Schließen', exact: true }).waitFor();
+    },
+    aufraeumen: async (p) => p.getByRole('button', { name: 'Alle schließen' }).click(),
+    ziel: (p) => p.getByRole('button', { name: 'Schließen', exact: true }),
+    hoverFarbe: true,
+  },
+  {
+    name: 'tooltip-host',
+    route: 'rueckmeldung',
+    ziel: (p) => abschnitt(p, 'Tooltip').getByRole('button', { name: 'Neustart' }),
+    hoverFarbe: true,
+  },
+
+  // Overlays: the two dialog buttons and the menu entries, each behind the
+  // overlay that has to be opened first.
+  {
+    name: 'dialog-cancel',
+    route: 'overlays',
+    vorbereiten: dialogOeffnen,
+    aufraeumen: schliessen,
+    ziel: (p) => p.getByRole('dialog').getByRole('button', { name: 'Abbrechen' }),
+    hoverFarbe: true,
+  },
+  {
+    name: 'dialog-confirm',
+    route: 'overlays',
+    vorbereiten: dialogOeffnen,
+    aufraeumen: schliessen,
+    ziel: (p) => p.getByRole('dialog').getByRole('button', { name: 'Hart beenden' }),
+    hoverFarbe: true,
+  },
+  {
+    name: 'menu-item',
+    route: 'overlays',
+    vorbereiten: menuOeffnen,
+    aufraeumen: schliessen,
+    ziel: (p) => p.getByRole('menuitem', { name: 'FTP-Zugang' }),
+    hoverFarbe: true,
+    fokussieren: async (_p, ziel) => ziel.focus(),
+  },
+  {
+    name: 'menu-item-danger',
+    route: 'overlays',
+    vorbereiten: menuOeffnen,
+    aufraeumen: schliessen,
+    ziel: (p) => p.getByRole('menuitem', { name: 'Server löschen' }),
+    hoverFarbe: true,
+    fokussieren: async (_p, ziel) => ziel.focus(),
+  },
+
+  // Werkzeuge: console input and its "Zum Ende" button, game tile and Faq.
+  {
+    name: 'console-input',
+    route: 'werkzeuge',
+    ziel: (p) => p.getByRole('textbox', { name: 'Befehl' }).first(),
+    hoverFarbe: false,
+  },
+  {
+    name: 'console-end',
+    route: 'werkzeuge',
+    vorbereiten: async (p) => {
+      const log = p.locator('.z-console__log').first();
+      await p.getByRole('button', { name: '50 Zeilen anhängen' }).click();
+      // Das Log zieht selbst ans Ende nach. Erst danach hoch scrollen, sonst
+      // holt der Nachlauf die Ansicht wieder zurück und der Button bleibt weg.
+      await expect.poll(() => log.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
+      await log.evaluate((el) => {
+        el.scrollTop = 0;
+      });
+      await p.getByRole('button', { name: 'Zum Ende' }).waitFor();
+    },
+    ziel: (p) => p.getByRole('button', { name: 'Zum Ende' }),
+    hoverFarbe: true,
+  },
+  {
+    // The reference colours the cover of the tile, not the tile itself.
+    name: 'game-tile',
+    route: 'werkzeuge',
+    ziel: (p) => p.getByRole('button', { name: /Valheim/ }),
+    farbeAn: (p) => p.getByRole('button', { name: /Valheim/ }).locator('.z-game__cover'),
+    farbProps: ['outlineColor'],
+    hoverFarbe: true,
+  },
+  {
+    name: 'faq-summary',
+    route: 'werkzeuge',
+    ziel: (p) =>
+      p.locator('.z-faq summary').filter({ hasText: 'Kann ich später mehr RAM buchen?' }),
+    hoverFarbe: false,
+  },
+];
+
+interface Messung {
+  geo: Record<string, string>;
+  box: Kasten;
+  farben: Record<string, string>;
+}
+
+async function messen(baustein: Baustein, page: Page): Promise<Messung> {
+  return {
+    geo: await stil(baustein.ziel(page), GEOMETRIE),
+    box: await kasten(baustein.ziel(page)),
+    farben: await stil((baustein.farbeAn ?? baustein.ziel)(page), baustein.farbProps ?? FARBEN),
+  };
+}
+
+/** Puts the browser into keyboard mode, so :focus-visible applies. */
+async function tastaturFokus(page: Page, baustein: Baustein): Promise<Locator> {
+  const ziel = baustein.ziel(page);
+  if (baustein.fokussieren) {
+    await baustein.fokussieren(page, ziel);
+    return ziel;
+  }
+  await page.keyboard.press('Tab');
+  await ziel.focus();
+  return ziel;
+}
+
+/** Bounding box plus 6px, clamped to the viewport. */
+async function fokusAusschnitt(page: Page, ziel: Locator): Promise<Kasten> {
+  const box = await kasten(ziel);
+  const sicht = page.viewportSize() ?? { width: 1280, height: 720 };
+  const links = Math.max(0, box.x - LUFT);
+  const oben = Math.max(0, box.y - LUFT);
+  const rechts = Math.min(sicht.width, box.x + box.width + LUFT);
+  const unten = Math.min(sicht.height, box.y + box.height + LUFT);
+  return { x: links, y: oben, width: rechts - links, height: unten - oben };
+}
+
+const teile = (wert: string) => wert.split(',').map((eintrag) => eintrag.trim());
+const ohneUebergang = (u: Record<string, string>) =>
+  teile(u.transitionDuration).every((dauer) => dauer === '0s');
+
+for (const baustein of BAUSTEINE) {
+  test.describe(baustein.name, () => {
+    test.beforeEach(async ({ page }) => {
+      await seiteOeffnen(page, baustein.route);
+      await baustein.vorbereiten?.(page);
+      await baustein.ziel(page).scrollIntoViewIfNeeded();
+    });
+
+    test('Hover färbt und bewegt nichts, Gedrückt hat keinen eigenen Stil', async ({ page }) => {
+      const ruhe = await messen(baustein, page);
+
+      await baustein.ziel(page).hover();
+      const hover = await messen(baustein, page);
+      expect(hover.geo, `${baustein.name}: Hover ändert Maße oder Schatten`).toEqual(ruhe.geo);
+      expect(hover.box, `${baustein.name}: Hover verschiebt das Element`).toEqual(ruhe.box);
+      if (baustein.hoverFarbe) {
+        expect(hover.farben, `${baustein.name}: Hover ändert keine Farbe`).not.toEqual(ruhe.farben);
+      } else {
+        expect(
+          hover.farben,
+          `${baustein.name}: Hover färbt, obwohl die Vorlage keine Hover-Regel hat`,
+        ).toEqual(ruhe.farben);
+      }
+      await expect(baustein.ziel(page)).toHaveScreenshot(`zustaende-${baustein.name}-hover.png`);
+
+      if (!baustein.ohneDruck) {
+        await page.mouse.down();
+        const gedrueckt = await messen(baustein, page);
+        // Away from the element before the release, so the click does not run.
+        await page.mouse.move(0, 0);
+        await page.mouse.up();
+        expect(gedrueckt.geo, `${baustein.name}: Gedrückt ändert Maße oder Schatten`).toEqual(
+          ruhe.geo,
+        );
+        expect(gedrueckt.box, `${baustein.name}: Gedrückt verschiebt das Element`).toEqual(
+          ruhe.box,
+        );
+        expect(gedrueckt.farben, `${baustein.name}: Gedrückt hat einen eigenen Stil`).toEqual(
+          hover.farben,
+        );
+      }
+    });
+
+    test('Tastaturfokus zeigt den 2px-Ring in --focus', async ({ page }) => {
+      const fokus = await tokenFarbe(page, '--focus');
+      const ziel = await tastaturFokus(page, baustein);
+
+      await expect(ziel).toBeFocused();
+      expect(
+        await ziel.evaluate((el) => el.matches(':focus-visible')),
+        `${baustein.name}: kein :focus-visible nach Tastaturbedienung`,
+      ).toBe(true);
+
+      const ring = await stil(ziel, [
+        'outlineStyle',
+        'outlineWidth',
+        'outlineOffset',
+        'outlineColor',
+      ]);
+      expect(ring.outlineStyle, `${baustein.name}: outline-style`).not.toBe('none');
+      expect(ring.outlineWidth, `${baustein.name}: outline-width`).toBe('2px');
+      expect(ring.outlineOffset, `${baustein.name}: outline-offset`).toBe('2px');
+      expect(ring.outlineColor, `${baustein.name}: Ringfarbe ist nicht --focus`).toBe(fokus);
+
+      await expect(page).toHaveScreenshot(`zustaende-${baustein.name}-focus.png`, {
+        clip: await fokusAusschnitt(page, ziel),
+      });
+    });
+
+    test('Ohne Bewegung: kein Übergang', async ({ page }) => {
+      const u = await stil(baustein.ziel(page), ['transitionProperty', 'transitionDuration']);
+      expect(ohneUebergang(u), `${baustein.name}: Übergang trotz prefers-reduced-motion`).toBe(
+        true,
+      );
+    });
+  });
+}
+
+test.describe('Übergänge bei prefers-reduced-motion: no-preference', () => {
+  test.use({ reducedMotion: 'no-preference' });
+
+  for (const route of [...new Set(BAUSTEINE.map((b) => b.route))]) {
+    test(`/${route}`, async ({ page }) => {
+      await seiteOeffnen(page, route);
+      const ohne: string[] = [];
+      for (const baustein of BAUSTEINE.filter((b) => b.route === route)) {
+        await baustein.vorbereiten?.(page);
+        const u = await stil(baustein.ziel(page), ['transitionProperty', 'transitionDuration']);
+        if (ohneUebergang(u)) {
+          ohne.push(baustein.name);
+        } else {
+          expect(teile(u.transitionProperty), `${baustein.name}: transition-property`).toEqual(
+            UEBERGANG,
+          );
+          expect(teile(u.transitionDuration), `${baustein.name}: transition-duration`).toEqual(
+            UEBERGANG.map(() => '0.15s'),
+          );
+        }
+        await baustein.aufraeumen?.(page);
+      }
+      test.info().annotations.push({ type: 'ohne Übergang', description: ohne.join(', ') || '-' });
+    });
+  }
+});
+
+test.describe('Aktiv und gewählt', () => {
+  test('Tab: aria-current, Textfarbe und die 2px-Linie nur am aktiven Tab', async ({ page }) => {
+    await seiteOeffnen(page, 'navigation');
+    const tabs = page.getByRole('navigation', { name: 'Hosting' });
+    const aktiv = tabs.getByRole('link', { name: 'Übersicht' });
+    const ruhend = tabs.getByRole('link', { name: 'Apps' });
+
+    await expect(aktiv).toHaveAttribute('aria-current', 'page');
+    await expect(ruhend).not.toHaveAttribute('aria-current', 'page');
+    const linie = await stil(aktiv, ['color', 'boxShadow']);
+    expect(linie.color, 'aktiver Tab steht nicht in --text').toBe(await tokenFarbe(page, '--text'));
+    expect(linie.boxShadow, 'aktiver Tab ohne 2px-Linie in --accent-text').toContain(
+      await tokenFarbe(page, '--accent-text'),
+    );
+    expect(linie.boxShadow, 'aktiver Tab ohne 2px-Linie').toContain('-2px');
+    expect((await stil(ruhend, ['boxShadow'])).boxShadow, 'ruhender Tab hat eine Linie').toBe(
+      'none',
+    );
+
+    await expect(aktiv).toHaveScreenshot('zustaende-tab-active.png');
+  });
+
+  test('Sidebar-Eintrag: aria-current, surface-hover und text', async ({ page }) => {
+    await seiteOeffnen(page, 'navigation');
+    const aktiv = page.locator('z-sidebar').getByRole('button', { name: 'Übersicht' });
+
+    await expect(aktiv).toHaveAttribute('aria-current', 'page');
+    const farben = await stil(aktiv, ['backgroundColor', 'color']);
+    expect(farben.backgroundColor, 'aktiver Eintrag ohne --surface-hover').toBe(
+      await tokenFarbe(page, '--surface-hover'),
+    );
+    expect(farben.color, 'aktiver Eintrag ohne --text').toBe(await tokenFarbe(page, '--text'));
+
+    await expect(aktiv).toHaveScreenshot('zustaende-sidebar-item-active.png');
+  });
+
+  test('Header-Link: aria-current, accent-subtle und text', async ({ page }) => {
+    await seiteOeffnen(page, 'navigation');
+    const aktiv = page.locator('z-app-header').first().getByRole('link', { name: 'Gameserver' });
+
+    await expect(aktiv).toHaveAttribute('aria-current', 'page');
+    const farben = await stil(aktiv, ['backgroundColor', 'color']);
+    // Die Vorlage setzt hier accent-subtle statt surface-hover.
+    expect(farben.backgroundColor, 'aktiver Header-Link ohne --accent-subtle').toBe(
+      await tokenFarbe(page, '--accent-subtle'),
+    );
+    expect(farben.color, 'aktiver Header-Link ohne --text').toBe(await tokenFarbe(page, '--text'));
+
+    await expect(aktiv).toHaveScreenshot('zustaende-header-link-active.png');
+  });
+
+  test('Segment: aria-pressed, surface-hover und text', async ({ page }) => {
+    await seiteOeffnen(page, 'formulare');
+    const gruppe = page.getByRole('group', { name: 'Zeitraum', exact: true });
+    const gewaehlt = gruppe.getByRole('button', { name: '6 Monate' });
+
+    await expect(gewaehlt).toHaveAttribute('aria-pressed', 'true');
+    const farben = await stil(gewaehlt, ['backgroundColor', 'color']);
+    expect(farben.backgroundColor, 'gewählte Option ohne --surface-hover').toBe(
+      await tokenFarbe(page, '--surface-hover'),
+    );
+    expect(farben.color, 'gewählte Option ohne --text').toBe(await tokenFarbe(page, '--text'));
+
+    await expect(gewaehlt).toHaveScreenshot('zustaende-segment-selected.png');
+  });
+
+  test('GameTile: aria-pressed und die 2px-Linie nur an der gewählten Kachel', async ({ page }) => {
+    await seiteOeffnen(page, 'werkzeuge');
+    const gewaehlt = page.getByRole('button', { name: /Terraria/ });
+    const ruhend = page.getByRole('button', { name: /Valheim/ });
+
+    await expect(gewaehlt).toHaveAttribute('aria-pressed', 'true');
+    await expect(ruhend).toHaveAttribute('aria-pressed', 'false');
+    const linie = await stil(gewaehlt.locator('.z-game__cover'), ['outlineWidth', 'outlineColor']);
+    expect(linie.outlineWidth, 'gewählte Kachel ohne 2px-Linie').toBe('2px');
+    expect(linie.outlineColor, 'gewählte Kachel nicht in --accent-text').toBe(
+      await tokenFarbe(page, '--accent-text'),
+    );
+    expect(
+      (await stil(ruhend.locator('.z-game__cover'), ['outlineWidth'])).outlineWidth,
+      'ruhende Kachel hat eine 2px-Linie',
+    ).toBe('1px');
+
+    await expect(ruhend).toHaveScreenshot('zustaende-game-tile-rest.png');
+    await expect(gewaehlt).toHaveScreenshot('zustaende-game-tile-selected.png');
+  });
+
+  test('Checkbox gewählt: accent als Fläche und Rahmen', async ({ page }) => {
+    await seiteOeffnen(page, 'formulare');
+    const gewaehlt = page.getByRole('checkbox', { name: 'server.properties' });
+
+    await expect(gewaehlt).toBeChecked();
+    const farben = await stil(gewaehlt, ['backgroundColor', 'borderTopColor']);
+    const accent = await tokenFarbe(page, '--accent');
+    expect(farben.backgroundColor, 'gewählte Checkbox ohne --accent').toBe(accent);
+    expect(farben.borderTopColor, 'gewählte Checkbox ohne Rahmen in --accent').toBe(accent);
+
+    await expect(gewaehlt).toHaveScreenshot('zustaende-checkbox-selected.png');
+  });
+
+  test('Toggle an: success als Fläche', async ({ page }) => {
+    await seiteOeffnen(page, 'formulare');
+    const an = page.getByRole('switch', { name: 'PvP' });
+
+    await expect(an).toBeChecked();
+    expect(
+      (await stil(an, ['backgroundColor'])).backgroundColor,
+      'eingeschalteter Toggle ohne --success',
+    ).toBe(await tokenFarbe(page, '--success'));
+
+    await expect(an).toHaveScreenshot('zustaende-toggle-selected.png');
+  });
+
+  test('Faq: geschlossen, offen und das Zeichen im Kopf', async ({ page }) => {
+    await seiteOeffnen(page, 'werkzeuge');
+    const offen = page.locator('.z-faq').filter({ hasText: 'Wie schnell ist mein Server online?' });
+    const zu = page.locator('.z-faq').filter({ hasText: 'Kann ich später mehr RAM buchen?' });
+
+    await expect(offen).toHaveAttribute('open', '');
+    await expect(zu).not.toHaveAttribute('open', '');
+    await expect(offen.locator('.z-faq__body')).toBeVisible();
+    await expect(zu.locator('.z-faq__body')).toBeHidden();
+
+    await expect(zu).toHaveScreenshot('zustaende-faq-closed.png');
+    await zu.locator('summary').click();
+    await expect(zu).toHaveAttribute('open', '');
+    await expect(zu.locator('.z-faq__body')).toBeVisible();
+    await expect(zu).toHaveScreenshot('zustaende-faq-open.png');
+  });
+});
+
+test.describe('Lädt und Fehler', () => {
+  test('Button lädt: Spinner vor dem Text, aria-busy und gesperrt', async ({ page }) => {
+    await seiteOeffnen(page, 'grundlage');
+    const laedt = page.getByRole('button', { name: 'Wird gestartet' }).first();
+
+    await expect(laedt).toHaveAttribute('aria-busy', 'true');
+    await expect(laedt).toBeDisabled();
+    expect(
+      await laedt.evaluate((el) => el.firstElementChild?.classList.contains('z-spinner') ?? false),
+      'Spinner steht nicht vor dem Text',
+    ).toBe(true);
+
+    await expect(laedt).toHaveScreenshot('zustaende-button-loading.png');
+  });
+
+  test('Feld im Fehler: Rahmen in --danger, Satz darunter, aria-invalid', async ({ page }) => {
+    await seiteOeffnen(page, 'grundlage');
+    const feld = page.getByLabel('Maximale Spieler');
+    const danger = await tokenFarbe(page, '--danger');
+
+    await expect(feld).toHaveAttribute('aria-invalid', 'true');
+    const rahmen = await stil(feld, [
+      'borderTopColor',
+      'borderRightColor',
+      'borderBottomColor',
+      'borderLeftColor',
+    ]);
+    expect(Object.values(rahmen), 'Rahmen des Feldes nicht in --danger').toEqual([
+      danger,
+      danger,
+      danger,
+      danger,
+    ]);
+
+    const beschrieben = await feld.getAttribute('aria-describedby');
+    expect(beschrieben, 'aria-describedby fehlt').toBeTruthy();
+    const satz = page.locator(`#${beschrieben}`);
+    await expect(satz).toHaveText('Dein Tarif erlaubt höchstens 100 Spieler.');
+    expect((await stil(satz, ['color'])).color, 'Fehlersatz steht nicht in --danger').toBe(danger);
+    const oben = await kasten(feld);
+    const unten = await kasten(satz);
+    expect(unten.y, 'Fehlersatz steht nicht unter dem Feld').toBeGreaterThan(oben.y);
+
+    await expect(page.locator('z-field').filter({ has: feld })).toHaveScreenshot(
+      'zustaende-input-error.png',
+    );
+  });
+
+  test('Tooltip erscheint bei Zeiger und Fokus und beschreibt den Auslöser', async ({ page }) => {
+    await seiteOeffnen(page, 'rueckmeldung');
+    const wirt = abschnitt(page, 'Tooltip').getByRole('button', { name: 'Neustart' });
+    const text = 'Beispiel-Server 1 läuft seit 3 Tagen ohne Neustart';
+
+    await wirt.hover();
+    await expect(page.locator('.z-tooltip')).toHaveText(text);
+    await expect(wirt).toHaveAttribute('aria-describedby', /.+/);
+
+    await page.mouse.move(0, 0);
+    await expect(page.locator('.z-tooltip')).toHaveCount(0);
+
+    await page.keyboard.press('Tab');
+    await wirt.focus();
+    await expect(page.locator('.z-tooltip')).toHaveText(text);
+  });
+});
+
+interface Gesperrt {
+  name: string;
+  route: string;
+  ziel: (page: Page) => Locator;
+  vorbereiten?: (page: Page) => Promise<void>;
+  /** aria-disabled stays in the tab order, native disabled does not. */
+  tabErreichbar?: boolean;
+  /**
+   * Entry of a CDK menu: the menu carries a roving focus, so no entry is a tab
+   * stop and Tab closes the whole menu. Instead of the Tab walk the test checks
+   * that the entry sits outside the tab order and still takes focus.
+   */
+  rovingFokus?: boolean;
+  /** Visible reason next to the element. */
+  grund: string;
+  /** Value that a click must not change. */
+  wirkung?: (page: Page) => Promise<string>;
+}
+
+const GESPERRT: Gesperrt[] = [
+  {
+    name: 'button-disabled',
+    route: 'grundlage',
+    ziel: (p) => reihe(p, 'Button', 'Deaktiviert').getByRole('button', { name: 'Stoppen' }),
+    grund: 'Beispiel-Server 1 ist bereits gestoppt.',
+  },
+  {
+    name: 'button-link-disabled',
+    route: 'grundlage',
+    ziel: (p) => reihe(p, 'Button', 'Als Link').getByRole('link', { name: 'Aufladen' }),
+    grund: 'Aufladen ist gesperrt, solange die Zahlung läuft.',
+    wirkung: async (p) => p.url(),
+  },
+  {
+    name: 'input-disabled',
+    route: 'grundlage',
+    ziel: (p) => p.getByLabel('Subdomain'),
+    grund: 'Die Subdomain vergibt Zenit, sie lässt sich nicht ändern.',
+  },
+  {
+    name: 'select-disabled',
+    route: 'grundlage',
+    ziel: (p) => p.getByLabel('Standort'),
+    grund: 'Zenit betreibt nur Nürnberg.',
+  },
+  {
+    name: 'checkbox-disabled',
+    route: 'formulare',
+    ziel: (p) => p.getByRole('checkbox', { name: 'server.jar' }),
+    grund: 'server.jar gehört zum Loader von PaperMC und lässt sich nicht auswählen.',
+    wirkung: async (p) => String(await p.getByRole('checkbox', { name: 'server.jar' }).isChecked()),
+  },
+  {
+    name: 'toggle-disabled',
+    route: 'formulare',
+    ziel: (p) => p.getByRole('switch', { name: 'Whitelist' }),
+    grund: 'Whitelist ist über den Input deaktiviert, solange PaperMC installiert wird.',
+    wirkung: async (p) => String(await p.getByRole('switch', { name: 'Whitelist' }).isChecked()),
+  },
+  {
+    name: 'slider-disabled',
+    route: 'formulare',
+    ziel: (p) => p.getByRole('slider', { name: 'CPU-Kerne' }),
+    grund: 'Der Tarif Flex gibt 4 Kerne fest vor.',
+    wirkung: async (p) => p.getByRole('slider', { name: 'CPU-Kerne' }).inputValue(),
+  },
+  {
+    name: 'segment-disabled',
+    route: 'formulare',
+    ziel: (p) =>
+      p
+        .getByRole('group', { name: 'Ticketstatus im Archiv' })
+        .getByRole('button', { name: 'Offen' }),
+    grund: 'Im Archiv sind alle Tickets geschlossen.',
+    wirkung: async (p) =>
+      (await p
+        .getByRole('group', { name: 'Ticketstatus im Archiv' })
+        .getByRole('button', { name: 'Offen' })
+        .getAttribute('aria-pressed')) ?? '',
+  },
+  {
+    name: 'pagination-disabled',
+    route: 'daten',
+    ziel: (p) =>
+      p
+        .locator('.z-panel')
+        .filter({ hasText: 'Erste Seite' })
+        .getByRole('button', { name: 'Vorherige Seite' }),
+    grund:
+      'Auf der ersten Seite ist der Pfeil zurück deaktiviert, auf der letzten der Pfeil weiter.',
+    wirkung: async (p) =>
+      p
+        .locator('.z-panel')
+        .filter({ hasText: 'Erste Seite' })
+        .locator('.z-pager__nav .z-mono')
+        .innerText(),
+  },
+  {
+    // aria-disabled instead of disabled, so the button keeps its tooltip.
+    name: 'button-aria-disabled',
+    route: 'rueckmeldung',
+    ziel: (p) => abschnitt(p, 'Tooltip').getByRole('button', { name: 'Stoppen' }),
+    tabErreichbar: true,
+    grund: 'Stoppen ist gesperrt: Beispiel-Server 1 ist bereits gestoppt.',
+  },
+  {
+    name: 'menu-item-disabled',
+    route: 'overlays',
+    vorbereiten: menuOeffnen,
+    ziel: (p) => p.getByRole('menuitem', { name: 'Zugriff teilen' }),
+    rovingFokus: true,
+    grund: 'Zugriff teilen ist gesperrt, solange Beispiel-Server 1 installiert wird.',
+    wirkung: async (p) => (await p.locator('.demo-sub').count()) + '',
+  },
+  {
+    name: 'console-input-disabled',
+    route: 'werkzeuge',
+    ziel: (p) => p.getByRole('textbox', { name: 'Befehl' }).nth(1),
+    grund: 'Beispiel-Server 1 ist gestoppt, deshalb nimmt die Konsole keine Befehle an.',
+    wirkung: async (p) => p.getByRole('textbox', { name: 'Befehl' }).nth(1).inputValue(),
+  },
+];
+
+test.describe('Deaktiviert', () => {
+  for (const gesperrt of GESPERRT) {
+    test(`${gesperrt.name}: 45 % Deckkraft, not-allowed, Grund und wirkungsloser Klick`, async ({
+      page,
+    }) => {
+      await seiteOeffnen(page, gesperrt.route);
+      await gesperrt.vorbereiten?.(page);
+      const ziel = gesperrt.ziel(page);
+      await ziel.scrollIntoViewIfNeeded();
+
+      const werte = await stil(ziel, ['opacity', 'cursor']);
+      expect(werte.opacity, `${gesperrt.name}: Deckkraft`).toBe('0.45');
+      expect(werte.cursor, `${gesperrt.name}: Zeiger`).toBe('not-allowed');
+
+      // Der Grund steht sichtbar daneben.
+      await expect(page.getByText(gesperrt.grund, { exact: false }).first()).toBeVisible();
+
+      if (gesperrt.rovingFokus) {
+        // Menü: kein eigener Tab-Stopp, aber der Eintrag nimmt den Fokus an,
+        // damit das CDK ihn mit den Pfeiltasten ansteuern und vorlesen kann.
+        expect(await ziel.evaluate((el) => (el as HTMLElement).tabIndex), 'tabindex').toBe(-1);
+        await ziel.focus();
+        expect(await ziel.evaluate((el) => el === document.activeElement), 'Fokus').toBe(true);
+      } else {
+        // Tab-Erreichbarkeit: vom vorherigen Tab-Stopp aus einmal weiter.
+        const vorher = await ziel.evaluate((el) => {
+          const auswahl = 'a[href], button, input, select, textarea, summary, [tabindex]';
+          const vorgaenger = Array.from(document.querySelectorAll<HTMLElement>(auswahl)).filter(
+            (kandidat) =>
+              kandidat !== el &&
+              kandidat.tabIndex >= 0 &&
+              !(kandidat as HTMLInputElement).disabled &&
+              kandidat.getBoundingClientRect().width > 0 &&
+              (el.compareDocumentPosition(kandidat) & Node.DOCUMENT_POSITION_PRECEDING) !== 0,
+          );
+          const letzter = vorgaenger[vorgaenger.length - 1];
+          letzter?.focus();
+          return !!letzter && document.activeElement === letzter;
+        });
+        expect(vorher, `${gesperrt.name}: kein vorheriger Tab-Stopp gefunden`).toBe(true);
+        await page.keyboard.press('Tab');
+        const fokussiert = await ziel.evaluate((el) => el === document.activeElement);
+        expect(fokussiert, `${gesperrt.name}: Tab-Erreichbarkeit`).toBe(
+          gesperrt.tabErreichbar ?? false,
+        );
+      }
+
+      // Der Klick tut nichts.
+      if (gesperrt.wirkung) {
+        const vorKlick = await gesperrt.wirkung(page);
+        await ziel.click({ force: true, noWaitAfter: true });
+        expect(await gesperrt.wirkung(page), `${gesperrt.name}: Klick wirkt trotzdem`).toBe(
+          vorKlick,
+        );
+      }
+
+      await expect(ziel).toHaveScreenshot(`zustaende-${gesperrt.name}.png`);
+    });
+  }
+});
