@@ -37,6 +37,9 @@ Selector: `z-segment`
 `ZSegmentOption` is `{ value: string; label: string }`: `value` is what the segment reports and the
 tracking key, `label` the short noun on the button, without an icon.
 
+Forms: has the shape of a Signal Forms `FormValueControl<string>`, so `[formField]` works and feeds
+`disabled`. There is no `invalid` input: `role="group"` does not take `aria-invalid`. See [Forms](../forms.md) for the three ways to bind it.
+
 No content projection. Forms: implements `ControlValueAccessor`, so `ngModel` and `formControl`
 work alongside the two-way binding. A `null` or `undefined` value becomes the empty string, which
 selects nothing.

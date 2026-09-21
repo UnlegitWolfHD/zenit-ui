@@ -52,8 +52,13 @@ let laufendeNummer = 0;
  * it anyway, so the scale collapses onto `min` and the value is `min`.
  *
  * Forms: implements `ControlValueAccessor`, so `ngModel` and `formControl`
- * work. `setDisabledState` from forms and the {@link disabled} input are
- * independent; either one locks the slider.
+ * work, and so does the Signal Forms `[formField]`, which binds through the
+ * same accessor. There the scale comes from the schema: Angular rejects
+ * `[min]`, `[max]` and `[disabled]` next to `[formField]` and feeds
+ * {@link min}, {@link max}, {@link disabled}, {@link invalid} and
+ * {@link touched} from the `min()`, `max()` and `disabled()` rules and the
+ * field state. `setDisabledState` from forms and the {@link disabled} input
+ * are independent; either one locks the slider.
  *
  * @example
  * ```html
@@ -86,6 +91,7 @@ let laufendeNummer = 0;
       [disabled]="gesperrt()"
       [attr.aria-valuetext]="anzeige()"
       [attr.aria-describedby]="hint() ? hinweisId : null"
+      [attr.aria-invalid]="invalid() && touched() ? 'true' : null"
       (input)="aufEingabe($event)"
       (blur)="beruehrt()"
     />
@@ -122,18 +128,20 @@ export class ZSlider implements ControlValueAccessor {
   readonly ariaLabel = input('');
 
   /**
-   * Lower end of the scale.
+   * Lower end of the scale. With `[formField]` it comes from the `min()` rule
+   * of the schema; without such a rule, `undefined`, it is the default.
    *
    * @default 0
    */
-  readonly min = input(0, { transform: numberAttribute });
+  readonly min = input(0, { transform: (wert: unknown) => numberAttribute(wert, 0) });
 
   /**
-   * Upper end of the scale.
+   * Upper end of the scale. With `[formField]` it comes from the `max()` rule
+   * of the schema; without such a rule, `undefined`, it is the default.
    *
    * @default 100
    */
-  readonly max = input(100, { transform: numberAttribute });
+  readonly max = input(100, { transform: (wert: unknown) => numberAttribute(wert, 100) });
 
   /**
    * Distance between two bookable steps. Only steps that can actually be
@@ -186,6 +194,24 @@ export class ZSlider implements ControlValueAccessor {
    * @default false
    */
   readonly disabled = input(false, { transform: booleanAttribute });
+
+  /**
+   * Validation failed. Writes `aria-invalid="true"` onto the range input while
+   * {@link touched} holds too; there is no error colour for a slider. Set by
+   * `[formField]` from the field state. Boolean attribute.
+   *
+   * @default false
+   */
+  readonly invalid = input(false, { transform: booleanAttribute });
+
+  /**
+   * Whether the user has left the slider, which gates {@link invalid}, so an
+   * untouched form does not start out in error. Set by `[formField]`; outside
+   * Signal Forms it stays `true` and {@link invalid} alone decides.
+   *
+   * @default true
+   */
+  readonly touched = input(true, { transform: booleanAttribute });
 
   protected readonly id = `z-slider-${++laufendeNummer}`;
   protected readonly hinweisId = `${this.id}-hint`;

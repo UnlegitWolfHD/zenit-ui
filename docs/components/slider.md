@@ -24,22 +24,27 @@ import { ZSlider } from 'zenit-ui';
 
 Selector: `z-slider`
 
-| Input       | Type                            | Default | Description                                                                        |
-| ----------- | ------------------------------- | ------- | ---------------------------------------------------------------------------------- |
-| `label`     | `string`                        | `''`    | Visible label above the track, tied to the input through a generated `id`.         |
-| `ariaLabel` | `string`                        | `''`    | `aria-label` of the input, used only while `label` stays empty.                    |
-| `min`       | `number`                        | `0`     | Lower end of the scale.                                                            |
-| `max`       | `number`                        | `100`   | Upper end of the scale.                                                            |
-| `step`      | `number`                        | `1`     | Distance between two bookable steps.                                               |
-| `unit`      | `string`                        | `''`    | Unit behind the value, for example `GB`. Joined with a non-breaking space.         |
-| `ticks`     | `readonly (string \| number)[]` | `[]`    | Scale values printed below the track. Purely visual and `aria-hidden`.             |
-| `hint`      | `string`                        | `''`    | One sentence below the track, referenced through `aria-describedby`.               |
-| `value`     | `number`                        | `0`     | Current value, two-way bindable through `[(value)]`. Also the value seen by forms. |
-| `disabled`  | `boolean`                       | `false` | Locks the slider. Independent of the disabled state from forms. Boolean attribute. |
+| Input       | Type                            | Default | Description                                                                                                                            |
+| ----------- | ------------------------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `label`     | `string`                        | `''`    | Visible label above the track, tied to the input through a generated `id`.                                                             |
+| `ariaLabel` | `string`                        | `''`    | `aria-label` of the input, used only while `label` stays empty.                                                                        |
+| `min`       | `number`                        | `0`     | Lower end of the scale. With `[formField]` it comes from the `min()` rule of the schema.                                               |
+| `max`       | `number`                        | `100`   | Upper end of the scale. With `[formField]` it comes from the `max()` rule of the schema.                                               |
+| `step`      | `number`                        | `1`     | Distance between two bookable steps.                                                                                                   |
+| `unit`      | `string`                        | `''`    | Unit behind the value, for example `GB`. Joined with a non-breaking space.                                                             |
+| `ticks`     | `readonly (string \| number)[]` | `[]`    | Scale values printed below the track. Purely visual and `aria-hidden`.                                                                 |
+| `hint`      | `string`                        | `''`    | One sentence below the track, referenced through `aria-describedby`.                                                                   |
+| `value`     | `number`                        | `0`     | Current value, two-way bindable through `[(value)]`. Also the value seen by forms.                                                     |
+| `disabled`  | `boolean`                       | `false` | Locks the slider. Independent of the disabled state from forms. Boolean attribute.                                                     |
+| `invalid`   | `boolean`                       | `false` | Writes `aria-invalid="true"` while `touched` holds too; no error colour. Set by `[formField]` from the field state. Boolean attribute. |
+| `touched`   | `boolean`                       | `true`  | Gates `invalid`. Set by `[formField]`; outside Signal Forms it stays `true`. Boolean attribute.                                        |
 
 | Output        | Payload  | Fires when                                                 |
 | ------------- | -------- | ---------------------------------------------------------- |
 | `valueChange` | `number` | the value changes while dragging (the `model()` companion) |
+
+Forms: `[formField]` works and takes `min`, `max` and `disabled` from the schema; Angular rejects
+`[min]`, `[max]` and `[disabled]` next to it. See [Forms](../forms.md) for the three ways to bind it.
 
 No content projection. Forms: implements `ControlValueAccessor`, so `ngModel` and `formControl`
 work; `registerOnChange` fires on every `input` of the track, so while dragging. A `null` or

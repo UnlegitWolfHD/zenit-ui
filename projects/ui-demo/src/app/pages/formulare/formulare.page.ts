@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { disabled, form, FormField, max, min, required, submit } from '@angular/forms/signals';
 import {
   ZButton,
   ZCheckbox,
@@ -14,6 +15,7 @@ import {
 @Component({
   selector: 'demo-formulare-page',
   imports: [
+    FormField,
     FormsModule,
     ReactiveFormsModule,
     ZButton,
@@ -28,7 +30,8 @@ import {
     <h1 class="heading-1 demo-title">Formulare</h1>
     <p class="demo-lead">
       Checkbox, Toggle mit Setting, Slider und Segment in allen Zuständen. Jeder Baustein steht
-      einmal mit model()-Bindung, einmal mit ngModel und einmal mit formControl da. Beispieldaten:
+      zuerst mit Signal Forms über [formField] da, Pflicht, Skala und Sperre kommen aus dem Schema.
+      Darunter folgen als Interop die model()-Bindung und formControl. Beispieldaten:
       Beispiel-Server 1 auf 203.0.113.10, Tarif Flex.
     </p>
 
@@ -40,7 +43,42 @@ import {
       </p>
 
       <div class="demo-row">
-        <p class="demo-cap caption">model()-Bindung mit [(checked)]</p>
+        <p class="demo-cap caption">
+          Signal Forms mit [formField], Pflichtfeld aus dem Schema: "Weiter" ohne Haken zeigt den
+          Satz, das Setzen des Hakens nimmt ihn wieder weg.
+        </p>
+        <div class="demo-feld">
+          <z-checkbox [formField]="bestellung.agb" ariaDescribedby="agb-fehler">
+            Ich habe die <a href="#">AGB</a> gelesen und bestelle.
+          </z-checkbox>
+          @if (agbFehler(); as satz) {
+            <span class="z-field__error" id="agb-fehler" role="alert">{{ satz }}</span>
+          }
+        </div>
+        <button zBtn="secondary" type="button" (click)="bestellen()">Weiter</button>
+        <p class="demo-grund caption">
+          z-checkbox bringt ihr eigenes label mit, deshalb steht der Fehlersatz nicht in einem
+          z-field, sondern direkt unter der Checkbox und hängt über ariaDescribedby an ihr. Das Feld
+          meldet aria-invalid erst, nachdem es berührt oder das Formular abgeschickt wurde.
+        </p>
+      </div>
+
+      <div class="demo-row">
+        <p class="demo-cap caption">
+          Gemischt über indeterminate: "Alle auswählen" steht zwischen keinem und allen Backups
+        </p>
+        <z-checkbox
+          [checked]="alleBackups()"
+          [indeterminate]="einigeBackups()"
+          (checkedChange)="waehleAlleBackups($event)"
+          >Alle Backups auswählen</z-checkbox
+        >
+        <z-checkbox [(checked)]="backupSonntag">backup-2026-09-20.zip</z-checkbox>
+        <z-checkbox [(checked)]="backupMontag">backup-2026-09-21.zip</z-checkbox>
+      </div>
+
+      <div class="demo-row">
+        <p class="demo-cap caption">Interop: model()-Bindung mit [(checked)]</p>
         <z-checkbox [(checked)]="serverProperties">server.properties</z-checkbox>
         <z-checkbox [(checked)]="whitelistJson">whitelist.json</z-checkbox>
         <z-checkbox disabled>server.jar</z-checkbox>
@@ -61,27 +99,6 @@ import {
 
       <div class="demo-row">
         <p class="demo-cap caption">
-          Fehler nach dem Absenden: "Weiter" ohne Haken zeigt den Satz, das Setzen des Hakens nimmt
-          ihn wieder weg.
-        </p>
-        <div class="demo-feld">
-          <z-checkbox [(checked)]="agbBestellung">
-            Ich habe die <a href="#">AGB</a> gelesen.
-          </z-checkbox>
-          @if (agbFehler()) {
-            <span class="z-field__error" role="alert">Bestätige die AGB, um fortzufahren.</span>
-          }
-        </div>
-        <button zBtn="secondary" type="button" (click)="bestellen()">Weiter</button>
-        <p class="demo-grund caption">
-          z-checkbox bringt ihr eigenes label mit und kennt kein aria-describedby, deshalb steht der
-          Fehlersatz hier nicht in einem z-field, sondern als role="alert" direkt unter der
-          Checkbox.
-        </p>
-      </div>
-
-      <div class="demo-row">
-        <p class="demo-cap caption">
           Ohne sichtbaren Text, Beschriftung über ariaLabel: so steht die Checkbox in einer
           Listenzeile
         </p>
@@ -93,15 +110,9 @@ import {
       </div>
 
       <div class="demo-row">
-        <p class="demo-cap caption">ngModel</p>
-        <z-checkbox [(ngModel)]="autoNeustart">Neustart jede Nacht um 05:00</z-checkbox>
-        <span class="z-muted"
-          >Wert <span class="z-mono">{{ autoNeustart }}</span></span
-        >
-      </div>
-
-      <div class="demo-row">
-        <p class="demo-cap caption">formControl, dazu ein per Forms deaktiviertes</p>
+        <p class="demo-cap caption">
+          Interop: Reactive Forms mit formControl, dazu ein per Forms deaktiviertes
+        </p>
         <z-checkbox [formControl]="backupVorUpdate">Backup vor dem Update</z-checkbox>
         <span class="z-muted"
           >Wert <span class="z-mono">{{ backupVorUpdate.value }}</span></span
@@ -121,6 +132,32 @@ import {
         Toggle schaltet eine Einstellung, die ohne Speichern-Button wirkt. Titel, Schlüssel und
         Wirkung stehen links in der z-setting-Zeile, der Toggle rechts und zeigt per ariaLabelledby
         auf den Titel.
+      </p>
+
+      <z-panel>
+        <z-setting
+          title="Automatische Updates"
+          key="auto.update"
+          description="PaperMC wird beim nächsten Neustart aktualisiert."
+          titleId="set-update"
+        >
+          <z-toggle [formField]="bestellung.autoUpdate" ariaLabelledby="set-update" />
+        </z-setting>
+        <z-setting
+          title="Vorabversionen"
+          key="auto.update.preview"
+          description="Nur zusammen mit automatischen Updates."
+          titleId="set-vorab"
+        >
+          <z-toggle [formField]="bestellung.vorabversionen" ariaLabelledby="set-vorab" />
+        </z-setting>
+      </z-panel>
+
+      <p class="demo-grund caption">
+        Signal Forms mit [formField]: automatische Updates
+        <span class="z-mono">{{ bestellModell().autoUpdate }}</span
+        >, Vorabversionen <span class="z-mono">{{ bestellModell().vorabversionen }}</span
+        >. Vorabversionen sperrt das Schema über disabled(), solange automatische Updates aus sind.
       </p>
 
       <z-panel>
@@ -166,11 +203,11 @@ import {
       </z-panel>
 
       <p class="demo-grund caption">
-        PvP <span class="z-mono">{{ pvp() }}</span> über model(), Hardcore
-        <span class="z-mono">{{ hardcore }}</span> über ngModel, Backup
-        <span class="z-mono">{{ nachtBackup.value }}</span> über formControl. Whitelist ist über den
-        Input deaktiviert, solange PaperMC installiert wird. Die Fernsteuerung ist über Forms
-        deaktiviert, weil der Tarif Flex sie nicht enthält.
+        Interop: PvP <span class="z-mono">{{ pvp() }}</span> über model(), Hardcore
+        <span class="z-mono">{{ hardcore }}</span> über ngModel (Interop: template-driven forms),
+        Backup <span class="z-mono">{{ nachtBackup.value }}</span> über formControl. Whitelist ist
+        über den Input deaktiviert, solange PaperMC installiert wird. Die Fernsteuerung ist über
+        Forms deaktiviert, weil der Tarif Flex sie nicht enthält.
       </p>
 
       <div class="demo-row">
@@ -193,6 +230,14 @@ import {
 
       <div class="demo-grid">
         <z-slider
+          label="Steckplätze"
+          unit="Spieler"
+          [step]="2"
+          [ticks]="steckplatzStufen"
+          hint="Jeder Steckplatz kostet 0,20&nbsp;€ im Monat."
+          [formField]="bestellung.steckplaetze"
+        />
+        <z-slider
           label="Arbeitsspeicher"
           unit="GB"
           [min]="2"
@@ -201,16 +246,6 @@ import {
           [ticks]="arbeitsspeicherStufen"
           hint="Empfohlen für Valheim mit bis zu 10 Spielern: 6&nbsp;GB."
           [(value)]="arbeitsspeicher"
-        />
-        <z-slider
-          label="Steckplätze"
-          unit="Spieler"
-          [min]="2"
-          [max]="20"
-          [step]="2"
-          [ticks]="steckplatzStufen"
-          hint="Jeder Steckplatz kostet 0,20&nbsp;€ im Monat."
-          [(ngModel)]="steckplaetze"
         />
         <z-slider
           label="Speicher"
@@ -246,9 +281,10 @@ import {
       </div>
 
       <p class="demo-grund caption">
-        Arbeitsspeicher <span class="z-mono">{{ arbeitsspeicher() }}&nbsp;GB</span> über model(),
-        Steckplätze <span class="z-mono">{{ steckplaetze }}&nbsp;Spieler</span> über ngModel,
-        Speicher <span class="z-mono">{{ speicher.value }}&nbsp;GB</span> über formControl.
+        Steckplätze <span class="z-mono">{{ bestellModell().steckplaetze }}&nbsp;Spieler</span> über
+        Signal Forms mit [formField], die Skala 2 bis 20 kommt aus min() und max() im Schema.
+        Interop: Arbeitsspeicher <span class="z-mono">{{ arbeitsspeicher() }}&nbsp;GB</span> über
+        model(), Speicher <span class="z-mono">{{ speicher.value }}&nbsp;GB</span> über formControl.
         CPU-Kerne sind über den Input deaktiviert, die Aufbewahrung über Forms.
       </p>
     </section>
@@ -261,7 +297,15 @@ import {
       </p>
 
       <div class="demo-row">
-        <p class="demo-cap caption">Drei Optionen, model()-Bindung</p>
+        <p class="demo-cap caption">Signal Forms mit [formField]</p>
+        <z-segment [options]="zeitraeume" [formField]="bestellung.laufzeit" ariaLabel="Laufzeit" />
+        <span class="z-muted"
+          >Laufzeit <span class="z-mono">{{ bestellModell().laufzeit }}</span> Monate</span
+        >
+      </div>
+
+      <div class="demo-row">
+        <p class="demo-cap caption">Interop: drei Optionen, model()-Bindung</p>
         <z-segment [options]="zeitraeume" [(value)]="zeitraum" ariaLabel="Zeitraum" />
         <span class="z-muted"
           >Zeitraum <span class="z-mono">{{ zeitraum() }}</span> Monate</span
@@ -269,15 +313,7 @@ import {
       </div>
 
       <div class="demo-row">
-        <p class="demo-cap caption">Zwei Optionen, ngModel</p>
-        <z-segment [options]="ticketStatus" [(ngModel)]="status" ariaLabel="Ticketstatus" />
-        <span class="z-muted"
-          >Status <span class="z-mono">{{ status }}</span></span
-        >
-      </div>
-
-      <div class="demo-row">
-        <p class="demo-cap caption">formControl</p>
+        <p class="demo-cap caption">Interop: Reactive Forms mit formControl</p>
         <z-segment
           [options]="zeitraeume"
           [formControl]="auslastungszeitraum"
@@ -311,16 +347,36 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FormularePage {
+  // Signal Forms: one model for the [formField] example of every control.
+  // Required, scale and lock live in the schema, not in the template.
+  protected readonly bestellModell = signal({
+    agb: false,
+    autoUpdate: false,
+    vorabversionen: false,
+    steckplaetze: 10,
+    laufzeit: '6',
+  });
+  protected readonly bestellung = form(this.bestellModell, (pfad) => {
+    required(pfad.agb, { message: 'Bestätige die AGB, um fortzufahren.' });
+    disabled(pfad.vorabversionen, ({ valueOf }) => !valueOf(pfad.autoUpdate));
+    min(pfad.steckplaetze, 2);
+    max(pfad.steckplaetze, 20);
+  });
+  /** The first error of the field, once it is touched; a submit touches every field. */
+  protected readonly agbFehler = computed(() => {
+    const feld = this.bestellung.agb();
+    return feld.touched() ? (feld.errors()[0]?.message ?? '') : '';
+  });
+
   // Checkbox
   protected readonly serverProperties = signal(true);
   protected readonly whitelistJson = signal(false);
   protected readonly agb = signal(false);
-  protected readonly agbBestellung = signal(false);
-  private readonly abgeschickt = signal(false);
-  /** The error only stands after a submit and disappears as soon as the box is ticked. */
-  protected readonly agbFehler = computed(() => this.abgeschickt() && !this.agbBestellung());
   protected readonly zeile = signal(false);
-  protected autoNeustart = true;
+  protected readonly backupSonntag = signal(true);
+  protected readonly backupMontag = signal(false);
+  protected readonly alleBackups = computed(() => this.backupSonntag() && this.backupMontag());
+  protected readonly einigeBackups = computed(() => this.backupSonntag() !== this.backupMontag());
   protected readonly backupVorUpdate = new FormControl(true, { nonNullable: true });
   protected readonly rconFreigabe = new FormControl(
     { value: false, disabled: true },
@@ -344,7 +400,6 @@ export class FormularePage {
   protected readonly kernStufen = [1, 2, 3, 4, 5, 6, 7, 8];
   protected readonly aufbewahrungStufen = [1, 10, 20, 30];
   protected readonly arbeitsspeicher = signal(6);
-  protected steckplaetze = 10;
   protected readonly speicher = new FormControl(40, { nonNullable: true });
   protected readonly aufbewahrung = new FormControl(
     { value: 7, disabled: true },
@@ -362,7 +417,6 @@ export class FormularePage {
     { value: 'geschlossen', label: 'Geschlossen' },
   ];
   protected readonly zeitraum = signal('6');
-  protected status = 'offen';
   protected readonly auslastungszeitraum = new FormControl('3', { nonNullable: true });
   protected readonly abrechnungszeitraum = new FormControl(
     { value: '12', disabled: true },
@@ -370,6 +424,12 @@ export class FormularePage {
   );
 
   protected bestellen(): void {
-    this.abgeschickt.set(true);
+    // Nothing is sent in the demo; submit() touches every field, which shows the error.
+    void submit(this.bestellung, async () => undefined);
+  }
+
+  protected waehleAlleBackups(alle: boolean): void {
+    this.backupSonntag.set(alle);
+    this.backupMontag.set(alle);
   }
 }

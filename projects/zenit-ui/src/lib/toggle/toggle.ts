@@ -12,6 +12,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
+import type { FormCheckboxControl } from '@angular/forms/signals';
 
 /**
  * Switches a setting that takes effect without a save button, on a native
@@ -31,8 +32,10 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
  * that rejects a switch still keeps element and model in sync.
  *
  * Forms: implements `ControlValueAccessor`, so `ngModel` and `formControl`
- * work. `setDisabledState` from forms and the {@link disabled} input are
- * independent; either one locks the toggle.
+ * work, and has the shape of a Signal Forms `FormCheckboxControl`, so
+ * `[formField]` works and feeds {@link disabled}, {@link invalid} and
+ * {@link touched} from the field state. `setDisabledState` from forms and the
+ * {@link disabled} input are independent; either one locks the toggle.
  *
  * @example
  * ```html
@@ -52,6 +55,8 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
       [disabled]="gesperrt()"
       [attr.aria-label]="ariaLabel() || null"
       [attr.aria-labelledby]="ariaLabelledby() || null"
+      [attr.aria-describedby]="ariaDescribedby() || null"
+      [attr.aria-invalid]="invalid() && touched() ? 'true' : null"
       (change)="aufAenderung($event)"
       (blur)="beruehrt()"
     />
@@ -59,7 +64,7 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => ZToggle), multi: true }],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ZToggle implements ControlValueAccessor {
+export class ZToggle implements ControlValueAccessor, FormCheckboxControl {
   /**
    * Switch state, two-way bindable: `true` is on. Also the value seen by
    * `ngModel` and `formControl`.
@@ -92,6 +97,33 @@ export class ZToggle implements ControlValueAccessor {
    * @default ''
    */
   readonly ariaLabelledby = input('');
+
+  /**
+   * `aria-describedby` of the switch: the `id`s of the error or hint sentence
+   * that belongs to it, separated by spaces, for example the description of
+   * the `z-setting` row. Empty writes no attribute.
+   *
+   * @default ''
+   */
+  readonly ariaDescribedby = input('');
+
+  /**
+   * Validation failed. Writes `aria-invalid="true"` onto the switch while
+   * {@link touched} holds too; there is no error colour for a toggle. Set by
+   * `[formField]` from the field state. Boolean attribute.
+   *
+   * @default false
+   */
+  readonly invalid = input(false, { transform: booleanAttribute });
+
+  /**
+   * Whether the user has left the toggle, which gates {@link invalid}, so an
+   * untouched form does not start out in error. Set by `[formField]`; outside
+   * Signal Forms it stays `true` and {@link invalid} alone decides.
+   *
+   * @default true
+   */
+  readonly touched = input(true, { transform: booleanAttribute });
 
   /** Lock coming from forms, independent of the `disabled` input. Either one is enough. */
   private readonly formsGesperrt = signal(false);

@@ -29,7 +29,7 @@ import { ZField } from './field';
     class: 'z-input',
     '[class.z-input--sm]': `size() === 'sm'`,
     '[class.z-input--mono]': `mono()`,
-    '[attr.aria-invalid]': `invalid() ? "true" : null`,
+    '[attr.aria-invalid]': `invalid() && touched() ? "true" : null`,
     '[attr.aria-describedby]': `feld?.beschreibung() ?? null`,
     // size is the name from the API table, but as a native attribute on the
     // <input> the value "sm" would be invalid HTML.
@@ -55,12 +55,24 @@ export class ZInput {
 
   /**
    * Marks the value as invalid: sets `aria-invalid="true"` and with it the
-   * danger border. Goes together with `error` on the surrounding `z-field`.
-   * Boolean attribute.
+   * danger border, while {@link touched} holds too. Goes together with `error`
+   * on the surrounding `z-field`. The Signal Forms `[formField]` on the same
+   * element sets it from the field state, and Angular then rejects an own
+   * `[invalid]` binding. Boolean attribute.
    *
    * @default false
    */
   readonly invalid = input(false, { transform: booleanAttribute });
+
+  /**
+   * Whether the user has left the field, which gates {@link invalid}, so an
+   * empty required field does not start out with a danger border. Set by
+   * `[formField]`; outside Signal Forms it stays `true` and {@link invalid}
+   * alone decides. Boolean attribute.
+   *
+   * @default true
+   */
+  readonly touched = input(true, { transform: booleanAttribute });
 
   protected readonly feld = inject(ZField, { optional: true });
 }
