@@ -27,8 +27,13 @@ import { ZAppHeader, ZBrand, ZHeaderLink, ZHeaderEnd } from 'zenit-ui';
 | `navLabel`  | `string` | `''`     | Accessible name of the `<nav>` landmark. Empty means no `aria-label` at all.               |
 | `landmark`  | `boolean` | `true`  | Whether the host is the `banner` landmark. Pass `[landmark]="false"` for a preview inside `<main>`. |
 | `menuLabel` | `string` | `'Menü'` | `aria-label` of the menu button shown below 900px. German default, meant to be overridden. |
+| `open`      | `boolean` | `false` | Whether the menu below 900px is open. Two-way bindable as `[(open)]`; see "Mobile menu".  |
 
-No outputs. Content projection:
+| Output       | Type      | Description                                                       |
+| ------------ | --------- | ----------------------------------------------------------------- |
+| `openChange` | `boolean` | The new state of the menu, whoever closed or opened it.           |
+
+Content projection:
 
 | Slot           | Where it lands                                          |
 | -------------- | ------------------------------------------------------- |
@@ -91,6 +96,37 @@ A logged-in visitor on a public page sees one secondary button instead of two ca
 </z-app-header>
 ```
 
+## Mobile menu
+
+Below 900px the links fold behind the burger button. `open` holds that state, it starts closed, and
+`[(open)]` hands it to the caller: a route guard, a "close everything" action or a test can set it
+from outside, and `openChange` reports every change the component makes itself.
+
+The menu closes when
+
+- the burger is pressed again,
+- a link projected into the default slot is clicked. The `<nav>` listens once and looks for an `<a>`
+  above the click target, so it does not matter whether the link is an `href` or a `routerLink`: the
+  library does not import `@angular/router`. A `<button>` inside the nav, a menu trigger for example,
+  leaves the menu open,
+- Escape is pressed while the focus is inside the header. The focus then returns to the burger
+  button. A closed menu ignores Escape, so a header never swallows the key from a dialog above it.
+
+The menu does not close on a resize, because above 900px the state no longer decides anything: CSS
+shows the links at that width. It also does not close on a click outside, which the design system
+does not ask for; the bar keeps credit and avatar reachable while the menu is open.
+
+Content in `[zHeaderEnd]` is not part of the menu. It stays in the bar at every width, so a link
+there neither opens nor closes anything.
+
+```html
+<z-app-header navLabel="Hauptnavigation" [(open)]="menueOffen">
+  <a zBrand href="/">Zenit</a>
+  <a zHeaderLink routerLink="/user">Dashboard</a>
+  <a zHeaderLink routerLink="/user/server">Gameserver</a>
+</z-app-header>
+```
+
 ## States
 
 | State       | How it looks                                                            | How to trigger it            |
@@ -99,7 +135,7 @@ A logged-in visitor on a public page sees one secondary button instead of two ca
 | Hover       | `surface-raised` behind the link, label in `text`                       | pointer over a link          |
 | Focus       | 2px ring in `focus` with 2px offset                                     | Tab, `:focus-visible`        |
 | Active link | `accent-subtle` behind it, label in `text`, `aria-current="page"`       | `active` on that link        |
-| Menu open   | the nav drops below the bar on `surface-raised`, `aria-expanded="true"` | the menu button, below 900px |
+| Menu open   | the nav drops below the bar on `surface-raised`, `aria-expanded="true"` | the menu button or `[(open)]`, below 900px |
 
 There is no disabled, loading, error or empty state.
 
@@ -113,6 +149,8 @@ There is no disabled, loading, error or empty state.
 - The active link carries `aria-current="page"`, which also drives the `accent-subtle` background.
 - The menu button is a `<button type="button">` with `aria-label` from `menuLabel`, `aria-expanded`
   reflecting the open state and `aria-controls` pointing at the generated id of the `<nav>`.
+- Escape closes the open menu and moves the focus back to the menu button, so the keyboard does not
+  end up on a link that CSS has just hidden.
 - The brand is a link back to the start page, so it needs no extra name.
 - The avatar initial is decorative and gets `aria-hidden="true"`; the account menu behind it carries
   the name.
@@ -122,7 +160,7 @@ There is no disabled, loading, error or empty state.
 Above 900px the links are visible and the menu button is hidden. Below 900px the links fold into a
 menu that sits as a surface below the bar, the bar may wrap so two buttons do not run off the page
 at 360px, and every header link grows to 40px tall. The end slot with credit and avatar stays
-visible at every width.
+visible at every width. What opens and closes that menu is in "Mobile menu".
 
 ## Rendered classes and tokens
 
@@ -156,6 +194,11 @@ New, because the reference stylesheet does not cover it:
 
 The `menuLabel` input is not in the API table of the design system; it exists so the German default
 of the menu button can be overridden, as the "Texte kommen immer von außen" rule requires.
+
+`open` is an addition too. The reference only says that the navigation folds into a menu below
+900px and that the balance stays visible; it says nothing about how the menu closes again. In a
+single-page application the menu would otherwise stand open over the page the link just loaded, so
+the component closes it on a link click and on Escape, and hands the state out as `[(open)]`.
 
 ## Do / Don't
 

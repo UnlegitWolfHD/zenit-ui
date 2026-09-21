@@ -60,7 +60,7 @@ One row per row of the table "Material ablösen" in `spec/guidelines/30-angular.
 </z-app-header>
 ```
 
-`z-app-header` brings its own burger button below 900px (`aria-label` from `menuLabel`, `aria-expanded`, `aria-controls`). There is no `color` input: the header is always `bg` with a 1px bottom border.
+`z-app-header` brings its own burger button below 900px (`aria-label` from `menuLabel`, `aria-expanded`, `aria-controls`). It closes that menu itself when a projected link is clicked and on Escape, so the `MatSidenav` that used to hold the mobile navigation, its `close()` on every route change included, falls away; `[(open)]` is there when the state is needed from outside. There is no `color` input: the header is always `bg` with a 1px bottom border.
 
 ### 3.2 `mat-icon` → `z-icon`
 
