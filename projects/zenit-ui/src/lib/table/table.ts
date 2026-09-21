@@ -1,10 +1,16 @@
 import {
+  afterNextRender,
+  afterRenderEffect,
   ChangeDetectionStrategy,
   Component,
   computed,
+  contentChild,
+  DestroyRef,
   Directive,
+  ElementRef,
   inject,
   input,
+  signal,
 } from '@angular/core';
 import { Z_LABELS } from '../labels';
 
@@ -12,9 +18,12 @@ import { Z_LABELS } from '../labels';
  * Wrapper around `table[zTable]`. Below 640px the table scrolls sideways in
  * here, the page itself never does.
  *
- * Renders only the projected content and puts `z-table-wrap` on the host. The
- * host is a `role="region"` with `tabindex="0"` and an `aria-label`, so the
- * scrollable area is reachable and scrollable by keyboard alone.
+ * Renders only the projected content and puts `z-table-wrap` on the host. While
+ * the table is actually wider than the wrapper, the host becomes a
+ * `role="region"` with `tabindex="0"` and an `aria-label`, so the scrollable
+ * area is reachable and scrollable by keyboard alone. While everything fits, all
+ * three are left off: a table that cannot scroll would otherwise be a tab stop
+ * that does nothing, on every desktop screen.
  *
  * @example
  * ```html
@@ -38,9 +47,9 @@ import { Z_LABELS } from '../labels';
   template: `<ng-content />`,
   host: {
     class: 'z-table-wrap',
-    role: 'region',
-    tabindex: '0',
-    '[attr.aria-label]': `bereichText()`,
+    '[attr.role]': `ueberlauf() ? 'region' : null`,
+    '[attr.tabindex]': `ueberlauf() ? '0' : null`,
+    '[attr.aria-label]': `ueberlauf() ? bereichText() : null`,
   },
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -55,8 +64,45 @@ export class ZTableContainer {
   readonly ariaLabel = input<string>();
 
   private readonly labels = inject(Z_LABELS);
+  private readonly el = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly tabelle = contentChild(ZTable, { read: ElementRef });
+  private beobachter?: ResizeObserver;
 
   protected readonly bereichText = computed(() => this.ariaLabel() ?? this.labels.tableRegion);
+  /** Whether the content is wider than the wrapper, so there is something to scroll. */
+  protected readonly ueberlauf = signal(false);
+
+  constructor() {
+    const destroyRef = inject(DestroyRef);
+    afterNextRender(() => {
+      // Not every environment has a ResizeObserver; without one the wrapper
+      // keeps the state of the last measurement.
+      if (typeof ResizeObserver === 'undefined') {
+        return;
+      }
+      this.beobachter = new ResizeObserver(() => this.messen());
+      this.beobachter.observe(this.el.nativeElement);
+      destroyRef.onDestroy(() => this.beobachter?.disconnect());
+    });
+
+    // A changed table is wider or narrower without the wrapper changing size,
+    // so the observer alone would miss it: measure after the render as well,
+    // and watch the table itself from then on.
+    afterRenderEffect({
+      earlyRead: () => {
+        const tabelle = this.tabelle()?.nativeElement;
+        if (tabelle) {
+          this.beobachter?.observe(tabelle);
+        }
+        this.messen();
+      },
+    });
+  }
+
+  private messen(): void {
+    const el = this.el.nativeElement;
+    this.ueberlauf.set(el.scrollWidth > el.clientWidth);
+  }
 }
 
 /**

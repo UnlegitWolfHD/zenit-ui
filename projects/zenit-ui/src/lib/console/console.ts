@@ -50,10 +50,12 @@ export interface ZConsoleLine {
  * pixels of slack. Scroll up and it stays put and the button appears; pressing
  * it scrolls back down and moves focus into the input.
  *
- * Accessibility: the `<pre>` is a tab stop with an `aria-label`, so the log can
- * be scrolled by keyboard; the input is labelled by {@link inputLabel}. Enter
- * emits {@link command}, Arrow Up and Arrow Down walk the commands of this
- * session and suppress the browser's caret movement.
+ * Accessibility: the `<pre>` is a `role="log"` tab stop with an `aria-label`, so
+ * the log can be scrolled by keyboard; the input is labelled by
+ * {@link inputLabel}. `role="log"` implies a polite live region, which
+ * {@link announce} turns off by default, see there. Enter emits
+ * {@link command}, Arrow Up and Arrow Down walk the commands of this session and
+ * suppress the browser's caret movement.
  *
  * @example
  * ```html
@@ -69,6 +71,8 @@ export interface ZConsoleLine {
       #log
       class="z-console__log"
       tabindex="0"
+      role="log"
+      [attr.aria-live]="announce() ? 'polite' : 'off'"
       [attr.aria-label]="logText()"
       (scroll)="aufScroll()"
     >@for (zeile of lines(); track $index; let letzte = $last) {<span
@@ -124,6 +128,21 @@ export class ZConsole {
   readonly placeholder = input('');
 
   /**
+   * Lets a screen reader read out every new log line as it arrives, by
+   * switching the `aria-live` of the log from `off` to `polite`.
+   *
+   * Off by default, deliberately: a game server writes several lines per
+   * second, and the polite live region that `role="log"` implies would turn
+   * each of them into an announcement and bury everything else on the page. The
+   * log stays a `role="log"` tab stop with an accessible name, so it can be read
+   * on demand at any time. Switch this on only for a console that stays quiet,
+   * for example a step-by-step installer. Boolean attribute.
+   *
+   * @default false
+   */
+  readonly announce = input(false, { transform: booleanAttribute });
+
+  /**
    * `aria-label` of the log region. Unset, the component uses
    * {@link ZLabels.consoleLog} from the label registry.
    *
@@ -174,12 +193,17 @@ export class ZConsole {
   private zeiger = 0;
 
   constructor() {
+    // Angular's docs forbid reading layout in the write phase, so the height
+    // of the log is measured in earlyRead and only written afterwards.
     afterRenderEffect({
-      write: () => {
+      earlyRead: () => {
         this.lines();
-        if (this.amEnde()) {
-          const el = this.logEl().nativeElement;
-          el.scrollTop = el.scrollHeight;
+        return this.amEnde() ? this.logEl().nativeElement.scrollHeight : undefined;
+      },
+      write: (hoehe) => {
+        const ziel = hoehe();
+        if (ziel !== undefined) {
+          this.logEl().nativeElement.scrollTop = ziel;
         }
       },
     });
