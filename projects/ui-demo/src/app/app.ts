@@ -1,12 +1,12 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { ZField, ZSelect, ZTheme } from 'zenit-ui';
+import { ZField, ZSelect, ZSkipLink, ZTheme } from 'zenit-ui';
 
 @Component({
   selector: 'demo-root',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, ZField, ZSelect],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, ZField, ZSelect, ZSkipLink],
   template: `
-    <a class="demo-skip body-sm" href="#inhalt">Zum Hauptinhalt springen</a>
+    <a zSkipLink class="body-sm" href="#inhalt">Zum Hauptinhalt springen</a>
     <header>
       <div class="z-container demo-header">
         <span class="demo-brand heading-2">zenit-ui</span>
