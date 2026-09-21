@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
+import { DialogRef } from '@angular/cdk/dialog';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { form, FormField } from '@angular/forms/signals';
 import {
@@ -6,6 +7,9 @@ import {
   ZCombobox,
   ZComboOption,
   ZCostChart,
+  ZDialog,
+  ZDialogActions,
+  ZDialogLayout,
   ZDisclosure,
   ZField,
   ZIncludedList,
@@ -46,6 +50,86 @@ const KLASSEN_MIT_FLEX: ZOption[] = [
 
 /** A list that no filter matches, for the empty row of the Combobox. */
 const KEINE_TREFFER: ZComboOption[] = [];
+
+/**
+ * A combobox in a dialog whose body scrolls: `.z-dialog` is `overflow: auto`,
+ * and no container of the library is registered as `cdkScrollable`, so this is
+ * the case where a panel used to hang in the air while the content under it
+ * moved away. The list has to close with the first scroll of the dialog.
+ */
+@Component({
+  selector: 'demo-anpassen-dialog',
+  imports: [
+    ZButton,
+    ZCombobox,
+    ZDialogActions,
+    ZDialogLayout,
+    ZField,
+    ZIncludedList,
+    ZInput,
+    ZOptionGroup,
+  ],
+  template: `
+    <z-dialog title="Server anpassen">
+      <z-field label="Minecraft-Version" for="kd-version" hint="Tippen filtert die Liste.">
+        <z-combobox
+          inputId="kd-version"
+          [options]="versionen"
+          [(value)]="version"
+          emptyText="Keine Version gefunden"
+        />
+      </z-field>
+      <z-option-group
+        legend="Arbeitsspeicher"
+        hint="Spielerzahlen sind Richtwerte"
+        compact
+        [options]="ramStufen"
+        [(value)]="ram"
+      />
+      <z-field label="Java-Version" for="kd-java">
+        <z-combobox
+          inputId="kd-java"
+          [options]="javaVersionen"
+          value="auto"
+          emptyText="Keine Java-Version gefunden"
+        />
+      </z-field>
+      <z-field label="Build" for="kd-build" hint="Leer lassen für den neuesten Build.">
+        <input zInput mono id="kd-build" />
+      </z-field>
+      <z-field label="Startscript" for="kd-start">
+        <input zInput mono id="kd-start" value="-Xms2G -Xmx4G" />
+      </z-field>
+      <z-included-list [items]="enthalten" />
+      <ng-container zDialogActions>
+        <button zBtn="ghost" (click)="ref.close()">Abbrechen</button>
+        <button zBtn="primary" (click)="ref.close(version())">Speichern</button>
+      </ng-container>
+    </z-dialog>
+  `,
+  // The dialog has to scroll for this demo to show anything: `.z-dialog` in
+  // _overlays.css takes its bound from `max-height: inherit`, and the parent of
+  // the `z-dialog` element is this host, not the overlay pane, so the bound
+  // never arrives and the content would simply grow past the viewport. The host
+  // takes the bound the reference means, and the dialog scrolls with it.
+  styles: `
+    :host {
+      display: block;
+      max-height: calc(100vh - 2 * var(--space-5));
+      overflow: auto;
+    }
+  `,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class AnpassenDialog {
+  protected readonly ref = inject<DialogRef<string>>(DialogRef);
+  protected readonly versionen = VERSIONEN;
+  protected readonly javaVersionen = JAVA_VERSIONEN;
+  protected readonly enthalten = ENTHALTEN;
+  protected readonly ramStufen = ramOptionen('neueste');
+  protected readonly version = signal('neueste');
+  protected readonly ram = signal(4);
+}
 
 /**
  * Gallery of the configurator building blocks: every block once per state from
@@ -158,6 +242,17 @@ const KEINE_TREFFER: ZComboOption[] = [];
           <z-combobox inputId="kf-gesperrt" [options]="regionen" value="nbg" disabled />
         </z-field>
       </div>
+
+      <p class="demo-cap caption">
+        Im Dialog: der Inhalt des Dialogs scrollt, und die Liste gehört zu ihrem Feld. Sobald etwas
+        um das Feld herum scrollt, schließt sie sich, wie es ein natives "select" tut.
+      </p>
+      <div class="demo-row">
+        <button zBtn="secondary" type="button" (click)="versionWechseln()">Server anpassen</button>
+      </div>
+      @if (dialogVersion(); as gewaehlt) {
+        <p class="demo-grund body-sm">Im Dialog gewählt: {{ gewaehlt }}</p>
+      }
     </section>
 
     <section class="demo-section">
@@ -381,7 +476,9 @@ export class KonfiguratorPage {
   protected readonly geaendert = signal('');
   protected readonly neuBerechnet = signal(false);
   protected readonly subdomain = signal('beispiel');
+  protected readonly dialogVersion = signal('');
   private readonly gepruefteSubdomain = signal('');
+  private readonly dialog = inject(ZDialog);
 
   /** A locked reactive control: that is how a whole group is disabled. */
   protected readonly gesperrt = new FormControl({ value: 'paypal', disabled: true });
@@ -412,5 +509,11 @@ export class KonfiguratorPage {
 
   protected pruefeSubdomain(wert: string): void {
     this.gepruefteSubdomain.set(wert.trim());
+  }
+
+  protected versionWechseln(): void {
+    this.dialog
+      .open<string, unknown, AnpassenDialog>(AnpassenDialog)
+      .closed.subscribe((wert) => this.dialogVersion.set(wert ?? ''));
   }
 }

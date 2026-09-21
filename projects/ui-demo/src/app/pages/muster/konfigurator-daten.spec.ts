@@ -7,6 +7,8 @@ import {
   flexStundenpreis,
   gutscheinFehler,
   gutscheinRabatt,
+  gutscheinSperre,
+  laufzeitGrund,
   laufzeitOptionen,
   laufzeitRabatt,
   mindestRam,
@@ -181,6 +183,38 @@ describe('Flex', () => {
 
   it('caps a third above the monthly price', () => {
     expect(flexDeckel(7.74)).toBeCloseTo(10.32, 10);
+  });
+});
+
+describe('Flex sperrt, was es nicht gibt', () => {
+  it('names the reason at the term group and nowhere else', () => {
+    expect(laufzeitGrund('flex')).toBe(
+      'Flex wird nach Stunden abgerechnet, es gibt keine Laufzeit.',
+    );
+    expect(laufzeitGrund('monat')).toBe('');
+  });
+
+  it('takes price and discount badge off the term cards under Flex', () => {
+    const flex = laufzeitOptionen('normal', 4, MINECRAFT_GRUNDBETRAG, 'flex');
+    const monat = laufzeitOptionen('normal', 4, MINECRAFT_GRUNDBETRAG, 'monat');
+
+    // The cards stay, so the group keeps its shape; what is not paid is gone.
+    expect(flex.map((option) => option.value)).toEqual([30, 90, 180]);
+    expect(flex.every((option) => !option.price && !option.badge)).toBe(true);
+    expect(monat.map((option) => option.price)).toEqual([
+      '7,74\u00a0€',
+      '21,83\u00a0€',
+      '42,26\u00a0€',
+    ]);
+  });
+
+  it('refuses every voucher under Flex, with the next step', () => {
+    expect(gutscheinSperre('flex')).toBe(
+      'Für Flex gilt kein Gutschein. Wechsle zu Monatspreis, um den Code einzulösen.',
+    );
+    expect(gutscheinSperre('monat')).toBe('');
+    // The code itself is still judged on its own where a voucher is possible.
+    expect(gutscheinFehler('ZENIT10')).toBe('');
   });
 });
 

@@ -11,7 +11,7 @@ import {
   signal,
   untracked,
 } from '@angular/core';
-import { form, FormField, required, submit } from '@angular/forms/signals';
+import { disabled, form, FormField, required, submit } from '@angular/forms/signals';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
   ZAlert,
@@ -48,8 +48,10 @@ import {
   FLEX_GRUNDBETRAG,
   flexStundenpreis,
   gutscheinFehler,
+  gutscheinSperre,
   JAVA_VERSIONEN,
   KLASSEN,
+  laufzeitGrund,
   laufzeitOptionen,
   MINECRAFT_GRUNDBETRAG,
   mindestRam,
@@ -189,14 +191,16 @@ type Parameter = Record<string, string>;
               actionLabel="Einlösen"
               [(value)]="gutscheinFeld"
               [loading]="gutscheinLaeuft()"
-              [success]="gutscheinErfolg()"
-              [error]="gutscheinFehlerText()"
+              [success]="gutscheinSperrgrund() ? '' : gutscheinErfolg()"
+              [error]="gutscheinSperrgrund() || gutscheinFehlerText()"
+              [disabled]="!!gutscheinSperrgrund()"
               (action)="loeseEin($event)"
             />
 
             <z-option-group
               legend="Laufzeit"
               compact
+              [hint]="laufzeitSperrgrund()"
               [options]="laufzeiten()"
               [formField]="formular.tage"
             />
@@ -324,6 +328,11 @@ export class MusterServerErstellenPage {
 
   protected readonly formular = form(this.werte, (pfad) => {
     required(pfad.bezahlung, { message: 'Wähle eine Bezahlmethode.' });
+    // Flex bills hours up to a cap, so there is no term to choose. The cards
+    // are locked instead of staying clickable without an effect, and the
+    // legend says why (12-konfigurator.md: what does not work is disabled and
+    // says why, where you choose).
+    disabled(pfad.tage, ({ valueOf }) => !!laufzeitGrund(valueOf(pfad.abrechnung)));
   });
 
   protected readonly schritt = signal(1);
@@ -353,8 +362,19 @@ export class MusterServerErstellenPage {
 
   protected readonly ramStufen = computed(() => ramOptionen(this.werte().version));
   protected readonly laufzeiten = computed(() =>
-    laufzeitOptionen(this.werte().klasse, this.werte().ramGb, this.werte().grundbetrag),
+    laufzeitOptionen(
+      this.werte().klasse,
+      this.werte().ramGb,
+      this.werte().grundbetrag,
+      this.werte().abrechnung,
+    ),
   );
+
+  /** Why the term group is locked, and the sentence at its legend. Empty means usable. */
+  protected readonly laufzeitSperrgrund = computed(() => laufzeitGrund(this.werte().abrechnung));
+
+  /** Why no voucher can be redeemed at all. Empty means the code decides. */
+  protected readonly gutscheinSperrgrund = computed(() => gutscheinSperre(this.werte().abrechnung));
 
   /** The raise that has happened, so the sentence about it can stand still. */
   private readonly angehoben = signal<{ version: string; gb: number } | null>(null);
@@ -394,15 +414,13 @@ export class MusterServerErstellenPage {
     const { typ, version: v, klasse, tage, ramGb, abrechnung } = this.werte();
     const zahl = rechnung(this.auswahl(), this.gutscheinCode());
     const flex = abrechnung === 'flex';
+    const klassenname = this.klassen.find((e) => e.value === klasse)?.title ?? '';
     const mitRabatt = !flex && (!!zahl.laufzeitrabatt || !!zahl.gutschein);
     const zeilen: ZPriceLine[] = [
       { label: 'Typ', value: this.typen.find((e) => e.value === typ)?.title ?? '' },
       { label: 'Version', value: version(v).label },
       { label: 'Arbeitsspeicher', value: `${angehobenerRam(ramGb, v)}\u00a0GB` },
-      {
-        label: 'Leistungsklasse',
-        value: this.klassen.find((e) => e.value === klasse)?.title ?? '',
-      },
+      { label: 'Leistungsklasse', value: klassenname },
     ];
     if (flex) {
       // Flex bills by the hour with a cap, so a term is not what is paid for.
@@ -430,12 +448,20 @@ export class MusterServerErstellenPage {
       });
     }
     const betrag = flex ? flexDeckel(zahl.proZeitraum) : zahl.summe;
+    const zeitraum = flex ? 'höchstens je 30\u00a0Tage' : '';
     return {
       preis: euro(betrag),
-      zeitraum: flex ? 'höchstens je 30\u00a0Tage' : '',
+      zeitraum,
       label: flex ? 'Minecraft, Flex' : `Minecraft, alle ${tage}\u00a0Tage`,
       lines: zeilen,
       total: mitRabatt ? { label: 'Summe', value: euro(betrag) } : null,
+      // The bar says what the summary says, out of the same object: while a
+      // price is pending the old amount would otherwise stand next to the new
+      // term, and Flex would read "alle 30 Tage" although nothing is billed per
+      // term there.
+      kurz:
+        `Minecraft, ${angehobenerRam(ramGb, v)}\u00a0GB, ${klassenname}, ` +
+        (flex ? `Flex, ${zeitraum}` : `alle ${tage}\u00a0Tage`),
     };
   });
 
@@ -492,9 +518,8 @@ export class MusterServerErstellenPage {
       `${this.klassen.find((e) => e.value === this.werte().klasse)?.title}`,
   );
 
-  protected readonly kurzAlles = computed(
-    () => `Minecraft, ${this.kurzGroesse()}, alle ${this.werte().tage}\u00a0Tage`,
-  );
+  /** Price and text of the bar come out of the same frozen state as the summary. */
+  protected readonly kurzAlles = computed(() => this.sichtbarerStand().kurz);
 
   protected readonly expertenZeile = computed(() => {
     const { build, java, start } = this.werte();
@@ -537,6 +562,18 @@ export class MusterServerErstellenPage {
         }
         this.berechneNeu();
       });
+    });
+
+    // A voucher and Flex do not go together, so switching to Flex takes an
+    // applied code back. Without this the field would keep claiming a discount
+    // that the price no longer has.
+    effect(() => {
+      if (this.gutscheinSperrgrund()) {
+        untracked(() => {
+          this.gutscheinCode.set('');
+          this.gutscheinErfolg.set('');
+        });
+      }
     });
 
     // The RAM the version demands is written into the model, so the card that
