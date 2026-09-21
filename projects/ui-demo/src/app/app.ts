@@ -1,9 +1,10 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { ZField, ZSelect, ZTheme } from 'zenit-ui';
 
 @Component({
   selector: 'demo-root',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, ZField, ZSelect],
   template: `
     <a class="demo-skip body-sm" href="#inhalt">Zum Hauptinhalt springen</a>
     <header>
@@ -16,6 +17,30 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
             }}</a>
           }
         </nav>
+        <div class="demo-theme">
+          <z-field label="Farbschema" for="theme-schema">
+            <z-select size="sm">
+              <select id="theme-schema" (change)="schemaWaehlen($event)">
+                @for (eintrag of schemata; track eintrag.id) {
+                  <option [value]="eintrag.id" [selected]="eintrag.id === theme.scheme()">
+                    {{ eintrag.name }}
+                  </option>
+                }
+              </select>
+            </z-select>
+          </z-field>
+          <z-field label="Akzent" for="theme-akzent">
+            <z-select size="sm">
+              <select id="theme-akzent" (change)="akzentWaehlen($event)">
+                @for (eintrag of akzente; track eintrag.id) {
+                  <option [value]="eintrag.id" [selected]="eintrag.id === theme.accent()">
+                    {{ eintrag.name }}
+                  </option>
+                }
+              </select>
+            </z-select>
+          </z-field>
+        </div>
       </div>
     </header>
     <main id="inhalt" class="z-container demo-main" tabindex="-1">
@@ -25,6 +50,22 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class App {
+  protected readonly theme = inject(ZTheme);
+
+  protected readonly schemata = [
+    { id: 'dark', name: 'Dunkel' },
+    { id: 'light', name: 'Hell' },
+    { id: 'contrast', name: 'Kontrast' },
+    { id: 'system', name: 'System' },
+  ];
+
+  protected readonly akzente = [
+    { id: 'rot', name: 'Rot' },
+    { id: 'blau', name: 'Blau' },
+    { id: 'gruen', name: 'Grün' },
+    { id: 'violett', name: 'Violett' },
+  ];
+
   protected readonly seiten = [
     { pfad: '/grundlage', name: 'Grundlage' },
     { pfad: '/formulare', name: 'Formulare' },
@@ -33,8 +74,17 @@ export class App {
     { pfad: '/rueckmeldung', name: 'Rückmeldung' },
     { pfad: '/overlays', name: 'Overlays' },
     { pfad: '/werkzeuge', name: 'Werkzeuge' },
+    { pfad: '/themes', name: 'Themes' },
     { pfad: '/muster/dashboard', name: 'Dashboard' },
     { pfad: '/muster/server-panel', name: 'Server-Panel' },
     { pfad: '/muster/startseite', name: 'Startseite' },
   ];
+
+  protected schemaWaehlen(ereignis: Event): void {
+    this.theme.setScheme((ereignis.target as HTMLSelectElement).value);
+  }
+
+  protected akzentWaehlen(ereignis: Event): void {
+    this.theme.setAccent((ereignis.target as HTMLSelectElement).value);
+  }
 }

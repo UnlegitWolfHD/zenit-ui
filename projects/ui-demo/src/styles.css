@@ -11,6 +11,14 @@
 @import '@fontsource/jetbrains-mono/400.css';
 @import '@fontsource/jetbrains-mono/600.css';
 
+/* Farbschemata und Akzente der Library. So bindet sie auch ein Produkt ein:
+   nach tokens.css, ungeschichtet. angular.json laedt tokens.css als erstes
+   Stilblatt, styles.css als letztes, also gewinnen diese Bloecke. Das ist
+   noetig, weil :root und [data-theme="light"] dieselbe Spezifitaet (0,1,0)
+   haben und deshalb die Reihenfolge entscheidet, nicht die Spezifitaet.
+   Im Paket heisst der Pfad zenit-ui/styles/themes.css. */
+@import '../../zenit-ui/src/styles/themes.css';
+
 /* Demo-Layout. Nur Tokens, nur was die Seiten tragen. */
 
 .demo-skip {
@@ -69,6 +77,78 @@
 .demo-nav a[aria-current='page'] {
   color: var(--text);
   background: var(--surface-hover);
+}
+
+/* Theme-Steuerung im Kopf: zwei schmale Selects, rechts. Bei 360px rutscht der
+   Block unter die Navigation, die Felder liegen dann nebeneinander. */
+.demo-theme {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-inline-start: auto;
+}
+.demo-theme .z-field {
+  width: 140px;
+}
+.demo-theme .z-field__label {
+  font-size: 12px;
+  line-height: 16px;
+}
+
+/* Seite Themes. */
+.demo-swatches {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.demo-swatch {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0 var(--space-3);
+  min-width: 0;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+.demo-swatch__probe {
+  grid-row: span 2;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-sm);
+}
+.demo-swatch__name,
+.demo-swatch__wert {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.demo-swatch__name {
+  font-weight: 500;
+}
+.demo-stufen {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+.demo-eigen {
+  display: grid;
+  gap: var(--space-4);
+  max-width: var(--measure);
+}
+.demo-code {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  overflow: auto;
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+  color: var(--text-muted);
 }
 
 .demo-main {
