@@ -17,3 +17,4 @@ export * from './lib/pakete/overlays';
 export * from './lib/pakete/werkzeuge';
 
 export * from './lib/labels';
+export * from './lib/pakete/theming';
