@@ -1,1 +1,65 @@
-/* Paket daten: wird in Welle 1 gefuellt. */
+/* Paket daten: Metric, ServerList, Table und Pagination.
+   Woertlich aus spec/components/bundle.css. */
+
+/* Metric */
+.z-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+.z-metric { display: grid; gap: var(--space-1); padding: var(--space-4); border-left: 1px solid var(--border); min-width: 0; }
+.z-metric:first-child { border-left: 0; }
+.z-metric__label { font-size: 12px; line-height: 16px; color: var(--text-muted); }
+.z-metric__value { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 20px; line-height: 28px; font-weight: 600; }
+.z-metric__value small { font-size: 12px; font-weight: 400; color: var(--text-subtle); }
+.z-metric__sub { font-size: 12px; line-height: 16px; color: var(--text-subtle); }
+.z-meter { height: 4px; border-radius: var(--radius-full); background: var(--surface-hover); overflow: hidden; }
+.z-meter__fill { display: block; height: 100%; background: var(--text-muted); }
+.z-meter--warning .z-meter__fill { background: var(--warning); }
+.z-meter--danger .z-meter__fill { background: var(--danger); }
+
+/* ServerList */
+.z-rows { display: grid; }
+.z-rows__head, .z-row {
+  display: grid; align-items: center; gap: var(--space-4);
+  grid-template-columns: var(--z-cols, minmax(0, 2fr) 128px minmax(0, 1fr) 96px 20px);
+  padding: var(--space-3) var(--space-4);
+}
+.z-rows__head { font-size: 12px; line-height: 16px; color: var(--text-subtle); border-bottom: 1px solid var(--border); padding-top: var(--space-2); padding-bottom: var(--space-2); }
+.z-row { border-top: 1px solid var(--border); color: inherit; text-decoration: none; cursor: pointer; }
+.z-root a.z-row { color: inherit; }
+.z-root a.z-row:hover { text-decoration: none; }
+.z-rows__head + .z-row { border-top: 0; }
+.z-row:hover { background: var(--surface-raised); }
+.z-row__main { display: flex; align-items: center; gap: var(--space-3); min-width: 0; }
+.z-row__thumb { width: 32px; height: 32px; border-radius: var(--radius-sm); background: var(--surface-hover); flex: none; display: grid; place-items: center; font-family: var(--font-display); font-weight: 700; color: var(--text-muted); }
+.z-row__title { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.z-row__meta { font-size: 12px; line-height: 16px; color: var(--text-subtle); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.z-row__num { text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+@media (max-width: 640px) {
+  .z-rows__head { display: none; }
+  .z-row { grid-template-columns: minmax(0, 1fr) auto; row-gap: var(--space-1); }
+  .z-row > :nth-child(n+3) { display: none; }
+}
+
+/* Table */
+.z-table-wrap { overflow-x: auto; }
+.z-table { width: 100%; border-collapse: collapse; }
+.z-table th { padding: var(--space-2) var(--space-4); border-bottom: 1px solid var(--border); text-align: left; font-size: 12px; line-height: 16px; font-weight: 400; color: var(--text-subtle); white-space: nowrap; }
+.z-table td { padding: var(--space-3) var(--space-4); border-top: 1px solid var(--border); white-space: nowrap; }
+.z-table tbody tr:first-child td { border-top: 0; }
+.z-table tbody tr:hover td { background: var(--surface-raised); }
+.z-table .z-table__num { text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--text-muted); }
+.z-table__name { display: flex; align-items: center; gap: var(--space-3); font-family: var(--font-mono); }
+.z-table__check { width: 18px; }
+
+/* Pagination */
+.z-pager { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-3); padding: var(--space-2) var(--space-4); border-top: 1px solid var(--border); font-size: 12px; line-height: 16px; color: var(--text-muted); }
+.z-pager__nav { display: flex; align-items: center; gap: var(--space-1); }
+
+/* ---------- Angular-Hosts und Ergaenzungen der Library ---------- */
+
+.z-table-wrap, z-pagination { display: block; }
+.z-rows__head > *, .z-row > * { min-width: 0; }
+/* Ersetzt das inline style="min-width:0" der Vorschau am Textblock der Zeile. */
+.z-row__text { min-width: 0; }
+/* Wie .z-game__cover img in bundle.css: das Bild fuellt die Flaeche des Thumbs. */
+.z-row__thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* Ergänzung zur Referenz: div[zRow] ist nicht klickbar. */
+.z-root div.z-row { cursor: auto; }
