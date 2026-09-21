@@ -56,8 +56,9 @@ export class ZWizard {
  * Renders the class `z-wstep` on the host, plus `z-wstep--done` or
  * `z-wstep--locked`. The head holds `.z-step__num`, the title as a heading,
  * the summary and, on a finished step, the "Ändern" button. The body is only
- * rendered while the step is current, with the projected `[zWizardActions]` as
- * the last row in `.z-wstep__actions`.
+ * rendered while the step is current, with every projected
+ * `[zWizardActions]` element as the last row in `.z-wstep__actions`, which is
+ * the flex row that puts "Zurück" left and "Weiter" right.
  *
  * Accessibility: `role="listitem"`, and `aria-current="step"` while it is the
  * current one. A locked step renders no body at all, so nothing in it can be
@@ -70,10 +71,8 @@ export class ZWizard {
  * ```html
  * <z-wizard-step title="Größe" state="current">
  *   <z-option-group legend="Arbeitsspeicher" [options]="stufen" [(value)]="ram" compact />
- *   <div zWizardActions>
- *     <button zBtn="ghost" type="button">Zurück</button>
- *     <button zBtn="secondary" type="button">Weiter zu Bezahlen</button>
- *   </div>
+ *   <button zWizardActions zBtn="ghost" type="button">Zurück</button>
+ *   <button zWizardActions zBtn="secondary" type="button">Weiter zu Bezahlen</button>
  * </z-wizard-step>
  * ```
  */

@@ -178,10 +178,8 @@ const KEINE_TREFFER: ZComboOption[] = [];
             [options]="ramStufen"
             [(value)]="wizardRam"
           />
-          <div zWizardActions>
-            <button zBtn="ghost" type="button">Zurück</button>
-            <button zBtn="secondary" type="button">Weiter zu Bezahlen</button>
-          </div>
+          <button zWizardActions zBtn="ghost" type="button">Zurück</button>
+          <button zWizardActions zBtn="secondary" type="button">Weiter zu Bezahlen</button>
         </z-wizard-step>
         <z-wizard-step title="Bezahlen" summary="Name, Laufzeit, Bezahlmethode" state="locked" />
       </z-wizard>
@@ -306,7 +304,7 @@ const KEINE_TREFFER: ZComboOption[] = [];
         Die neuen Zustände: lädt, Fehler, unvollständig, sowie Rabatt- und Gutscheinzeile mit Summe
         und Steuerhinweis.
       </p>
-      <div class="demo-grid demo-grid--start">
+      <div class="demo-grid demo-grid--wide demo-grid--start">
         <z-price-summary
           label="Minecraft, alle 30 Tage (lädt)"
           price="7,74&nbsp;€"

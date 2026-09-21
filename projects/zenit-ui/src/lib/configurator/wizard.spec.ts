@@ -14,7 +14,7 @@ import { ZWizard, ZWizardState, ZWizardStep } from './wizard';
     />
     <z-wizard-step title="Größe" [state]="zweiter()">
       <p class="inhalt">Arbeitsspeicher</p>
-      <div zWizardActions><button type="button">Weiter</button></div>
+      <button zWizardActions type="button">Weiter</button>
     </z-wizard-step>
     <z-wizard-step title="Bezahlen" summary="Name, Laufzeit" state="locked">
       <p class="gesperrter-inhalt">Bezahlmethode</p>

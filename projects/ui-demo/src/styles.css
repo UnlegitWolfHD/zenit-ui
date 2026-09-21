@@ -199,6 +199,11 @@
 .demo-grid--narrow {
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
 }
+/* A summary is 340px wide next to a form; in the gallery four of them stand
+   next to one another, and below 300px the alert inside one breaks out. */
+.demo-grid--wide {
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
 /* Panels of equal rank keep their own height instead of stretching. */
 .demo-grid--start {
   align-items: start;

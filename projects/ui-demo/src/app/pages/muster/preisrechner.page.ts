@@ -226,10 +226,14 @@ export class MusterPreisrechnerPage {
     () => `${this.werte().spiel}, ${this.istFlex() ? 'Flex' : 'Monatspreis'}`,
   );
 
-  protected readonly summenZeile = computed(() => ({
-    label: this.istFlex() ? 'Höchstens im Monat' : 'Summe',
-    value: this.preisText(),
-  }));
+  /** Whether anything is taken off, which is what a sum line is there for. */
+  private readonly mitRabatt = computed(() => !this.istFlex() && !!this.summe().laufzeitrabatt);
+
+  // One fact, one place: without a deduction the sum is the price in the head
+  // already, so neither the sum nor the price before the discount gets a line.
+  protected readonly summenZeile = computed(() =>
+    this.mitRabatt() ? { label: 'Summe', value: this.preisText() } : null,
+  );
 
   protected readonly posten = computed<ZPriceLine[]>(() => {
     const zahl = this.summe();
@@ -246,7 +250,13 @@ export class MusterPreisrechnerPage {
       zeilen.push({ label: 'Pro Stunde', value: euro(this.stundenpreis()) });
       return zeilen;
     }
-    zeilen.push({ label: `Laufzeit ${this.werte().tage}\u00a0Tage`, value: euro(zahl.vorRabatt) });
+    zeilen.push({ label: 'Laufzeit', value: `${this.werte().tage}\u00a0Tage` });
+    if (this.mitRabatt()) {
+      zeilen.push({
+        label: `Preis f\u00fcr ${this.werte().tage}\u00a0Tage`,
+        value: euro(zahl.vorRabatt),
+      });
+    }
     if (zahl.laufzeitrabatt) {
       zeilen.push({
         label: 'Laufzeitrabatt',

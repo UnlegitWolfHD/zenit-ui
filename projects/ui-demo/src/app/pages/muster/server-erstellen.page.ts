@@ -122,10 +122,10 @@ type Parameter = Record<string, string>;
                 [formField]="formular.version"
               />
             </z-field>
-            <div zWizardActions>
-              <span></span>
-              <button zBtn="secondary" type="button" (click)="geheZu(2)">Weiter zu Größe</button>
-            </div>
+            <span zWizardActions></span>
+            <button zWizardActions zBtn="secondary" type="button" (click)="geheZu(2)">
+              Weiter zu Größe
+            </button>
           </z-wizard-step>
 
           <z-wizard-step
@@ -149,10 +149,10 @@ type Parameter = Record<string, string>;
               [options]="klassen"
               [formField]="formular.klasse"
             />
-            <div zWizardActions>
-              <button zBtn="ghost" type="button" (click)="geheZu(1)">Zurück</button>
-              <button zBtn="secondary" type="button" (click)="geheZu(3)">Weiter zu Bezahlen</button>
-            </div>
+            <button zWizardActions zBtn="ghost" type="button" (click)="geheZu(1)">Zurück</button>
+            <button zWizardActions zBtn="secondary" type="button" (click)="geheZu(3)">
+              Weiter zu Bezahlen
+            </button>
           </z-wizard-step>
 
           <z-wizard-step
@@ -218,10 +218,8 @@ type Parameter = Record<string, string>;
               </z-field>
             </z-disclosure>
 
-            <div zWizardActions>
-              <button zBtn="ghost" type="button" (click)="geheZu(2)">Zurück</button>
-              <span></span>
-            </div>
+            <button zWizardActions zBtn="ghost" type="button" (click)="geheZu(2)">Zurück</button>
+            <span zWizardActions></span>
           </z-wizard-step>
         </z-wizard>
 
@@ -346,10 +344,19 @@ export class MusterServerErstellenPage {
   });
 
   protected readonly summenLabel = computed(() => `Minecraft, alle ${this.werte().tage}\u00a0Tage`);
-  protected readonly summenZeile = computed(() => ({ label: 'Summe', value: this.preisText() }));
-
   private readonly summe = computed(() => rechnung(this.auswahl(), this.gutscheinCode()));
   protected readonly preisText = computed(() => euro(this.summe().summe));
+
+  /** Whether anything is taken off, which is what a sum line is there for. */
+  private readonly mitRabatt = computed(
+    () => !!this.summe().laufzeitrabatt || !!this.summe().gutschein,
+  );
+
+  // One fact, one place: without a deduction the sum is the price in the head
+  // already, so neither the sum nor the price before the discount gets a line.
+  protected readonly summenZeile = computed(() =>
+    this.mitRabatt() ? { label: 'Summe', value: this.preisText() } : null,
+  );
 
   protected readonly posten = computed<ZPriceLine[]>(() => {
     const { typ, version: v, klasse, tage } = this.werte();
@@ -362,8 +369,11 @@ export class MusterServerErstellenPage {
         label: 'Leistungsklasse',
         value: this.klassen.find((e) => e.value === klasse)?.title ?? '',
       },
-      { label: `Laufzeit ${tage}\u00a0Tage`, value: euro(zahl.vorRabatt) },
+      { label: 'Laufzeit', value: `${tage}\u00a0Tage` },
     ];
+    if (this.mitRabatt()) {
+      zeilen.push({ label: `Preis f\u00fcr ${tage}\u00a0Tage`, value: euro(zahl.vorRabatt) });
+    }
     if (zahl.laufzeitrabatt) {
       zeilen.push({
         label: 'Laufzeitrabatt',
@@ -443,10 +453,19 @@ export class MusterServerErstellenPage {
     });
 
     // A price that is recomputed shows the last number with a spinner, never a
-    // dash. The delay is simulated; a real page would wait for its service.
+    // dash. The delay is simulated; a real page would wait for its service. The
+    // first run is skipped: the page opens with a price that is already right
+    // and would otherwise start out loading for no reason.
+    let ersterLauf = true;
     effect(() => {
       this.preisSchluessel();
-      untracked(() => this.berechneNeu());
+      untracked(() => {
+        if (ersterLauf) {
+          ersterLauf = false;
+          return;
+        }
+        this.berechneNeu();
+      });
     });
 
     // The RAM the version demands is written into the model, so the card that

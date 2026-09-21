@@ -24,9 +24,12 @@ const ROUTEN = [
   'rueckmeldung',
   'overlays',
   'werkzeuge',
+  'konfigurator',
   'muster/dashboard',
   'muster/server-panel',
   'muster/startseite',
+  'muster/server-erstellen',
+  'muster/preisrechner',
 ] as const;
 
 /** Screenshot-Name: der Pfad ohne Schrägstrich, z. B. muster-dashboard. */
