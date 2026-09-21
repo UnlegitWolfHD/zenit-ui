@@ -30,8 +30,10 @@ import { ZToast, ZToastItem } from './toast';
  * region is announced twice. Both regions set `aria-atomic="false"`, which
  * overrides the `true` implied by `status` and `alert`: with up to three toasts
  * open, only the one that was just added is read out instead of all of them.
- * The close button has an overridable German `aria-label` default. Using the
- * action runs it and closes that toast.
+ * The `aria-label` of the close button comes from the label registry, key
+ * `toastClose`: German without a provider, English with
+ * `provideZenitLabels(Z_LABELS_EN)`, and `closeLabel` on this component wins
+ * over both. Using the action runs it and closes that toast.
  *
  * Both regions are `display: contents`, so the toasts stay the grid items of
  * `.z-toast-outlet`; the `order` bound per toast keeps the visual sequence of

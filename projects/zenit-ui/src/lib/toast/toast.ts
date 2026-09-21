@@ -44,6 +44,11 @@ export interface ZToastItem {
   readonly text: string;
   /** Line above the message, empty for a single-line toast. */
   readonly title: string;
+  /**
+   * Which of the five looks the toast has, and which live region announces it:
+   * `danger` goes into the assertive one, the other four into the polite one.
+   * Always set here; `show()` falls back to `neutral`.
+   */
   readonly status: ZToastStatus;
   /** Name of the Material Icons ligature, empty for no icon. */
   readonly icon: string;

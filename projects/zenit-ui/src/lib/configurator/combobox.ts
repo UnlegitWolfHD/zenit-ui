@@ -389,8 +389,10 @@ export class ZCombobox implements ControlValueAccessor, FormValueControl<string>
    * {@link value}, so it never answers itself.
    *
    * There is no debounce in here: the timing belongs to whoever runs the
-   * search. `docs/components/combobox.md` has a `resource()` recipe and an
-   * RxJS one.
+   * search. Write the text into a signal and let a `resource()` with that
+   * signal as its `params` fetch, or push it into a `Subject` and debounce
+   * with RxJS; feed the result back into `options` and set `loading` while the
+   * request is open.
    */
   readonly queryChange = output<string>();
 

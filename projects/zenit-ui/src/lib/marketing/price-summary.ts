@@ -11,6 +11,11 @@ export interface ZPriceLine {
   /**
    * The amount, already formatted by the caller. Discounts carry a minus sign
    * and stay a line of their own, they never become a badge.
+   *
+   * This is a TypeScript string, so the non-breaking space before the currency
+   * is written as `'4,40\u00a0€'`, never as `&nbsp;`: an HTML entity inside a
+   * TypeScript literal is rendered as those six characters. `Intl.NumberFormat`
+   * with `'de-DE'` emits the same U+00A0 by itself.
    */
   value: string;
   /**
@@ -64,7 +69,7 @@ export interface ZPriceTotal {
  *   label="Minecraft, alle 30 Tage"
  *   price="7,74&nbsp;€"
  *   [lines]="posten"
- *   [total]="{ label: 'Summe', value: '7,74&nbsp;€' }"
+ *   [total]="{ label: 'Summe', value: '7,74\u00a0€' }"
  *   note="Wähle noch eine Bezahlmethode"
  *   legalNote="Gemäß § 19 UStG wird keine Umsatzsteuer berechnet."
  * >
