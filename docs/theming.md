@@ -143,19 +143,35 @@ they work:
 the first child of `<head>`), `inlineCritical: false`, `provideZenitTheme()` in
 the application config. By hand:
 
-```ts
-// any Node script, or the server
-import { zenitThemeInitScript } from 'zenit-ui';
-console.log(zenitThemeInitScript()); // pass the same config as to provideZenitTheme()
+```bash
+# Prints the script body. @angular/compiler has to be loaded FIRST: the package
+# ships unlinked partial declarations, and without the JIT compiler the import
+# fails with "JIT compilation failed for injectable [class PlatformLocation]".
+node -e "import('@angular/compiler').then(() => import('zenit-ui')).then((m) => console.log(m.zenitThemeInitScript()))"
 ```
+
+A plain `import { zenitThemeInitScript } from 'zenit-ui'` in a Node script without that first
+import does not work. The function itself has no dependency on Angular; what fails is loading the
+module that carries it. Pass the same config as to `provideZenitTheme()`, for example
+`m.zenitThemeInitScript({ defaultScheme: 'system' })`.
+
+Paste the output into `<head>`, in front of every stylesheet. With the default config this is
+verbatim what `ng add zenit-ui --themes` writes, and what the two applications of this workspace
+carry:
 
 ```html
 <head>
   <meta charset="utf-8" />
   <!-- prettier-ignore -->
-  <script>/* paste the output here */</script>
-  …
+  <script>(function(k,S,A,ds,da){var s=ds,a=da,d=document.documentElement,m=function(q,f){try{return matchMedia(q).matches}catch(e){return f}};try{var v=JSON.parse((k&&localStorage.getItem(k))||'null');if(v&&typeof v==='object'){if(v.scheme==='system'||S.indexOf(v.scheme)>-1)s=v.scheme;if(A.indexOf(v.accent)>-1)a=v.accent}}catch(e){}if(s==='system')s=S.indexOf('contrast')>-1&&m('(prefers-contrast: more)',false)?'contrast':m('(prefers-color-scheme: dark)',true)?'dark':'light';d.setAttribute('data-theme',s);if(a!==da)d.setAttribute('data-accent',a)})("zenit-theme",["dark","light","contrast"],["rot","blau","gruen","violett"],"dark","rot")</script>
+  <title>…</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
 ```
+
+The last five arguments are the config: storage key, schemes, accents, default scheme, default
+accent. `zenitThemeInitScript({ defaultScheme: 'system' })` changes the fourth of them to
+`"system"` and nothing else.
 
 ```json
 "configurations": {

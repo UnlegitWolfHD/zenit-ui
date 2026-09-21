@@ -97,7 +97,7 @@ toast.info('Der Host wird für etwa 15 Minuten neu gestartet', {
 });
 
 toast.warning('Danach wird Beispiel-Server 1 gesperrt', {
-  title: 'Dein Guthaben reicht noch 6 Tage',
+  title: 'Dein Guthaben reicht noch 6\u00a0Tage',
   actionLabel: 'Guthaben aufladen',
   action: () => guthabenOeffnen(),
 });

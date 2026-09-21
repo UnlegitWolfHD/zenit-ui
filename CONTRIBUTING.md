@@ -29,7 +29,7 @@ ng serve ui-demo       # demo app at http://localhost:4200/
 npm run start:beispiel # example app, library build included
 ```
 
-`npm run check` runs `lint`, `lint:css`, `check:themes`, `check:snippets`, `check:order`, `build:lib`, `check:bundle`, both application builds, the unit tests of `zenit-ui` and of `beispiel-app`, `test:beispiel:jit`, `test:schematics` and `format:check`. It has to be green before anything is handed over, and so do the two Playwright runs. Node 24 is what CI uses; newer odd-numbered releases print engine warnings but work.
+`npm run check` runs `lint`, `lint:css`, `check:themes`, `check:snippets`, `check:order`, `build:lib`, `check:llms`, `check:bundle`, both application builds, the unit tests of `zenit-ui` and of `beispiel-app`, `test:beispiel:jit`, `test:schematics` and `format:check`. It has to be green before anything is handed over, and so do the two Playwright runs. Node 24 is what CI uses; newer odd-numbered releases print engine warnings but work.
 
 CI runs on `windows-latest`. The reference screenshots in `e2e/screenshots` were recorded on Windows and their path carries no platform, while the comparison runs with zero tolerance, so a Linux runner would fail every screenshot test. Re-record with `npm run e2e:update` on Windows, and look at the new images before committing them.
 

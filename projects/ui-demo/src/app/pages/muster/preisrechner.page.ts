@@ -81,6 +81,7 @@ const RAM_OPTIONEN: ZOption<number>[] = RAM_STUFEN.map((stufe) => ({
         sub="Beispielwerte dieser Vorschau, keine gültigen Preise"
       />
 
+      <!-- #region konfiguratorseite -->
       <z-config>
         <div class="z-stack">
           <div class="z-stack">
@@ -167,6 +168,7 @@ const RAM_OPTIONEN: ZOption<number>[] = RAM_STUFEN.map((stufe) => ({
           >Server erstellen</a
         >
       </z-sticky-bar>
+      <!-- #endregion -->
     </div>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,

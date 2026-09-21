@@ -97,6 +97,10 @@ export class ZHeaderEnd {}
  * the `banner` landmark of the page unless {@link landmark} is off. Above 900px
  * the links are visible and the end slot stays visible at every width.
  *
+ * It centres nothing: the header runs the full width of whatever contains it,
+ * so put it inside a `div.z-container`, the same one `<main>` and `z-footer`
+ * get, or brand and page title stand on different lines.
+ *
  * @example
  * ```html
  * <z-app-header navLabel="Hauptnavigation">

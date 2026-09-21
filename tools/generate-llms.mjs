@@ -24,7 +24,7 @@
  * no timestamps, stable ordering, so a check can diff the output.
  */
 
-import { readdirSync, readFileSync, statSync, writeFileSync, mkdirSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
@@ -37,7 +37,23 @@ const STYLES = join(QUELLE, 'styles');
 const DOCS = join(WURZEL, 'docs');
 const ZIEL = join(PAKET, 'llms');
 
-const VERSION = JSON.parse(readFileSync(join(PAKET, 'package.json'), 'utf8')).version;
+const MANIFEST = JSON.parse(readFileSync(join(PAKET, 'package.json'), 'utf8'));
+const VERSION = MANIFEST.version;
+
+/**
+ * The Angular major the package is built against, read from its own
+ * `peerDependencies` (`^22.0.0` → `22`). Never a constant: "Angular 0.1.0
+ * component library" in the first line of `llms.txt` was the version of the
+ * library, and every model of the blind test repeated it.
+ */
+const ANGULAR_MAJOR = (() => {
+  const bereich = MANIFEST.peerDependencies?.['@angular/core'] ?? '';
+  const treffer = bereich.match(/(\d+)/);
+  if (!treffer) {
+    throw new Error('package.json has no @angular/core in peerDependencies');
+  }
+  return treffer[1];
+})();
 
 /* ------------------------------------------------------------------ helpers */
 
@@ -460,14 +476,34 @@ function sammle() {
     proDatei.get(datei).namen.add(name);
   }
 
+  // One parse per file, shared with the heritage lookup below.
+  const dateiCache = new Map();
+  const parse = (datei) => {
+    if (!dateiCache.has(datei)) {
+      dateiCache.set(
+        datei,
+        ts.createSourceFile(datei, readFileSync(datei, 'utf8'), ts.ScriptTarget.Latest, true),
+      );
+    }
+    return dateiCache.get(datei);
+  };
+
+  /** The declaration of an interface by name, for `extends` clauses. */
+  const interfaceVon = (name) => {
+    const ort = oberflaeche.get(name);
+    if (!ort) {
+      return null;
+    }
+    return (
+      parse(ort.datei).statements.find(
+        (st) => ts.isInterfaceDeclaration(st) && st.name.text === name,
+      ) ?? null
+    );
+  };
+
   const eintraege = [];
   for (const [datei, { paket, namen }] of proDatei) {
-    const sf = ts.createSourceFile(
-      datei,
-      readFileSync(datei, 'utf8'),
-      ts.ScriptTarget.Latest,
-      true,
-    );
+    const sf = parse(datei);
     for (const st of sf.statements) {
       const deklarationen = ts.isVariableStatement(st)
         ? st.declarationList.declarations.filter((d) => ts.isIdentifier(d.name))
@@ -479,19 +515,29 @@ function sammle() {
         if (!namen.has(name) || istIntern(st) || istIntern(d)) {
           continue;
         }
-        eintraege.push(baue(name, st, d, paket, datei));
+        eintraege.push(baue(name, st, d, paket, datei, interfaceVon));
       }
     }
   }
   return eintraege;
 }
 
-function baue(name, statement, deklaration, paket, datei) {
+/** `<T extends string | number = string>` of a class, interface or type alias. */
+function typParameterVon(statement) {
+  return statement.typeParameters?.length
+    ? `<${statement.typeParameters.map((p) => zeile(p.getText())).join(', ')}>`
+    : '';
+}
+
+function baue(name, statement, deklaration, paket, datei, interfaceVon) {
   const doc = jsdocText(statement) || jsdocText(deklaration);
   const basis = {
     name,
     paket,
     datei,
+    // Generics are part of the name: `ZOption` alone says nothing about the
+    // `T` a caller has to pin down.
+    typParameter: typParameterVon(statement),
     zweck: ersterAbsatz(doc),
     notizen: weitereAbsaetze(doc),
     beispiel: beispielAusJsdoc(statement) ?? beispielAusJsdoc(deklaration),
@@ -519,7 +565,7 @@ function baue(name, statement, deklaration, paket, datei) {
     return { ...basis, art: 'class', mitglieder: mitgliederVon(statement) };
   }
   if (ts.isInterfaceDeclaration(statement)) {
-    return { ...basis, art: 'interface', felder: felderVon(statement) };
+    return { ...basis, art: 'interface', felder: felderVon(statement, interfaceVon) };
   }
   if (ts.isTypeAliasDeclaration(statement)) {
     return { ...basis, art: 'type', signatur: zeile(statement.type.getText()) };
@@ -554,8 +600,30 @@ function baue(name, statement, deklaration, paket, datei) {
   };
 }
 
-function felderVon(knoten) {
+/**
+ * Fields of an interface, its `extends` clauses followed first, so the table
+ * shows everything the caller may pass instead of only the fields the
+ * declaration adds. An inherited field says where it comes from. `@default` is
+ * printed as the default column; without one the column stays empty, which is
+ * not the same as "no default".
+ */
+function felderVon(knoten, interfaceVon, tiefe = 0) {
   const raus = [];
+  for (const klausel of knoten.heritageClauses ?? []) {
+    if (klausel.token !== ts.SyntaxKind.ExtendsKeyword || tiefe > 3) {
+      continue;
+    }
+    for (const typ of klausel.types) {
+      const basisName = ts.isIdentifier(typ.expression) ? typ.expression.text : null;
+      const basis = basisName && interfaceVon?.(basisName);
+      if (!basis) {
+        continue;
+      }
+      for (const f of felderVon(basis, interfaceVon, tiefe + 1)) {
+        raus.push({ ...f, von: f.von ?? basisName });
+      }
+    }
+  }
   for (const m of knoten.members) {
     if (!m.name || istIntern(m)) {
       continue;
@@ -565,7 +633,9 @@ function felderVon(knoten) {
     raus.push({
       name: `${m.name.getText()}${optional}`,
       typ: zelle(typ),
+      standard: zelle(entlinke(tag(m, 'default') ?? '')),
       beschreibung: zelle(entlinke(jsdocText(m))),
+      von: null,
     });
   }
   return raus;
@@ -643,46 +713,45 @@ function leseTokens() {
 }
 
 /**
- * The classes a consumer sets by hand. Every one is verified against
+ * The classes a consumer sets by hand, with their description, read from the
+ * one table of `docs/layout.md`. Every class is verified against
  * `_grundlage.css`; an entry the stylesheet no longer has fails the run rather
  * than shipping a class that does not exist.
  */
 function leseKlassen() {
   const css = readFileSync(join(STYLES, '_grundlage.css'), 'utf8');
-  const liste = [
-    [
-      'z-root',
-      'On `<html>` and on `<body>`. Background, text colour, fonts, `font: inherit` for controls, focus ring.',
-    ],
-    ['z-container', 'Centres content at `--container` width with the page gutter.'],
-    ['z-stack', 'Grid with `--space-5` between its children. The vertical rhythm of a page.'],
-    [
-      'z-cluster',
-      'Flex row that wraps, `--space-2` gap, items centred. Buttons and badges side by side.',
-    ],
-    ['z-section', 'A section of a public page: vertical padding plus the 1px separating line.'],
-    ['z-panel-shell', 'Sidebar plus content from 900px up, one column below.'],
-    [
-      'z-mono',
-      'JetBrains Mono with `tabular-nums`: prices, figures, IPs, ports, file names, log lines.',
-    ],
-    ['z-muted', 'Text in `--text-muted`: descriptions and icons.'],
-    ['z-subtle', 'Text in `--text-subtle`: timestamps and placeholders.'],
-    [
-      'z-visually-hidden',
-      'Hidden on screen, read by a screen reader. Live regions and skip links.',
-    ],
-    [
-      'z-field__error',
-      'The error sentence next to a control that sits outside a `z-field` (checkbox, toggle).',
-    ],
-    ['z-theme-mc', 'Minecraft subtheme on a page container: the primary button turns green.'],
-  ];
+  const doc = readFileSync(join(DOCS, 'layout.md'), 'utf8');
+  const liste = [...doc.matchAll(/^\|\s*`([\w-]+)`\s*\|\s*(.+?)\s*\|\s*$/gm)].map((m) => [
+    m[1],
+    zeile(m[2]),
+  ]);
+  if (liste.length < 10) {
+    throw new Error(`docs/layout.md no longer has the class table (${liste.length} rows)`);
+  }
   const fehlend = liste.filter(([k]) => !css.includes(`.${k}`)).map(([k]) => k);
   if (fehlend.length) {
     throw new Error(`_grundlage.css no longer has: ${fehlend.join(', ')}`);
   }
   return liste;
+}
+
+/**
+ * The forms chapter, read out of `docs/forms.md` instead of being kept as a
+ * second copy here. The blind test found the copy broken while the original
+ * was right, which is what a copy does. The title line goes, because the
+ * section already has one, and every heading drops one level to fit under it.
+ */
+function leseFormulare() {
+  const text = readFileSync(join(DOCS, 'forms.md'), 'utf8');
+  const ohneTitel = text.replace(/^#\s+.*\n+/, '');
+  if (!/^##\s+Signal Forms\s*$/m.test(ohneTitel)) {
+    throw new Error('docs/forms.md no longer has the section "Signal Forms"');
+  }
+  return ohneTitel
+    .split('\n')
+    .map((z) => (z.startsWith('## ') ? `#${z}` : z))
+    .join('\n')
+    .trim();
 }
 
 /** The mapping table of docs/migration-from-material.md, section 3. */
@@ -697,6 +766,89 @@ function leseMigration() {
     von: zeile(m[1]),
     nach: zeile(m[2]),
   }));
+}
+
+/* ------------------------------------------------- assembled page examples
+ *
+ * The three examples that show how blocks are put together come out of the
+ * applications this workspace builds, never out of a constant here: marked
+ * regions in `beispiel-app` and `ui-demo`, which the compiler and the e2e runs
+ * cover. A missing region fails the run instead of printing nothing.
+ *
+ * ponytail: `regionAus` is a second copy of `ausschnitt()` in
+ * `projects/beispiel-app/src/app/shared/quelltexte.ts`, 25 lines. Share the two
+ * once one of them is compiled to JavaScript a Node tool can import.
+ */
+
+/** Start of a marked region, as in `<!-- #region name -->` or `// #region name`. */
+const REGION_START = '#region ';
+const REGION_ENDE = '#endregion';
+
+function leseQuelle(relativ) {
+  return readFileSync(join(WURZEL, relativ), 'utf8').replace(/\r\n/g, '\n');
+}
+
+/** Removes the indentation a block only carries because of where it sits. */
+function ausrichten(zeilen) {
+  const einzug = zeilen
+    .filter((z) => z.trim().length > 0)
+    .reduce((kleinster, z) => Math.min(kleinster, z.length - z.trimStart().length), 80);
+  return zeilen
+    .map((z) => z.slice(Math.min(einzug, z.length - z.trimStart().length)))
+    .join('\n')
+    .replace(/^\n+|\s+$/g, '');
+}
+
+/** The lines between `#region <name>` and its `#endregion`. Regions nest. */
+function regionAus(relativ, name) {
+  const zeilen = leseQuelle(relativ).split('\n');
+  const start = zeilen.findIndex((z) => z.includes(REGION_START + name));
+  if (start < 0) {
+    throw new Error(`${relativ} has no region "${name}" any more`);
+  }
+  const block = [];
+  let tiefe = 1;
+  for (const z of zeilen.slice(start + 1)) {
+    if (z.includes(REGION_START)) {
+      tiefe++;
+    } else if (z.includes(REGION_ENDE)) {
+      if (--tiefe === 0) {
+        break;
+      }
+    } else {
+      block.push(z);
+    }
+  }
+  const text = ausrichten(block);
+  if (!text) {
+    throw new Error(`the region "${name}" of ${relativ} is empty`);
+  }
+  return text;
+}
+
+/** The whole `template:` literal of a component, marker lines removed. */
+function templateAus(relativ) {
+  const quelle = leseQuelle(relativ);
+  const start = quelle.indexOf('template: `');
+  const ende = quelle.indexOf('`,', start);
+  if (start < 0 || ende < 0) {
+    throw new Error(`${relativ} has no inline template`);
+  }
+  return ausrichten(
+    quelle
+      .slice(start + 'template: `'.length, ende)
+      .split('\n')
+      .filter((z) => !z.includes(REGION_START) && !z.includes(REGION_ENDE)),
+  );
+}
+
+/** The `<head>` of the example application, which `ng add --themes` wrote. */
+function leseKopf(relativ) {
+  const treffer = leseQuelle(relativ).match(/^[ \t]*<head>[\s\S]*?^[ \t]*<\/head>/m);
+  if (!treffer) {
+    throw new Error(`${relativ} has no <head>`);
+  }
+  return ausrichten(treffer[0].split('\n'));
 }
 
 /* ------------------------------------------------------------------- output */
@@ -717,8 +869,16 @@ const REGELN = `- **No \`@angular/material\`.** Not the components, not the them
   exception is the Material Icons webfont, self-hosted. Peer dependencies are \`@angular/core\`,
   \`common\`, \`forms\`, \`cdk\` and \`rxjs\`; nothing else.
 - **Tokens only.** Every colour, spacing, radius, font and shadow comes from \`var(--…)\`.
-  \`tokens.css\` is the single place with hex and pixel values. Write no hex, no \`rgb()\`, no pixel
-  value of your own.
+  \`tokens.css\` is the single place with hex and pixel values. Write no hex, no \`rgb()\` and no
+  pixel value of your own for colour, spacing, radius, font size or shadow. Two things are not
+  design values and take a literal length: the grid tracks of \`columns\` on \`z-rows\`
+  (\`columns="minmax(0, 2fr) 128px 96px 40px"\`) and the \`width\` of a \`z-skeleton\`
+  (\`<z-skeleton width="64px" />\`, also \`60%\`), which is the length of the text it stands in for.
+- **Numbers keep their non-breaking space**, comma as the decimal mark: \`1,98\\u00a0€\`,
+  \`24\\u00a0GB\`, \`89\\u00a0%\`. In a template write the entity, \`price="7,74&nbsp;€"\`; in a
+  TypeScript string write the escape, \`{ value: '7,74\\u00a0€' }\`, because \`&nbsp;\` inside a
+  TypeScript literal renders as those six characters. \`new Intl.NumberFormat('de-DE', { style:
+  'currency', currency: 'EUR' })\` emits the same U+00A0 by itself. The library formats nothing.
 - **\`z-root\` on \`<html>\` and on \`<body>\`.** Without it controls fall back to Arial, the focus
   ring is missing and overlays attached to \`body\` lose the variables.
 - **Style order is binding**, by package specifier:
@@ -743,7 +903,9 @@ const REGELN = `- **No \`@angular/material\`.** Not the components, not the them
   native elements carrying library classes. Overlays, focus traps and menus come from
   \`@angular/cdk\`.`;
 
-const SETUP = `1. **Install.** The package is not on npm; it is installed from the tarball built by
+const SETUP = (
+  kopf,
+) => `1. **Install.** The package is not on npm; it is installed from the tarball built by
    \`npm pack\` inside \`dist/zenit-ui\`:
    \`\`\`bash
    npm i ./zenit-ui-${VERSION}.tgz
@@ -811,6 +973,26 @@ const SETUP = `1. **Install.** The package is not on npm; it is installed from t
    \`<script>\` into the \`<head>\` of \`index.html\`, before the stylesheets, and set
    \`"inlineCritical": false\` for the production build.
 
+7. **The resulting \`<head>\`.** This is the \`index.html\` of the example application of this
+   workspace, written by \`ng add … --themes\` with \`{ defaultScheme: 'system' }\`. The script is
+   the literal output of \`zenitThemeInitScript({ defaultScheme: 'system' })\`; its five arguments
+   are storage key, schemes, accents, default scheme and default accent, so another config only
+   changes those.
+
+   \`\`\`html
+${kopf
+  .split('\n')
+  .map((z) => (z ? `   ${z}` : z))
+  .join('\n')}
+   \`\`\`
+
+   To generate it yourself, \`@angular/compiler\` has to be loaded first, or importing the package
+   in plain Node fails with "JIT compilation failed for injectable [class PlatformLocation]":
+
+   \`\`\`bash
+   node -e "import('@angular/compiler').then(() => import('zenit-ui')).then((m) => console.log(m.zenitThemeInitScript()))"
+   \`\`\`
+
 Components are standalone: import the class into the \`imports\` array of your component, nothing
 else. There is no \`NgModule\`.`;
 
@@ -818,7 +1000,12 @@ else. There is no \`NgModule\`.`;
 const REGELN_KURZ = `- **No \`@angular/material\`**, not even temporarily. The one exception is the Material Icons
   webfont. Peers: \`@angular/core\`, \`common\`, \`forms\`, \`cdk\`, \`rxjs\`; nothing else.
 - **Tokens only.** Colour, spacing, radius, font and shadow come from \`var(--…)\`. Write no hex,
-  no \`rgb()\`, no pixel value of your own; \`tokens.css\` is the only place that has them.
+  no \`rgb()\`, no pixel value of your own; \`tokens.css\` is the only place that has them. The two
+  exceptions are not design values: the grid tracks of \`columns\` on \`z-rows\` and the \`width\` of
+  a \`z-skeleton\`.
+- **Numbers**: comma as the decimal mark and a non-breaking space before unit and currency.
+  \`&nbsp;\` in a template, \`\\u00a0\` in a TypeScript string, or \`Intl.NumberFormat('de-DE', …)\`,
+  which emits it. The library formats nothing.
 - **\`class="z-root"\` on \`<html>\` and on \`<body>\`**, or controls fall back to Arial, the focus
   ring is gone and overlays on \`body\` lose the variables.
 - **Style order is binding**, by package specifier: \`zenit-ui/styles/tokens.css\`,
@@ -850,104 +1037,6 @@ const SETUP_KURZ = `1. \`npm i ./zenit-ui-${VERSION}.tgz\` (the package is not o
    at the application root; \`zenitThemeInitScript()\` inline in \`<head>\` against the flash.
 
 Components are standalone: import the class into \`imports\`. No \`NgModule\`, no \`forRoot\`.`;
-
-const FORMULARE = `Three ways to bind a value; every control of the library supports all three.
-
-| Way | Use it for | Binding |
-| --- | --- | --- |
-| Signal Forms | new forms, the default since Angular 22 | \`[formField]\` |
-| Signal \`model()\` | a single control outside a form | \`[(checked)]\`, \`[(value)]\` |
-| Reactive / template-driven | existing forms (interop) | \`[formControl]\`, \`[(ngModel)]\` |
-
-| Control | Value | Element that takes the binding |
-| --- | --- | --- |
-| \`z-checkbox\` | \`boolean\` | the component |
-| \`z-toggle\` | \`boolean\` | the component |
-| \`z-slider\` | \`number\` | the component |
-| \`z-segment\` | \`string\` | the component |
-| \`z-combobox\` | \`string\` | the component |
-| \`input[zInput]\`, \`textarea[zInput]\` | \`string\` | the native element, next to \`zInput\` |
-| \`z-select\` | \`string\` | the native \`<select>\` inside, not \`z-select\` |
-
-Signal Forms:
-
-\`\`\`ts
-import { Component, signal } from '@angular/core';
-import { disabled, form, FormField, max, min, required, submit } from '@angular/forms/signals';
-import { ZButton, ZCheckbox, ZField, ZInput, ZSegment, ZSelect, ZSlider, ZToggle } from 'zenit-ui';
-
-@Component({
-  imports: [FormField, ZButton, ZCheckbox, ZField, ZInput, ZSegment, ZSelect, ZSlider, ZToggle],
-  templateUrl: './bestellung.html',
-})
-export class Bestellung {
-  protected readonly modell = signal({ name: '', ramGb: 4, backups: false, agb: false });
-
-  protected readonly formular = form(this.modell, (pfad) => {
-    required(pfad.name, { message: 'Gib dem Server einen Namen.' });
-    min(pfad.ramGb, 2);
-    max(pfad.ramGb, 16);
-    required(pfad.agb, { message: 'Bestätige die AGB, um fortzufahren.' });
-  });
-
-  /** First error of a field, once it was left or the form was submitted. */
-  protected fehler(feld: { touched(): boolean; errors(): readonly { message?: string }[] }): string {
-    return feld.touched() ? (feld.errors()[0]?.message ?? '') : '';
-  }
-
-  protected bestellen(): void {
-    // submit() touches every field, so all errors show, and runs only when valid.
-    void submit(this.formular, async () => this.sende(this.modell()));
-  }
-}
-\`\`\`
-
-\`\`\`html
-<z-field label="Servername" for="name" [error]="fehler(formular.name())">
-  <input zInput id="name" [formField]="formular.name" />
-</z-field>
-
-<z-field label="Standort" for="standort">
-  <z-select>
-    <select id="standort" [formField]="formular.standort">
-      <option value="nbg">Nürnberg</option>
-    </select>
-  </z-select>
-</z-field>
-
-<z-slider label="Arbeitsspeicher" unit="GB" [step]="2" [formField]="formular.ramGb" />
-<z-toggle [formField]="formular.backups" ariaLabel="Backup jede Nacht" />
-
-<z-checkbox [formField]="formular.agb" ariaDescribedby="agb-fehler">
-  Ich stimme den <a href="/agb">Bedingungen</a> zu
-</z-checkbox>
-@if (fehler(formular.agb()); as satz) {
-  <span class="z-field__error" id="agb-fehler" role="alert">{{ satz }}</span>
-}
-
-<button zBtn="primary" type="button" (click)="bestellen()">Server erstellen</button>
-\`\`\`
-
-Rules that follow from how Angular wires the directive:
-
-- **State comes from the schema, not the template.** Next to \`[formField]\` Angular rejects
-  \`[disabled]\`, \`[required]\`, \`[min]\`, \`[max]\`, \`[invalid]\`, \`[touched]\`, \`[value]\` and
-  \`[checked]\` at compile time (NG8022). The scale of a slider therefore lives in \`min()\` and
-  \`max()\`; without those rules the slider keeps its defaults, 0 to 100.
-- **The slider stays on its scale.** A model value outside \`min()\`/\`max()\` or between two steps is
-  corrected to the value the track really shows, and that correction is written into the field.
-- **\`aria-invalid\` waits for \`touched\`.** \`zInput\`, \`z-checkbox\`, \`z-toggle\` and \`z-slider\`
-  write it only once the field is invalid *and* touched. \`submit()\` touches every field.
-- **\`reset()\`** on a field or the form writes the value back and clears touched and dirty.
-- \`[formField]\` belongs on the native \`<select>\` inside \`z-select\`, never on the host.
-- **Errors**: \`z-field\` takes the sentence as \`error\` (a string), replaces the hint with it and
-  points \`aria-describedby\` at it. \`z-checkbox\` and \`z-toggle\` bring their own label and do not
-  sit in a \`z-field\`; their sentence is a \`<span class="z-field__error" id="…" role="alert">\`
-  referenced through \`ariaDescribedby\`.
-- In reactive forms nothing sets \`invalid\` for you: bind \`[invalid]\` yourself.
-- Not supported on the custom controls: \`readonly()\`, \`hidden()\`, \`pending\`, \`name\`, \`errors\`,
-  \`dirty\`, \`minLength\`, \`maxLength\`, \`pattern\`; and \`required()\` is not reflected on
-  \`z-toggle\`, \`z-slider\` and \`z-segment\` (the rule still validates).`;
 
 const THEMING = `\`tokens.css\` carries one scheme, \`dark\`. The opt-in stylesheet
 \`zenit-ui/styles/themes.css\` adds \`light\` and \`contrast\` plus the accents \`blau\`, \`gruen\`
@@ -1055,6 +1144,19 @@ It returns \`EnvironmentProviders\`, so it also works in the \`providers\` of a 
 merges over the labels of the enclosing injector, not over German. For one subtree provide the
 token directly: \`{ provide: Z_LABELS, useValue: { ...Z_LABELS_EN, headerMenu: 'Menu' } }\`.
 
+**English plus one override is one call, not two.** Two \`provideZenitLabels()\` in the same
+\`providers\` array do not stack: the factory reads the enclosing injector with \`skipSelf\`, both
+calls sit in that same injector, so the second one merges over the German defaults and the first
+is never seen. Measured: \`[provideZenitLabels(Z_LABELS_EN), provideZenitLabels({ tableRegion: 'Invoices' })]\`
+leaves \`paginationPrev\` at \`'Vorherige Seite'\`. Spread instead:
+
+\`\`\`ts
+providers: [provideZenitLabels({ ...Z_LABELS_EN, tableRegion: 'Invoices, scrollable' })];
+\`\`\`
+
+Stacking works across injectors only: one call at the application root, another in the
+\`providers\` of a route.
+
 Every input that used to carry a German default still wins over the registry: \`ariaLabel\`,
 \`ariaLabelPrev\`, \`ariaLabelNext\`, \`rangeLabel\` and \`pageSizeLabel\` on \`z-pagination\`,
 \`logLabel\`, \`inputLabel\` and \`endLabel\` on \`z-console\`, \`menuLabel\` on \`z-app-header\`,
@@ -1088,20 +1190,49 @@ function mitgliedTabelle(mitglieder, kind) {
     '| Name | Type | Default | Description |',
     '| --- | --- | --- | --- |',
     ...zeilen.map((m) => {
+      // A transform or a default may hold a union type; an unescaped pipe would
+      // split the row into more cells than the table has columns.
       const zusatz = m.transform
-        ? ` — \`${m.transform}\`, so the bare attribute \`${m.name}\` counts as ${m.transform === 'booleanAttribute' ? '`true`' : 'that value'}`
+        ? ` — \`${zelle(m.transform)}\`, so the bare attribute \`${m.name}\` counts as ${m.transform === 'booleanAttribute' ? '`true`' : 'that value'}`
         : m.akzeptiert
           ? ` — also accepts \`${zelle(m.akzeptiert)}\``
           : '';
-      return `| \`${m.name}\` | \`${zelle(m.typ)}\`${zusatz} | \`${m.standard}\` | ${m.beschreibung || '—'} |`;
+      return `| \`${m.name}\` | \`${zelle(m.typ)}\`${zusatz} | \`${zelle(m.standard)}\` | ${m.beschreibung || '—'} |`;
     }),
   ].join('\n');
+}
+
+/**
+ * The rule the compiler enforces as NG8011. Measured against Angular 22: with
+ * two root nodes in an `@if` nothing reaches the named slot at all — the nodes
+ * fall into the default slot, and a component without one drops them.
+ */
+function slotSatz(slots) {
+  const attribute = slots.filter((s) => s.startsWith('['));
+  const elemente = slots.filter((s) => !s.startsWith('['));
+  const wege = [];
+  if (attribute.length) {
+    wege.push(
+      `for \`${attribute[0]}\` wrap the block's content in an \`<ng-container ${attribute[0].slice(1, -1)}>\`, which carries the slot attribute`,
+    );
+  }
+  if (elemente.length) {
+    wege.push(
+      `for \`${elemente[0]}\` there is no such wrapper, because an \`<ng-container>\` cannot carry an element selector, so keep the block to that one node`,
+    );
+  }
+  return (
+    'A slot only receives a node while that node is the single root of its `@if`, `@for` or ' +
+    '`@switch` block. With more than one root the compiler warns NG8011 and the node goes to the ' +
+    'default slot instead, or nowhere when the component has none. Either split the block into ' +
+    `one block per node, or ${wege.join('; ')}.`
+  );
 }
 
 function bausteinAbschnitt(e, leitfaden, beispielBesitzer) {
   const aus = [];
   const kopf = e.selektor ? `\`${e.selektor}\`` : e.art;
-  aus.push(`### ${e.name} — ${kopf}`, '');
+  aus.push(`### ${e.name}${e.typParameter ?? ''} — ${kopf}`, '');
   aus.push(`Import: \`import { ${e.name} } from 'zenit-ui';\``);
   if (e.zweck) {
     aus.push('', e.zweck);
@@ -1128,7 +1259,12 @@ function bausteinAbschnitt(e, leitfaden, beispielBesitzer) {
     );
   }
   if (e.slots?.length) {
-    aus.push('', `Content slots: ${e.slots.map((s) => `\`${s}\``).join(', ')}.`);
+    const benannt = e.slots.filter((s) => s !== '(default content)');
+    aus.push(
+      '',
+      `Content slots: ${e.slots.map((s) => `\`${s}\``).join(', ')}.` +
+        (benannt.length ? ` ${slotSatz(benannt)}` : ''),
+    );
   }
   if (e.cva) {
     aus.push(
@@ -1145,15 +1281,19 @@ function bausteinAbschnitt(e, leitfaden, beispielBesitzer) {
     }
   }
   if (e.felder?.length) {
-    aus.push('', '| Field | Type | Description |', '| --- | --- | --- |');
+    aus.push('', '| Field | Type | Default | Description |', '| --- | --- | --- | --- |');
     for (const f of e.felder) {
-      aus.push(`| \`${f.name}\` | \`${f.typ}\` | ${f.beschreibung || '—'} |`);
+      const woher = f.von ? ` (from ${f.von})` : '';
+      aus.push(
+        `| \`${f.name}\` | \`${f.typ}\` | ${f.standard ? `\`${f.standard}\`` : '—'} | ${f.beschreibung || '—'}${woher} |`,
+      );
     }
   }
   if (e.signatur && ['type', 'const', 'token', 'function', 'provider'].includes(e.art)) {
+    const typParameter = e.typParameter ?? '';
     aus.push(
       '',
-      `\`\`\`ts\n${e.art === 'type' ? `type ${e.name} = ${e.signatur}` : e.art === 'token' ? `const ${e.name}: InjectionToken<${e.signatur}>` : e.signatur}\n\`\`\``,
+      `\`\`\`ts\n${e.art === 'type' ? `type ${e.name}${typParameter} = ${e.signatur}` : e.art === 'token' ? `const ${e.name}: InjectionToken<${e.signatur}>` : e.signatur}\n\`\`\``,
     );
   }
 
@@ -1174,6 +1314,70 @@ function bausteinAbschnitt(e, leitfaden, beispielBesitzer) {
   // The trailing newline keeps a blank line between two sections when the
   // caller joins them.
   return `${aus.join('\n')}\n`;
+}
+
+/**
+ * The three assembled pages. Every block of this section is a marked region of
+ * an application this workspace builds, so an example that stops compiling
+ * fails the build, not the reader.
+ */
+function baueSeitenrahmen() {
+  return [
+    'The reference sections below are per block. What they do not show is how blocks are put',
+    'together, which is where every model of the blind test went wrong. These three pages are',
+    'copied out of the applications of this workspace, region by region, so they compile.',
+    '',
+    '### The page shell',
+    '',
+    'Three facts, and all three were missed:',
+    '',
+    '- **Header, `<main>` and footer each get the page width from their own `.z-container`.**',
+    '- **`z-app-header` and `z-footer` centre nothing themselves.** They run the full width of',
+    '  whatever contains them, so without the container the footer is full-bleed under a centred',
+    '  page.',
+    '- **The skip link is `a[zSkipLink]`, first in the body**, before the header, pointing at the',
+    '  `<main>`, which carries `tabindex="-1"` so the focus can land there. The class',
+    '  `z-visually-hidden` is not a skip link: it stays hidden on focus.',
+    '',
+    '```html',
+    templateAus('projects/beispiel-app/src/app/layout/shell/shell.ts'),
+    '```',
+    '',
+    '### A table page',
+    '',
+    'Panel, the three states, pagination as the last row. `z-panel` picks `z-pagination` out of the',
+    'projected content, and a control-flow block reaches that slot only while it holds this single',
+    'node. The skeleton rows use the same grid as the real rows, so nothing jumps when the data',
+    'arrives.',
+    '',
+    '```html',
+    regionAus('projects/ui-demo/src/app/pages/muster/dashboard.page.ts', 'tabellenseite'),
+    '```',
+    '',
+    'Sorting is a `table[zTable]` with `th[zSortHeader]` inside the same panel:',
+    '',
+    '```html',
+    regionAus('projects/ui-demo/src/app/pages/daten/daten.page.ts', 'sortierbar'),
+    '```',
+    '',
+    'The library never sorts. `[(sort)]` reports which column and which direction the header asked',
+    "for; the order is the caller's:",
+    '',
+    '```ts',
+    regionAus('projects/ui-demo/src/app/pages/daten/daten.page.ts', 'sortierung'),
+    '```',
+    '',
+    '### A configurator page',
+    '',
+    '`z-config` is the two-column frame: the form on the left, the `[zConfigAside]` element on the',
+    'right, which sticks from 900px up. `z-price-summary` carries the one primary button of the',
+    'page as its projected content, and `z-sticky-bar mobileOnly` repeats price and action below',
+    '900px, where the aside has moved under the form.',
+    '',
+    '```html',
+    regionAus('projects/ui-demo/src/app/pages/muster/preisrechner.page.ts', 'konfiguratorseite'),
+    '```',
+  ].join('\n');
 }
 
 function baueDateien() {
@@ -1199,17 +1403,20 @@ function baueDateien() {
   const dienste = eintraege.filter((e) =>
     ['service', 'provider', 'token', 'function'].includes(e.art),
   );
-  const typen = eintraege.filter((e) => ['interface', 'type', 'const', 'class'].includes(e.art));
+  // A constant is a value you import and use, not a shape you annotate with.
+  // Filed under "types" they read like something to implement.
+  const typen = eintraege.filter((e) => ['interface', 'type', 'class'].includes(e.art));
+  const konstanten = eintraege.filter((e) => e.art === 'const');
 
   /* ------------------------------------------------------------- llms.txt */
 
   const kurz = [
     '# zenit-ui',
     '',
-    `> Angular ${VERSION} component library of the Zenit design system: ${bausteine.length} standalone`,
-    '> components and directives, dark by default, token-driven, `@angular/cdk` for overlays and no',
-    '> Angular Material anywhere. This file is the index; `llms-full.txt` next to it is the complete',
-    '> reference and needs no other file.',
+    `> Component library ${VERSION} for Angular ${ANGULAR_MAJOR} of the Zenit design system:`,
+    `> ${bausteine.length} standalone components and directives, dark by default, token-driven,`,
+    '> `@angular/cdk` for overlays and no Angular Material anywhere. This file is the index;',
+    '> `llms-full.txt` next to it is the complete reference and needs no other file.',
     '',
     '## What it is',
     '',
@@ -1239,7 +1446,13 @@ function baueDateien() {
     '',
     '## Exported types',
     '',
-    typen.map((e) => `\`${e.name}\``).join(', ') + '.',
+    typen.map((e) => `\`${e.name}${e.typParameter ?? ''}\``).join(', ') + '.',
+    '',
+    '## Exported constants',
+    '',
+    'Values to import and use, not shapes to implement.',
+    '',
+    ...konstanten.map((e) => `- \`${e.name}\` — ${kuerze(e.zweck)}`),
     '',
     '## Full reference',
     '',
@@ -1262,15 +1475,17 @@ function baueDateien() {
     '1. What it is',
     '2. Hard rules',
     '3. Setup',
-    '4. Components and directives',
-    '5. Services, providers and tokens',
-    '6. Exported types',
-    '7. Forms',
-    '8. Theming',
-    '9. Labels and languages',
-    '10. CSS classes you may set',
-    '11. Coming from Angular Material',
-    '12. Design tokens',
+    '4. Page shell and two assembled pages',
+    '5. Components and directives',
+    '6. Services, providers and tokens',
+    '7. Exported types',
+    '8. Exported constants',
+    '9. Forms',
+    '10. Theming',
+    '11. Labels and languages',
+    '12. CSS classes you may set',
+    '13. Coming from Angular Material',
+    '14. Design tokens',
     '',
     '## 1. What it is',
     '',
@@ -1280,8 +1495,8 @@ function baueDateien() {
     'look is technical, quiet and dense: dark by default, one accent colour that means "you can act',
     'here", no gradients, no glow, no motion beyond colour transitions.',
     '',
-    'Peer dependencies: `@angular/core`, `@angular/common`, `@angular/forms`, `@angular/cdk` (all',
-    '22) and `rxjs` 7.8. Its own only dependency is `tslib`.',
+    'Peer dependencies: `@angular/core`, `@angular/common`, `@angular/forms` and `@angular/cdk`',
+    `(all ${ANGULAR_MAJOR}) plus \`rxjs\` 7.8. Its own only dependency is \`tslib\`.`,
     '',
     'Every block is standalone: import the class into the `imports` array of your component. There',
     'is no `NgModule` and no `forRoot`.',
@@ -1292,9 +1507,13 @@ function baueDateien() {
     '',
     '## 3. Setup',
     '',
-    SETUP,
+    SETUP(leseKopf('projects/beispiel-app/src/index.html')),
     '',
-    '## 4. Components and directives',
+    '## 4. Page shell and two assembled pages',
+    '',
+    baueSeitenrahmen(),
+    '',
+    '## 5. Components and directives',
     '',
     'Every input is a signal. `[(name)]` works where a member is listed as a two-way model. A',
     'boolean input marked `booleanAttribute` may be written as a bare attribute (`disabled`),',
@@ -1304,7 +1523,7 @@ function baueDateien() {
       bausteinAbschnitt(e, leitfadenVon.get(e.name), besitzerVon.get(e.name) ?? e.name),
     ),
     '',
-    '## 5. Services, providers and tokens',
+    '## 6. Services, providers and tokens',
     '',
     SERVICES,
     '',
@@ -1312,25 +1531,33 @@ function baueDateien() {
       bausteinAbschnitt(e, leitfadenVon.get(e.name), besitzerVon.get(e.name) ?? e.name),
     ),
     '',
-    '## 6. Exported types',
+    '## 7. Exported types',
     '',
     ...typen.map((e) =>
       bausteinAbschnitt(e, leitfadenVon.get(e.name), besitzerVon.get(e.name) ?? e.name),
     ),
     '',
-    '## 7. Forms',
+    '## 8. Exported constants',
     '',
-    FORMULARE,
+    'Values to import and use, not shapes to annotate with.',
     '',
-    '## 8. Theming',
+    ...konstanten.map((e) =>
+      bausteinAbschnitt(e, leitfadenVon.get(e.name), besitzerVon.get(e.name) ?? e.name),
+    ),
+    '',
+    '## 9. Forms',
+    '',
+    leseFormulare(),
+    '',
+    '## 10. Theming',
     '',
     THEMING,
     '',
-    '## 9. Labels and languages',
+    '## 11. Labels and languages',
     '',
     LABELS,
     '',
-    '## 10. CSS classes you may set',
+    '## 12. CSS classes you may set',
     '',
     'These are the classes a page sets by hand. Everything else is rendered by a component and is',
     'not part of the contract.',
@@ -1347,7 +1574,7 @@ function baueDateien() {
     'and `caption` are Inter; `mono*` is JetBrains Mono with `tabular-nums` and belongs to prices,',
     'figures, IP addresses, ports, file names and log lines. Nothing is smaller than 12px.',
     '',
-    '## 11. Coming from Angular Material',
+    '## 13. Coming from Angular Material',
     '',
     '| Angular Material | zenit-ui |',
     '| --- | --- |',
@@ -1361,7 +1588,7 @@ function baueDateien() {
     'tabs are links first and a tab list second; `zTooltip` takes the text as its value and has no',
     'options; `z-icon` takes the ligature as `name`, not as content.',
     '',
-    '## 12. Design tokens',
+    '## 14. Design tokens',
     '',
     'Every value the system has. Use them as `var(--name)`; write no literal of your own.',
     '`themes.css` overrides the colour block per scheme (`[data-theme="light"]`,',
@@ -1378,7 +1605,7 @@ function baueDateien() {
     ]),
   ].join('\n');
 
-  return { kurz: normalisiere(kurz), voll: normalisiere(voll), eintraege, bausteine };
+  return { kurz: normalisiere(kurz), voll: normalisiere(voll), eintraege, bausteine, konstanten };
 }
 
 function kuerze(text) {
@@ -1421,17 +1648,17 @@ function pruefe({ kurz, voll, eintraege, bausteine }) {
 
   for (const e of eintraege) {
     const muss = ['component', 'directive', 'service', 'provider'].includes(e.art);
-    if (muss && !voll.includes(`### ${e.name} —`)) {
+    if (muss && !voll.includes(`### ${e.name}${e.typParameter ?? ''} —`)) {
       fehler.push(`llms-full.txt has no section for ${e.art} ${e.name}`);
     }
     for (const m of e.mitglieder ?? []) {
       mitglieder++;
-      const zelle = m.kind === 'output' ? `| \`(${m.name})\` |` : `| \`${m.name}\` |`;
-      if (!voll.includes(zelle)) {
+      const spalte = m.kind === 'output' ? `| \`(${m.name})\` |` : `| \`${m.name}\` |`;
+      if (!voll.includes(spalte)) {
         fehler.push(`llms-full.txt is missing ${e.name}.${m.name}`);
         continue;
       }
-      if (m.kind !== 'output' && !voll.includes(`\`${m.standard}\` |`)) {
+      if (m.kind !== 'output' && !voll.includes(`\`${zelle(m.standard)}\` |`)) {
         fehler.push(`llms-full.txt is missing the default of ${e.name}.${m.name} (${m.standard})`);
       }
     }
@@ -1451,14 +1678,127 @@ function pruefe({ kurz, voll, eintraege, bausteine }) {
       }
     }
   }
-  return { fehler, mitglieder, selektoren: selektoren.size };
+
+  fehler.push(...keinePfade(voll), ...keinePfade(kurz));
+  const fences = pruefeFences(voll, eintraege);
+  fehler.push(...fences.fehler);
+
+  return { fehler, mitglieder, selektoren: selektoren.size, fences };
+}
+
+/**
+ * A reader of these files has the package and nothing else. A sentence that
+ * sends them to `docs/…`, `spec/…` or "see …​.md" is a dead end, so the fact
+ * has to stand in the JSDoc it came from. Code fences are exempt: a path in an
+ * example is part of the example.
+ */
+function keinePfade(text) {
+  const fehler = [];
+  let inFence = false;
+  text.split('\n').forEach((z, i) => {
+    if (z.startsWith('```')) {
+      inFence = !inFence;
+      return;
+    }
+    if (inFence) {
+      return;
+    }
+    for (const muster of [/\bdocs\/[\w./-]+/, /\bspec\/[\w./-]+/, /\bsee\b[^.\n]{0,60}\.md\b/i]) {
+      const treffer = z.match(muster);
+      if (treffer) {
+        fehler.push(`line ${i + 1} points at a file the reader has no access to: ${treffer[0]}`);
+      }
+    }
+  });
+  return fehler;
+}
+
+/**
+ * Every `ts` fence that is a whole file (an `@Component` and an import from
+ * `zenit-ui`) is written to `tmp/llms-fences/` and type-checked against the
+ * built package with the TypeScript compiler API, the same way the example
+ * application resolves `zenit-ui` through `paths`. Fragments are counted and
+ * skipped. Measured at 1.9 s for the whole step.
+ *
+ * Without `dist/zenit-ui` there is nothing to check against; the run then
+ * falls back to parsing the imports and asserting every identifier is in the
+ * public API, and says so. `npm run check` therefore runs `check:llms` behind
+ * `build:lib`.
+ *
+ * A `templateUrl` becomes an empty inline template: the file next to it does
+ * not exist, and plain `tsc` does not type-check Angular templates anyway.
+ */
+function pruefeFences(text, eintraege) {
+  const fehler = [];
+  const ganze = [];
+  let teile = 0;
+  for (const m of text.matchAll(/```ts\n([\s\S]*?)```/g)) {
+    const code = m[1];
+    if (!/@Component\s*\(/.test(code) || !/from 'zenit-ui'/.test(code)) {
+      teile++;
+      continue;
+    }
+    ganze.push(code.replace(/templateUrl: '[^']*'/, "template: ''"));
+  }
+
+  const dist = join(WURZEL, 'dist/zenit-ui');
+  let art = 'type-checked against dist/zenit-ui';
+  if (!existsSync(join(dist, 'package.json'))) {
+    art = 'imports checked against the public API (dist/zenit-ui not built)';
+    const bekannt = new Set(eintraege.map((e) => e.name));
+    for (const code of ganze) {
+      for (const treffer of code.matchAll(
+        /import\s+(?:type\s+)?\{([^}]*)\}\s+from\s+'zenit-ui'/g,
+      )) {
+        for (const roh of treffer[1].split(',')) {
+          const ident = roh
+            .replace(/^\s*type\s+/, '')
+            .split(/\s+as\s+/)[0]
+            .trim();
+          if (ident && !bekannt.has(ident)) {
+            fehler.push(`a ts fence imports ${ident} from 'zenit-ui', which is not exported`);
+          }
+        }
+      }
+    }
+    return { fehler, ganze: ganze.length, teile, art };
+  }
+
+  const ordner = join(WURZEL, 'tmp/llms-fences');
+  mkdirSync(ordner, { recursive: true });
+  const dateien = ganze.map((code, i) => {
+    const pfad = join(ordner, `fence-${i + 1}.ts`);
+    writeFileSync(pfad, code, 'utf8');
+    return pfad;
+  });
+  const optionen = {
+    strict: true,
+    target: ts.ScriptTarget.ES2022,
+    module: ts.ModuleKind.Preserve,
+    moduleResolution: ts.ModuleResolutionKind.Bundler,
+    skipLibCheck: true,
+    noEmit: true,
+    lib: ['lib.es2022.d.ts', 'lib.dom.d.ts'],
+    pathsBasePath: ordner,
+    paths: { 'zenit-ui': [dist] },
+  };
+  const programm = ts.createProgram(dateien, optionen);
+  for (const d of ts.getPreEmitDiagnostics(programm)) {
+    const wo = d.file
+      ? `${d.file.fileName.split(/[\\/]/).pop()}:${
+          d.file.getLineAndCharacterOfPosition(d.start ?? 0).line + 1
+        }`
+      : 'fences';
+    fehler.push(`${wo}: ${ts.flattenDiagnosticMessageText(d.messageText, ' ')}`);
+  }
+  return { fehler, ganze: ganze.length, teile, art };
 }
 
 /* -------------------------------------------------------------------- main */
 
 const nurPruefen = process.argv.includes('--check');
 const ergebnis = baueDateien();
-const { fehler, mitglieder, selektoren } = pruefe(ergebnis);
+const { fehler, mitglieder, selektoren, fences } = pruefe(ergebnis);
 
 const kb = (t) => `${(Buffer.byteLength(t, 'utf8') / 1024).toFixed(1)} kB`;
 
@@ -1474,15 +1814,19 @@ const zaehlung = {
   services: ergebnis.eintraege.filter((e) => e.art === 'service').length,
   providers: ergebnis.eintraege.filter((e) => e.art === 'provider').length,
   tokens: ergebnis.eintraege.filter((e) => e.art === 'token').length,
-  types: ergebnis.eintraege.filter((e) => ['interface', 'type', 'const', 'class'].includes(e.art))
-    .length,
+  types: ergebnis.eintraege.filter((e) => ['interface', 'type', 'class'].includes(e.art)).length,
+  constants: ergebnis.konstanten.length,
 };
 
 console.log(
   `${nurPruefen ? 'check' : 'generate'}: ${zaehlung.components} components, ` +
     `${zaehlung.directives} directives, ${zaehlung.services} services, ` +
     `${zaehlung.providers} provider functions, ${zaehlung.tokens} injection tokens, ` +
-    `${zaehlung.types} types; ${selektoren} selectors, ${mitglieder} inputs/models/outputs.`,
+    `${zaehlung.types} types, ${zaehlung.constants} constants; ${selektoren} selectors, ` +
+    `${mitglieder} inputs/models/outputs.`,
+);
+console.log(
+  `ts fences: ${fences.ganze} whole files ${fences.art}, ${fences.teile} fragments skipped.`,
 );
 console.log(`llms.txt ${kb(ergebnis.kurz)}, llms-full.txt ${kb(ergebnis.voll)}`);
 
