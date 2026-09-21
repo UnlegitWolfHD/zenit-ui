@@ -9,7 +9,6 @@ import {
   numberAttribute,
   untracked,
 } from '@angular/core';
-import { ZButton } from '../button';
 import { ZIcon } from '../icon';
 import { Z_LABELS } from '../labels';
 
@@ -17,12 +16,19 @@ import { Z_LABELS } from '../labels';
  * Pages through lists with more than {@link pageSize} entries and sits as the
  * last row inside a panel.
  *
- * Renders `<div class="z-pager">` with the range sentence on the left and
- * `.z-pager__nav` on the right: a back button, `page / pages` in the mono face
- * and a forward button. Both buttons are icon-only ghost buttons in size `sm`
- * with an `aria-label`, and they are `disabled` on the first and the last page.
- * As long as everything fits on one page the component renders nothing at all,
- * so an empty list shows no pager.
+ * Renders a `<nav>` with an accessible name around `<div class="z-pager">`: the
+ * range sentence on the left and `.z-pager__nav` on the right, with a back
+ * button, `page / pages` in the mono face and a forward button. Both buttons are
+ * icon-only ghost buttons in size `sm` with an `aria-label`. As long as
+ * everything fits on one page the component renders nothing at all, so an empty
+ * list shows no pager.
+ *
+ * Accessibility: on the first and the last page the matching arrow carries
+ * `aria-disabled="true"` instead of the native `disabled`, and its click is
+ * swallowed. A native `disabled` on the button that was just used would throw
+ * the focus back to `<body>`; this way the focus stays where the user put it and
+ * the state is still announced. The range sentence is an `aria-live="polite"`
+ * region, so paging is reported even though nothing moves the focus.
  *
  * The component does not slice the data. It reports the wanted page through
  * {@link page}, the caller cuts the list.
@@ -37,37 +43,35 @@ import { Z_LABELS } from '../labels';
  */
 @Component({
   selector: 'z-pagination',
-  imports: [ZButton, ZIcon],
+  imports: [ZIcon],
   template: `
     @if (sichtbar()) {
-      <div class="z-pager">
-        <span>{{ bereich()(von(), bis(), total(), itemLabel()) }}</span>
-        <div class="z-pager__nav">
-          <button
-            type="button"
-            zBtn="ghost"
-            iconOnly
-            size="sm"
-            [attr.aria-label]="zurueckText()"
-            [disabled]="seite() <= 1"
-            (click)="zuSeite(seite() - 1)"
-          >
-            <z-icon name="chevron_left" />
-          </button>
-          <span class="z-mono">{{ seite() }} / {{ seiten() }}</span>
-          <button
-            type="button"
-            zBtn="ghost"
-            iconOnly
-            size="sm"
-            [attr.aria-label]="weiterText()"
-            [disabled]="seite() >= seiten()"
-            (click)="zuSeite(seite() + 1)"
-          >
-            <z-icon name="chevron_right" />
-          </button>
+      <nav [attr.aria-label]="navText()">
+        <div class="z-pager">
+          <span aria-live="polite">{{ bereich()(von(), bis(), total(), itemLabel()) }}</span>
+          <div class="z-pager__nav">
+            <button
+              type="button"
+              class="z-btn z-btn--ghost z-btn--icon z-btn--sm"
+              [attr.aria-label]="zurueckText()"
+              [attr.aria-disabled]="seite() <= 1 ? 'true' : null"
+              (click)="zuSeite(seite() - 1)"
+            >
+              <z-icon name="chevron_left" />
+            </button>
+            <span class="z-mono">{{ seite() }} / {{ seiten() }}</span>
+            <button
+              type="button"
+              class="z-btn z-btn--ghost z-btn--icon z-btn--sm"
+              [attr.aria-label]="weiterText()"
+              [attr.aria-disabled]="seite() >= seiten() ? 'true' : null"
+              (click)="zuSeite(seite() + 1)"
+            >
+              <z-icon name="chevron_right" />
+            </button>
+          </div>
         </div>
-      </div>
+      </nav>
     }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -83,8 +87,9 @@ export class ZPagination {
   readonly page = model(1);
 
   /**
-   * Entries per page. The spec fixes this at 25 and offers no per-page picker;
-   * values below 1 are treated as 1.
+   * Entries per page. The spec fixes this at 25 and offers no per-page picker.
+   * A value below 1 and a value that is not a finite number both count as 1,
+   * everywhere: in the page count as well as in the range sentence.
    *
    * @default 25
    */
@@ -117,6 +122,15 @@ export class ZPagination {
     input<(von: number, bis: number, total: number, itemLabel: string) => string>();
 
   /**
+   * Accessible name of the `<nav>` around the pager, which tells a screen
+   * reader what this navigation landmark is for. Unset, the component uses
+   * {@link ZLabels.paginationNav} from the label registry.
+   *
+   * @default undefined
+   */
+  readonly ariaLabel = input<string>();
+
+  /**
    * `aria-label` of the back button. Unset, the component uses
    * {@link ZLabels.paginationPrev} from the label registry.
    *
@@ -135,6 +149,7 @@ export class ZPagination {
   private readonly labels = inject(Z_LABELS);
 
   protected readonly bereich = computed(() => this.rangeLabel() ?? this.labels.paginationRange);
+  protected readonly navText = computed(() => this.ariaLabel() ?? this.labels.paginationNav);
   protected readonly zurueckText = computed(
     () => this.ariaLabelPrev() ?? this.labels.paginationPrev,
   );
@@ -142,16 +157,22 @@ export class ZPagination {
     () => this.ariaLabelNext() ?? this.labels.paginationNext,
   );
 
+  /** {@link pageSize} as a whole number of at least 1, used by every count. */
+  private readonly proSeite = computed(() => {
+    const roh = Math.trunc(this.pageSize());
+    return Number.isFinite(roh) ? Math.max(1, roh) : 1;
+  });
+
   protected readonly seiten = computed(() =>
-    Math.max(1, Math.ceil(this.total() / Math.max(1, this.pageSize()))),
+    Math.max(1, Math.ceil(this.total() / this.proSeite())),
   );
   /** The page shown is always inside the valid range. */
   protected readonly seite = computed(() =>
     Math.min(Math.max(1, Math.trunc(this.page())), this.seiten()),
   );
-  protected readonly sichtbar = computed(() => this.total() > 0 && this.total() > this.pageSize());
-  protected readonly von = computed(() => (this.seite() - 1) * this.pageSize() + 1);
-  protected readonly bis = computed(() => Math.min(this.seite() * this.pageSize(), this.total()));
+  protected readonly sichtbar = computed(() => this.total() > 0 && this.total() > this.proSeite());
+  protected readonly von = computed(() => (this.seite() - 1) * this.proSeite() + 1);
+  protected readonly bis = computed(() => Math.min(this.seite() * this.proSeite(), this.total()));
 
   constructor() {
     // When total or pageSize change, a page beyond the end moves back into the
@@ -164,7 +185,14 @@ export class ZPagination {
     });
   }
 
+  /**
+   * A click on an arrow that is marked `aria-disabled` is swallowed: the button
+   * keeps the focus and nothing else happens.
+   */
   protected zuSeite(ziel: number): void {
-    this.page.set(Math.min(Math.max(1, ziel), this.seiten()));
+    if (ziel < 1 || ziel > this.seiten()) {
+      return;
+    }
+    this.page.set(ziel);
   }
 }

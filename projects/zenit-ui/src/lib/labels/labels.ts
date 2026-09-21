@@ -22,6 +22,9 @@ export interface ZLabels {
   /** `aria-label` of the forward button in `z-pagination`. */
   paginationNext: string;
 
+  /** Accessible name of the `<nav>` landmark around the pager in `z-pagination`. */
+  paginationNav: string;
+
   /**
    * The sentence in front of the pagination buttons.
    *
@@ -59,6 +62,7 @@ export interface ZLabels {
 export const Z_LABELS_DE = {
   paginationPrev: 'Vorherige Seite',
   paginationNext: 'Nächste Seite',
+  paginationNav: 'Seitennavigation',
   paginationRange: (from, to, total, itemLabel) => `${from} bis ${to} von ${total} ${itemLabel}`,
   consoleLog: 'Serverlog',
   consoleInput: 'Befehl',
@@ -80,6 +84,7 @@ export const Z_LABELS_DE = {
 export const Z_LABELS_EN = {
   paginationPrev: 'Previous page',
   paginationNext: 'Next page',
+  paginationNav: 'Pagination',
   paginationRange: (from, to, total, itemLabel) => `${from} to ${to} of ${total} ${itemLabel}`,
   consoleLog: 'Server log',
   consoleInput: 'Command',

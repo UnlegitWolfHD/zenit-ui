@@ -37,6 +37,13 @@ class LabelHost {}
 
 @Component({
   imports: [ZConsole],
+  template: `<z-console announce />`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class AnsageHost {}
+
+@Component({
+  imports: [ZConsole],
   template: `<z-console /><z-console logLabel="Konsole von Test" />`,
   providers: [{ provide: Z_LABELS, useValue: Z_LABELS_EN }],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -125,6 +132,18 @@ describe('ZConsole', () => {
   it('makes the log focusable and names it Serverlog by default', () => {
     expect(log().getAttribute('tabindex')).toBe('0');
     expect(log().getAttribute('aria-label')).toBe('Serverlog');
+  });
+
+  it('is a role=log that stays silent until announce is set', () => {
+    expect(log().getAttribute('role')).toBe('log');
+    expect(log().getAttribute('aria-live')).toBe('off');
+
+    const laut = TestBed.createComponent(AnsageHost);
+    laut.detectChanges();
+
+    expect(laut.nativeElement.querySelector('.z-console__log').getAttribute('aria-live')).toBe(
+      'polite',
+    );
   });
 
   it('lets the caller override the aria label of the log and the end button', () => {
