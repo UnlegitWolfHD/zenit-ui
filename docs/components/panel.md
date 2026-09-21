@@ -26,6 +26,7 @@ import { ZPanel, ZPanelActions } from 'zenit-ui';
 | Input   | Type      | Default | Description                                                                                                    |
 | ------- | --------- | ------- | -------------------------------------------------------------------------------------------------------------- |
 | `title` | `string`  | `''`    | Panel title in normal capitalization, without an icon. Empty renders no header, unless an action is projected. |
+| `headingLevel` | `2 \| 3 \| 4` | `3` | Tag of the title. Raise it to `2` where the panel sits directly under the page `<h1>`. The size never changes with it. |
 | `flush` | `boolean` | `false` | Removes the padding of the body so lists and tables reach the border. Boolean attribute.                       |
 | `busy`  | `boolean` | `false` | Marks the panel as loading and sets `aria-busy="true"`. Boolean attribute.                                     |
 
@@ -114,7 +115,8 @@ The panel has no hover, focus or disabled state; the controls inside it do.
 - `busy` sets `aria-busy="true"`; pair it with an `aria-label` on the panel so the loading region
   has a name.
 - The title is an `<h3>`, so it takes part in the heading outline. Keep the page `<h1>` in
-  `z-page-header` above it.
+  `z-page-header` above it. A panel that sits directly under that `<h1>` is a section of its own and
+  sets `headingLevel="2"`, so no level is skipped; below a section heading the default `3` fits.
 - The native `title` attribute is suppressed on the host, so the browser shows no tooltip of its own
   because of the `title` input.
 
@@ -130,7 +132,7 @@ its own breakpoints: the row grid collapses below 640px, a table scrolls inside
 | ---------------------- | ------------------------------------- |
 | `z-panel`              | always (host)                         |
 | `z-panel__header`      | `title` set or an action is projected |
-| `z-panel__title`       | `title` is not empty                  |
+| `z-panel__title`       | `title` is not empty (on `h2`, `h3` or `h4`) |
 | `z-panel__body`        | always                                |
 | `z-panel__body--flush` | `flush`                               |
 
