@@ -708,10 +708,11 @@ export class ZCombobox implements ControlValueAccessor, FormValueControl<string>
    * The listener hangs on the document in the CAPTURE phase, because a scroll
    * event on an inner element does not bubble: `ScrollDispatcher` of the CDK
    * listens without capture and therefore only ever hears the page and the
-   * containers a caller marked `cdkScrollable`. No container of this library is
-   * marked and `.z-dialog` scrolls, so a combobox in a dialog used to keep a
-   * panel hanging where the field no longer was. Capture hears every scroller
-   * without asking any caller to annotate its container.
+   * containers a caller marked `cdkScrollable`. The scrolling body of a dialog
+   * carries that mark since `z-dialog` sets it, but a scroll container of the
+   * caller's own does not, so a combobox in one used to keep a panel hanging
+   * where the field no longer was. Capture hears every scroller without asking
+   * any caller to annotate its container.
    */
   private horcheAufScrollen(): void {
     this.scrollHorcher = new AbortController();

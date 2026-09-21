@@ -1,3 +1,4 @@
+import { InteractivityChecker } from '@angular/cdk/a11y';
 import { CdkScrollable } from '@angular/cdk/scrolling';
 import {
   afterNextRender,
@@ -6,6 +7,7 @@ import {
   contentChild,
   DestroyRef,
   Directive,
+  DOCUMENT,
   ElementRef,
   inject,
   InjectionToken,
@@ -55,18 +57,10 @@ export function naechsteId(praefix: string): string {
 export class ZDialogActions {}
 
 /**
- * Enough of a tabbable element for the question "does Tab reach the body?".
- * A locked control, a hidden field and `tabindex="-1"` are no tab stops, so
- * they do not count.
+ * Everything that could be a tab stop. Whether it really is one is decided by
+ * `InteractivityChecker`, which knows the dozen reasons why it might not be.
  */
-const TABBAR = [
-  'a[href]',
-  'button:not([disabled])',
-  'input:not([disabled]):not([type="hidden"])',
-  'select:not([disabled])',
-  'textarea:not([disabled])',
-  '[tabindex]:not([tabindex="-1"])',
-].join(', ');
+const KANDIDATEN = 'a[href], button, input, select, textarea, [tabindex], [contenteditable]';
 
 /**
  * Layout of a dialog: header with the heading, body, footer with the actions.
@@ -152,9 +146,15 @@ export class ZDialogLayout {
   protected readonly rumpfTabIndex = signal<0 | null>(null);
 
   private readonly rumpf = viewChild.required<ElementRef<HTMLElement>>('rumpf');
+  /** Takes the blur listener of the body with it on destroy. */
+  private readonly abbruch = new AbortController();
+
+  private readonly pruefer = inject(InteractivityChecker);
+  private readonly dokument = inject(DOCUMENT);
 
   constructor() {
     const zerstoerung = inject(DestroyRef);
+    const fenster = this.dokument.defaultView;
     // A dialog longer than the screen scrolls in its body, and what scrolls has
     // to be reachable by keyboard (WCAG 2.1 SC 2.1.1). Controls inside the body
     // are reached by Tab and the browser scrolls them into view, so a form
@@ -172,25 +172,70 @@ export class ZDialogLayout {
       const element = this.rumpf().nativeElement;
       const pruefe = (): void => {
         const scrollt = element.scrollHeight > element.clientHeight;
-        this.rumpfTabIndex.set(scrollt && !element.querySelector(TABBAR) ? 0 : null);
+        // Focus lives on the stop itself while the content shrinks? Then it
+        // stays: taking the tabindex away would drop the focus onto <body>,
+        // outside the focus trap of the dialog. `blur` asks again.
+        const behalten = element === this.dokument.activeElement && this.rumpfTabIndex() === 0;
+        this.rumpfTabIndex.set(behalten || (scrollt && !this.hatTabStopp(element)) ? 0 : null);
+      };
+      // One check per frame, not one per mutation: every check reads
+      // scrollHeight and therefore forces a layout. Measured on 3000 appended
+      // log lines, one per task: 3000 layouts and 54.9s against 3 layouts and
+      // 32ms once they are coalesced.
+      let geplant = 0;
+      const rahmen = fenster?.requestAnimationFrame?.bind(fenster);
+      const plane = (): void => {
+        if (!rahmen) {
+          pruefe();
+          return;
+        }
+        geplant ||= rahmen(() => {
+          geplant = 0;
+          pruefe();
+        });
       };
       pruefe();
       // ResizeObserver is missing on the server, where no box changes either.
+      // It already reports once per frame, so it checks directly.
       const groesse =
         typeof ResizeObserver === 'undefined' ? undefined : new ResizeObserver(pruefe);
       groesse?.observe(element);
-      const inhalt = new MutationObserver(pruefe);
+      const inhalt = new MutationObserver(plane);
       inhalt.observe(element, {
         childList: true,
         subtree: true,
         characterData: true,
         attributes: true,
-        attributeFilter: ['disabled', 'hidden', 'href', 'tabindex', 'type'],
+        attributeFilter: ['class', 'disabled', 'hidden', 'href', 'inert', 'style', 'tabindex'],
       });
+      element.addEventListener('blur', plane, { signal: this.abbruch.signal });
       zerstoerung.onDestroy(() => {
         groesse?.disconnect();
         inhalt.disconnect();
+        this.abbruch.abort();
+        if (geplant) {
+          fenster?.cancelAnimationFrame?.(geplant);
+        }
       });
     });
+  }
+
+  /**
+   * Does Tab reach anything inside the body? `InteractivityChecker` is what the
+   * focus trap of the CDK asks, so the answer is the same one the trap gives:
+   * it knows `tabindex="-1"`, `disabled`, `hidden`, `display: none`,
+   * `visibility: hidden`, `inert` and a disabled `fieldset` around the control.
+   */
+  private hatTabStopp(rumpf: HTMLElement): boolean {
+    return Array.from(rumpf.querySelectorAll<HTMLElement>(KANDIDATEN)).some(
+      (element) =>
+        // isTabbable answers for the tabindex, isFocusable for `disabled` and
+        // for everything invisible.
+        this.pruefer.isTabbable(element) &&
+        this.pruefer.isFocusable(element) &&
+        // The checker reads the `disabled` of the control itself, not the two
+        // ways a whole subtree is switched off around it.
+        !element.closest('[inert], fieldset:disabled'),
+    );
   }
 }

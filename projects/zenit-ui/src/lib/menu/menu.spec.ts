@@ -202,13 +202,25 @@ describe('ZMenu', () => {
     document.dispatchEvent(new Event('scrollend'));
   }
 
+  /**
+   * Puts the trigger into a box of its own, which jsdom does not do. A scroll
+   * only counts for the menu when it moves the trigger, so a test that wants to
+   * be heard has to move it.
+   */
+  function liegtBei(top: number): void {
+    ausloeser.getBoundingClientRect = () =>
+      ({ top, bottom: top + 20, left: 10, right: 30, width: 20, height: 20 }) as DOMRect;
+  }
+
   // The scroll strategy of the CDK builds on ScrollDispatcher, which only hears
   // the window and containers marked cdkScrollable; the menu therefore listens
   // on the document in the capture phase.
   it('closes on a scroll under it and hands the focus back to the trigger', () => {
+    liegtBei(100);
     oeffne();
     zurRuhe();
     eintraege()[0].focus();
+    liegtBei(40);
 
     scrolleAn(document);
 
@@ -217,11 +229,13 @@ describe('ZMenu', () => {
   });
 
   it('leaves the focus where it is when it was not inside the menu', () => {
+    liegtBei(100);
     oeffne();
     zurRuhe();
     const feld = document.createElement('input');
     document.body.append(feld);
     feld.focus();
+    liegtBei(40);
 
     scrolleAn(document);
 
@@ -233,16 +247,64 @@ describe('ZMenu', () => {
   // A trigger reached with the keyboard is scrolled into view, and those events
   // arrive after the menu has opened. They must not close it again.
   it('ignores the scroll that was still running when it opened', () => {
+    liegtBei(100);
     oeffne();
+    liegtBei(40);
 
     scrolleAn(document);
 
     expect(menue()).not.toBeNull();
 
+    liegtBei(10);
     zurRuhe();
     scrolleAn(document);
 
     expect(menue()).toBeNull();
+  });
+
+  // The menu hangs where the trigger stood when it opened, and the CDK locks
+  // that position: a trigger that has moved on in the meantime leaves it
+  // pointing at nothing, so arming closes it right away.
+  it('closes at once when the trigger has moved away during that scroll', () => {
+    liegtBei(100);
+    oeffne();
+    liegtBei(40);
+    scrolleAn(document);
+
+    expect(menue()).not.toBeNull();
+
+    zurRuhe();
+
+    expect(menue()).toBeNull();
+  });
+
+  // A trigger in a sticky header keeps its place while the page scrolls, and
+  // with it its menu, exactly as the tooltip does.
+  it('stays open while the trigger keeps its place on the screen', () => {
+    liegtBei(100);
+    oeffne();
+    zurRuhe();
+
+    scrolleAn(document);
+
+    expect(menue()).not.toBeNull();
+  });
+
+  // Same defect class as the tooltip had: one Escape may not close the dialog
+  // behind the menu as well.
+  it('takes the Escape it uses away from everything below it', () => {
+    oeffne();
+    const unten = vi.fn();
+    document.body.addEventListener('keydown', unten);
+
+    menue()?.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', keyCode: 27, bubbles: true, cancelable: true }),
+    );
+    fixture.detectChanges();
+
+    expect(menue()).toBeNull();
+    expect(unten).not.toHaveBeenCalled();
+    document.body.removeEventListener('keydown', unten);
   });
 
   // A console that follows its own log scrolls on every line; the trigger does
@@ -250,8 +312,10 @@ describe('ZMenu', () => {
   it('stays open when a container the trigger is not in scrolls', () => {
     const fremder = document.createElement('div');
     document.body.append(fremder);
+    liegtBei(100);
     oeffne();
     zurRuhe();
+    liegtBei(40);
 
     scrolleAn(fremder);
 
@@ -422,6 +486,34 @@ describe('ZMenuItem as a link', () => {
 
     expect(amLink).not.toHaveBeenCalled();
     expect(ereignis.defaultPrevented).toBe(true);
+    expect(menue()).not.toBeNull();
+  });
+
+  // The middle click of the browser opens a link in a new tab and arrives as
+  // `auxclick`, which a locked entry has to swallow as well.
+  it('stops the middle click on a disabled link', () => {
+    host.gesperrt.set(true);
+    fixture.detectChanges();
+    const papierkorb = links()[1];
+    const amLink = vi.fn();
+    papierkorb.addEventListener('auxclick', amLink);
+
+    const ereignis = new MouseEvent('auxclick', { bubbles: true, cancelable: true, button: 1 });
+    papierkorb.dispatchEvent(ereignis);
+    fixture.detectChanges();
+
+    expect(amLink).not.toHaveBeenCalled();
+    expect(ereignis.defaultPrevented).toBe(true);
+    expect(menue()).not.toBeNull();
+  });
+
+  it('leaves the middle click on an open link to the browser', () => {
+    const ereignis = new MouseEvent('auxclick', { bubbles: true, cancelable: true, button: 1 });
+    links()[0].dispatchEvent(ereignis);
+    fixture.detectChanges();
+
+    expect(ereignis.defaultPrevented).toBe(false);
+    expect(host.geoeffnet).toBe(0);
     expect(menue()).not.toBeNull();
   });
 

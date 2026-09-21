@@ -21,6 +21,22 @@ const NACHLAUF = 100;
 
 let zaehler = 0;
 
+/** The values of `overflow` that cut a child off at the edge of its box. */
+const KLEMMT = new Set(['auto', 'scroll', 'hidden', 'clip', 'overlay']);
+
+/** One box entirely beyond one of the edges of the other. */
+function ausserhalb(
+  kasten: DOMRect,
+  rolle: { top: number; left: number; bottom: number; right: number },
+): boolean {
+  return (
+    kasten.bottom <= rolle.top ||
+    kasten.top >= rolle.bottom ||
+    kasten.right <= rolle.left ||
+    kasten.left >= rolle.right
+  );
+}
+
 /** Two boxes at the same place on the screen: nothing moved the trigger. */
 function unbewegt(a: DOMRect, b: DOMRect): boolean {
   return a.top === b.top && a.left === b.left && a.width === b.width && a.height === b.height;
@@ -259,7 +275,7 @@ export class ZTooltip {
       this.verstecke();
       return;
     }
-    if (this.verdeckt(ziel, kasten)) {
+    if (this.verdeckt(kasten)) {
       this.verbergeFlaeche();
     } else if (!this.sichtbar()) {
       this.zeigeFlaeche(this.zTooltip());
@@ -269,25 +285,36 @@ export class ZTooltip {
   }
 
   /**
-   * Has the trigger left the visible box of the scroller the event came from?
-   * The page reports its scroll on the document, and in some engines on the
-   * root element or the body; all three mean the viewport.
+   * Has the trigger left the visible part of anything that clips it? Not only
+   * the scroller the event came from: with two scrollers inside each other the
+   * inner one can hold the trigger out of sight while the outer one moves, and
+   * a panel brought back then would float over foreign content. The viewport
+   * counts as the outermost clip.
    */
-  private verdeckt(ziel: Node, kasten: DOMRect): boolean {
-    const seite =
-      !(ziel instanceof Element) ||
-      ziel === this.dokument.documentElement ||
-      ziel === this.dokument.body;
+  private verdeckt(kasten: DOMRect): boolean {
     const fenster = this.dokument.defaultView;
-    const rolle = seite
-      ? { top: 0, left: 0, bottom: fenster?.innerHeight ?? 0, right: fenster?.innerWidth ?? 0 }
-      : ziel.getBoundingClientRect();
-    return (
-      kasten.bottom <= rolle.top ||
-      kasten.top >= rolle.bottom ||
-      kasten.right <= rolle.left ||
-      kasten.left >= rolle.right
-    );
+    if (
+      ausserhalb(kasten, {
+        top: 0,
+        left: 0,
+        bottom: fenster?.innerHeight ?? 0,
+        right: fenster?.innerWidth ?? 0,
+      })
+    ) {
+      return true;
+    }
+    for (
+      let element = this.host.nativeElement.parentElement;
+      element;
+      element = element.parentElement
+    ) {
+      const stil = fenster?.getComputedStyle(element);
+      const klemmt = !!stil && (KLEMMT.has(stil.overflowX) || KLEMMT.has(stil.overflowY));
+      if (klemmt && ausserhalb(kasten, element.getBoundingClientRect())) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**

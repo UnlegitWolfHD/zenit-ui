@@ -346,6 +346,21 @@ test.describe('an overlay opened while the trigger is still being scrolled', () 
 });
 
 test.describe('Escape in the long dialog', () => {
+  test('the first Escape takes the menu, the second the dialog', async ({ page }) => {
+    await langerDialog(page, 1440, 700);
+    const menuKnopf = page.getByRole('button', { name: 'Aktionen für Welt 1' });
+    await menuKnopf.click();
+    await expect(page.getByRole('menu')).toBeVisible();
+
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('menu')).toHaveCount(0);
+    await expect(page.getByRole('dialog'), 'der Dialog steht noch').toBeVisible();
+    await expect(menuKnopf).toBeFocused();
+
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+  });
+
   test('the first Escape takes the tooltip, the second the dialog', async ({ page }) => {
     await langerDialog(page, 1440, 700);
     await page.getByRole('button', { name: 'Hinweis zur Welt' }).focus();
@@ -357,6 +372,41 @@ test.describe('Escape in the long dialog', () => {
 
     await page.keyboard.press('Escape');
     await expect(page.getByRole('dialog')).toHaveCount(0);
+  });
+});
+
+/**
+ * Two scrollers inside each other. The tooltip may only come back when the
+ * trigger is visible in every one of them, not just in the one that moved.
+ */
+test.describe('nested scrollers', () => {
+  test('the panel stays away while the inner container still covers the trigger', async ({
+    page,
+  }) => {
+    await langerDialog(page, 1440, 700);
+    // The dialog itself becomes a scroller around the scrolling body.
+    await page.addStyleTag({
+      content:
+        '.z-dialog-panel .z-dialog { max-height: 320px; overflow: auto; }' +
+        '.z-dialog-panel .z-dialog__body { max-height: 600px; }',
+    });
+    const karteEl = karte(page);
+    const hinweis = page.getByRole('button', { name: 'Hinweis zur Welt' });
+    await hinweis.focus();
+    await expect(page.getByRole('tooltip')).toBeVisible();
+
+    // The body takes the trigger out of sight.
+    await rumpf(page).evaluate((el) => (el.scrollTop = 200));
+    await expect(page.getByRole('tooltip')).toHaveCount(0);
+
+    // The outer scroller moves a little: the trigger is still behind the top
+    // edge of the body, so the panel has to stay away.
+    await karteEl.evaluate((el) => (el.scrollTop = 5));
+    await expect(page.getByRole('tooltip'), 'kommt nicht zurück').toHaveCount(0);
+
+    // Back in the body, and it is there again.
+    await rumpf(page).evaluate((el) => (el.scrollTop = 0));
+    await expect(page.getByRole('tooltip')).toBeVisible();
   });
 });
 

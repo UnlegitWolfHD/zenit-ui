@@ -318,6 +318,35 @@ describe('ZTooltip', () => {
     expect(flaeche()).not.toBeNull();
   });
 
+  // Two scrollers inside each other: the inner one holds the trigger out of
+  // sight while the outer one moves. A panel brought back then would float over
+  // foreign content.
+  it('stays away while an inner scroller still covers the focused trigger', () => {
+    const innen = document.createElement('div');
+    // jsdom does not expand the `overflow` shorthand, so both longhands are set.
+    innen.style.overflowX = 'auto';
+    innen.style.overflowY = 'auto';
+    innen.getBoundingClientRect = () =>
+      ({ top: 300, bottom: 500, left: 0, right: 300, width: 300, height: 200 }) as DOMRect;
+    ausloeser.replaceWith(innen);
+    innen.append(ausloeser);
+    liegtBei(350, 370);
+    ausloeser.focus();
+    loese('focusin');
+
+    // The inner container scrolls the trigger above its own edge.
+    liegtBei(100, 120);
+    scrolleAn(innen);
+    expect(flaeche()).toBeNull();
+
+    // The page moves a little: the trigger is inside the viewport again, but
+    // still outside the container it sits in.
+    liegtBei(105, 125);
+    scrolleAn(document);
+
+    expect(flaeche()).toBeNull();
+  });
+
   // WAI-ARIA Practices: Escape dismisses the tooltip, and only the tooltip, so
   // the dialog it may stand in needs a second one.
   it('takes the Escape it uses away from everything below it', () => {

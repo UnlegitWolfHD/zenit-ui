@@ -8,6 +8,7 @@ import {
   DOCUMENT,
   ElementRef,
   inject,
+  Injector,
   input,
 } from '@angular/core';
 import { ZIcon } from '../icon';
@@ -74,21 +75,49 @@ export class ZMenu {
     // Closing is therefore armed once that scrolling has come to rest: at the
     // `scrollend` of the browser, or after two animation frames without a
     // scroll event, whichever comes first.
+    const schliesse = (): void =>
+      menue.menuStack.closeAll({ focusParentTrigger: wirt.contains(dokument.activeElement) });
+
+    /** The trigger, which points at this menu through `aria-controls`. */
+    const ausloeserSuchen = (): HTMLElement | null =>
+      wirt.id ? dokument.querySelector<HTMLElement>(`[aria-controls="${wirt.id}"]`) : null;
+
     let scharf = !fenster;
     let stille = 0;
+    /** Where the trigger stood when the menu was hung on it. */
+    let verankert: DOMRect | undefined;
+    /** Has the trigger moved since, while the menu could not follow? */
+    let verschoben = false;
+    const armiere = (): void => {
+      if (scharf) {
+        return;
+      }
+      scharf = true;
+      // The menu was hung on a trigger that was still moving, and the CDK locks
+      // the position of an open menu: it now points where the trigger no longer
+      // is, so it goes instead of standing around detached.
+      if (verschoben) {
+        schliesse();
+      }
+    };
     const beobachte = (): void => {
       if (scharf || signal.aborted) {
         return;
       }
       stille += 1;
       if (stille >= 2) {
-        scharf = true;
+        armiere();
         return;
       }
       fenster?.requestAnimationFrame(beobachte);
     };
     fenster?.requestAnimationFrame(beobachte);
-    dokument.addEventListener('scrollend', () => (scharf = true), { capture: true, signal });
+    dokument.addEventListener('scrollend', armiere, { capture: true, signal });
+    // The box of the trigger as the menu opened, read once the binding of
+    // `aria-controls` has been rendered.
+    afterNextRender(() => (verankert ??= ausloeserSuchen()?.getBoundingClientRect()), {
+      injector: inject(Injector),
+    });
 
     dokument.addEventListener(
       'scroll',
@@ -100,17 +129,43 @@ export class ZMenu {
         // console following its own log for example, leave the trigger where it
         // is. Right after opening, the trigger carries no `aria-controls` yet;
         // until it does, every scroll counts, the way it did before.
-        const ausloeser = wirt.id ? dokument.querySelector(`[aria-controls="${wirt.id}"]`) : null;
+        const ausloeser = ausloeserSuchen();
         if (!ziel || (ausloeser && !ziel.contains(ausloeser))) {
           return;
+        }
+        // A scroll that leaves the trigger where it is means nothing: a trigger
+        // in a sticky or fixed header keeps its menu while the page moves, the
+        // same rule the tooltip follows.
+        const kasten = ausloeser?.getBoundingClientRect();
+        if (kasten && verankert && unbewegt(verankert, kasten)) {
+          return;
+        }
+        if (kasten) {
+          verschoben = verschoben || verankert !== undefined;
+          verankert = kasten;
         }
         if (!scharf) {
           stille = 0;
           return;
         }
-        menue.menuStack.closeAll({ focusParentTrigger: wirt.contains(dokument.activeElement) });
+        schliesse();
       },
       { capture: true, passive: true, signal },
+    );
+
+    // Escape closes the menu, and only the menu. `CdkMenu` listens on this same
+    // host, so it still sees the key; stopping the event here keeps it from
+    // reaching the keyboard dispatcher of the CDK on `document.body`, which
+    // would close the dialog behind the menu with the same press. In the BUBBLE
+    // phase, so the handler of the CDK comes first.
+    wirt.addEventListener(
+      'keydown',
+      (ereignis) => {
+        if (ereignis.key === 'Escape') {
+          ereignis.stopPropagation();
+        }
+      },
+      { signal },
     );
 
     // A locked link entry must not navigate. `CdkMenuItem` does call
@@ -120,22 +175,23 @@ export class ZMenu {
     // the menu, before any listener on the entry. A click with a modifier is
     // the browser's: it opens the link in a new tab or downloads it, and the
     // menu stays where it is, exactly as a middle click already does.
-    wirt.addEventListener(
-      'click',
-      (ereignis) => {
-        const ziel = (ereignis.target as HTMLElement | null)?.closest('a.z-menu__item');
-        if (!ziel) {
-          return;
-        }
-        if (ziel.getAttribute('aria-disabled') === 'true') {
-          ereignis.preventDefault();
-          ereignis.stopPropagation();
-        } else if (mitZusatztaste(ereignis)) {
-          ereignis.stopPropagation();
-        }
-      },
-      { capture: true, signal },
-    );
+    const aufKlick = (ereignis: MouseEvent): void => {
+      const ziel = (ereignis.target as HTMLElement | null)?.closest('a.z-menu__item');
+      if (!ziel) {
+        return;
+      }
+      if (ziel.getAttribute('aria-disabled') === 'true') {
+        ereignis.preventDefault();
+        ereignis.stopPropagation();
+      } else if (mitZusatztaste(ereignis)) {
+        ereignis.stopPropagation();
+      }
+    };
+    // `auxclick` is the middle click, which opens a link in a new tab: the same
+    // rules apply, a locked entry leads nowhere there either.
+    for (const art of ['click', 'auxclick'] as const) {
+      wirt.addEventListener(art, aufKlick, { capture: true, signal });
+    }
 
     // Space activates an entry (ARIA menu pattern), but the browser clicks only
     // buttons: on a link `CdkMenuItem` would close the menu without anything
@@ -254,6 +310,11 @@ export class ZMenuItem {
       zerstoerung.onDestroy(() => beobachter.disconnect());
     });
   }
+}
+
+/** Two boxes at the same place on the screen: nothing moved the trigger. */
+function unbewegt(a: DOMRect, b: DOMRect): boolean {
+  return a.top === b.top && a.left === b.left && a.width === b.width && a.height === b.height;
 }
 
 /**

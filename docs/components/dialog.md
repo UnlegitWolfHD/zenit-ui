@@ -235,8 +235,9 @@ closes (see the Tooltip and Menu pages). Both listen on the document in the capt
 also hear a scroll container of your own around the dialog, which `cdkScrollable` would be needed
 for otherwise, and both ignore a scroller the trigger does not sit in.
 
-Escape inside the dialog goes to the tooltip first when one stands, and only the second Escape
-closes the dialog.
+Escape inside the dialog goes to the overlay above it first: a tooltip that stands or a menu that is
+open takes it, and only the second Escape closes the dialog. A dialog with a long form is not lost
+to the key that was meant for the menu.
 
 ## Rendered classes and tokens
 

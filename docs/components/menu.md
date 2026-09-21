@@ -64,6 +64,9 @@ the target on a link ("Rechnungen").
 On a link, a plain click, Enter and Space all follow the link and close the menu, and `(triggered)`
 fires along with it. A click with Ctrl, Cmd, Shift or Alt and a middle click belong to the browser:
 it opens a new tab or downloads the target, and the menu stays open, the way it does on any link.
+`z-menu` stops such a click at its own element, so a `(click)` handler of the application on the
+entry does not see it; a listener that has to count every click, analytics for example, belongs on
+the document in the capture phase.
 
 `disabled` puts `aria-disabled="true"` on the entry, and `z-menu` swallows the click in the capture
 phase before the link sees it, so the `href` can stay as it is. That capture is what makes the lock
@@ -180,9 +183,21 @@ event.
 Focus returns to the trigger only when it was inside the menu, so scrolling with the pointer does
 not pull it away from whatever is being typed somewhere else.
 
+A trigger that keeps its place on the screen keeps its menu: a scroll that leaves the trigger box
+where it was changes nothing, so a menu opened from a sticky or fixed header survives the page
+scrolling under it, exactly as a tooltip does.
+
 `z-menu` listens for `scroll` on the document in the capture phase, looks its trigger up through the
 `aria-controls` that `CdkMenuTrigger` sets and closes through `menuStack.closeAll()` of the CDK,
-which also takes submenus. The CDK's own scroll strategy builds on `ScrollDispatcher`, which only
+which also takes submenus. A trigger without `aria-controls` cannot be found, and then every scroll
+counts, the way it did before: that is the case for the first moments after opening, and for good
+with `cdkContextMenuTriggerFor`, which has no trigger element at all.
+
+Two limits are known and accepted. A menu opened less than about 30ms after the key that moved the
+focus can still see the very first scroll event of that movement and close with it. And with smooth
+scrolling of the application itself, a menu opened while such a scroll runs closes as soon as the
+scrolling comes to rest, because the CDK locks its position and it would otherwise point at a place
+the trigger has left. The CDK's own scroll strategy builds on `ScrollDispatcher`, which only
 hears the window and containers marked `cdkScrollable`, so a menu inside an unannotated container
 used to stand still while its trigger moved away under it. The listener lives exactly as long as the
 open menu, because `z-menu` only exists while the menu hangs in its overlay.
@@ -193,6 +208,8 @@ open menu, because `z-menu` only exists while the menu hangs in its overlay.
   also provides the `(triggered)` output.
 - Arrow keys move through the entries, Home and End jump to the ends, a click outside and Escape
   close the menu, and focus returns to the trigger.
+- Escape closes the menu and nothing else: the key stops at the menu, so a dialog behind it stays
+  open and takes a second Escape, and a header menu the menu was opened from does the same.
 - The CDK typeahead label is set to the text without the icon ligature after every render. Without
   that the raw `textContent` would start with the ligature ("content_copyAdresse kopieren") and
   typing the first letter would not find the entry.

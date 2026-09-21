@@ -35,15 +35,6 @@ class MitFeldHost {}
 
 @Component({
   imports: [ZDialogLayout],
-  template: `<z-dialog title="Server umbenennen"
-    ><input id="gesperrt" disabled /><button disabled>Speichern</button></z-dialog
-  >`,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-})
-class GesperrtHost {}
-
-@Component({
-  imports: [ZDialogLayout],
   template: `<z-dialog title="Server umbenennen" />`,
   providers: [{ provide: Z_DIALOG_TITLE_ID, useValue: 'z-dialog-title-von-aussen' }],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -142,8 +133,122 @@ describe('ZDialogLayout', () => {
     vi.spyOn(Element.prototype, 'clientHeight', 'get').mockReturnValue(200);
   }
 
+  /**
+   * `InteractivityChecker` asks for geometry, which jsdom has none of. Here it
+   * comes from the computed style instead, so `display: none` and `hidden`
+   * still count as invisible.
+   */
+  function sichtbarMachen(): void {
+    vi.spyOn(Element.prototype, 'getClientRects').mockImplementation(function (this: Element) {
+      // jsdom does not inherit `display: none` down the tree, so the ancestors
+      // are asked as well, the way a browser would.
+      for (let el: Element | null = this; el; el = el.parentElement) {
+        if (getComputedStyle(el).display === 'none' || (el as HTMLElement).hidden) {
+          return [] as unknown as DOMRectList;
+        }
+      }
+      return [{ width: 10, height: 10 }] as unknown as DOMRectList;
+    });
+  }
+
+  /** The check is coalesced into one animation frame; this waits for it. */
+  function naechsterRahmen(): Promise<void> {
+    return new Promise((fertig) => requestAnimationFrame(() => fertig()));
+  }
+
+  /**
+   * A scrolling body with the given markup in it. The markup lands in the body
+   * after the first check, so the observers have to answer for it.
+   */
+  async function rumpfMit(
+    markup: string,
+  ): Promise<{ rumpf: HTMLElement; rendere: () => Promise<void> }> {
+    laengerAlsDerKasten();
+    sichtbarMachen();
+    const fixture = TestBed.createComponent(OhneAktionenHost);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const rumpf: HTMLElement = fixture.nativeElement.querySelector('.z-dialog__body');
+    const rendere = async (): Promise<void> => {
+      await naechsterRahmen();
+      fixture.detectChanges();
+    };
+    rumpf.insertAdjacentHTML('beforeend', markup);
+    await rendere();
+    return { rumpf, rendere };
+  }
+
+  /**
+   * None of these is a tab stop, so the body has to become one. Every row is a
+   * way an application really switches a control off; the disabled `a[zBtn]`
+   * of this library renders exactly the second one.
+   */
+  const OHNE_TABSTOPP = [
+    ['button with tabindex -1', '<button tabindex="-1">Mehr</button>'],
+    ['link with tabindex -1', '<a href="/x" tabindex="-1">Mehr</a>'],
+    ['hidden button', '<button hidden>Mehr</button>'],
+    ['button in display none', '<div style="display: none"><button>Mehr</button></div>'],
+    ['button in visibility hidden', '<div style="visibility: hidden"><button>Mehr</button></div>'],
+    ['button in an inert subtree', '<div inert><button>Mehr</button></div>'],
+    ['input in a disabled fieldset', '<fieldset disabled><input /></fieldset>'],
+    ['hidden input', '<input type="hidden" />'],
+    ['disabled input', '<input disabled />'],
+  ] as const;
+
+  for (const [name, markup] of OHNE_TABSTOPP) {
+    it(`gives the tab stop although the body holds a ${name}`, async () => {
+      const { rumpf } = await rumpfMit(markup);
+
+      expect(rumpf.getAttribute('tabindex')).toBe('0');
+    });
+  }
+
+  it('leaves the body alone as soon as one real tab stop is in it', async () => {
+    const { rumpf } = await rumpfMit('<button tabindex="-1">Mehr</button><input />');
+
+    expect(rumpf.hasAttribute('tabindex')).toBe(false);
+  });
+
+  // Every check reads scrollHeight and forces a layout, so a log that appends
+  // three thousand lines may not cost three thousand of them.
+  it('checks once per frame, not once per mutation', async () => {
+    const { rumpf } = await rumpfMit('');
+    const messungen = vi.spyOn(Element.prototype, 'scrollHeight', 'get').mockReturnValue(400);
+
+    for (let zeile = 0; zeile < 50; zeile++) {
+      rumpf.insertAdjacentHTML('beforeend', '<p>Zeile</p>');
+    }
+    await naechsterRahmen();
+
+    // Fifty lines, a handful of layout reads: one per frame plus what the
+    // rendering of the answer costs, never one per line.
+    expect(messungen.mock.calls.length).toBeLessThanOrEqual(3);
+  });
+
+  // Taking the tabindex away while the focus stands on it would drop the focus
+  // onto <body>, outside the focus trap of the dialog.
+  it('keeps the tab stop while the focus stands on it', async () => {
+    const { rumpf, rendere } = await rumpfMit('');
+    rumpf.focus();
+    expect(document.activeElement).toBe(rumpf);
+
+    // The content shrinks below the box: without the focus the stop would go.
+    vi.spyOn(Element.prototype, 'scrollHeight', 'get').mockReturnValue(100);
+    rumpf.insertAdjacentHTML('beforeend', '<p>weniger</p>');
+    await rendere();
+
+    expect(rumpf.getAttribute('tabindex')).toBe('0');
+    expect(document.activeElement).toBe(rumpf);
+
+    rumpf.blur();
+    await rendere();
+
+    expect(rumpf.hasAttribute('tabindex')).toBe(false);
+  });
+
   it('gives a scrolling body without a control a tab stop of its own', async () => {
     laengerAlsDerKasten();
+    sichtbarMachen();
     const fixture = TestBed.createComponent(OhneAktionenHost);
     fixture.detectChanges();
     await fixture.whenStable();
@@ -162,6 +267,7 @@ describe('ZDialogLayout', () => {
   // The content of a dialog changes while it stands: a log grows, a field
   // appears. The answer to "does Tab reach the body?" changes with it.
   it('gives the tab stop later when the content grows into a scroller', async () => {
+    sichtbarMachen();
     const fixture = TestBed.createComponent(OhneAktionenHost);
     fixture.detectChanges();
     await fixture.whenStable();
@@ -171,28 +277,15 @@ describe('ZDialogLayout', () => {
 
     laengerAlsDerKasten();
     rumpf.append(document.createElement('p'));
-    // The MutationObserver reports in a microtask of its own.
-    await new Promise((fertig) => setTimeout(fertig));
+    await naechsterRahmen();
     fixture.detectChanges();
 
     expect(rumpf.getAttribute('tabindex')).toBe('0');
   });
 
-  // A tabbable control is reached by Tab and scrolled into view by the browser;
-  // a locked one is not, so it does not answer the question.
-  it('gives the tab stop although the body holds a disabled control', async () => {
-    laengerAlsDerKasten();
-    const fixture = TestBed.createComponent(GesperrtHost);
-    fixture.detectChanges();
-    await fixture.whenStable();
-
-    expect(fixture.nativeElement.querySelector('.z-dialog__body').getAttribute('tabindex')).toBe(
-      '0',
-    );
-  });
-
   it('leaves a scrolling body with a control alone', async () => {
     laengerAlsDerKasten();
+    sichtbarMachen();
     const fixture = TestBed.createComponent(MitFeldHost);
     fixture.detectChanges();
     await fixture.whenStable();
