@@ -588,7 +588,8 @@ These are the places where a one-to-one template swap changes what the page actu
 ### 4.4 `ZToast` instead of `MatSnackBar`
 
 - **The outlet is mounted by you.** `<z-toast-outlet />` goes once into the shell. Without it `ZToast` writes into nothing and no toast appears — there is no global container injected for you.
-- **Three statuses only**: `neutral`, `success`, `danger`, via `show`, `success` and `error`. There is no `panelClass` and no positioning config; the outlet decides where toasts sit.
+- **Five statuses**: `neutral`, `info`, `success`, `warning`, `danger`, via `show`, `info`, `success`, `warning` and `error`. Only `danger` interrupts with `role="alert"` and stays until it is closed; `info` and `warning` behave like a neutral toast. There is no `panelClass` and no positioning config; the outlet decides where toasts sit.
+- **A title is optional.** A service of your own that carries a title, a message and a type maps onto one call: `title` to `title`, the message to `text`, the type to `status`. Without a title the toast stays the single line it always was.
 - **The action is a callback, not a ref.** `MatSnackBar` gives you `onAction()` on the returned ref. Here you pass `actionLabel` and `action: () => …` in the options. `show`/`success`/`error` return a numeric id, which is what `dismiss(id)` takes; `dismiss()` without an id clears all.
 - **No `openFromComponent`.** A snackbar with custom content has no counterpart. Per the Alert README, anything that is not a short transient message is a `z-alert` in the page flow anyway.
 - **`duration`** is in milliseconds as before.

@@ -247,6 +247,10 @@ const PAARE = [
 for (const status of ['success', 'warning', 'danger', 'info']) {
   PAARE.push([`--${status}`, '--bg', 4.5]);
   PAARE.push([`--${status}`, '--surface', 4.5]);
+  // .z-toast--info/--success/--warning/--danger .z-icon: a toast lies on the
+  // untinted surface-raised and carries the status colour on the icon only. An
+  // icon is a graphical object, so 3:1 (WCAG 1.4.11), not text.
+  PAARE.push([`--${status}`, '--surface-raised', 3]);
   PAARE.push([`--${status}`, [`--${status}-subtle`, '--surface-raised'], 4.5]);
   PAARE.push([`--${status}`, [`--${status}-subtle`, '--surface'], 4.5]);
   // Control border inside a tinted alert: .z-alert .z-btn--secondary takes

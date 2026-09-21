@@ -11,15 +11,21 @@ import { ZToast, ZToastItem } from './toast';
  *
  * Renders a host with the class `z-toast-outlet` holding two permanent
  * `div.z-toast-outlet__live` regions, and per toast a `div.z-toast` plus
- * `z-toast--success` or `z-toast--danger`, an optional `z-icon`, the text, an
- * optional `button.z-toast__action` and the close button `button.z-toast__close`
- * (ghost, `sm`, icon only).
+ * `z-toast--info`, `--success`, `--warning` or `--danger`, an optional `z-icon`,
+ * the text, an optional `button.z-toast__action` and the close button
+ * `button.z-toast__close` (ghost, `sm`, icon only).
+ *
+ * Without a title the text is a bare `span`, as it has always been. With a
+ * title the two lines share one column: `div.z-toast__text` with
+ * `span.z-toast__title` above `span.z-toast__body`, the same structure as
+ * `z-alert`.
  *
  * Accessibility: a screen reader announces a change *inside* an existing live
  * region, not a region that appears together with its content. The outlet
  * therefore renders the two regions from the start, empty, and puts each toast
- * into the matching one: `role="status"` with `aria-live="polite"` for neutral
- * and success, `role="alert"` with `aria-live="assertive"` for danger. The toast
+ * into the matching one: `role="status"` with `aria-live="polite"` for neutral,
+ * info, success and warning, `role="alert"` with `aria-live="assertive"` for
+ * danger, because only a failure is worth interrupting for. The toast
  * elements carry no `role` of their own, because a live region nested in a live
  * region is announced twice. Both regions set `aria-atomic="false"`, which
  * overrides the `true` implied by `status` and `alert`: with up to three toasts
@@ -52,14 +58,23 @@ import { ZToast, ZToastItem } from './toast';
           @let toast = eintrag.toast;
           <div
             class="z-toast"
+            [class.z-toast--info]="toast.status === 'info'"
             [class.z-toast--success]="toast.status === 'success'"
+            [class.z-toast--warning]="toast.status === 'warning'"
             [class.z-toast--danger]="toast.status === 'danger'"
             [style.order]="eintrag.reihe"
           >
             @if (toast.icon) {
               <z-icon [name]="toast.icon" />
             }
-            <span>{{ toast.text }}</span>
+            @if (toast.title) {
+              <div class="z-toast__text">
+                <span class="z-toast__title">{{ toast.title }}</span>
+                <span class="z-toast__body">{{ toast.text }}</span>
+              </div>
+            } @else {
+              <span>{{ toast.text }}</span>
+            }
             @if (toast.actionLabel) {
               <button type="button" class="z-toast__action" (click)="aufAktion(toast)">
                 {{ toast.actionLabel }}

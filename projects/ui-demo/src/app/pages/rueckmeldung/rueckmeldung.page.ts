@@ -129,7 +129,8 @@ import {
       <p class="demo-cap caption">
         5 Sekunden sichtbar, mit Aktion 8 Sekunden. Fehler bleiben, bis man sie schließt, und nutzen
         role="alert". Höchstens drei gleichzeitig, der neueste unten. Auch ein Fehler kann eine
-        Aktion tragen, wie in der Vorschau: "Speicher ansehen".
+        Aktion tragen, wie in der Vorschau: "Speicher ansehen". Hinweis und Warnung tragen einen
+        Titel über der Meldung und werden wie ein neutraler Toast höflich angesagt.
       </p>
 
       <div class="demo-row">
@@ -139,6 +140,8 @@ import {
         <button zBtn="secondary" (click)="toast.error('Backup fehlgeschlagen: Speicher voll')">
           Fehler zeigen
         </button>
+        <button zBtn="secondary" (click)="hinweis()">Hinweis zeigen</button>
+        <button zBtn="secondary" (click)="warnung()">Warnung zeigen</button>
         <button zBtn="secondary" (click)="fehlerMitAktion()">Fehler mit Aktion anzeigen</button>
         <button zBtn="secondary" (click)="mitAktion()">Mit Aktion zeigen</button>
         <button zBtn="secondary" (click)="dauerhaft()">Dauerhaft zeigen</button>
@@ -202,6 +205,22 @@ export class RueckmeldungPage {
     this.toast.error('Backup fehlgeschlagen: Speicher voll', {
       actionLabel: 'Speicher ansehen',
       action: () => this.toast.show('Speicher geöffnet', { icon: 'folder' }),
+    });
+  }
+
+  /** A hint with a title: what happens and how long it takes. */
+  protected hinweis(): void {
+    this.toast.info('Der Host wird für etwa 15 Minuten neu gestartet', {
+      title: 'Wartung am 22.09.2026, 03:00',
+    });
+  }
+
+  /** A warning with a title: the cause and the next step as an action. */
+  protected warnung(): void {
+    this.toast.warning('Danach wird Beispiel-Server 1 gesperrt', {
+      title: 'Dein Guthaben reicht noch 6 Tage',
+      actionLabel: 'Guthaben aufladen',
+      action: () => this.toast.show('Guthaben geöffnet', { icon: 'account_balance_wallet' }),
     });
   }
 
