@@ -1,1 +1,117 @@
-/* Paket navigation: wird in Welle 1 gefuellt. */
+/* Paket navigation: Tabs, Sidebar, AppHeader, PageHeader, Stepper, Footer.
+   Woertlich aus spec/components/bundle.css. Der Transition-Block und die
+   Layout-Helfer stehen schon in _grundlage.css, .z-segment gehoert zu
+   _formulare.css. */
+
+/* Tabs */
+.z-tabs { display: flex; gap: var(--space-5); border-bottom: 1px solid var(--border); overflow-x: auto; }
+.z-tab {
+  display: inline-flex; align-items: center; height: var(--control-md); padding: 0; border: 0; background: none; cursor: pointer; white-space: nowrap;
+  color: var(--text-muted); font-weight: 500;
+}
+.z-tab:hover { color: var(--text); }
+.z-tab[aria-selected="true"], .z-tab[aria-current="page"] { color: var(--text); box-shadow: inset 0 -2px 0 var(--accent-text); }
+
+/* Sidebar */
+.z-side { width: var(--sidebar); max-width: 100%; display: grid; gap: var(--space-4); padding: var(--space-3); border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); }
+.z-side__group { display: grid; gap: 2px; }
+.z-side__label { padding: 0 var(--space-3) var(--space-1); font-size: 12px; line-height: 16px; color: var(--text-subtle); }
+.z-side__item {
+  display: flex; align-items: center; gap: var(--space-3); width: 100%; height: 36px; padding: 0 var(--space-3);
+  border: 0; border-radius: var(--radius-sm); background: none; cursor: pointer; text-align: left; color: var(--text-muted);
+}
+.z-side__item:hover { background: var(--surface-raised); color: var(--text); }
+.z-side__item[aria-current="page"] { background: var(--surface-hover); color: var(--text); font-weight: 600; }
+.z-side__item[aria-current="page"] .z-icon { color: var(--accent-text); }
+.z-theme-mc .z-side__item[aria-current="page"] .z-icon { color: var(--mc-accent); }
+.z-side__count { margin-left: auto; font-size: 12px; color: var(--text-subtle); font-family: var(--font-mono); }
+
+/* AppHeader */
+.z-header { display: flex; align-items: center; gap: var(--space-5); height: var(--header); padding: 0 var(--space-5); border-bottom: 1px solid var(--border); background: var(--bg); }
+.z-header__brand { font-family: var(--font-display); font-weight: 700; font-size: 16px; color: var(--text); }
+.z-header__nav { display: flex; gap: var(--space-1); min-width: 0; overflow-x: auto; }
+.z-header__link { display: inline-flex; align-items: center; gap: var(--space-2); height: var(--control-sm); padding: 0 var(--space-3); border-radius: var(--radius-sm); color: var(--text-muted); font-weight: 500; white-space: nowrap; }
+.z-root a.z-header__link { color: var(--text-muted); }
+.z-root a.z-header__link:hover { color: var(--text); background: var(--surface-raised); text-decoration: none; }
+.z-root a.z-header__link[aria-current="page"] { color: var(--text); background: var(--accent-subtle); }
+.z-root a.z-header__link[aria-current="page"] .z-icon { color: var(--accent-text); }
+.z-header__end { margin-left: auto; display: flex; align-items: center; gap: var(--space-3); }
+.z-avatar { width: 32px; height: 32px; border-radius: var(--radius-full); background: var(--surface-hover); display: grid; place-items: center; font-weight: 600; font-size: 12px; }
+
+/* PageHeader */
+.z-pagehead { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: var(--space-4); }
+.z-pagehead__title { margin: 0; font-family: var(--font-display); font-size: 28px; line-height: 34px; font-weight: 600; letter-spacing: -0.01em; }
+.z-pagehead__sub { margin: var(--space-1) 0 0; color: var(--text-muted); }
+.z-pagehead__actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+
+/* Stepper */
+.z-steps { display: flex; flex-wrap: wrap; gap: var(--space-5); margin: 0; padding: 0; list-style: none; }
+.z-step { display: flex; align-items: center; gap: var(--space-2); color: var(--text-muted); }
+.z-step__num { display: grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-control); border-radius: var(--radius-full); font-family: var(--font-mono); font-size: 12px; }
+.z-step[aria-current="step"] { color: var(--text); font-weight: 600; }
+.z-step[aria-current="step"] .z-step__num { border-color: var(--text); background: var(--text); color: var(--bg); }
+.z-step--done .z-step__num { border-color: transparent; background: var(--surface-hover); color: var(--text); }
+
+/* Footer */
+.z-footer { border-top: 1px solid var(--border); padding-block: var(--space-7) var(--space-5); }
+.z-footer__cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--space-6); }
+.z-footer__head { margin: 0 0 var(--space-3); font-size: 12px; line-height: 16px; font-weight: 400; color: var(--text-subtle); }
+.z-footer__list { display: grid; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
+.z-root .z-footer__list a { color: var(--text-muted); }
+.z-root .z-footer__list a:hover { color: var(--text); text-decoration: none; }
+.z-footer__base { display: flex; justify-content: space-between; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-7); padding-top: var(--space-4); border-top: 1px solid var(--border); font-size: 12px; line-height: 16px; color: var(--text-subtle); }
+.z-root .z-footer__base a { color: var(--text-muted); }
+
+/* ---------- Angular-Hosts und Ergaenzungen der Library ---------- */
+
+.z-root a.z-tab, .z-root a.z-tab:hover { color: var(--text-muted); text-decoration: none; }
+.z-root a.z-tab:hover, .z-root a.z-tab[aria-current="page"] { color: var(--text); }
+.z-root a.z-side__item, .z-root a.z-side__item:hover { text-decoration: none; }
+.z-root a.z-side__item { color: var(--text-muted); }
+.z-root a.z-side__item:hover, .z-root a.z-side__item[aria-current="page"] { color: var(--text); }
+.z-footer, z-stepper { display: block; }
+
+/* Neu, weil bundle.css es nicht abdeckt:
+   1. z-sidebar traegt Liste und Select, erst die Liste darin ist .z-side.
+   2. Unter 900px wird die Sidebar zum Select (Sidebar/README), darueber ist
+      das Select verborgen. 899px statt 900px, damit sich die Regel nicht mit
+      .z-panel-shell (min-width: 900px) ueberschneidet.
+   3. Im Kundenbereich hat der Fuss keine Spalten (Footer/README). Das leere
+      Raster faellt zusammen, der Abstand darueber entfaellt dann auch.
+   4. Unter 900px klappt die Navigation in ein Menue, das Guthaben bleibt
+      sichtbar (AppHeader/README). Das Menue liegt als Flaeche unter der
+      Leiste, damit die Leiste ihre Hoehe behaelt.
+   5. Unter 900px darf die Leiste umbrechen: oeffentlich stehen rechts zwei
+      Buttons, die bei 360px sonst waagerecht aus der Seite laufen. Die Hoehe
+      header bleibt als Mindesthoehe.
+   6. Unter 900px sind die Links der Kopfzeile so hoch wie ein Bedienelement,
+      weil Klickziele mobil mindestens 40px hoch sind. */
+z-sidebar { display: block; }
+z-sidebar > .z-select { display: none; }
+.z-footer__cols:empty + .z-footer__base { margin-top: 0; }
+.z-header__menu { display: none; }
+@media (max-width: 899px) {
+  z-sidebar > .z-side { display: none; }
+  z-sidebar > .z-select { display: block; }
+  .z-header { position: relative; flex-wrap: wrap; height: auto; min-height: var(--header); padding-block: var(--space-2); }
+  .z-header__menu { display: inline-flex; }
+  .z-header__nav { display: none; }
+  .z-header .z-header__link { height: var(--control-md); }
+  .z-header--open .z-header__nav {
+    display: grid; gap: var(--space-1);
+    position: absolute; top: 100%; left: 0; right: 0; z-index: var(--z-header);
+    padding: var(--space-2) var(--space-5);
+    background: var(--surface-raised); border-bottom: 1px solid var(--border);
+  }
+}
+
+/* Ergänzung zur Referenz: Klickziele mobil mindestens 40px (CLAUDE.md, Abstand und Layout).
+   Betroffen sind nur die Links im Fuss (Spalten und Basiszeile) und der
+   Sidebar-Eintrag mit seinen 36px. Tab, Sidebar-Select, Kopfzeilen-Links,
+   Menue-Knopf und die Aktionen im PageHeader sind schon control-md hoch, der
+   Stepper ist nicht bedienbar. Die Basiszeile bleibt flex mit Umbruch. */
+@media (max-width: 640px) {
+  .z-footer__list a, .z-footer__base a, .z-side__item {
+    display: inline-flex; align-items: center; min-height: var(--control-md);
+  }
+}
