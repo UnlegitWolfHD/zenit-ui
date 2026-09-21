@@ -1,2 +1,2 @@
-/* Paket navigation: wird in Welle 1 gefuellt. */
-export {};
+/* Paket navigation: Tabs, Stepper, Sidebar, AppHeader, PageHeader, Footer. */
+export * from '../navigation';
