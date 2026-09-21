@@ -5,6 +5,11 @@
       "description": "Wire zenit-ui into an application: styles, z-root, fonts and the toast outlet.",
       "factory": "./ng-add/index#ngAdd",
       "schema": "./ng-add/schema.json"
+    },
+    "migrate-material": {
+      "description": "Rewrite the mechanical Angular Material usages (mat-icon, mat-*-button, matTooltip, mat-spinner, mat-chip, Mat* imports) to zenit-ui and report everything that needs a human.",
+      "factory": "./migrate-material/index#migrateMaterial",
+      "schema": "./migrate-material/schema.json"
     }
   }
 }

@@ -1,0 +1,54 @@
+import { CommonModule } from '@angular/common';
+import { Component, inject } from '@angular/core';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { MatDialogModule } from '@angular/material/dialog';
+import { MatDividerModule } from '@angular/material/divider';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSelectModule } from '@angular/material/select';
+import { MatTableModule } from '@angular/material/table';
+import { ServerService } from '../server.service';
+import { ZBadge, ZButton, ZIcon, ZSpinner, ZTooltip } from 'zenit-ui';
+
+@Component({
+  selector: 'app-server-page',
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    MatDialogModule,
+    MatDividerModule,
+    MatFormFieldModule,
+    MatIconModule,
+    MatInputModule,
+    MatMenuModule,
+    MatPaginatorModule,
+    MatProgressSpinnerModule,
+    MatSelectModule,
+    MatTableModule,
+    ZBadge,
+    ZButton,
+    ZIcon,
+    ZSpinner,
+    ZTooltip,
+  ],
+  templateUrl: './server-page.html',
+  styleUrl: './server-page.scss',
+})
+export class ServerPage {
+  private readonly service = inject(ServerService);
+  protected readonly form = inject(FormBuilder).group({
+    name: ['', Validators.required],
+    region: ['nbg'],
+  });
+  protected readonly columns = ['name', 'tags', 'actions'];
+  protected loading = false;
+  protected saving = false;
+
+  protected page(event: PageEvent): void {
+    this.service.load(event.pageIndex);
+  }
+}

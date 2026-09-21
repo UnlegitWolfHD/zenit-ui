@@ -1,0 +1,106 @@
+<h2 mat-dialog-title>Server bearbeiten</h2>
+
+<mat-dialog-content>
+  <form [formGroup]="form" (ngSubmit)="save()">
+    <mat-form-field appearance="outline">
+      <mat-label>Name</mat-label>
+      <mat-icon matPrefix>dns</mat-icon>
+      <input matInput formControlName="name" />
+      <button
+        zBtn="ghost" iconOnly
+        matSuffix
+        type="button"
+        (click)="form.controls.name.reset()"
+        zTooltip="Feld leeren"
+      >
+        <z-icon name="close" />
+      </button>
+      <mat-error *ngIf="form.controls.name.hasError('required')">Gib einen Namen ein.</mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Standort</mat-label>
+      <mat-select formControlName="region">
+        <mat-option *ngFor="let region of regions" [value]="region.id">{{ region.name }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+  </form>
+
+  <div class="toolbar">
+    <button
+      zBtn
+      type="button"
+      [disabled]="loading"
+      (click)="reload()"
+      zTooltip="Liste neu laden"
+    >
+      <z-icon name="refresh" />
+      Aktualisieren
+    </button>
+    <button zBtn="ghost" iconOnly [matMenuTriggerFor]="menu" aria-label="Weitere Aktionen">
+      <z-icon name="more_vert" />
+    </button>
+    <mat-menu #menu="matMenu">
+      <button mat-menu-item (click)="exportCsv()">
+        <z-icon name="download" /><span>Als CSV exportieren</span>
+      </button>
+    </mat-menu>
+  </div>
+
+  @if (loading) {
+    <z-spinner />
+  } @else {
+    <table mat-table [dataSource]="servers" class="servers">
+      <ng-container matColumnDef="name">
+        <th mat-header-cell *matHeaderCellDef>Name</th>
+        <td mat-cell *matCellDef="let server">
+          <z-icon [name]="server.online ? 'check_circle' : 'cancel'" class="state" [class.state--on]="server.online" />
+          {{ server.name }}
+        </td>
+      </ng-container>
+      <ng-container matColumnDef="tags">
+        <th mat-header-cell *matHeaderCellDef>Tags</th>
+        <td mat-cell *matCellDef="let server">
+          <span class="z-cluster">
+            @for (tag of server.tags; track tag) {
+              <z-badge>{{ tag }}</z-badge>
+            }
+          </span>
+        </td>
+      </ng-container>
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef></th>
+        <td mat-cell *matCellDef="let server">
+          <button
+            zBtn="ghost" iconOnly
+            type="button"
+            (click)="remove(server)"
+            [zTooltip]="!server.deletable ? '' : ('Server ' + server.name + ' löschen')"
+          >
+            <z-icon name="delete" />
+          </button>
+        </td>
+      </ng-container>
+      <tr mat-header-row *matHeaderRowDef="columns"></tr>
+      <tr mat-row *matRowDef="let row; columns: columns"></tr>
+    </table>
+    <mat-divider></mat-divider>
+    <mat-paginator [length]="total" [pageSize]="25" (page)="page($event)"></mat-paginator>
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button zBtn="ghost" mat-dialog-close type="button">Abbrechen</button>
+  <button
+    zBtn="primary"
+    type="submit"
+    [disabled]="form.invalid || saving"
+    (click)="save()"
+  >
+    <mat-spinner *ngIf="saving" diameter="18"></mat-spinner>
+    <span *ngIf="!saving">Speichern</span>
+  </button>
+  <button zBtn="primary" type="button" (click)="saveAndClose()">
+    Speichern und schließen
+  </button>
+</mat-dialog-actions>

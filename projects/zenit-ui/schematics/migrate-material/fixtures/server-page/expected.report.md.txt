@@ -1,0 +1,95 @@
+# zenit-ui migration report
+
+Path `src/app/server`, rules icon, button, tooltip, spinner, chip, imports. Applied: lines refer to the files after the run.
+
+3 files scanned, 2 changed, 19 spots converted, 17 findings.
+
+- **manual**: not converted, a human has to do it.
+- **review**: converted, but something changed that needs a look.
+- **info**: converted, what was dropped has no effect in zenit-ui.
+
+## Summary
+
+| Rule | Converted | Manual | Review | Info |
+| --- | ---: | ---: | ---: | ---: |
+| icon | 6 | 1 | 1 | 1 |
+| button | 7 | 0 | 5 | 3 |
+| tooltip | 3 | 0 | 1 | 1 |
+| spinner | 1 | 1 | 1 | 1 |
+| chip | 1 | 0 | 1 | 0 |
+| imports | 1 | 0 | 0 | 0 |
+
+## Left for manual migration
+
+Material tags and attributes still in the templates after this run.
+
+| Selector | Count | zenit-ui replacement |
+| --- | ---: | --- |
+| `mat-cell` | 3 | z-table-container with table[zTable], cdk-table where a data source is needed (3.12) |
+| `mat-dialog-actions` | 1 | z-dialog with [zDialogActions], opened through ZDialog (3.14) |
+| `mat-dialog-close` | 1 | z-dialog with [zDialogActions], opened through ZDialog (3.14) |
+| `mat-dialog-content` | 1 | z-dialog with [zDialogActions], opened through ZDialog (3.14) |
+| `mat-dialog-title` | 1 | z-dialog with [zDialogActions], opened through ZDialog (3.14) |
+| `mat-divider` | 1 | a 1px border in `border`, z-menu-separator inside a menu (never edited) |
+| `mat-error` | 1 | z-field with input[zInput]; icons in fields through z-input-group (3.4) |
+| `mat-form-field` | 2 | z-field with input[zInput]; icons in fields through z-input-group (3.4) |
+| `mat-header-cell` | 3 | z-table-container with table[zTable], cdk-table where a data source is needed (3.12) |
+| `mat-header-row` | 1 | z-table-container with table[zTable], cdk-table where a data source is needed (3.12) |
+| `mat-icon` | 1 | z-icon (3.2) |
+| `mat-label` | 2 | z-field with input[zInput]; icons in fields through z-input-group (3.4) |
+| `mat-menu` | 1 | z-menu with button[zMenuItem] and [cdkMenuTriggerFor] (3.15) |
+| `mat-menu-item` | 1 | z-menu with button[zMenuItem] and [cdkMenuTriggerFor] (3.15) |
+| `mat-option` | 1 | z-select around a native <select> (3.5) |
+| `mat-paginator` | 1 | z-pagination, 1-based (3.13) |
+| `mat-row` | 1 | z-table-container with table[zTable], cdk-table where a data source is needed (3.12) |
+| `mat-select` | 1 | z-select around a native <select> (3.5) |
+| `mat-spinner` | 1 | z-spinner, or [loading] on the button (3.18) |
+| `mat-table` | 1 | z-table-container with table[zTable], cdk-table where a data source is needed (3.12) |
+| `matCellDef` | 3 | z-table-container with table[zTable], cdk-table where a data source is needed (3.12) |
+| `matColumnDef` | 3 | z-table-container with table[zTable], cdk-table where a data source is needed (3.12) |
+| `matHeaderCellDef` | 3 | z-table-container with table[zTable], cdk-table where a data source is needed (3.12) |
+| `matHeaderRowDef` | 1 | z-table-container with table[zTable], cdk-table where a data source is needed (3.12) |
+| `matInput` | 1 | z-field with input[zInput]; icons in fields through z-input-group (3.4) |
+| `matMenuTriggerFor` | 1 | z-menu with button[zMenuItem] and [cdkMenuTriggerFor] (3.15) |
+| `matPrefix` | 1 | z-field with input[zInput]; icons in fields through z-input-group (3.4) |
+| `matRowDef` | 1 | z-table-container with table[zTable], cdk-table where a data source is needed (3.12) |
+| `matSuffix` | 1 | z-field with input[zInput]; icons in fields through z-input-group (3.4) |
+
+## Style debt
+
+Stylesheets are never edited. Every count is a place where application CSS reaches into Material.
+
+| File | mat-* element selectors | .mat-* / .mdc-* classes | --mat-* / --mdc-* properties | ::ng-deep | @use '@angular/material' |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `src/app/server/server-page.scss` | 2 | 2 | 2 | 2 | 1 |
+
+## Files
+
+### `src/app/server/server-page.html`
+
+changed, converted: icon 6, button 7, tooltip 3, spinner 1, chip 1
+
+| Line:Col | Rule | Kind | Code | Reason | Suggested fix |
+| --- | --- | --- | --- | --- | --- |
+| 7:7 | icon | manual | icon-in-field | The icon is projected into a mat-form-field through matPrefix. | Migrate the field to z-field and use the icon of z-input-group. |
+| 9:7 | button | review | button-no-name | The icon-only button has no accessible name: z-icon is aria-hidden and a tooltip is a description, not a label. | Add an aria-label, usually the tooltip text: aria-label="Feld leeren". |
+| 40:5 | button | review | button-type | The button has no type attribute, so inside a <form> it submits. It was not added, because that would change what the button does. | Add type="button", or type="submit" where the button is meant to submit. |
+| 45:9 | icon | review | icon-in-menu-item | The icon sits in a mat-menu-item, which projects <mat-icon> into its own slot. | When the menu is migrated the icon becomes the "icon" input of button[zMenuItem]. |
+| 51:5 | spinner | review | spinner-no-label | The spinner has no accessible label; without one z-spinner is decorative and aria-hidden. | Add label="Wird geladen" (or what is loading) for a standalone loading state; leave it out only where text next to it says the same. |
+| 66:15 | chip | review | chip-status | The chip became a neutral z-badge. | Where it shows a state, set status="success\|warning\|danger\|info" and dot, and keep the state as a word. |
+| 74:11 | button | review | button-no-name | The icon-only button has no accessible name: z-icon is aria-hidden and a tooltip is a description, not a label. | Add an aria-label, usually the tooltip text: [attr.aria-label]="'Server ' + server.name + ' löschen'". |
+| 74:11 | button | review | button-warn | color="warn" was dropped: zenit-ui has no colour input, colour must come from the context. | Candidate for zBtn="danger": use it only where the action destroys something, and confirm it with a dialog. |
+| 74:11 | tooltip | review | tooltip-disabled-merged | [matTooltipDisabled]="!server.deletable" was merged into the text: an empty zTooltip shows nothing. | Check the expression. |
+| 100:5 | spinner | manual | spinner-in-button | The spinner sits inside a <button> and was left alone: zBtn shows its own spinner. | Replace it with [loading] on the button: [loading]="saving", and remove the spinner and the label swap around it. loading also disables the button. |
+| 103:3 | button | review | several-primaries | This template now has 2 buttons with zBtn="primary". The design system allows at most one primary per screen height. | Keep the one action the screen exists for as primary and make the others zBtn (secondary) or zBtn="ghost". |
+
+- info `button-colour` x3, lines 30, 94, 103
+- info `icon-aria-hidden` x1, lines 57
+- info `spinner-option` x1, lines 51
+- info `tooltip-option` x1, lines 30
+
+Left: `mat-cell` x3, `mat-dialog-actions` x1, `mat-dialog-close` x1, `mat-dialog-content` x1, `mat-dialog-title` x1, `mat-divider` x1, `mat-error` x1, `mat-form-field` x2, `mat-header-cell` x3, `mat-header-row` x1, `mat-icon` x1, `mat-label` x2, `mat-menu` x1, `mat-menu-item` x1, `mat-option` x1, `mat-paginator` x1, `mat-row` x1, `mat-select` x1, `mat-spinner` x1, `mat-table` x1, `matCellDef` x3, `matColumnDef` x3, `matHeaderCellDef` x3, `matHeaderRowDef` x1, `matInput` x1, `matMenuTriggerFor` x1, `matPrefix` x1, `matRowDef` x1, `matSuffix` x1
+
+### `src/app/server/server-page.ts`
+
+changed, converted: imports 1
