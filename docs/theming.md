@@ -62,7 +62,10 @@ Single files work as well, as long as the order inside `themes.css` is kept:
 `[data-theme="light"]` both weigh (0,1,0), so the later rule wins. `themes.css`
 has to come after `tokens.css`, and `accents.css` after the scheme files. Only
 `[data-theme="light"][data-accent="blau"]` (0,2,0) wins on specificity alone.
-The demo checks this in the built bundle, not only in the sources.
+Nothing checks the order inside a built CSS bundle. A wrong order shows up as
+the dark values under `data-theme="light"`, which the screenshot tests of
+`/themes` in `e2e/themes.spec.ts` catch; the contrast gate reads `themes.css`
+to learn the order and measures the cascade that order produces.
 
 `base.css` exists because `tokens.css` is compiled from `tokens.json` and stays
 byte identical to `spec/tokens.css`; `color-scheme: dark` for the default
@@ -83,13 +86,117 @@ export const appConfig: ApplicationConfig = {
 | --------------- | ------------------------------------ | ------------------------------------------------------------------------ |
 | `schemes`       | `['dark', 'light', 'contrast']`      | Ids written as `data-theme`. Own ids allowed; validation uses this list.   |
 | `accents`       | `['rot', 'blau', 'gruen', 'violett']`| Ids written as `data-accent`. Own ids allowed.                             |
-| `defaultScheme` | `'dark'`                             | One of `schemes`, or `'system'` to follow `prefers-color-scheme`.          |
+| `defaultScheme` | `'dark'`                             | One of `schemes`, or `'system'` to follow the operating system.            |
 | `defaultAccent` | `'rot'`                              | One of `accents`. Carries no attribute.                                    |
 | `storageKey`    | `'zenit-theme'`                      | `localStorage` key. `null` turns persistence off.                          |
-| `target`        | `() => document.documentElement`     | Getter for the element that carries both attributes.                       |
+| `target`        | `() => document.documentElement`     | Getter for the element that carries both attributes. Keep it stable.       |
 
-The provider also applies the stored or default choice at startup, so the first
-frame is already in the right scheme without anyone injecting the service.
+The provider applies the stored or default choice when the application starts,
+without anyone injecting the service. That is not the first frame: Angular
+starts several frames after the first paint (measured below: about 110 frames
+under a throttled network), and until then the page shows the default scheme.
+The next section closes that gap.
+
+**Application root only.** `ZTheme` is a root service and reads one config. A
+second `provideZenitTheme()` in the `providers` of a route, or a second one at
+the root, is ignored; dev mode prints a `console.warn`. Dev mode also warns
+about a `defaultScheme` or `defaultAccent` that is not registered.
+
+**`target`** has to return a stable element. If the getter starts returning
+another element, the attributes are removed from the previous one with the next
+change (not before, the service does not poll). `zenitThemeInitScript` and the
+server only know `<html>`; both are skipped for a custom target.
+
+## No flash of the wrong theme
+
+Without further steps a user who chose `light` sees the dark default on every
+load until Angular has started. Two things are needed, and only together do
+they work:
+
+1. **An inline script at the top of `<head>`** that sets `data-theme` and
+   `data-accent` before the first paint. `zenitThemeInitScript(config?)`
+   returns its source: same storage key, same validation, same defaults and the
+   same resolution of `'system'` as `ZTheme`, from shared constants. A unit
+   test runs the script and the service against the same stored values and
+   system settings and compares what they write.
+2. **A render-blocking stylesheet.** The Angular CLI inlines "critical" CSS and
+   loads the full stylesheet late (`media="print"`, swapped on load).
+   `[data-theme="light"]` is never critical, because nothing in `index.html`
+   matches it at build time. So with the script alone the attribute is right
+   and the page is still dark until the full stylesheet arrives. Set
+   `optimization.styles.inlineCritical` to `false` for the production build.
+
+`ng add zenit-ui --themes` does all of it: script after `<meta charset>` (or as
+the first child of `<head>`), `inlineCritical: false`, `provideZenitTheme()` in
+the application config. By hand:
+
+```ts
+// any Node script, or the server
+import { zenitThemeInitScript } from 'zenit-ui';
+console.log(zenitThemeInitScript()); // pass the same config as to provideZenitTheme()
+```
+
+```html
+<head>
+  <meta charset="utf-8" />
+  <!-- prettier-ignore -->
+  <script>/* paste the output here */</script>
+  …
+```
+
+```json
+"configurations": {
+  "production": {
+    "optimization": {
+      "scripts": true,
+      "styles": { "minify": true, "inlineCritical": false, "removeSpecialComments": true },
+      "fonts": true
+    }
+  }
+}
+```
+
+The script is generated, so regenerate it when the config changes (own
+`schemes`, `defaultScheme: 'system'`, another `storageKey`). The two
+applications of this workspace carry it in their `index.html`, and a test in
+`projects/zenit-ui/schematics/ng-add/index.spec.ts` fails when that text is not
+exactly the current output of the function.
+
+**Content Security Policy.** The function returns the script body, without the
+`<script>` tags, and the body contains no `eval`. Hash exactly that string
+(`script-src 'sha256-…'`), or render it into `<script nonce="…">` on the
+server. Keep formatters away from it (`<!-- prettier-ignore -->`): a reformatted
+script is a different hash.
+
+**Measured** on the production build of `ui-demo`, served statically,
+Chromium with 1.6 Mbit/s and 150 ms latency, `light` stored, one sample per
+animation frame from the first frame until the application is up:
+
+| Build                                         | Dark frames        | First paint |
+| --------------------------------------------- | ------------------ | ----------- |
+| before (no script, critical CSS inlined)      | 110 of 156 (until 2.07 s) | 0.27 s |
+| script only, critical CSS still inlined       | 68 of 158 (until 1.37 s)  | 0.27 s |
+| script and `inlineCritical: false`            | 0 of 97                   | 2.03 s |
+
+The price is visible in the last column: the first paint waits for the
+stylesheet. What was painted earlier was an empty shell in the wrong scheme;
+the moment the application shows content is the same in all three (about 2 s
+here).
+
+To repeat it: `npx ng build ui-demo`, serve `dist/ui-demo/browser` on a free
+port with a fallback to `index.html`, then run the same test the dev server
+gets, against that URL:
+
+```
+THEME_FLASH_URL=http://localhost:4510 E2E_PORT=4511 npx playwright test e2e/themes.spec.ts -g "No flash"
+```
+
+Against the dev server (no `THEME_FLASH_URL`) the test checks the script only;
+critical CSS inlining exists only in an optimised build.
+
+If neither step is an option, a static `<html data-theme="light">` in
+`index.html` fixes the scheme for everyone until the service starts; that fits
+an application with a fixed scheme and no switch.
 
 ## The `ZTheme` API
 
@@ -100,7 +207,7 @@ const theme = inject(ZTheme);
 | Member                    | Type                      | Meaning                                                             |
 | ------------------------- | ------------------------- | ------------------------------------------------------------------- |
 | `scheme()`                | `Signal<string>`          | The chosen value, including `'system'`.                              |
-| `resolvedScheme()`        | `Signal<string>`          | What is applied; `'system'` resolves to `'dark'` or `'light'`.        |
+| `resolvedScheme()`        | `Signal<string>`          | What is applied; `'system'` resolves to `'contrast'`, `'dark'` or `'light'`. |
 | `accent()`                | `Signal<string>`          | The chosen accent.                                                   |
 | `setScheme(id)`           | `(string) => boolean`     | Switches and stores. `false` for an unknown id, nothing changes.     |
 | `setAccent(id)`           | `(string) => boolean`     | Same for the accent.                                                 |
@@ -109,14 +216,28 @@ const theme = inject(ZTheme);
 **Unknown ids are rejected, not thrown.** The usual caller is a `<select>` whose
 value can come from outside the application (a stored value, a query parameter,
 a hand-edited `localStorage`), and a bad value there must not take the page
-down. A stored unknown id is ignored the same way and the default stays.
+down. A stored unknown id is ignored the same way and the default stays. In dev
+mode `setScheme` and `setAccent` name the rejected id in a `console.warn`; do
+not drop the return value silently either (the demo resets its `<select>`).
 
-**SSR.** `document`, `window`, `matchMedia` and `localStorage` are never touched
-outside the browser. On the server the service reports the defaults and writes
-nothing; the attributes are applied on the client.
+**SSR.** `window`, `matchMedia` and `localStorage` are never touched outside
+the browser, and a custom `target` is never called there. The service reports
+the defaults. One thing it does write, through the injected `DOCUMENT`: a
+`defaultScheme` other than `'system'` goes onto `<html>` of the server document
+as `data-theme`, so the delivered HTML already carries it. The stored choice
+and `'system'` can only be resolved in the browser; that is the job of the init
+script above. Without SSR and without the script, a static
+`<html data-theme="…">` in `index.html` does the same as the server.
 
-**System mode** follows `prefers-color-scheme` live, without a reload. Choosing
-any other scheme ends that.
+**System mode** resolves to `contrast` while `prefers-contrast: more` matches
+and `contrast` is one of `schemes`; otherwise to `dark` or `light` after
+`prefers-color-scheme`. Both are followed live, without a reload, and the init
+script resolves them the same way. Choosing any other scheme ends that.
+
+**Other tabs.** The service listens to the `storage` event for its own key: a
+scheme chosen in one tab is applied in the others, and a `reset()` there
+resets them. The listeners (media queries and `storage`) are removed when the
+injector is destroyed.
 
 ## Writing your own theme
 
@@ -172,19 +293,30 @@ contrast, with `rgba()` fills composited over the surface they are stated on.
 
 | Rule                                                          | Required |
 | ------------------------------------------------------------- | -------- |
-| `text` on `bg`, `surface`, `surface-raised`                     | ≥ 12:1   |
+| `text` on `bg`, `surface`, `surface-raised`, `surface-hover`    | ≥ 12:1   |
 | `text-muted` on `bg`, `surface`, `surface-raised`               | ≥ 7:1    |
 | `text-subtle` on `bg`, `surface`, `surface-raised`              | ≥ 4.5:1  |
 | `text-muted` on `surface-hover`                                 | ≥ 4.5:1  |
 | `border-control` on `surface`                                   | ≥ 3:1    |
 | `on-accent` on `accent` and on `accent-hover`                   | ≥ 4.5:1  |
-| `accent-text` on `bg` and on `surface`                          | ≥ 4.5:1  |
+| `accent-text` on `bg`, `surface` and `surface-raised`           | ≥ 4.5:1  |
 | `on-mc` on `mc-accent` and on `mc-accent-hover`                 | ≥ 4.5:1  |
+| `on-mc` on `success` (the knob of the checked toggle, a graphic) | ≥ 3:1    |
 | `success`/`warning`/`danger`/`info` on `bg` and `surface`        | ≥ 4.5:1  |
 | … and on their own `-subtle` over `surface-raised` and `surface` | ≥ 4.5:1  |
-| `text-muted` on every status `-subtle` over `bg` and `surface`   | ≥ 3:1    |
+| `danger` on `surface-raised` and `surface-hover` (menu item)     | ≥ 4.5:1  |
+| `text` on every status `-subtle` over `bg` and `surface` (alert title) | ≥ 12:1 |
+| `text-muted` on every status `-subtle` over `bg` and `surface` (alert body, and the control border inside an alert) | ≥ 4.5:1 |
+| `accent-text` on every status `-subtle` over `bg` and `surface` (link in an alert) | ≥ 4.5:1 |
 | `focus` against all four surfaces and against `accent`           | ≥ 3:1    |
 | `danger` apart from `accent-text`                                | ≥ 1.25:1 **or** ≥ 30° hue |
+
+`focus` is not measured against `accent-hover`. On the light ground it cannot
+pass (2.41:1 with `rot`, 2.97:1 with `blau` and `gruen`, 2.54:1 with
+`violett`): a fill that keeps white at 4.5:1 and near black at 3:1 sits in a
+band so narrow that hover would look like rest. It does not have to: the ring
+is drawn with a 2px offset and lies on the surface around the button, never on
+the fill.
 
 The last rule has two ways of passing on purpose. In the red accents `danger`
 is the lighter and more orange red, which the luminance rule catches. With a
@@ -200,13 +332,29 @@ node tools/check-theme-contrast.mjs --md   # same table as Markdown
 
 It reads `tokens.css` and the files `themes.css` imports, rebuilds the cascade
 for every scheme × accent combination, resolves `var()` aliases, composites
-`rgba()`, measures every pair above, and exits non-zero on the first failure.
+`rgba()` and measures every pair above. It measures all combinations, lists
+every failure and then exits with 1 if there was at least one.
 It also fails when a scheme leaves a colour token undefined or an accent leaves
 one of its five undefined, so a new scheme cannot be half finished. Schemes and
 accents are discovered from the stylesheets, so adding one automatically adds
-it to the gate. Today: 3 schemes × 4 accents, 564 pairs.
+it to the gate. Today: 3 schemes × 4 accents, 816 pairs.
 
-This command is not wired into `package.json` yet; add it to `check` and to CI.
+The parser knows flat rules only. A block at-rule (`@media`, `@supports`,
+`@layer`, `@container`) in one of the files stops the run with exit code 2
+instead of being flattened into rules that seem to apply unconditionally.
+
+`dark` with the default accent is `tokens.css` and normative, so the gate may
+not demand other values there. Two pairs of it miss a rule that was added
+later: `accent-text` on `warning-subtle` and on `info-subtle` over `surface`
+(4.37:1 and 4.38:1, rule 4.5:1), a link inside a tinted alert inside a panel.
+They are printed as `Referenz`, listed at the end of every run and do not fail
+it; a listed pair that passes again is an error, so the list cannot go stale.
+See "Open design questions".
+
+It runs as `npm run check:themes` and is part of `npm run check`. It guards the
+schemes this package ships and reads only the library's own files; it is not
+part of the published package. Check your own scheme with your own contrast
+tooling against the table above.
 
 ## The values
 
@@ -222,12 +370,12 @@ default accent `rot`.
 | `--surface`       | `#0e0e11`        | `#f4f4f6` | `#0b0b0e` | –                                  |
 | `--surface-raised`| `#15151a`        | `#eaeaee` | `#17171d` | –                                  |
 | `--surface-hover` | `#1b1b21`        | `#dfdfe5` | `#24242c` | –                                  |
-| `--border`        | `#26262c`        | `#dcdce2` | `#4a4a56` | decorative; in `contrast` ≈ 3:1 on `surface` |
+| `--border`        | `#26262c`        | `#dcdce2` | `#5e5e6a` | decorative; in `contrast` 3.07 on `surface`, 3.29 on `bg`, 2.79 on `surface-raised` |
 | `--border-control`| `#62626d`        | `#85858f` | `#a9a9b5` | 3.20 / 3.33 / 8.45 (≥ 3)           |
 | `--text`          | `#f2f2f3`        | `#18181b` | `#ffffff` | 16.26 / 14.77 / 17.85 (≥ 12)       |
 | `--text-muted`    | `#9ca3af`        | `#4a4a54` | `#d5d9e1` | 7.17 / 7.30 / 12.61 (≥ 7)          |
 | `--text-subtle`   | `#7d838f`        | `#66666f` | `#b0b6c2` | 4.78 / 4.74 / 8.77 (≥ 4.5)         |
-| `--focus`         | `#ffffff`        | `#09090b` | `#ffffff` | 4.70 / 3.27 / 5.39 vs `accent` (≥ 3) |
+| `--focus`         | `#ffffff`        | `#09090b` | `#ffffff` | 4.70 / 3.27 / 4.70 vs `accent` (≥ 3) |
 | `--scrim`         | `rgba(0,0,0,.6)` | `rgba(9,9,11,.5)` | `rgba(0,0,0,.8)` | – |
 | `--shadow-overlay`| `0 8px 24px rgba(0,0,0,.5)` | `0 8px 24px rgba(9,9,11,.18)` | `0 8px 24px rgba(0,0,0,.8)` | – |
 
@@ -239,14 +387,14 @@ default accent `rot`.
 | `--success-subtle` | `rgba(76,175,80,.12)`     | `#e4f3e7` | `rgba(124,227,139,.16)`   |                               |
 | `--warning`        | `#f5a524`                 | `#8a5300` | `#ffc75c`                 | 7.24 / 5.63 / 7.99 (≥ 4.5)    |
 | `--warning-subtle` | `rgba(245,165,36,.12)`    | `#fdf0dc` | `rgba(255,199,92,.16)`    |                               |
-| `--danger`         | `#ff6b6b`                 | `#b8340f` | `#ffa08c`                 | 5.58 / 5.18 / 6.63 (≥ 4.5)    |
-| `--danger-subtle`  | `rgba(255,107,107,.12)`   | `#fdece7` | `rgba(255,160,140,.16)`   |                               |
+| `--danger`         | `#ff6b6b`                 | `#b5330f` | `#ff9661`                 | 5.58 / 5.32 / 6.22 (≥ 4.5)    |
+| `--danger-subtle`  | `rgba(255,107,107,.12)`   | `#fdece7` | `rgba(255,150,97,.16)`    |                               |
 | `--info`           | `#6cb6ff`                 | `#17548f` | `#9ccdff`                 | 6.88 / 6.63 / 7.50 (≥ 4.5)    |
 | `--info-subtle`    | `rgba(108,182,255,.12)`   | `#e4eefa` | `rgba(156,205,255,.16)`   |                               |
 | `--mc-accent`      | `#5fb84e`                 | `#2f7d32` | `#78d964`                 | `on-mc` 6.42 / 5.12 / 9.99    |
 | `--mc-accent-hover`| `#4ea03f`                 | `#276b2a` | `#63bd51`                 | `on-mc` 4.88 / 6.52 / 7.49    |
 | `--on-mc`          | `#06280a`                 | `#ffffff` | `#031e06`                 |                               |
-| `danger` vs `accent-text` |                    |           |                           | 1.32 / 1.34 / 1.39 (≥ 1.25)   |
+| `danger` vs `accent-text` |                    |           |                           | 1.32 / 1.30 / 1.27 (≥ 1.25)   |
 
 In `light` the `-subtle` fills are opaque light tints, not the status colour at
 10 % opacity: on a light ground a translucent tint darkens the badge and eats
@@ -258,7 +406,7 @@ exactly the contrast the word inside it needs.
 | --------- | -------- | ---------- | ---------------- | ------------- | --------------- | ------------------------- | ----------- | -------------------------- | ------------------- |
 | `rot`     | dark     | `#e11d48`  | `#be123c`        | `#ffffff`     | `#ff2d4f`       | `rgba(255,45,79,.1)`      | 4.70 / 6.29 | 5.27                       | 4.70                |
 | `rot`     | light    | `#c2123f`  | `#9d0e33`        | `#ffffff`     | `#a11039`       | `#fbe7ec`                 | 6.08 / 8.25 | 7.22                       | 3.27                |
-| `rot`     | contrast | `#d1163f`  | `#ab1033`        | `#ffffff`     | `#ff6b85`       | `rgba(255,107,133,.16)`   | 5.39 / 7.36 | 7.20                       | 5.39                |
+| `rot`     | contrast | `#e11d48`  | `#be123c`        | `#ffffff`     | `#ff6b85`       | `rgba(255,107,133,.16)`   | 4.70 / 6.29 | 7.20                       | 4.70                |
 | `blau`    | dark     | `#1d4ed8`  | `#1a44ba`        | `#ffffff`     | `#7ab0ff`       | `rgba(122,176,255,.12)`   | 6.70 / 8.14 | 8.70                       | 6.70                |
 | `blau`    | light    | `#2563eb`  | `#1d4ed8`        | `#ffffff`     | `#1d4ed8`       | `#e6edfd`                 | 5.17 / 6.70 | 6.10                       | 3.85                |
 | `blau`    | contrast | `#1d4ed8`  | `#1a44ba`        | `#ffffff`     | `#7ab0ff`       | `rgba(122,176,255,.12)`   | 6.70 / 8.14 | 8.87                       | 6.70                |
@@ -274,7 +422,20 @@ because there `accent-text` has to be a deep colour instead of a light tint.
 
 Known overlap: with `gruen`, `accent-text` sits close to `--success`, and with
 `blau` close to `--info`. The design system answers that itself, because a
-status is always written out as a word as well.
+status is always written out as a word as well. See "Open design questions".
+
+### Changes after the review
+
+| Token, scheme              | Old       | New       | Why, with the measured ratio                                                       |
+| -------------------------- | --------- | --------- | ---------------------------------------------------------------------------------- |
+| `--danger`, light          | `#b8340f` | `#b5330f` | Danger item of a menu on `surface-hover`: 4.47 → 4.59 (≥ 4.5). On `surface-raised` 5.08, on its tint 5.32, vs `accent-text` 1.34 → 1.30. |
+| `--danger`, contrast       | `#ffa08c` | `#ff9661` | Red-green deficiency: colour difference to `success` under deuteranopia about 3.5 → 18. On its tint 6.63 → 6.22, vs `accent-text` 1.39 → 1.27 (≥ 1.25). |
+| `--danger-subtle`, contrast | `rgba(255,160,140,.16)` | `rgba(255,150,97,.16)` | Follows `--danger`.                                           |
+| `--border`, contrast       | `#4a4a56` | `#5e5e6a` | The comment promised "about 3:1 on surface", measured 2.25. Now 3.07 on `surface`, 3.29 on `bg`, 2.79 on `surface-raised`; 2.75 between `border` and `border-control`. |
+| `--accent`, contrast / rot | `#d1163f` | `#e11d48` | The fill of the dark scheme. Against `bg` 3.90 → 4.47; `on-accent` 5.39 → 4.70 (≥ 4.5). |
+| `--accent-hover`, contrast / rot | `#ab1033` | `#be123c` | Against `bg` 2.85 → 3.34; `on-accent` 7.36 → 6.29.                          |
+
+The dark scheme is normative and was not touched.
 
 ## What is not covered
 
@@ -282,6 +443,37 @@ status is always written out as a word as well.
   would need the tokens on a container instead of the root; the CSS already
   allows it (`[data-theme]` matches any element), the service writes to one
   target only.
-- `prefers-contrast: more` is not wired to the `contrast` scheme. Do that in
-  the application if you want it; the service only knows `prefers-color-scheme`.
+- A choice of `dark` or `light` wins over `prefers-contrast: more`; only
+  `'system'` follows it.
 - The values still need the design owner's approval, see the note at the top.
+
+## Open design questions
+
+Proposals of the review that were not taken, and what was measured. They need
+the design owner.
+
+- **Accent hues, `blau` → indigo and `gruen` → teal.** With `gruen`,
+  `accent-text` and `success` are nearly one colour: 1.43:1 and 12° of hue
+  apart in `dark`, 1.06:1 and 1° in `light`, 1.22:1 and 6° in `contrast`. With
+  `blau` the same holds for `info`: 1.03:1 and 6°, 1.16:1 and 15°, 1.33:1 and
+  5°. "Clickable" and "status" are then told apart by the written word only.
+  Moving the two accents away from the status hues would fix that; it changes
+  the look of two accents, so it was not done here.
+- **A token for the disabled opacity.** `opacity: 0.45` is a literal in 8
+  places of the library stylesheets. Text at 45 % on `surface` reaches 4.17:1 in
+  `dark`, 2.86:1 in `light` and 4.51:1 in `contrast`; `border-control` at 45 %
+  1.56:1, 1.61:1 and 2.54:1. WCAG exempts disabled controls, but a token
+  (`--opacity-disabled`) would let `light` and `contrast` choose their own
+  value. It belongs in `tokens.json`, which this package does not own.
+- **Links inside a tinted alert in `dark`.** `accent-text` on `warning-subtle`
+  and `info-subtle` over `surface` measures 4.37:1 and 4.38:1, below 4.5:1, in
+  the normative scheme (on `bg` it passes with 4.72:1 and 4.74:1). Options: a
+  link in an alert takes `text` and keeps the underline it now always has, or
+  lighter tints in `dark`, which is a change to `tokens.json`. Until then the gate lists both pairs as
+  `Referenz`.
+- **Fills of `blau`, `gruen` and `violett` on the black ground of `contrast`.**
+  `rot` was lightened to the fill of the dark scheme. The other three share one
+  block with `dark`; against `#000000` their fills measure 3.13 / 4.19 / 3.01
+  and their hover fills 2.58 / 3.13 / 2.43, while `on-accent` has room (6.70 /
+  5.02 / 6.98 on the fill). Lightening them needs a third block per accent
+  (`[data-theme="contrast"][data-accent="…"]`) and a decision on the values.

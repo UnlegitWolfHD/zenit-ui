@@ -1,33 +1,54 @@
-import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
+import { pruefeAxe } from './pruefungen';
 
 /**
  * Prüfung der Farbschemata und Akzente (docs/theming.md).
  *
  * Die Farbwerte selbst prüft `node tools/check-theme-contrast.mjs` rechnerisch.
  * Hier läuft die andere Hälfte: dass der gewählte Block im Browser wirklich
- * gewinnt, dass axe auf jeder Kombination sauber bleibt, dass der Fokus-Ring
- * sichtbar ist und dass kein Schema die Verbotsliste aus CLAUDE.md aufmacht.
+ * gewinnt, dass axe auf jeder Route in jeder Kombination sauber bleibt, dass der
+ * Fokus-Ring sichtbar ist, dass kein Schema die Verbotsliste aus CLAUDE.md
+ * aufmacht und dass ein gespeichertes Schema schon im ersten Frame steht.
  *
  * Lauf mit eigenem Port, damit ein fremdes `ng serve` nicht stört:
  *   E2E_PORT=4360 npx playwright test e2e/themes.spec.ts
  */
 const SCHEMATA = ['dark', 'light', 'contrast'] as const;
 const AKZENTE = ['rot', 'blau', 'gruen', 'violett'] as const;
-const ROUTEN = ['grundlage', 'rueckmeldung', 'themes'] as const;
+/**
+ * Every route of the demo: the list of demo.spec.ts plus /themes. axe runs on
+ * each of them in every combination, because a contrast failure only shows
+ * where the pair occurs (link-in-text-block only on /formulare, for example).
+ */
+const ROUTEN = [
+  'grundlage',
+  'formulare',
+  'navigation',
+  'daten',
+  'rueckmeldung',
+  'overlays',
+  'werkzeuge',
+  'themes',
+  'muster/dashboard',
+  'muster/server-panel',
+  'muster/startseite',
+] as const;
+/** The expensive checks (effects, focus rings) stay on these three routes. */
+const ROUTEN_TIEF: readonly string[] = ['grundlage', 'rueckmeldung', 'themes'];
 
 /** Der Schlüssel und das Format, die ZTheme in localStorage schreibt. */
 const SPEICHER = 'zenit-theme';
 
 /**
- * Setzt die Wahl, bevor die Anwendung startet. So sieht der erste Frame schon
- * das richtige Schema; das ist auch der Weg, den ein Produkt geht.
+ * Setzt die Wahl, bevor die Anwendung startet, so wie sie ein früherer Besuch
+ * hinterlassen hätte. Das Skript im <head> von index.html liest sie vor dem
+ * ersten Frame, ZTheme nach dem Start.
  */
 async function wahlSetzen(page: Page, scheme: string, accent: string) {
-  await page.addInitScript(
-    ([schluessel, wert]) => window.localStorage.setItem(schluessel, wert),
-    [SPEICHER, JSON.stringify({ scheme, accent })] as const,
-  );
+  await page.addInitScript(([schluessel, wert]) => window.localStorage.setItem(schluessel, wert), [
+    SPEICHER,
+    JSON.stringify({ scheme, accent }),
+  ] as const);
 }
 
 async function seiteOeffnen(page: Page, route: string, breite = 1440, hoehe = 900) {
@@ -142,7 +163,9 @@ for (const scheme of SCHEMATA) {
   for (const accent of AKZENTE) {
     test.describe(`${scheme} / ${accent}`, () => {
       for (const route of ROUTEN) {
-        test(`/${route} ist barrierefrei, fokussierbar und effektfrei`, async ({ page }) => {
+        const tief = ROUTEN_TIEF.includes(route);
+        const titel = tief ? 'ist barrierefrei, fokussierbar und effektfrei' : 'ist barrierefrei';
+        test(`/${route} ${titel}`, async ({ page }) => {
           await wahlSetzen(page, scheme, accent);
           await seiteOeffnen(page, route);
 
@@ -153,20 +176,8 @@ for (const scheme of SCHEMATA) {
           );
           expect(zustand.bg, `--bg ist in ${scheme} nicht aufgeloest`).not.toBe('');
 
-          const ergebnis = await new AxeBuilder({ page })
-            .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
-            .analyze();
-          const lesbar = ergebnis.violations.map(
-            (v) =>
-              `${v.id} (${v.impact}): ${v.help}\n    ${v.helpUrl}\n` +
-              v.nodes
-                .map(
-                  (n) =>
-                    `    ${n.target.join(' ')}\n      ${(n.failureSummary || '').replace(/\n/g, '\n      ')}`,
-                )
-                .join('\n'),
-          );
-          expect(lesbar, `axe-Verstoesse auf /${route} in ${scheme}/${accent}`).toEqual([]);
+          await pruefeAxe(page, `/${route} in ${scheme}/${accent}`);
+          if (!tief) return;
 
           expect(
             await verboteneEffekte(page),
@@ -185,6 +196,116 @@ for (const scheme of SCHEMATA) {
   }
 }
 
+/**
+ * Links in running text are underlined in every scheme (deviation in
+ * _grundlage.css); links in navigation, header, footer, tabs, rows and buttons
+ * are not. Checked on the computed style at rest.
+ */
+test.describe('Link underline', () => {
+  const unterstrichen = (page: Page, auswahl: string) =>
+    page
+      .locator(auswahl)
+      .evaluateAll((liste) =>
+        liste.map((el) => getComputedStyle(el).textDecorationLine.includes('underline')),
+      );
+
+  test('underlines links in running text', async ({ page }) => {
+    await seiteOeffnen(page, 'formulare');
+    const imText = await unterstrichen(page, 'main label a');
+
+    expect(imText.length, 'no link in running text on /formulare').toBeGreaterThan(0);
+    expect(imText).not.toContain(false);
+  });
+
+  for (const route of ['navigation', 'muster/startseite', 'muster/server-panel'] as const) {
+    test(`leaves navigation, header, footer, tabs, rows and buttons alone on /${route}`, async ({
+      page,
+    }) => {
+      await seiteOeffnen(page, route);
+      const auswahl = [
+        'nav a',
+        '.z-header a',
+        '.z-footer a',
+        'a.z-tab',
+        'a.z-row',
+        'a.z-side__item',
+        'a.z-btn',
+      ].join(', ');
+      const ohne = await unterstrichen(page, auswahl);
+
+      expect(ohne.length, `no navigation links on /${route}`).toBeGreaterThan(0);
+      expect(ohne).not.toContain(true);
+    });
+  }
+});
+
+/**
+ * A stored light scheme must never flash dark. ZTheme sets data-theme only once
+ * Angular has started, many frames after the first paint; the script from
+ * zenitThemeInitScript() in <head> sets it before.
+ *
+ * The probe runs inside the page: a requestAnimationFrame loop from the first
+ * frame on, with a throttled network, so there really are frames between the
+ * first paint and the start of the application. Against the dev server this
+ * checks the script. The second half of the fix
+ * (optimization.styles.inlineCritical: false) only exists in a production
+ * build; run the same test against the built output for that, see
+ * docs/theming.md, "No flash of the wrong theme":
+ *   THEME_FLASH_URL=http://localhost:4510 E2E_PORT=4511 \
+ *     npx playwright test e2e/themes.spec.ts -g "No flash"
+ */
+test.describe('No flash of the wrong theme', () => {
+  const DUNKEL = 'rgb(6, 6, 8)';
+  const HELL = 'rgb(255, 255, 255)';
+  const BASIS = process.env['THEME_FLASH_URL'] ?? '';
+
+  test('paints a stored light scheme from the first frame on', async ({ page }) => {
+    await wahlSetzen(page, 'light', 'blau');
+    await page.addInitScript(() => {
+      const proben: { bg: string; theme: string | null; accent: string | null }[] = [];
+      (window as unknown as { __proben: typeof proben }).__proben = proben;
+      const messen = () => {
+        const html = document.documentElement;
+        proben.push({
+          bg: getComputedStyle(html).backgroundColor,
+          theme: html.getAttribute('data-theme'),
+          accent: html.getAttribute('data-accent'),
+        });
+        if (proben.length < 2000) requestAnimationFrame(messen);
+      };
+      requestAnimationFrame(messen);
+    });
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send('Network.enable');
+    await cdp.send('Network.emulateNetworkConditions', {
+      offline: false,
+      latency: 100,
+      downloadThroughput: (8 * 1024 * 1024) / 8,
+      uploadThroughput: (750 * 1024) / 8,
+    });
+
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto(`${BASIS}/`);
+    await page.locator('main h1').first().waitFor();
+
+    const proben = await page.evaluate(
+      () =>
+        (
+          window as unknown as {
+            __proben: { bg: string; theme: string | null; accent: string | null }[];
+          }
+        ).__proben,
+    );
+    const dunkel = proben.filter((p) => p.bg === DUNKEL).length;
+    const ohneSchema = proben.filter((p) => p.theme !== 'light' || p.accent !== 'blau').length;
+
+    expect(proben.length, 'no frames between first paint and start').toBeGreaterThan(3);
+    expect(dunkel, `${dunkel} of ${proben.length} frames dark`).toBe(0);
+    expect(ohneSchema, `${ohneSchema} of ${proben.length} frames without the stored theme`).toBe(0);
+    expect(proben.at(-1)?.bg).toBe(HELL);
+  });
+});
+
 test.describe('Steuerung im Kopf', () => {
   test('schaltet Schema und Akzent und überlebt den Neuladen', async ({ page }) => {
     await seiteOeffnen(page, 'themes');
@@ -192,10 +313,12 @@ test.describe('Steuerung im Kopf', () => {
     await page.locator('#theme-schema').selectOption('light');
     await page.locator('#theme-akzent').selectOption('violett');
 
-    await expect.poll(() => angewandt(page)).toMatchObject({
-      theme: 'light',
-      accent: 'violett',
-    });
+    await expect
+      .poll(() => angewandt(page))
+      .toMatchObject({
+        theme: 'light',
+        accent: 'violett',
+      });
 
     await page.reload();
     await page.locator('main h1').first().waitFor();
