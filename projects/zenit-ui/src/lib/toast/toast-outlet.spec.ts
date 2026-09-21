@@ -99,6 +99,66 @@ describe('ZToastOutlet', () => {
     expect(toast.parentElement).toBe(bereiche()[0]);
   });
 
+  it('renders info with z-toast--info and its icon into the polite region', () => {
+    zeige(() => dienst.info('Der Host wird für etwa 15 Minuten neu gestartet'));
+    const toast = toasts()[0];
+
+    expect(toast.classList.contains('z-toast--info')).toBe(true);
+    expect(toast.classList.contains('z-toast--danger')).toBe(false);
+    expect(toast.querySelector(':scope > z-icon')?.textContent?.trim()).toBe('info');
+    expect(toast.getAttribute('role')).toBeNull();
+    expect(toast.parentElement).toBe(bereiche()[0]);
+  });
+
+  it('renders warning with z-toast--warning and its icon into the polite region', () => {
+    zeige(() => dienst.warning('Dein Guthaben reicht noch 6 Tage'));
+    const toast = toasts()[0];
+
+    expect(toast.classList.contains('z-toast--warning')).toBe(true);
+    expect(toast.classList.contains('z-toast--danger')).toBe(false);
+    expect(toast.querySelector(':scope > z-icon')?.textContent?.trim()).toBe('warning');
+    expect(toast.getAttribute('role')).toBeNull();
+    expect(toast.parentElement).toBe(bereiche()[0]);
+  });
+
+  it('renders a title above the message in one text column', () => {
+    zeige(() =>
+      dienst.info('Der Host wird für etwa 15 Minuten neu gestartet', {
+        title: 'Wartung am 22.09.2026, 03:00',
+      }),
+    );
+    const spalte = toasts()[0].querySelector('.z-toast__text');
+
+    expect(spalte?.querySelector('.z-toast__title')?.textContent?.trim()).toBe(
+      'Wartung am 22.09.2026, 03:00',
+    );
+    expect(spalte?.querySelector('.z-toast__body')?.textContent?.trim()).toBe(
+      'Der Host wird für etwa 15 Minuten neu gestartet',
+    );
+    // Title first, message below it.
+    expect(Array.from(spalte?.children ?? []).map((kind) => kind.className)).toEqual([
+      'z-toast__title',
+      'z-toast__body',
+    ]);
+  });
+
+  it('keeps the markup of a toast without a title unchanged', () => {
+    zeige(() =>
+      dienst.show('Adresse kopiert', { icon: 'content_copy', actionLabel: 'Rückgängig' }),
+    );
+    const toast = toasts()[0];
+
+    expect(toast.querySelector('.z-toast__text')).toBeNull();
+    expect(
+      Array.from(toast.children).map((kind) => `${kind.tagName.toLowerCase()}.${kind.className}`),
+    ).toEqual([
+      'z-icon.material-icons z-icon',
+      'span.',
+      'button.z-toast__action',
+      'button.z-btn z-toast__close z-btn--ghost z-btn--sm z-btn--icon',
+    ]);
+  });
+
   it('renders an error with z-toast--danger into the assertive region', () => {
     zeige(() => dienst.error('Backup fehlgeschlagen: Speicher voll'));
     const toast = toasts()[0];
