@@ -11,7 +11,16 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    # Windows, because of the screenshots. The reference images in
+    # e2e/screenshots were recorded on Windows and their path carries no
+    # platform (snapshotPathTemplate in the three Playwright configs), while
+    # the comparison runs with zero tolerance. Chromium renders text
+    # differently on Linux, so an ubuntu runner would fail every screenshot
+    # test against baselines it has no way to match. Recording a second set on
+    # Linux is the alternative; it needs a Linux machine to record on, which
+    # this project does not have, so inventing those images here would be a
+    # guess. Until then the job runs on the one platform that has baselines.
+    runs-on: windows-latest
 
     steps:
       - uses: actions/checkout@v4
@@ -53,7 +62,9 @@ jobs:
 
       - run: npm run test:schematics
 
-      - run: npx playwright install --with-deps chromium
+      # No --with-deps: installing system dependencies is an Ubuntu-only step
+      # and fails on a Windows runner, which needs none.
+      - run: npx playwright install chromium
 
       - run: npm run e2e
 
