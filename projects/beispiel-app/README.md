@@ -54,7 +54,7 @@ src/
     pages/gameserver/gameserver.spec.ts   the states and the filter on a fake clock
     pages/einbindung/einbindung.ts   the setup, step by step, with the real files
     gameserver/
-      beispieldaten.ts           the sample data, the only file to throw away
+      beispieldaten.ts           the sample data, see "What to replace"
       gameserver-data.ts         service: one simulated load as a promise, filter function
       server-list/server-list.ts the list in all of its states
       server-list/server-list.spec.ts
@@ -123,7 +123,9 @@ no subscription, no effect and no event handler that reads `$event.target`.
 | Deleting a server     | `liste.update(...)`: a resource is writable, the local change is its state `'local'`.                                                                                                                                          |
 | Filter row            | Signal Forms from `@angular/forms/signals`: `filter = form(signal({ suche, status }))`, `[formField]="filter.suche"` on `input[zInput]` and on the native `select` inside `z-select`. The filtered list is a `computed()`.     |
 | "Filter zurücksetzen" | `filter().reset(KEIN_FILTER)` writes the model and clears touched and dirty.                                                                                                                                                   |
-| Confirmation          | `ZDialog.confirm()` returns `Observable<boolean>` (API table). It emits once, so the page awaits `firstValueFrom()`. The field that asks for the server name belongs to the library's confirm dialog, not to this application. |
+| Confirmation          | `ZDialog.confirm()` returns `Observable<boolean>` (API table). It emits once, so the page awaits `firstValueFrom()`. The field that asks for the server name belongs to the library's confirm dialog, not to this application. `restoreFocusTo: '#aktionen-<id>'` names the row menu by its id, because the menu has closed by then and the CDK no longer knows the trigger. |
+| Focus after a delete  | The trigger goes with its row, so `ServerList.fokusNachEntfernen()` registers an `afterNextRender` before the row is removed and then focuses the menu button of the row that moved up, the last one, or the `main` landmark when no row is left.                                                                                                                             |
+| Page of the list      | `linkedSignal()` over the number of pages: the chosen page is clamped into range instead of reset, so deleting a server on page two leaves you on page two.                                                                                                                                                                                                                  |
 
 `[formField]` owns `name`, `disabled`, `required`, `readonly`, `min` and `max`
 of the element it sits on, so these come from the schema of the form and are not
@@ -162,12 +164,13 @@ tried, not assumed.
 | `main.z-container`       | Content at most `container` wide, left aligned, `tabindex="-1"` for the skip link                                                 |
 | `z-page-header`          | Title equals the navigation link, one fact, exactly one primary per screen height                                                 |
 | Filter row               | Search with icon plus `z-select--sm` in one line, two rows below 640px, gone while the list is empty                              |
-| `z-panel` "Meine Server" | The one container with a border, `flush` for lists, `aria-busy` while loading                                                     |
-| `z-rows`                 | Shared grid, status always the second column and always a word, tariff as a neutral tag, amounts right aligned in mono            |
-| Row actions              | Own tab stop next to the row, not inside a link; destructive entries below a separator and always with a dialog                   |
+| `z-panel` "Meine Server" | The one container with a border, `flush` for lists, `aria-busy` while loading; the sentence that gets announced sits in a `role="status"` next to the panel, because `aria-busy` is silent and the panel host has no role |
+| `z-rows`                 | Shared grid, status always the second column and always a word, tariff as a neutral tag, amounts right aligned in mono, address and port in mono through `[zRowMeta]` |
+| Row as a link            | `div[zRow]` with `a[zRowLink]` on the title: the whole row is one link with one tab stop, and the markup stays valid             |
+| Row actions              | `[zRowAction]`, so the menu stays a tab stop of its own above the stretched link and stays reachable below 640px; destructive entries below a separator and always with a dialog |
 | `z-pagination`           | Last row of the panel, appears only from the second page on                                                                       |
 | States                   | Skeleton only after 300ms, empty state with one secondary action, at most one alert, own sentence when the filter matches nothing |
-| Feedback                 | Toast for what happened, dialog for what cannot be undone, focus returns to the trigger                                           |
+| Feedback                 | Toast for what happened, dialog for what cannot be undone; cancel and Escape put the focus back on the row menu through `restoreFocusTo`, a confirmed delete moves it to the row that took the place of the deleted one |
 | `z-footer`               | Customer area: only the bottom row, copyright left, legal links right                                                             |
 | `styles.css`             | Only `var(--…)`, no hex, no pixel or radius literals of its own                                                                   |
 | Theme control            | Library components only, 40px targets, current value in the `aria-label`, choice stored by `ZTheme`                               |
@@ -175,14 +178,17 @@ tried, not assumed.
 
 ## What to replace in a real application
 
-`gameserver/beispieldaten.ts` and the timer in `gameserver/gameserver-data.ts`:
-put your HTTP call into `laden()` (or swap the resource of the page for
-`httpResource()`), drop the `simulation` and keep the rest of the signals. The code display
-(`shared/code-block`, `shared/quelltexte*`, the page "Einbindung" and the
-disclosures) exists to explain this example and comes out with it. Everything
-else stays. The row of the list would then link to the detail page of a server,
-which this example does not have (see the comment in `server-list.ts`).
+Everything in this list exists because the example has no server, no second
+page and no `node_modules` entry for the library. Everything not in it stays as
+it is.
 
-In a real application the `paths` override in the two tsconfigs also goes away,
-because `npm i ./zenit-ui-0.1.0.tgz` or `ng add zenit-ui --themes` puts the
-package into `node_modules`.
+| What                                                                                                             | Why it is here and what takes its place                                                                                                                                                                       |
+| ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `gameserver/beispieldaten.ts`                                                                                    | The eight sample servers, the credit and the navigation links. Your data comes from your API.                                                                                                                 |
+| The timer in `gameserver/gameserver-data.ts`                                                                     | `laden()` waits 600ms instead of calling anything. Put your HTTP call in there, or swap the `resource()` of the page for `httpResource()`.                                                                     |
+| `?zustand=` with the `Simulation` type and the `simulation` signal                                                | Only so a reader can call up loading, empty and error. A real page has the states but not the switch: drop the `zustand` input, the `SIMULATIONEN` list and the parameter of `laden()`, and keep the resource. |
+| `href="#"` with `$event.preventDefault()`                                                                        | The row link, the credit link, the five header links without a route and the footer links point nowhere, because this example is one page. They become `routerLink` or real URLs.                              |
+| The `oeffnen` output of `app-server-list` and the two toasts "gehört in deine Anwendung"                          | Stand-ins for the detail page and the wizard. The row link becomes `[routerLink]="['/gameserver', server.id]"` and the output goes away.                                                                       |
+| The `paths` override in `tsconfig.app.json` and `tsconfig.spec.json`                                             | Resolves `zenit-ui` to `dist/zenit-ui`. `npm i ./zenit-ui-0.1.0.tgz` puts the package into `node_modules` instead.                                                                                             |
+| The `dist/zenit-ui/styles/…` entries in `angular.json`                                                           | Same reason. With the package installed they read `zenit-ui/styles/…`, and `ng add ./zenit-ui-0.1.0.tgz --themes` writes them for you.                                                                         |
+| The code display: `shared/code-block`, `shared/quelltexte*`, the page "Einbindung", the `#region` markers and the disclosures "So ist es eingebunden" | They exist to explain this example, together with `tools/generate-example-snippets.mjs` and `npm run check:snippets`.                                                                                          |

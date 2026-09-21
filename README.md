@@ -15,6 +15,11 @@ Angular workspace for the Zenit design system. It holds the library `zenit-ui` w
 | `docs/theming.md` | colour schemes, accents, `provideZenitTheme`, the contrast gate |
 | `docs/labels.md` | the label registry and how to switch the library's own texts |
 | `docs/ng-add.md` | what `ng add zenit-ui` does, its options and its tests |
+| `docs/signals.md` | the signal conventions of this workspace, the audit table and its exceptions |
+| `docs/forms.md` | the three ways to bind a form control, Signal Forms first |
+| `docs/components/` | one usage guide per building block, checked by `node tools/check-docs-examples.mjs` |
+| `docs/migration-from-material.md` | how a page moves off Angular Material |
+| `docs/bundle-report.md` | size of the package per entry point |
 | `docs/api/` | generated TypeDoc reference, not committed |
 | `tools/` | schematics build, schematics tests, contrast gate, example snippets |
 
@@ -54,6 +59,9 @@ How to pull the library into an application is described in `projects/zenit-ui/R
 - `docs/theming.md` — colour schemes, accents, `provideZenitTheme`, the contrast gate
 - `docs/labels.md` — the label registry, `provideZenitLabels`, `Z_LABELS_EN`
 - `docs/ng-add.md` — `ng add zenit-ui`: what it changes, options, tests
+- `docs/signals.md` — signals, `resource()`, `linkedSignal()`, and what is deliberately not a signal
+- `docs/forms.md` — Signal Forms, reactive forms and `ngModel` against the library's fields
+- `docs/components/` — one guide per building block: API, examples, states, accessibility
 - `CHANGELOG.md` — what changed per version
 - `CONTRIBUTING.md` — commands, rules, how to add a building block, review checklist
 
