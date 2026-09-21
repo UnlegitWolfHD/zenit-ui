@@ -65,6 +65,17 @@
   .z-toast__action { display: inline-flex; align-items: center; min-height: var(--control-md); }
 }
 
+/* Addition to the reference: the statuses info and warning, mirrored from the
+   rules the reference has for success and danger. Only the icon takes the
+   colour; the toast keeps the plain surface of the reference, without a tinted
+   fill and without a coloured frame, and the status also stands in the text.
+   With a title the two lines share one column, built like .z-alert__text. */
+.z-toast--info .z-icon { color: var(--info); }
+.z-toast--warning .z-icon { color: var(--warning); }
+.z-toast__text { display: grid; gap: 2px; min-width: 0; }
+.z-toast__title { font-weight: 600; }
+.z-toast__body { color: var(--text-muted); }
+
 /* Addition to the reference: the outlet keeps two live regions, one polite and
    one assertive, so a screen reader announces a toast that appears inside them.
    display: contents removes the two boxes again, so the toasts themselves stay
