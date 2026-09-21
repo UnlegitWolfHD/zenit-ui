@@ -110,14 +110,36 @@ function istIntern(knoten) {
   return tag(knoten, 'internal') !== null;
 }
 
-/** The first fenced block of `@example`, with its language. */
+/**
+ * The first fenced block of `@example`, with its language.
+ *
+ * The parsed tag is not enough: TypeScript ends a tag at the next line that
+ * starts with `@`, and an Angular example holds `@Component`, so the fence
+ * would come back unterminated. Where that happens the raw comment is read
+ * instead, with the leading ` * ` of every line stripped.
+ */
 function beispielAusJsdoc(knoten) {
+  const fence = /```(\w*)\r?\n([\s\S]*?)```/;
   const roh = tag(knoten, 'example');
-  if (!roh) {
-    return null;
-  }
-  const treffer = roh.match(/```(\w*)\n([\s\S]*?)```/);
+  const treffer =
+    roh?.match(fence) ??
+    rohesJsdoc(knoten)
+      ?.split(/^\s*@example\s*$/m)[1]
+      ?.match(fence);
   return treffer ? { sprache: treffer[1] || 'html', code: treffer[2].trimEnd() } : null;
+}
+
+/** The JSDoc comment as written, without the comment markers. */
+function rohesJsdoc(knoten) {
+  const docs = knoten.jsDoc ?? [];
+  const letzter = docs[docs.length - 1];
+  return letzter
+    ? letzter
+        .getText()
+        .replace(/^\/\*\*/, '')
+        .replace(/\*\/$/, '')
+        .replace(/^[ \t]*\* ?/gm, '')
+    : null;
 }
 
 /* -------------------------------------------------------- the public surface */
@@ -518,6 +540,9 @@ function baue(name, statement, deklaration, paket, datei) {
     initialisierer &&
     ts.isNewExpression(initialisierer) &&
     /InjectionToken/.test(initialisierer.expression.getText());
+  // A value that does not fit on a line is not printed at all: a cut-off
+  // object literal reads like a complete one and would be a lie.
+  const wert = zeile(initialisierer?.getText() ?? '');
   return {
     ...basis,
     art: istToken ? 'token' : 'const',
@@ -525,7 +550,9 @@ function baue(name, statement, deklaration, paket, datei) {
       ? zeile(deklaration.type.getText())
       : istToken
         ? zeile(initialisierer.typeArguments?.[0]?.getText() ?? 'unknown')
-        : zeile(initialisierer?.getText().slice(0, 120) ?? ''),
+        : wert.length <= 120
+          ? wert
+          : '',
   };
 }
 
@@ -675,6 +702,18 @@ function leseMigration() {
 }
 
 /* ------------------------------------------------------------------- output */
+
+/* --------------------------------------------------------------- the prose
+ *
+ * The API above is read out of the sources and can never be stale. The blocks
+ * below are the parts that are not API: the rules, the setup, forms, theming,
+ * labels and the services. They are written here once instead of being scraped
+ * out of `README.md` and `docs/*.md`, whose headings and fences move.
+ *
+ * ponytail: prose constants drift from README.md and docs/ by hand. Move a
+ * block here into a scraper only once its source file has a stable anchor
+ * (a heading id or a marked fence) to scrape from.
+ */
 
 const REGELN = `- **No \`@angular/material\`.** Not the components, not the theme, not temporarily. The one
   exception is the Material Icons webfont, self-hosted. Peer dependencies are \`@angular/core\`,
