@@ -1,59 +1,34 @@
-# ZenitUiWorkspace
+# zenit-ui-workspace
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.1.8.
+Angular-Workspace für das Zenit Design System. Hier entsteht die Library `zenit-ui` mit allen Bausteinen der Website, des Kundenbereichs und der Server-Panels, dazu eine Demo-App, die jeden Baustein in allen Zuständen zeigt. Der Workspace ist unabhängig vom bestehenden Frontend von Zenit-Hosting und enthält keine Geschäftslogik, keine API-Aufrufe und keine echten Kundendaten.
 
-## Development server
+## Ordner
 
-To start a local development server, run:
+| Ordner | Inhalt |
+| --- | --- |
+| `projects/zenit-ui` | die Library: Bausteine in `src/lib`, Tokens und Styles in `src/styles` |
+| `projects/ui-demo` | Demo-App, eine Seite je Paket, jeder Baustein in allen Zuständen |
+| `spec/` | das Design System als Vorgabe: Tokens, Komponenten-READMEs, Vorschauen, Leitfäden |
+| `docs/pakete.md` | Schnitt der Arbeitspakete, Festlegungen und Abnahmepunkte |
 
-```bash
-ng serve
-```
+`CLAUDE.md` in der Wurzel ist die Übersicht des Systems: Grundsätze, Sprache, Farbe, Typografie, Form, Bewegung und die Verbotsliste. Sie gilt für jede Änderung.
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
-```bash
-ng generate component component-name
-```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+## Befehle
 
 ```bash
-ng generate --help
+npm run build         # ng build zenit-ui und ng build ui-demo
+ng build zenit-ui     # nur die Library, Ergebnis in dist/zenit-ui
+ng test zenit-ui      # Unit-Tests der Library
+npm run lint          # ESLint über Library und Demo
+npm run lint:css      # Stylelint über projects/**/*.css
+npm run e2e           # Playwright mit axe über die Demo-Seiten
+ng serve ui-demo      # Demo-App unter http://localhost:4200/
 ```
 
-## Building
+## Paket zenit-ui
 
-To build the project run:
+Wie du die Library in eine App einbaust, steht in `projects/zenit-ui/README.md`: Voraussetzungen, Installation aus dem lokal gebauten `.tgz`, Reihenfolge der Styles, `z-root`, Schriften, Toast-Ausgabe, Minecraft-Subtheme und die vollständige API-Tabelle. Diese README wird mit dem Paket ausgeliefert.
 
-```bash
-ng build
-```
+## Freigabe
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+Kein Push, kein Publish und kein Deploy ohne Freigabe. `npm pack` in `dist/zenit-ui` ist nur eine lokale Probe, die Library ist nicht auf npm veröffentlicht.
