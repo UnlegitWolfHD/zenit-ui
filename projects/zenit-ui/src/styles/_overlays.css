@@ -44,6 +44,14 @@ z-menu-separator { display: block; }
 @media (max-width: 640px) {
   .z-menu__item { height: var(--control-md); }
 }
+/* Addition to the reference: an entry may be a link when it leads somewhere.
+   `.z-root a` (0,1,1) beats `.z-menu__item` (0,1,0) and would colour it
+   accent-text and underline it on hover, so the colours of the reference are
+   restored with the same weight, exactly as the a.z-btn rules in
+   _grundlage.css do. */
+.z-root a.z-menu__item, .z-root a.z-menu__item:hover { text-decoration: none; }
+.z-root a.z-menu__item { color: var(--text); }
+.z-root a.z-menu__item--danger { color: var(--danger); }
 /* Addition to the reference: a long dialog scrolls inside instead of growing
    past the screen. Two links of the chain were missing. The CDK loads the
    styles of `.cdk-overlay-pane` at runtime, so they stand after this stylesheet

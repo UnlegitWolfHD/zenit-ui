@@ -33,6 +33,31 @@ class MenuHost {
   geloescht = 0;
 }
 
+/** A menu whose entries lead somewhere: two links and one button. */
+@Component({
+  imports: [CdkMenuTrigger, Z_MENU],
+  template: `
+    <button [cdkMenuTriggerFor]="menue">Seiten</button>
+    <ng-template #menue>
+      <z-menu>
+        <a zMenuItem icon="dns" href="#daten" (triggered)="geoeffnet = geoeffnet + 1">
+          Server öffnen
+        </a>
+        <a zMenuItem icon="delete" danger [disabled]="gesperrt()" href="#papierkorb">
+          Papierkorb
+        </a>
+        <button zMenuItem (triggered)="kopiert = kopiert + 1">Adresse kopieren</button>
+      </z-menu>
+    </ng-template>
+  `,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class LinkMenuHost {
+  readonly gesperrt = signal(false);
+  geoeffnet = 0;
+  kopiert = 0;
+}
+
 describe('ZMenu', () => {
   let fixture: ComponentFixture<MenuHost>;
   let host: MenuHost;
@@ -246,5 +271,111 @@ describe('ZMenu', () => {
     await new Promise((fertig) => setTimeout(fertig, 250));
 
     expect(document.activeElement).toBe(kopieren);
+  });
+});
+
+describe('ZMenuItem as a link', () => {
+  let fixture: ComponentFixture<LinkMenuHost>;
+  let host: LinkMenuHost;
+  let behaelter: OverlayContainer;
+  let ausloeser: HTMLButtonElement;
+
+  function menue(): HTMLElement | null {
+    return behaelter.getContainerElement().querySelector('z-menu');
+  }
+
+  function links(): HTMLAnchorElement[] {
+    return Array.from(behaelter.getContainerElement().querySelectorAll('a[zMenuItem]'));
+  }
+
+  function oeffne(): void {
+    ausloeser.click();
+    fixture.detectChanges();
+  }
+
+  /** A key on the entry, the way the browser sends it: bubbling from there. */
+  function taste(ziel: HTMLElement, key: string, keyCode: number): void {
+    ziel.dispatchEvent(new KeyboardEvent('keydown', { key, keyCode, bubbles: true }));
+    fixture.detectChanges();
+  }
+
+  beforeEach(() => {
+    fixture = TestBed.createComponent(LinkMenuHost);
+    host = fixture.componentInstance;
+    behaelter = TestBed.inject(OverlayContainer);
+    fixture.detectChanges();
+    ausloeser = fixture.nativeElement.querySelector('button');
+    oeffne();
+  });
+
+  afterEach(() => {
+    behaelter.ngOnDestroy();
+  });
+
+  it('gives a link the same role and class as a button entry', () => {
+    const [oeffnen, papierkorb] = links();
+
+    expect(oeffnen.getAttribute('role')).toBe('menuitem');
+    expect(oeffnen.classList.contains('z-menu__item')).toBe(true);
+    expect(papierkorb.classList.contains('z-menu__item--danger')).toBe(true);
+    expect(oeffnen.querySelector('z-icon')?.textContent).toBe('dns');
+  });
+
+  it('leaves href alone and writes no type attribute', () => {
+    const [oeffnen] = links();
+
+    // _setType() of the CDK only touches a <button>; a type on a link would be
+    // the media type of its target.
+    expect(oeffnen.hasAttribute('type')).toBe(false);
+    expect(oeffnen.getAttribute('href')).toBe('#daten');
+  });
+
+  it('fires triggered on a click and closes the menu', () => {
+    links()[0].click();
+    fixture.detectChanges();
+
+    expect(host.geoeffnet).toBe(1);
+    expect(menue()).toBeNull();
+  });
+
+  // Space activates an entry in the ARIA menu pattern, but the browser clicks
+  // only buttons, so z-menu turns the key into a click on the link.
+  it('activates a link with Space, exactly once', () => {
+    taste(links()[0], ' ', 32);
+
+    expect(host.geoeffnet).toBe(1);
+    expect(menue()).toBeNull();
+  });
+
+  it('closes the menu on Enter', () => {
+    taste(links()[0], 'Enter', 13);
+
+    expect(host.geoeffnet).toBe(1);
+    expect(menue()).toBeNull();
+  });
+
+  it('swallows click and Space on a disabled link and keeps the menu', () => {
+    host.gesperrt.set(true);
+    fixture.detectChanges();
+    const papierkorb = links()[1];
+
+    expect(papierkorb.getAttribute('aria-disabled')).toBe('true');
+    expect(papierkorb.tabIndex).toBe(-1);
+
+    papierkorb.click();
+    taste(papierkorb, ' ', 32);
+    fixture.detectChanges();
+
+    expect(menue()).not.toBeNull();
+  });
+
+  it('finds a link entry through the typeahead without its icon ligature', async () => {
+    const oeffnen = links()[0];
+
+    // Without the own typeaheadLabel the CDK would read "dnsServer öffnen".
+    menue()?.dispatchEvent(new KeyboardEvent('keydown', { key: 's', keyCode: 83, bubbles: true }));
+    await new Promise((fertig) => setTimeout(fertig, 250));
+
+    expect(document.activeElement).toBe(oeffnen);
   });
 });

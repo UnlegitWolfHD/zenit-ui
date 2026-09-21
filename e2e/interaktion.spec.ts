@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { pruefeAxe } from './pruefungen';
 
 /**
  * Real browser interaction, keyboard first. Every test drives the demo app the
@@ -243,6 +244,42 @@ test.describe('Menu on /overlays', () => {
 
     await page.keyboard.press('Tab');
     await expect(page.getByRole('menu')).toHaveCount(0);
+  });
+
+  // Entries that lead somewhere are links. They keep the role and the keyboard
+  // of an entry, and Enter follows the link instead of only closing the menu.
+  test('Enter on a link entry navigates and closes the menu', async ({ page }) => {
+    await seite(page, 'overlays');
+    await page.getByRole('button', { name: 'Weitere Seiten' }).focus();
+    await page.keyboard.press('ArrowDown');
+
+    const daten = eintrag(page, 'Daten');
+    await expect(daten).toBeFocused();
+    await expect(daten).toHaveAttribute('href', '/daten');
+
+    await page.keyboard.press('Enter');
+    await expect(page).toHaveURL(/\/daten$/);
+    await expect(page.getByRole('menu')).toHaveCount(0);
+  });
+
+  test('a link entry looks like a button entry, at rest and on hover', async ({ page }) => {
+    await seite(page, 'overlays');
+    await page.getByRole('button', { name: 'Weitere Seiten' }).click();
+    const stil = (name: string) =>
+      eintrag(page, name).evaluate((el) => {
+        const s = getComputedStyle(el);
+        return { color: s.color, dekoration: s.textDecorationLine, hoehe: s.height };
+      });
+
+    // Without the counter-rule `.z-root a` would colour the entry accent-text
+    // and underline it on hover.
+    expect(await stil('Daten')).toEqual(await stil('Link kopieren'));
+
+    await eintrag(page, 'Daten').hover();
+    expect((await stil('Daten')).dekoration).toBe('none');
+    expect(await stil('Daten')).toEqual(await stil('Link kopieren'));
+
+    await pruefeAxe(page, '/overlays mit offenem Link-Menü');
   });
 });
 

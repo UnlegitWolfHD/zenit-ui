@@ -79,17 +79,46 @@ export class ZMenu {
       },
       { capture: true, passive: true, signal: abbruch.signal },
     );
+
+    // Space activates an entry (ARIA menu pattern), but the browser clicks only
+    // buttons: on a link `CdkMenuItem` would close the menu without anything
+    // ever navigating. This listener hangs on the menu in the CAPTURE phase, so
+    // it comes before the keydown handler on the entry, and turns the key into
+    // the click that `href` and `routerLink` both listen for. Enter needs
+    // nothing: the browser clicks a link by itself.
+    wirt.addEventListener(
+      'keydown',
+      (ereignis) => {
+        const ziel = (ereignis.target as HTMLElement | null)?.closest('a.z-menu__item');
+        if (ereignis.key !== ' ' || !ziel || mitZusatztaste(ereignis)) {
+          return;
+        }
+        ereignis.preventDefault();
+        ereignis.stopPropagation();
+        (ziel as HTMLElement).click();
+      },
+      { capture: true, signal: abbruch.signal },
+    );
+
     inject(DestroyRef).onDestroy(() => abbruch.abort());
   }
 }
 
 /**
  * One entry of the menu, an icon plus a verb and its object ("Adresse
- * kopieren"). Sits on a `<button>` through the attribute `zMenuItem`.
+ * kopieren"). Sits on a `<button>` through the attribute `zMenuItem`, or on an
+ * `<a>` when the entry leads somewhere instead of doing something.
  *
  * Renders the class `z-menu__item` on the host, plus `z-menu__item--danger`
  * while {@link danger} is set, and inside it the optional `z-icon` followed by
  * the projected text.
+ *
+ * A link entry keeps its `href` or `routerLink`: the library has no router and
+ * touches neither. Enter and a click follow the link and close the menu, Space
+ * does the same because `z-menu` turns it into a click, and a middle click or
+ * Ctrl+click opens a new tab without closing the menu. `disabled` is
+ * `aria-disabled="true"` on a link with its click swallowed, the same way
+ * `a[zBtn]` is locked.
  *
  * Accessibility: role, focus and the `disabled` input come from `CdkMenuItem`
  * as a host directive, which also provides the `(triggered)` output. The CDK
@@ -102,14 +131,16 @@ export class ZMenu {
  * @example
  * ```html
  * <button zMenuItem icon="content_copy" (triggered)="kopiere()">Adresse kopieren</button>
+ * <a zMenuItem icon="dns" routerLink="/user/server/1">Server öffnen</a>
  * <button zMenuItem icon="delete" danger [disabled]="laeuft()" (triggered)="loesche()">
  *   Server löschen
  * </button>
  * ```
  */
 @Component({
-  // The API table says the entry is a button with an attribute selector.
-  selector: 'button[zMenuItem]',
+  // An entry does something (button) or leads somewhere (link); both carry the
+  // attribute of the API table.
+  selector: 'button[zMenuItem], a[zMenuItem]',
   imports: [ZIcon],
   template: `@if (icon()) {
       <z-icon [name]="icon()" />
@@ -164,6 +195,14 @@ export class ZMenuItem {
       zerstoerung.onDestroy(() => beobachter.disconnect());
     });
   }
+}
+
+/**
+ * A key pressed together with a modifier belongs to the browser: Ctrl+Space and
+ * the like are not an activation of the entry.
+ */
+function mitZusatztaste(ereignis: KeyboardEvent): boolean {
+  return ereignis.altKey || ereignis.ctrlKey || ereignis.metaKey || ereignis.shiftKey;
 }
 
 /**
