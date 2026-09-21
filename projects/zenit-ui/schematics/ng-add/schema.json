@@ -6,7 +6,7 @@
   "properties": {
     "project": {
       "type": "string",
-      "description": "Name of the application the library is wired into.",
+      "description": "Name of the application the library is wired into. Without it the workspace must have exactly one application.",
       "$default": {
         "$source": "projectName"
       }
