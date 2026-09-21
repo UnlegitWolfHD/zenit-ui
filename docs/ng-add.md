@@ -61,7 +61,11 @@ the schematic's. The init script carries a `<!-- prettier-ignore -->`.
    from `options`; such configurations are left alone and named in the log.
 
 2. **`src/index.html`** – the class `z-root` is merged into the class lists of
-   `<html>` and `<body>`. `lang="de"` is only added when `<html>` has no `lang`.
+   `<html>` and `<body>`. Both are required: `html.z-root` resets `font-size`
+   and `line-height` so that the class does not move the rem base of the
+   document, which leaves `body.z-root` as the only place the page size comes
+   from. On `<html>` alone the page renders at 16px/normal instead of 14px/20px.
+   `lang="de"` is only added when `<html>` has no `lang`.
    A fresh `ng new` application has `lang="en"`, which is left as it is; the log
    then says `lang left as "en": set it to your UI language` (the built-in
    labels of zenit-ui are German).
@@ -143,6 +147,95 @@ the schematic's. The init script carries a `<!-- prettier-ignore -->`.
 | `--themes` | boolean | `false` | Also register `zenit-ui/styles/themes.css` and wire the theme without a flash: init script in `index.html`, `provideZenitTheme()`, `inlineCritical: false` for production. |
 | `--fonts` | boolean | `true` | Add the font packages and their imports. |
 | `--toast-outlet` | boolean | `true` | Mount `<z-toast-outlet />` in the root component. |
+
+## Working against a linked build
+
+`npm link` (or a junction into `node_modules`) is the fastest way to try a change from the library
+in a real application, and it is the one setup that needs a second option. The build already has it:
+
+```json
+"preserveSymlinks": true
+```
+
+Without it the bundler resolves the linked package to its real path and pulls `@angular/core` out of
+the **library workspace** instead of the application, which gives two Angular instances and
+`NG0203: inject() must be called from an injection context` at runtime.
+
+**The unit tests need one more line.** `preserveSymlinks` does reach Vitest — the
+`@angular/build:unit-test` builder reads it from the build target and passes it on as
+`resolve.preserveSymlinks` — but it has nothing to work on: a package under `node_modules` is
+*external* to the test bundle, so Vitest hands it to Node's own loader, and Node resolves a
+symlinked package to its real path no matter what Vite is configured to do. From there
+`@angular/core` comes out of the library workspace again, and every spec that touches a zenit-ui
+component fails with `NG0203` or a duplicated `@angular/core`.
+
+Pull the package into the Vite graph, where `preserveSymlinks` applies. That takes two steps, and the
+first one is easy to miss, because without it the second file is never read:
+
+**Step 0, let the test target load a runner config at all.** `@angular/build:unit-test` ignores every
+Vitest config file unless the target asks for one: `runnerConfig` defaults to `false`
+(`node_modules/@angular/build/src/builders/unit-test/schema.json`). In `angular.json`:
+
+```json
+"test": {
+  "builder": "@angular/build:unit-test",
+  "options": {
+    "tsConfig": "tsconfig.spec.json",
+    "runnerConfig": true
+  }
+}
+```
+
+With `true` the builder looks for `vitest-base.config.ts` (also `.mts`, `.cts`, `.js`, `.mjs`,
+`.cjs`) first in the project root, then in the workspace root, and logs
+`Using Vitest configuration file: …`. A string is the path to the file instead, which is what
+`beispiel-app`'s `test-jit` target in this repository does.
+
+**Step 1, the file itself:**
+
+```ts
+// vitest-base.config.ts next to angular.json or in the project root
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  test: {
+    server: { deps: { inline: [/zenit-ui/] } },
+  },
+});
+```
+
+A consumer went from 2 of 2 specs red to 8 of 8 green with this block. Both steps were then checked
+here from an empty test target, with the real builder, in a throwaway workspace: a package junctioned
+into `node_modules` next to a second copy of `@angular/core`, and one spec comparing the
+`InjectionToken` class the package holds with the one the application imports.
+
+| Build target | `runnerConfig` | Runner config | Same `@angular/core` |
+| --- | --- | --- | --- |
+| `preserveSymlinks: true` | not set | file present | no |
+| `preserveSymlinks: true` | `true` | `server.deps.inline` | **yes** |
+| not set | `true` | `server.deps.inline` | no |
+| not set | `true` | `+ resolve.dedupe: ['@angular/core']` | **yes** |
+
+What is worth knowing before you copy it:
+
+- **It only works together with `preserveSymlinks: true` on the build target**, row 3 of the table.
+  Inlining alone moves the resolution from Node to Vite; Vite realpaths a symlink as well unless it
+  is told not to. `server.deps.inline: true` for everything changes nothing on its own.
+- **`resolve.dedupe` is the alternative** and needs no build option: `resolve: { dedupe: ['@angular/core', '@angular/common'] }`
+  merged the instances in the same probe, row 4. Contrary to a widespread note, the builder does not take
+  only the `test` section of the runner config: it carries the top-level `resolve`, `optimizeDeps`
+  and `plugins` over as well (`@angular/build` 22.1.8,
+  `src/builders/unit-test/runners/vitest/plugins.js`). `test.include`, `test.projects` and
+  `test.watch` are the options it overrides and warns about.
+- **Keep both workspaces on the same Angular patch version.** It does not fix `NG0203` by itself —
+  two directories are two instances even at equal versions — but a library built against a newer
+  patch than the application runs on is a second, harder class of bug.
+- **A real install is not affected.** Unpacked from the tarball or fetched from a registry, the
+  package sits inside the application's own `node_modules`, with no link to follow, and resolves
+  `@angular/core` from there. Measured the same way: `dist/zenit-ui` junctioned into a throwaway
+  consumer resolved `@angular/core` to the library workspace's copy, the same `dist/zenit-ui`
+  copied into it resolved to the consumer's own copy. So `server.deps.inline` is scaffolding for
+  the link phase; it does no harm afterwards, but it is not needed.
 
 ## Running it against the local build
 

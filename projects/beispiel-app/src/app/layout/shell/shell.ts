@@ -7,6 +7,7 @@ import {
   ZFooterBase,
   ZHeaderEnd,
   ZHeaderLink,
+  ZSkipLink,
   ZToastOutlet,
 } from 'zenit-ui';
 import { GUTHABEN, KUNDEN_LINKS, NUTZER } from '../../gameserver/beispieldaten';
@@ -31,11 +32,13 @@ import { ThemeControl } from '../theme-control/theme-control';
     ZFooterBase,
     ZHeaderLink,
     ZHeaderEnd,
+    ZSkipLink,
     ZToastOutlet,
   ],
   template: `
-    <!-- First tab stop of the page, visible only while focused. -->
-    <a class="app-skip body-sm z-visually-hidden" href="#inhalt">Zum Hauptinhalt springen</a>
+    <!-- First tab stop of the page, visible only while focused. The directive
+         brings the whole appearance; the application supplies text and target. -->
+    <a zSkipLink class="body-sm" href="#inhalt">Zum Hauptinhalt springen</a>
 
     <!-- Header, content and footer share the same z-container, so brand,
          page title and copyright stand on one line at every width. -->

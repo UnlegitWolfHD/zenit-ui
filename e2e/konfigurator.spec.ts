@@ -227,7 +227,7 @@ test.describe('OptionCard mit der Tastatur', () => {
     const gruppe = page.locator('z-option-group').first();
 
     // Mit Tab in die Gruppe, nicht mit focus(): genau das ist die Prüfung.
-    await page.locator('.demo-skip').focus();
+    await page.locator('.z-skip-link').focus();
     for (let i = 0; i < 40; i++) {
       await page.keyboard.press('Tab');
       const drin = await page.evaluate(() =>

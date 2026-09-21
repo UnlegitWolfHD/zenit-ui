@@ -8,6 +8,7 @@ export * from './lib/button';
 export * from './lib/badge';
 export * from './lib/field';
 export * from './lib/panel';
+export * from './lib/skip-link';
 
 export * from './lib/pakete/formulare';
 export * from './lib/pakete/navigation';

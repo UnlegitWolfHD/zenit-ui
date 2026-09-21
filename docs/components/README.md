@@ -56,6 +56,7 @@ It prints a table per file and exits non-zero on any mismatch.
 
 | Row in the API table | File                             | Summary                                                                    |
 | -------------------- | -------------------------------- | -------------------------------------------------------------------------- |
+| SkipLink (addition)  | [skip-link.md](skip-link.md)     | The first tab stop of a page, jumping past the header to the content.      |
 | Tabs                 | [tabs.md](tabs.md)               | Switches between the sub-pages of one area; every tab is a link.           |
 | Stepper              | [stepper.md](stepper.md)         | Shows where you are in a flow whose steps follow one another.              |
 | Sidebar              | [sidebar.md](sidebar.md)         | Navigation inside a server panel, a select below 900px.                    |
@@ -123,4 +124,6 @@ It prints a table per file and exits non-zero on any mismatch.
 | CostChart            | [cost-chart.md](cost-chart.md)         | Shows how flex costs grow and where the cap takes over.             |
 
 All 44 rows of the API table in `spec/guidelines/40-bibliothek.md` are covered, Icon, Spinner and
-Tooltip among them.
+Tooltip among them. SkipLink is not one of those rows: `15-zustaende.md` makes the link mandatory
+while the API table has no entry for it, and an application cannot supply it itself, so the library
+closes the gap.

@@ -439,7 +439,7 @@ async function domLesen(page: Page, wortliste: string[]) {
       }
     }
 
-    const skipLink = document.querySelector<HTMLAnchorElement>('a.demo-skip');
+    const skipLink = document.querySelector<HTMLAnchorElement>('a.z-skip-link');
     const ziel = skipLink
       ? document.getElementById((skipLink.getAttribute('href') ?? '').replace('#', ''))
       : null;

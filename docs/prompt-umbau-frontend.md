@@ -44,15 +44,23 @@ EINBINDUNG ÜBER NPM LINK (vorerst)
   `npm link zenit-ui`. Schreib dafür ein Skript "link:ui" in package.json.
 - angular.json, build.options des Projekts: "preserveSymlinks": true, sonst
   wird @angular/core doppelt aufgelöst (NG0203, inject() außerhalb des
-  Kontexts). Prüfe auch die Test-Konfiguration.
+  Kontexts). Die Unit-Tests brauchen zusätzlich
+  `test: { server: { deps: { inline: [/zenit-ui/] } } }` in der Runner-Config:
+  ein Paket aus node_modules ist extern, Vitest lässt es von Node laden, und
+  Node folgt dem Link. Beides gilt nur zusammen. Siehe docs/ng-add.md,
+  "Working against a linked build".
 - @angular/cdk in derselben Major-Version wie Angular installieren. Prüfe
   zuerst die Angular-Version dieses Repos. zenit-ui verlangt Angular 22. Ist
   das Repo älter, brich ab und sag es mir.
 - Styles in angular.json in dieser Reihenfolge vor den eigenen Styles:
-  node_modules/zenit-ui/styles/tokens.css,
-  node_modules/zenit-ui/styles/themes.css (nur falls Themes gewünscht sind),
-  node_modules/@angular/cdk/overlay-prebuilt.css,
-  node_modules/zenit-ui/styles/zenit-ui.css.
+  zenit-ui/styles/tokens.css,
+  zenit-ui/styles/themes.css (nur falls Themes gewünscht sind),
+  @angular/cdk/overlay-prebuilt.css,
+  zenit-ui/styles/zenit-ui.css.
+  Schreib den Paketnamen, nicht node_modules/zenit-ui/styles/…: der Name wird
+  über Node aufgelöst und funktioniert deshalb auch dort, wo der Ordner
+  woanders liegt, in einem git-Worktree ohne eigenes node_modules, in einem
+  Monorepo mit Hoisting und unter pnpm.
   Du kannst stattdessen `ng generate zenit-ui:ng-add` im Trockenlauf prüfen
   und dann ausführen. Kontrolliere den Diff.
 - Der Link ist eine Übergangslösung. CI kennt ihn nicht. Halte in
