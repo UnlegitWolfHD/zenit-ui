@@ -21,6 +21,8 @@ import {
   ZSidebarItem,
   ZStepper,
   ZTab,
+  ZTabGroup,
+  ZTabPanel,
   ZTabs,
 } from 'zenit-ui';
 
@@ -54,6 +56,8 @@ interface SeitenEintrag {
     ZSidebarItem,
     ZStepper,
     ZTab,
+    ZTabGroup,
+    ZTabPanel,
     ZTabs,
   ],
   template: `
@@ -78,6 +82,34 @@ interface SeitenEintrag {
         }
       </nav>
       <p class="demo-grund caption">Aktiv: {{ aktiverTab() }}</p>
+
+      <section class="demo-section">
+        <h2 class="heading-2">Tabs ohne eigene Adresse</h2>
+        <p class="demo-cap caption">
+          z-tab-group schaltet Ansichten innerhalb der Seite, ohne Route und ohne Adresse. Rollen
+          tablist, tab und tabpanel: Pfeil links und rechts wechseln sofort, Pos1 und Ende springen
+          an den Rand, nur der aktive Tab ist ein Tab-Stopp. "Pakete" ist gesperrt, weil für diesen
+          Server keine Pakete gebucht sind. Der Inhalt eines inaktiven Tabs steht nicht im Dokument.
+        </p>
+        <z-tab-group ariaLabel="Serveransichten" [(value)]="ansicht">
+          <z-tab-panel value="uebersicht" label="Übersicht">
+            <p class="demo-sub">Beispiel-Server 1, PaperMC 1.21.4, seit 4 Tagen online.</p>
+          </z-tab-panel>
+          <z-tab-panel value="apps" label="Apps">
+            <p class="demo-sub">2 Anwendungen installiert: Dynmap und EssentialsX.</p>
+          </z-tab-panel>
+          <z-tab-panel value="speicher" label="Speicher">
+            <p class="demo-sub">12,4&nbsp;GB von 40&nbsp;GB belegt.</p>
+          </z-tab-panel>
+          <z-tab-panel value="pakete" label="Pakete" disabled>
+            <p class="demo-sub">Für diesen Server sind keine Pakete gebucht.</p>
+          </z-tab-panel>
+          <z-tab-panel value="einstellungen" label="Einstellungen">
+            <p class="demo-sub">Neustart täglich um 05:00, Whitelist aus.</p>
+          </z-tab-panel>
+        </z-tab-group>
+        <p class="demo-grund caption">Gewählt: {{ ansicht() }}</p>
+      </section>
     </section>
 
     <section class="demo-section">
@@ -321,6 +353,7 @@ export class NavigationPage {
   ];
 
   protected readonly aktiverTab = signal(this.tabs[0]);
+  protected readonly ansicht = signal('uebersicht');
   protected readonly bereich = signal('Übersicht');
 
   protected waehleTab(tab: string, ereignis: Event): void {

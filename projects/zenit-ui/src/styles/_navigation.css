@@ -128,3 +128,25 @@ z-sidebar > .z-select { display: none; }
    and .z-skel carry no text at all, and the selected game tile changes only
    its outline over surface-raised. */
 .z-side__item[aria-current="page"] .z-side__count { color: var(--text-muted); }
+
+/* Addition to the reference: the in-page tab group (z-tab-group, z-tab-panel).
+   Its markup is the one Tabs/preview.html shows, so .z-tabs and .z-tab above
+   already carry it: .z-tab resets border, background and padding of a button,
+   is control-md tall and never wraps, and .z-tabs scrolls horizontally when
+   the bar does not fit. Three things the reference does not have:
+   1. The group as a grid, so the bar and the panel below it keep one gap
+      instead of a margin on a sibling (CLAUDE.md, Abstand und Layout). An
+      inactive panel carries the hidden attribute and is therefore display:
+      none and leaves no gap behind. Nothing here may set display on
+      z-tab-panel: an author rule of any specificity beats the browser's
+      [hidden], and the panel would stay visible. As a grid item it becomes a
+      block on its own.
+   2. The bar is the grid item that scrolls, so its automatic minimum size is
+      0 and five tabs cannot push the page sideways at 360px.
+   3. The locked tab as everywhere else in the library: 45 % and not-allowed
+      (15-zustaende.md). It is a natively disabled button, so the reason
+      belongs next to the group, not on the tab.
+   The focus ring is the global one from _grundlage.css, on the tab as well as
+   on the panel, which is a tab stop of its own. */
+z-tab-group { display: grid; gap: var(--space-4); }
+.z-tab:disabled { opacity: 0.45; cursor: not-allowed; }
