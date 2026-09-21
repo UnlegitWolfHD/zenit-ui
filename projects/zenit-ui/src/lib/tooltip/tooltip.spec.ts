@@ -12,6 +12,9 @@ class TooltipHost {
   readonly text = signal('Server neu starten');
 }
 
+/** Grace period of the directive between leaving and closing. */
+const NACHLAUF = 100;
+
 describe('ZTooltip', () => {
   let fixture: ComponentFixture<TooltipHost>;
   let ausloeser: HTMLButtonElement;
@@ -21,12 +24,28 @@ describe('ZTooltip', () => {
     return behaelter.getContainerElement().querySelector('.z-tooltip');
   }
 
+  function pane(): HTMLElement {
+    return behaelter.getContainerElement().querySelector('.z-tooltip-pane')!;
+  }
+
   function loese(name: string): void {
     ausloeser.dispatchEvent(new Event(name, { bubbles: name.startsWith('focus') }));
     fixture.detectChanges();
   }
 
+  function loeseAm(ziel: HTMLElement, name: string): void {
+    ziel.dispatchEvent(new Event(name));
+    fixture.detectChanges();
+  }
+
+  /** Lets the grace period run out and renders what came of it. */
+  function warteAb(): void {
+    vi.advanceTimersByTime(NACHLAUF);
+    fixture.detectChanges();
+  }
+
   beforeEach(() => {
+    vi.useFakeTimers();
     fixture = TestBed.createComponent(TooltipHost);
     behaelter = TestBed.inject(OverlayContainer);
     fixture.detectChanges();
@@ -35,6 +54,7 @@ describe('ZTooltip', () => {
 
   afterEach(() => {
     behaelter.ngOnDestroy();
+    vi.useRealTimers();
   });
 
   it('shows the panel on mouseenter and takes it back on mouseleave', () => {
@@ -43,6 +63,7 @@ describe('ZTooltip', () => {
     expect(flaeche()?.textContent?.trim()).toBe('Server neu starten');
 
     loese('mouseleave');
+    warteAb();
 
     expect(flaeche()).toBeNull();
   });
@@ -68,6 +89,7 @@ describe('ZTooltip', () => {
     expect(ausloeser.getAttribute('aria-describedby')).toBe(panel?.id);
 
     loese('mouseleave');
+    warteAb();
 
     expect(ausloeser.hasAttribute('aria-describedby')).toBe(false);
   });
@@ -125,6 +147,7 @@ describe('ZTooltip', () => {
 
     loese('mouseleave');
     loese('mouseenter');
+    warteAb();
 
     expect(behaelter.getContainerElement().querySelectorAll('.z-tooltip')).toHaveLength(1);
   });
@@ -137,5 +160,95 @@ describe('ZTooltip', () => {
     fixture.destroy();
 
     expect(flaeche()).toBeNull();
+  });
+
+  // WCAG 2.1 SC 1.4.13 "Hoverable": the panel stands 8px away on the body, so
+  // it may only close once the pointer has had the time to reach it.
+  it('keeps the panel standing during the grace period after mouseleave', () => {
+    loese('mouseenter');
+    loese('mouseleave');
+
+    vi.advanceTimersByTime(NACHLAUF - 1);
+    fixture.detectChanges();
+
+    expect(flaeche()).not.toBeNull();
+
+    vi.advanceTimersByTime(1);
+    fixture.detectChanges();
+
+    expect(flaeche()).toBeNull();
+  });
+
+  it('keeps the panel while the pointer rests on it and closes when it leaves both', () => {
+    loese('mouseenter');
+    loese('mouseleave');
+    loeseAm(pane(), 'mouseenter');
+    warteAb();
+
+    expect(flaeche()).not.toBeNull();
+
+    loeseAm(pane(), 'mouseleave');
+    warteAb();
+
+    expect(flaeche()).toBeNull();
+  });
+
+  it('does not close on mouseleave while the trigger holds the focus', () => {
+    ausloeser.focus();
+    loese('focusin');
+    loese('mouseenter');
+    loese('mouseleave');
+    warteAb();
+
+    expect(flaeche()).not.toBeNull();
+    expect(vi.getTimerCount()).toBe(0);
+
+    ausloeser.blur();
+    loese('focusout');
+
+    expect(flaeche()).toBeNull();
+  });
+
+  it('keeps the panel on focusout while the pointer still rests on it', () => {
+    loese('mouseenter');
+    loeseAm(pane(), 'mouseenter');
+    loese('focusout');
+
+    expect(flaeche()).not.toBeNull();
+  });
+
+  it('closes at once with Escape although the grace period is still running', () => {
+    loese('mouseenter');
+    loese('mouseleave');
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    fixture.detectChanges();
+
+    expect(flaeche()).toBeNull();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('clears the pending timer when the directive is destroyed', () => {
+    // Tearing an open overlay down schedules timers of the CDK itself. That is
+    // the baseline the grace period of the directive has to vanish into, so it
+    // is measured once with the grace period already cancelled.
+    loese('mouseenter');
+    loese('mouseleave');
+    loese('mouseenter');
+    fixture.destroy();
+    const grundlast = vi.getTimerCount();
+    vi.clearAllTimers();
+
+    fixture = TestBed.createComponent(TooltipHost);
+    fixture.detectChanges();
+    ausloeser = fixture.nativeElement.querySelector('button');
+    loese('mouseenter');
+    loese('mouseleave');
+
+    expect(vi.getTimerCount()).toBe(1);
+
+    fixture.destroy();
+
+    expect(vi.getTimerCount()).toBe(grundlast);
   });
 });
