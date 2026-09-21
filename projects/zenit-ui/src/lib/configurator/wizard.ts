@@ -10,6 +10,8 @@ import {
 } from '@angular/core';
 import { injectZLabels } from '../labels';
 
+let schrittZaehler = 0;
+
 /** State of one step of a `z-wizard`. */
 export type ZWizardState = 'done' | 'current' | 'locked';
 
@@ -80,8 +82,9 @@ export class ZWizard {
  * current one. A locked step renders no body at all, so nothing in it can be
  * reached by Tab. The title carries `tabindex="-1"`, so the caller can move
  * the focus onto it after "Weiter" or "Ändern". The "Ändern" buttons of a
- * wizard read differently, because the accessible name carries the title of
- * the step ("Inhalt ändern"); the visible caption stays the short word.
+ * wizard read differently, because the accessible name is built from the
+ * visible caption and the title of the step ("Ändern Inhalt"), which keeps the
+ * written word at the start of the spoken one.
  *
  * @example
  * ```html
@@ -99,23 +102,27 @@ export class ZWizard {
       <span class="z-step__num">{{ nummer() }}</span>
       @switch (headingLevel()) {
         @case (2) {
-          <h2 class="z-wstep__title" tabindex="-1">{{ title() }}</h2>
+          <h2 class="z-wstep__title" [attr.id]="titelId" tabindex="-1">{{ title() }}</h2>
         }
         @case (4) {
-          <h4 class="z-wstep__title" tabindex="-1">{{ title() }}</h4>
+          <h4 class="z-wstep__title" [attr.id]="titelId" tabindex="-1">{{ title() }}</h4>
         }
         @default {
-          <h3 class="z-wstep__title" tabindex="-1">{{ title() }}</h3>
+          <h3 class="z-wstep__title" [attr.id]="titelId" tabindex="-1">{{ title() }}</h3>
         }
       }
       @if (summary()) {
         <span class="z-wstep__summary">{{ summary() }}</span>
       }
       @if (state() === 'done') {
+        <!-- The name is built from the visible caption and the title of the
+             step, so it always starts with what is written on the button
+             (WCAG 2.5.3) even when the caller renames it. -->
         <button
           class="z-wstep__edit"
           type="button"
-          [attr.aria-label]="etiketten.wizardEditFor(title())"
+          [attr.id]="knopfId"
+          [attr.aria-labelledby]="knopfId + ' ' + titelId"
           (click)="edit.emit()"
         >
           {{ editLabel() || etiketten.wizardEdit }}
@@ -193,6 +200,8 @@ export class ZWizardStep {
   readonly edit = output<void>();
 
   protected readonly etiketten = injectZLabels();
+  protected readonly titelId = `z-wstep-t-${++schrittZaehler}`;
+  protected readonly knopfId = `z-wstep-e-${schrittZaehler}`;
   private readonly wizard = inject(ZWizard, { optional: true });
 
   /**

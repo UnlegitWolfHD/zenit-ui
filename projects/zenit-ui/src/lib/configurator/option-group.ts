@@ -3,19 +3,27 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
+  ElementRef,
   forwardRef,
   input,
   model,
   signal,
+  viewChildren,
 } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import type { FormValueControl } from '@angular/forms/signals';
 import { ZBadge, ZBadgeStatus } from '../badge';
 
-/** One card of a `z-option-group`. */
-export interface ZOption {
+/**
+ * One card of a `z-option-group`.
+ *
+ * @typeParam T The type of {@link value}. `string` for a server type, `number`
+ * for a RAM step, so the caller keeps the type it computes with.
+ */
+export interface ZOption<T extends string | number = string> {
   /** The value reported through `value`. Also the tracking key of the list. */
-  value: string;
+  value: T;
   /** The name of the option, one or two words. Shown in bold, in mono while `compact`. */
   title: string;
   /** One sentence on what the option means. Optional. */
@@ -92,6 +100,7 @@ let zaehler = 0;
       @for (option of options(); track option.value; let i = $index) {
         <label class="z-option">
           <input
+            #radio
             type="radio"
             [name]="gruppenname"
             [value]="option.value"
@@ -122,7 +131,9 @@ let zaehler = 0;
     { provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => ZOptionGroup), multi: true },
   ],
 })
-export class ZOptionGroup implements ControlValueAccessor, FormValueControl<string> {
+export class ZOptionGroup<T extends string | number = string>
+  implements ControlValueAccessor, FormValueControl<T>
+{
   /**
    * The question or the term above the cards, rendered as the `<legend>`.
    *
@@ -144,15 +155,19 @@ export class ZOptionGroup implements ControlValueAccessor, FormValueControl<stri
    *
    * @default []
    */
-  readonly options = input<readonly ZOption[]>([]);
+  readonly options = input<readonly ZOption<T>[]>([]);
 
   /**
    * The chosen option's `value`, two-way bindable. A value that matches no
-   * option leaves every card unchecked.
+   * option leaves every card unchecked, and so does the unset state: a radio
+   * group has no neutral member of `T`, so an unbound group starts out
+   * `undefined` and every card is unchecked.
    *
-   * @default ''
+   * @default undefined
    */
-  readonly value = model('');
+  // The cast is the one place where the missing empty member of T is named.
+  // It matches what the DOM does: no radio is checked.
+  readonly value = model<T>(undefined as unknown as T);
 
   /**
    * Narrow cards with the title in the mono face, for short values such as
@@ -162,22 +177,52 @@ export class ZOptionGroup implements ControlValueAccessor, FormValueControl<stri
    */
   readonly compact = input(false, { transform: booleanAttribute });
 
+  /**
+   * Locks every card of the group. Independent of the disabled state that forms
+   * set; either one is enough. A single card is locked through `disabled` on
+   * its option. Boolean attribute.
+   *
+   * @default false
+   */
+  readonly disabled = input(false, { transform: booleanAttribute });
+
   /** Unique `name` of the radios, which is what makes them one group. */
   protected readonly gruppenname = `z-options-${++zaehler}`;
 
-  /** Lock coming from forms. The group has no `disabled` input of its own. */
+  /** Lock coming from forms, independent of the `disabled` input. Either one suffices. */
   private readonly formsGesperrt = signal(false);
-  protected readonly gesperrt = computed(() => this.formsGesperrt());
+  protected readonly gesperrt = computed(() => this.disabled() || this.formsGesperrt());
 
-  private melde?: (wert: string) => void;
+  private readonly radios = viewChildren<ElementRef<HTMLInputElement>>('radio');
+  /** Bumped on every native change, so the mirror below runs again. */
+  private readonly spiegelzaehler = signal(0);
+
+  private melde?: (wert: T) => void;
   private aufBeruehrt?: () => void;
 
+  constructor() {
+    // The browser checks a radio before anyone is asked. If the caller refuses
+    // the new value, `value()` never changes and the binding has nothing to
+    // redo, so the DOM would keep a selection the model does not have. This
+    // effect writes the model back into every radio after each change, the way
+    // checkbox, toggle and slider mirror their own state (docs/signals.md).
+    effect(() => {
+      this.spiegelzaehler();
+      const wert = this.value();
+      this.options();
+      for (const radio of this.radios()) {
+        radio.nativeElement.checked = radio.nativeElement.value === String(wert);
+      }
+    });
+  }
+
   /** The reason wins over the description, the way the reference card shows it. */
-  protected satz(option: ZOption): string {
+  protected satz(option: ZOption<T>): string {
     return (option.disabled && option.disabledReason) || option.description || '';
   }
 
-  protected waehle(wert: string): void {
+  protected waehle(wert: T): void {
+    this.spiegelzaehler.update((zahl) => zahl + 1);
     if (wert === this.value()) {
       return;
     }
@@ -191,10 +236,11 @@ export class ZOptionGroup implements ControlValueAccessor, FormValueControl<stri
 
   /**
    * `ControlValueAccessor`: takes the value from the form. `null` and
-   * `undefined` become the empty string, which selects nothing.
+   * `undefined` leave every card unchecked.
    */
-  writeValue(wert: string): void {
-    this.value.set(wert ?? '');
+  writeValue(wert: T): void {
+    this.value.set(wert ?? (undefined as unknown as T));
+    this.spiegelzaehler.update((zahl) => zahl + 1);
   }
 
   /**
@@ -202,7 +248,7 @@ export class ZOptionGroup implements ControlValueAccessor, FormValueControl<stri
    * the form. It fires on a real change of the radio, not on writes through
    * {@link value}.
    */
-  registerOnChange(fn: (wert: string) => void): void {
+  registerOnChange(fn: (wert: T) => void): void {
     this.melde = fn;
   }
 

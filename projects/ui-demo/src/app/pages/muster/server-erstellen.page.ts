@@ -14,6 +14,7 @@ import {
 import { form, FormField, required, submit } from '@angular/forms/signals';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
+  ZAlert,
   ZButton,
   ZCombobox,
   ZConfig,
@@ -33,6 +34,7 @@ import {
   ZToastOutlet,
   ZToggle,
   ZWizard,
+  ZWizardActions,
   ZWizardStep,
 } from 'zenit-ui';
 import {
@@ -45,9 +47,12 @@ import {
   JAVA_VERSIONEN,
   KLASSEN,
   laufzeitOptionen,
+  MINECRAFT_GRUNDBETRAG,
   mindestRam,
   minusEuro,
   ramOptionen,
+  RAM_STUFEN,
+  RECHNER_SPIELE,
   rechnung,
   SERVER_TYPEN,
   version,
@@ -71,6 +76,7 @@ type Parameter = Record<string, string>;
   selector: 'demo-muster-server-erstellen-page',
   imports: [
     FormField,
+    ZAlert,
     ZButton,
     ZCombobox,
     ZConfig,
@@ -88,6 +94,7 @@ type Parameter = Record<string, string>;
     ZToastOutlet,
     ZToggle,
     ZWizard,
+    ZWizardActions,
     ZWizardStep,
   ],
   template: `
@@ -100,6 +107,12 @@ type Parameter = Record<string, string>;
           <z-toggle [(checked)]="preisFehlerSchalter" ariaLabelledby="demo-preisfehler" />
         </z-setting>
       </div>
+
+      @if (uebernahme(); as satz) {
+        <z-alert status="info" title="Diese Vorschau zeigt den Ablauf für Minecraft" icon="info">
+          {{ satz }}
+        </z-alert>
+      }
 
       <z-config>
         <z-wizard>
@@ -122,7 +135,6 @@ type Parameter = Record<string, string>;
                 [formField]="formular.version"
               />
             </z-field>
-            <span zWizardActions></span>
             <button zWizardActions zBtn="secondary" type="button" (click)="geheZu(2)">
               Weiter zu Größe
             </button>
@@ -219,7 +231,6 @@ type Parameter = Record<string, string>;
             </z-disclosure>
 
             <button zWizardActions zBtn="ghost" type="button" (click)="geheZu(2)">Zurück</button>
-            <span zWizardActions></span>
           </z-wizard-step>
         </z-wizard>
 
@@ -282,12 +293,12 @@ export class MusterServerErstellenPage {
   /**
    * The whole form is one Signal Form over one model signal, and every derived
    * value is a `computed` over it. The price logic itself lives in
-   * `konfigurator-daten.ts` as pure functions.
+   * `konfigurator-daten.ts` as pure functions. Numbers stay numbers: the option
+   * groups are typed on their value, so nothing is converted on the way in or
+   * out.
    */
   protected readonly werte = signal({
     ...VORGABE,
-    ramGb: String(VORGABE.ramGb),
-    tage: String(VORGABE.tage),
     name: '',
     verlaengern: true,
     build: '',
@@ -312,22 +323,27 @@ export class MusterServerErstellenPage {
   /** The voucher that is really applied, not what stands in the field. */
   private readonly gutscheinCode = signal('');
 
+  /** What the price calculator last came back with, and what the page shows. */
+  private readonly bestaetigterPreis = signal('');
+  /** Set when the selection arrived from the calculator with another game. */
+  private readonly uebernommenesSpiel = signal('');
+
   private rechenTimer?: ReturnType<typeof setTimeout>;
   private pruefTimer?: ReturnType<typeof setTimeout>;
 
-  /** The selection as the pure functions want it, with the numbers as numbers. */
+  /** The selection as the pure functions want it. */
   private readonly auswahl = computed<DemoAuswahl>(() => {
-    const { typ, version: v, ramGb, klasse, tage, bezahlung } = this.werte();
-    return { typ, version: v, ramGb: Number(ramGb), klasse, tage: Number(tage), bezahlung };
+    const { typ, version: v, ramGb, klasse, tage, bezahlung, grundbetrag } = this.werte();
+    return { typ, version: v, ramGb, klasse, tage, bezahlung, grundbetrag };
   });
 
   protected readonly ramStufen = computed(() => ramOptionen(this.werte().version));
   protected readonly laufzeiten = computed(() =>
-    laufzeitOptionen(this.werte().klasse, this.auswahl().ramGb),
+    laufzeitOptionen(this.werte().klasse, this.werte().ramGb, this.werte().grundbetrag),
   );
 
   /** The raise that has happened, so the sentence about it can stand still. */
-  private readonly angehoben = signal<{ version: string; gb: string } | null>(null);
+  private readonly angehoben = signal<{ version: string; gb: number } | null>(null);
 
   /**
    * The one sentence about a choice that moved another. It stands as long as
@@ -343,9 +359,31 @@ export class MusterServerErstellenPage {
     return `Auf ${ramGb}\u00a0GB angehoben, weil ${version(v).kurz} das verlangt`;
   });
 
-  protected readonly summenLabel = computed(() => `Minecraft, alle ${this.werte().tage}\u00a0Tage`);
+  /** What the calculator handed over, once, above the wizard. */
+  protected readonly uebernahme = computed(() => {
+    const spiel = this.uebernommenesSpiel();
+    if (!spiel) {
+      return '';
+    }
+    const { klasse, ramGb, tage } = this.werte();
+    const klassenname = this.klassen.find((e) => e.value === klasse)?.title ?? '';
+    return (
+      `Für ${spiel} gibt es hier noch keinen eigenen Ablauf. Übernommen sind ` +
+      `${ramGb}\u00a0GB, ${klassenname} und ${tage}\u00a0Tage; Server-Typ und Version ` +
+      `gehören zu Minecraft. Wechsle im Preisrechner zurück, wenn du ${spiel} wolltest.`
+    );
+  });
+
   private readonly summe = computed(() => rechnung(this.auswahl(), this.gutscheinCode()));
-  protected readonly preisText = computed(() => euro(this.summe().summe));
+
+  /**
+   * The number on screen. While a calculation runs it is the last one that came
+   * back, never the new one in muted grey: a price a customer reads has been
+   * confirmed.
+   */
+  protected readonly preisText = computed(() =>
+    this.preisLaedt() ? this.bestaetigterPreis() : euro(this.summe().summe),
+  );
 
   /** Whether anything is taken off, which is what a sum line is there for. */
   private readonly mitRabatt = computed(
@@ -355,16 +393,16 @@ export class MusterServerErstellenPage {
   // One fact, one place: without a deduction the sum is the price in the head
   // already, so neither the sum nor the price before the discount gets a line.
   protected readonly summenZeile = computed(() =>
-    this.mitRabatt() ? { label: 'Summe', value: this.preisText() } : null,
+    this.mitRabatt() ? { label: 'Summe', value: euro(this.summe().summe) } : null,
   );
 
   protected readonly posten = computed<ZPriceLine[]>(() => {
-    const { typ, version: v, klasse, tage } = this.werte();
+    const { typ, version: v, klasse, tage, ramGb } = this.werte();
     const zahl = this.summe();
     const zeilen: ZPriceLine[] = [
       { label: 'Typ', value: this.typen.find((e) => e.value === typ)?.title ?? '' },
       { label: 'Version', value: version(v).label },
-      { label: 'Arbeitsspeicher', value: `${angehobenerRam(this.auswahl().ramGb, v)}\u00a0GB` },
+      { label: 'Arbeitsspeicher', value: `${angehobenerRam(ramGb, v)}\u00a0GB` },
       {
         label: 'Leistungsklasse',
         value: this.klassen.find((e) => e.value === klasse)?.title ?? '',
@@ -372,7 +410,7 @@ export class MusterServerErstellenPage {
       { label: 'Laufzeit', value: `${tage}\u00a0Tage` },
     ];
     if (this.mitRabatt()) {
-      zeilen.push({ label: `Preis f\u00fcr ${tage}\u00a0Tage`, value: euro(zahl.vorRabatt) });
+      zeilen.push({ label: `Preis für ${tage}\u00a0Tage`, value: euro(zahl.vorRabatt) });
     }
     if (zahl.laufzeitrabatt) {
       zeilen.push({
@@ -391,14 +429,22 @@ export class MusterServerErstellenPage {
     return zeilen;
   });
 
-  /** Everything the order needs, before the order button opens. */
+  /**
+   * Everything the order needs before the button opens: the last step, a
+   * payment method, and a price that has come back. An unconfirmed price is not
+   * a price to order on.
+   */
   protected readonly bestellbar = computed(
-    () => this.schritt() === 3 && !!this.werte().bezahlung && !this.preisFehler(),
+    () =>
+      this.schritt() === 3 && !!this.werte().bezahlung && !this.preisFehler() && !this.preisLaedt(),
   );
 
   protected readonly hinweisText = computed(() => {
     if (this.preisFehler()) {
       return 'Der Preis steht noch nicht fest.';
+    }
+    if (this.preisLaedt()) {
+      return 'Der Preis wird neu berechnet.';
     }
     if (!this.werte().bezahlung) {
       return 'Wähle noch eine Bezahlmethode';
@@ -409,6 +455,8 @@ export class MusterServerErstellenPage {
     return 'Nach Stunden abgerechnet, jederzeit kündbar.';
   });
 
+  protected readonly summenLabel = computed(() => `Minecraft, alle ${this.werte().tage}\u00a0Tage`);
+
   protected readonly kurzInhalt = computed(
     () =>
       `${this.typen.find((e) => e.value === this.werte().typ)?.title}, ${version(this.werte().version).label}`,
@@ -416,7 +464,7 @@ export class MusterServerErstellenPage {
 
   protected readonly kurzGroesse = computed(
     () =>
-      `${angehobenerRam(this.auswahl().ramGb, this.werte().version)}\u00a0GB, ` +
+      `${angehobenerRam(this.werte().ramGb, this.werte().version)}\u00a0GB, ` +
       `${this.klassen.find((e) => e.value === this.werte().klasse)?.title}`,
   );
 
@@ -436,26 +484,26 @@ export class MusterServerErstellenPage {
 
   constructor() {
     this.ausUrl();
+    this.bestaetigterPreis.set(euro(this.summe().summe));
 
     // The URL carries the whole selection, so a link is shareable and a reload
     // brings the state back, step included.
     effect(() => {
       const parameter = this.alsParameter();
-      untracked(
-        () =>
-          void this.router.navigate([], {
-            relativeTo: this.route,
-            queryParams: parameter,
-            queryParamsHandling: 'merge',
-            replaceUrl: true,
-          }),
-      );
+      untracked(() => {
+        void this.router.navigate([], {
+          relativeTo: this.route,
+          queryParams: parameter,
+          queryParamsHandling: 'merge',
+          replaceUrl: true,
+        });
+      });
     });
 
-    // A price that is recomputed shows the last number with a spinner, never a
-    // dash. The delay is simulated; a real page would wait for its service. The
-    // first run is skipped: the page opens with a price that is already right
-    // and would otherwise start out loading for no reason.
+    // A price that is recomputed shows the last confirmed number with a
+    // spinner, never a dash and never the new number before it is confirmed.
+    // The delay is simulated; a real page would wait for its service. The first
+    // run is skipped: the page opens with a price that is already right.
     let ersterLauf = true;
     effect(() => {
       this.preisSchluessel();
@@ -473,7 +521,7 @@ export class MusterServerErstellenPage {
     // visible, and ramHinweis() says why it happened.
     effect(() => {
       const { ramGb, version: v } = this.werte();
-      const echt = String(angehobenerRam(Number(ramGb), v));
+      const echt = angehobenerRam(ramGb, v);
       if (echt !== ramGb) {
         untracked(() => {
           this.formular.ramGb().value.set(echt);
@@ -536,7 +584,11 @@ export class MusterServerErstellenPage {
     this.preisLaedt.set(true);
     this.rechenTimer = setTimeout(() => {
       this.preisLaedt.set(false);
-      this.preisFehler.set(this.preisFehlerSchalter());
+      const fehlgeschlagen = this.preisFehlerSchalter();
+      this.preisFehler.set(fehlgeschlagen);
+      if (!fehlgeschlagen) {
+        this.bestaetigterPreis.set(euro(this.summe().summe));
+      }
     }, RECHENDAUER);
   }
 
@@ -553,6 +605,7 @@ export class MusterServerErstellenPage {
       this.werte().klasse,
       this.werte().ramGb,
       this.werte().tage,
+      this.werte().grundbetrag,
       this.gutscheinCode(),
       this.preisFehlerSchalter(),
     ].join('|'),
@@ -563,11 +616,12 @@ export class MusterServerErstellenPage {
     return {
       typ,
       version: v,
-      ram: ramGb,
+      ram: String(ramGb),
       klasse,
-      tage,
+      tage: String(tage),
       bezahlung: bezahlung || 'offen',
       schritt: String(this.schritt()),
+      spiel: this.uebernommenesSpiel() || 'minecraft',
     };
   });
 
@@ -579,23 +633,34 @@ export class MusterServerErstellenPage {
 
     const gewaehlteVersion = einer(VERSIONEN, p.get('version')) || VORGABE.version;
     const ramParameter = Number(p.get('ram'));
-    const ram = ramOptionen(gewaehlteVersion).some(
-      (o) => o.value === String(ramParameter) && !o.disabled,
-    )
-      ? ramParameter
-      : mindestRam(gewaehlteVersion);
+    const istStufe = RAM_STUFEN.some((stufe) => stufe.gb === ramParameter);
+    const ram = istStufe ? ramParameter : mindestRam(gewaehlteVersion);
+    const angehobenerWert = angehobenerRam(ram, gewaehlteVersion);
     const tage = [30, 90, 180].includes(Number(p.get('tage')))
       ? Number(p.get('tage'))
       : VORGABE.tage;
+
+    // A raise that comes in through the URL is a raise too, and the sentence
+    // under the field has to say so: without this the price would silently be
+    // one step above what the link asked for.
+    if (istStufe && angehobenerWert !== ram) {
+      this.angehoben.set({ version: gewaehlteVersion, gb: angehobenerWert });
+    }
+
+    const spiel = RECHNER_SPIELE.find((eintrag) => eintrag.titel === p.get('spiel'));
+    if (spiel) {
+      this.uebernommenesSpiel.set(spiel.titel);
+    }
 
     this.werte.update((alt) => ({
       ...alt,
       typ: einer(SERVER_TYPEN, p.get('typ')) || VORGABE.typ,
       version: gewaehlteVersion,
-      ramGb: String(angehobenerRam(ram, gewaehlteVersion)),
+      ramGb: angehobenerWert,
       klasse: einer(KLASSEN, p.get('klasse')) || VORGABE.klasse,
-      tage: String(tage),
+      tage,
       bezahlung: einer(BEZAHLMETHODEN, p.get('bezahlung')),
+      grundbetrag: spiel?.grundbetrag ?? MINECRAFT_GRUNDBETRAG,
     }));
     const schritt = Number(p.get('schritt'));
     this.schritt.set([1, 2, 3].includes(schritt) ? schritt : 1);

@@ -63,9 +63,11 @@ describe('ZWizard', () => {
     expect(erster.querySelector('.z-wstep__body')).toBeNull();
 
     const knopf = erster.querySelector('.z-wstep__edit') as HTMLButtonElement;
+    const titel = erster.querySelector('.z-wstep__title') as HTMLElement;
     expect(knopf.textContent?.trim()).toBe('Ändern');
-    // The accessible name carries the step, so several of them stay apart.
-    expect(knopf.getAttribute('aria-label')).toBe('Inhalt ändern');
+    // The name is the visible caption plus the step, so it starts with what is
+    // written on the button (WCAG 2.5.3) and stays distinguishable.
+    expect(knopf.getAttribute('aria-labelledby')).toBe(`${knopf.id} ${titel.id}`);
 
     knopf.click();
     fixture.detectChanges();
@@ -119,6 +121,8 @@ describe('ZWizard', () => {
     const knopf = schritte(fixture)[0].querySelector('.z-wstep__edit') as HTMLElement;
 
     expect(knopf.textContent?.trim()).toBe('Change');
-    expect(knopf.getAttribute('aria-label')).toBe('Change Inhalt');
+    // Still built from the caption, so a renamed button renames its own name.
+    const titel = schritte(fixture)[0].querySelector('.z-wstep__title') as HTMLElement;
+    expect(knopf.getAttribute('aria-labelledby')).toBe(`${knopf.id} ${titel.id}`);
   });
 });

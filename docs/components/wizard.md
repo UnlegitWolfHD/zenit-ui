@@ -56,7 +56,6 @@ The three steps, with the summary next to them:
       (edit)="geheZu(1)"
     >
       <z-option-group legend="Server-Typ" [options]="typen" [(value)]="typ" />
-      <span zWizardActions></span>
       <button zWizardActions zBtn="secondary" type="button" (click)="geheZu(2)">
         Weiter zu Größe
       </button>
@@ -129,8 +128,9 @@ state belongs on `z-price-summary`.
   effect.
 - The title carries `tabindex="-1"`, so the caller can move the focus onto it after "Weiter" or
   "Ändern". That is what makes the keyboard follow the content.
-- Every "Ändern" button reads differently, because its accessible name carries the step
-  ("Inhalt ändern"); the visible caption stays the short word.
+- Every "Ändern" button reads differently, because its accessible name is built from the visible
+  caption and the title of the step through `aria-labelledby`. The spoken name therefore starts
+  with the written one (WCAG 2.5.3) even when `editLabel` renames the button.
 
 ## Responsive
 
@@ -163,6 +163,9 @@ reference stylesheet.
 
 - Addition to the reference: `.z-wstep__actions:empty` is hidden, because the action row is a slot
   and a step without actions would otherwise spend the `space-5` gap of the body on an empty div.
+- Addition to the reference: a single action is pushed to the right with `margin-inline-start:
+  auto`, and a single ghost action stays on the left, so a step with only "Weiter" or only
+  "Zurück" needs no spacer element.
 - Addition to the reference: below 640px `.z-wstep__edit` is at least `--control-md` tall.
 
 ## Do / Don't

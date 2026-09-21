@@ -50,8 +50,10 @@ export interface ZPriceTotal {
  *
  * Accessibility: the `<aside>` is a complementary landmark named by
  * {@link label}; without a label it carries no `aria-label`. The `<dl>` ties
- * every item to its amount, and the price carries `aria-busy` while it is
- * being recomputed.
+ * every item to its amount. The price is a polite live region, so a changed
+ * amount is announced instead of only redrawn; while {@link loading} holds it
+ * also carries `aria-busy` and the caller keeps the last confirmed number
+ * there, so nothing unconfirmed is ever read out.
  *
  * Never show it empty: on load the cheapest game is preselected. All values
  * come from the price service and are never hard-coded.
@@ -79,9 +81,15 @@ export interface ZPriceTotal {
         @if (label()) {
           <div class="z-summary__label">{{ label() }}</div>
         }
+        <!-- A price that changes has to be heard, not just seen. The region is
+             always in the markup and only its text changes; while the
+             calculation runs it says nothing, so only a confirmed amount is
+             announced. -->
         <div
           class="z-summary__price"
           [class.z-summary__price--pending]="loading()"
+          aria-live="polite"
+          aria-atomic="true"
           [attr.aria-busy]="loading() ? 'true' : null"
         >
           {{ price() }} <small>{{ period() }}</small>

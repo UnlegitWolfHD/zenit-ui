@@ -161,6 +161,22 @@ describe('ZPriceSummary: Zustände', () => {
     expect(preis.querySelector('z-spinner')).not.toBeNull();
   });
 
+  it('announces the price politely, and stays silent while it loads', () => {
+    const { aside, host, rendere } = baue();
+    const preis = aside.querySelector('.z-summary__price') as HTMLElement;
+
+    // The region exists before the first change, which is what makes a later
+    // change announce itself at all.
+    expect(preis.getAttribute('aria-live')).toBe('polite');
+    expect(preis.getAttribute('aria-atomic')).toBe('true');
+
+    host.laedt.set(true);
+    rendere();
+
+    // aria-busy holds the announcement back until the amount is confirmed.
+    expect(preis.getAttribute('aria-busy')).toBe('true');
+  });
+
   it('shows a danger alert with the retry button when the price fails', () => {
     const { aside, host, rendere } = baue();
 

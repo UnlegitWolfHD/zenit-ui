@@ -1,8 +1,11 @@
 import {
+  afterRenderEffect,
   ChangeDetectionStrategy,
   Component,
   computed,
+  DestroyRef,
   ElementRef,
+  inject,
   input,
   numberAttribute,
   signal,
@@ -11,6 +14,7 @@ import {
 import { injectZLabels } from '../labels';
 import {
   Z_CHART_AREA,
+  zCostArea,
   zCostAt,
   zCostGeometry,
   zCostHourAt,
@@ -61,11 +65,11 @@ let zaehler = 0;
     <div class="z-chart__figures">
       <div class="z-chart__figure">
         <span>{{ etiketten.chartPerHour }}</span
-        ><strong>{{ etiketten.chartMoney(rate()) }}</strong>
+        ><strong>{{ etiketten.chartMoney(stundenpreis()) }}</strong>
       </div>
       <div class="z-chart__figure">
         <span>{{ etiketten.chartCapPerMonth }}</span
-        ><strong>{{ etiketten.chartMoney(cap()) }}</strong>
+        ><strong>{{ etiketten.chartMoney(deckelBetrag()) }}</strong>
       </div>
     </div>
 
@@ -74,6 +78,7 @@ let zaehler = 0;
       class="z-chart__plot"
       tabindex="0"
       role="slider"
+      aria-orientation="horizontal"
       [attr.aria-label]="etiketten.chartTitle"
       aria-valuemin="0"
       [attr.aria-valuemax]="geometrie().maxHours"
@@ -86,7 +91,7 @@ let zaehler = 0;
       (keydown)="aufTaste($event)"
     >
       <svg
-        [attr.viewBox]="'0 0 ' + flaeche.width + ' ' + flaeche.height"
+        [attr.viewBox]="'0 0 ' + flaeche().width + ' ' + flaeche().height"
         role="img"
         focusable="false"
         [attr.aria-labelledby]="titelId + ' ' + beschreibungId"
@@ -97,14 +102,14 @@ let zaehler = 0;
         @for (tick of geometrie().valueTicks; track tick.value) {
           <line
             class="z-chart__grid"
-            [attr.x1]="flaeche.x0"
-            [attr.x2]="flaeche.x1"
+            [attr.x1]="flaeche().x0"
+            [attr.x2]="flaeche().x1"
             [attr.y1]="tick.pos"
             [attr.y2]="tick.pos"
           />
           <text
             class="z-chart__axis"
-            [attr.x]="flaeche.x0 - 8"
+            [attr.x]="flaeche().x0 - 8"
             [attr.y]="tick.pos + 4"
             text-anchor="end"
           >
@@ -116,7 +121,7 @@ let zaehler = 0;
             class="z-chart__axis"
             [class.z-chart__axis--half]="i % 2 === 1"
             [attr.x]="tick.pos"
-            [attr.y]="flaeche.y0 + 24"
+            [attr.y]="flaeche().y0 + 24"
             [attr.text-anchor]="letzte ? 'end' : 'middle'"
           >
             {{ etiketten.chartAxisHours(tick.value) }}
@@ -126,8 +131,8 @@ let zaehler = 0;
         @if (geometrie().capY !== null) {
           <line
             class="z-chart__cap"
-            [attr.x1]="flaeche.x0"
-            [attr.x2]="flaeche.x1"
+            [attr.x1]="flaeche().x0"
+            [attr.x2]="flaeche().x1"
             [attr.y1]="geometrie().capY"
             [attr.y2]="geometrie().capY"
           />
@@ -140,17 +145,24 @@ let zaehler = 0;
             [attr.cy]="geometrie().capY"
             r="5"
           />
-          <text
-            class="z-chart__label"
-            [attr.x]="geometrie().capX"
-            [attr.y]="(geometrie().capY ?? 0) - 15"
-            text-anchor="middle"
-          >
-            {{ etiketten.chartCapLabel(knickStunde()) }}
-          </text>
+          @if (knickStunde() > 0) {
+            <text
+              class="z-chart__label"
+              [attr.x]="geometrie().capX"
+              [attr.y]="(geometrie().capY ?? 0) - 15"
+              [attr.text-anchor]="knickAnker()"
+            >
+              {{ etiketten.chartCapLabel(knickStunde()) }}
+            </text>
+          }
         }
-        <text class="z-chart__label" [attr.x]="flaeche.x0 + 8" [attr.y]="geometrie().baseY + 16">
-          {{ etiketten.chartBaseLabel(base()) }}
+        <text
+          class="z-chart__label"
+          [attr.x]="flaeche().x0 + 8"
+          [attr.y]="grundY()"
+          text-anchor="start"
+        >
+          {{ etiketten.chartBaseLabel(grundbetrag()) }}
         </text>
 
         @if (zeiger()) {
@@ -158,19 +170,14 @@ let zaehler = 0;
             class="z-chart__cross"
             [attr.x1]="zeigerX()"
             [attr.x2]="zeigerX()"
-            [attr.y1]="flaeche.y1"
-            [attr.y2]="flaeche.y0"
+            [attr.y1]="flaeche().y1"
+            [attr.y2]="flaeche().y0"
           />
           <circle class="z-chart__marker" [attr.cx]="zeigerX()" [attr.cy]="zeigerY()" r="5" />
         }
       </svg>
       @if (zeiger()) {
-        <div
-          class="z-chart__tip"
-          [class.z-chart__tip--flip]="zeigerX() > flaeche.width * 0.6"
-          [style.left.%]="(zeigerX() / flaeche.width) * 100"
-          [style.top.%]="tipOben()"
-        >
+        <div #tip class="z-chart__tip" [style.left.px]="tipLinks()" [style.top.px]="tipOben()">
           {{ etiketten.chartPlayed(stunde()) }}:
           <strong>{{ etiketten.chartMoney(kostenJetzt()) }}</strong>
         </div>
@@ -201,7 +208,13 @@ let zaehler = 0;
                       : stunden
                   }}
                 </td>
-                <td class="z-table__num">{{ etiketten.chartMoney(kostenBei(stunden)) }}</td>
+                <td class="z-table__num">
+                  {{
+                    etiketten.chartMoney(
+                      letzte && geometrie().capHour !== null ? deckelBetrag() : kostenBei(stunden)
+                    )
+                  }}
+                </td>
               </tr>
             }
           </tbody>
@@ -252,31 +265,72 @@ export class ZCostChart {
   readonly caption = input('');
 
   protected readonly etiketten = injectZLabels();
-  protected readonly flaeche = Z_CHART_AREA;
   protected readonly titelId = `z-chart-t-${++zaehler}`;
   protected readonly beschreibungId = `z-chart-d-${zaehler}`;
 
   private readonly plot = viewChild.required<ElementRef<HTMLElement>>('plot');
+  private readonly tip = viewChild<ElementRef<HTMLElement>>('tip');
 
-  /** Hour under the cursor. Also `aria-valuenow`, so it always holds a number. */
-  protected readonly stunde = signal(0);
+  /** Measured width of the plot. One viewBox unit is one pixel of it. */
+  private readonly breite = signal(Z_CHART_AREA.width);
+  /** Measured width of the tooltip, so it can be kept inside the plot. */
+  private readonly tipBreite = signal(0);
+
+  /** The hour the cursor asks for, before the axis has its say. */
+  private readonly gewaehlteStunde = signal(0);
   /** Whether cross, dot and tooltip are shown: on hover and while focused. */
   protected readonly zeiger = signal(false);
 
+  protected readonly flaeche = computed(() => zCostArea(this.breite()));
+
   protected readonly geometrie = computed(() =>
-    zCostGeometry(this.base(), this.rate(), this.cap(), this.maxHours()),
+    zCostGeometry(this.base(), this.rate(), this.cap(), this.maxHours(), this.breite()),
   );
 
-  protected readonly knickStunde = computed(() => Math.round(this.geometrie().capHour ?? 0));
-
-  protected readonly satz = computed(() =>
-    this.etiketten.chartDesc(
-      this.base(),
-      this.rate(),
-      this.cap(),
-      Math.round(this.geometrie().capHour ?? this.geometrie().maxHours),
-    ),
+  /**
+   * The hour under the cursor, clamped to the axis. A shrinking `maxHours`
+   * would otherwise leave `aria-valuenow` past `aria-valuemax`.
+   */
+  protected readonly stunde = computed(() =>
+    Math.min(Math.max(this.gewaehlteStunde(), 0), this.geometrie().maxHours),
   );
+
+  // Rounded up, like the table: the cap holds from the hour the line reaches it.
+  protected readonly knickStunde = computed(() => Math.ceil(this.geometrie().capHour ?? 0));
+
+  /** The cap label leaves the plot at the right edge unless the anchor moves. */
+  protected readonly knickAnker = computed(() => {
+    const flaeche = this.flaeche();
+    const x = this.geometrie().capX ?? 0;
+    if (x > flaeche.x1 - 80) {
+      return 'end';
+    }
+    return x < flaeche.x0 + 80 ? 'start' : 'middle';
+  });
+
+  /**
+   * The base label sits under the start of the line, and above it where the
+   * line starts so low that the label would fall out of the plot.
+   */
+  protected readonly grundY = computed(() => {
+    const y = this.geometrie().baseY;
+    return y + 16 > this.flaeche().y0 + 4 ? y - 8 : y + 16;
+  });
+
+  /**
+   * The sentence for the screen reader. Without a cap on the axis it must not
+   * claim one, so a second label carries that case. Every number goes through
+   * the same guard the drawing uses, so no label ever reads "NaN".
+   */
+  protected readonly satz = computed(() => {
+    const geo = this.geometrie();
+    const grund = this.zahl(this.base());
+    const preis = this.zahl(this.rate());
+    if (geo.capHour === null) {
+      return this.etiketten.chartDescOpen(grund, preis);
+    }
+    return this.etiketten.chartDesc(grund, preis, this.zahl(this.cap()), this.knickStunde());
+  });
 
   protected readonly kostenJetzt = computed(() => this.kostenBei(this.stunde()));
 
@@ -285,15 +339,66 @@ export class ZCostChart {
       `${this.etiketten.chartPlayed(this.stunde())}: ${this.etiketten.chartMoney(this.kostenJetzt())}`,
   );
 
-  protected readonly zeigerX = computed(() => zCostX(this.stunde(), this.geometrie().maxHours));
+  protected readonly zeigerX = computed(() =>
+    zCostX(this.stunde(), this.geometrie().maxHours, this.flaeche()),
+  );
   protected readonly zeigerY = computed(() =>
-    zCostY(this.kostenJetzt(), this.geometrie().maxValue),
+    zCostY(this.kostenJetzt(), this.geometrie().maxValue, this.flaeche()),
   );
 
-  /** Keeps the tooltip inside the plot: above the dot, never past the top edge. */
-  protected readonly tipOben = computed(() =>
-    Math.max(0, ((this.zeigerY() - 36) / Z_CHART_AREA.height) * 100),
-  );
+  /** Beside the cursor, and inside the plot: measured, not guessed. */
+  protected readonly tipLinks = computed(() => {
+    const abstand = 8;
+    const breite = this.flaeche().width;
+    const tip = this.tipBreite();
+    const rechts = this.zeigerX() + abstand;
+    const links = this.zeigerX() - tip - abstand;
+    return Math.max(0, rechts + tip > breite ? Math.min(links, breite - tip) : rechts);
+  });
+
+  /** Above the dot, never past the top edge of the plot. */
+  protected readonly tipOben = computed(() => Math.max(0, this.zeigerY() - 36));
+
+  constructor() {
+    // The viewBox follows the measured width, so one unit stays one pixel and
+    // the 12px axis type is 12px at 360px too. ResizeObserver is missing on the
+    // server and in a test environment without layout; the chart then keeps the
+    // width of the reference, which is what it renders with anyway.
+    const beobachter =
+      typeof ResizeObserver === 'undefined'
+        ? undefined
+        : new ResizeObserver((eintraege) => {
+            for (const eintrag of eintraege) {
+              const breite = eintrag.contentRect.width;
+              if (eintrag.target === this.plot().nativeElement) {
+                this.breite.set(breite);
+              } else {
+                this.tipBreite.set(breite);
+              }
+            }
+          });
+
+    afterRenderEffect(() => {
+      const tip = this.tip()?.nativeElement;
+      beobachter?.observe(this.plot().nativeElement);
+      if (tip) {
+        beobachter?.observe(tip);
+      } else {
+        this.tipBreite.set(0);
+      }
+    });
+
+    inject(DestroyRef).onDestroy(() => beobachter?.disconnect());
+  }
+
+  /** Not NaN, not infinite, not negative: what a label may be handed. */
+  private zahl(wert: number): number {
+    return Number.isFinite(wert) && wert > 0 ? wert : 0;
+  }
+
+  protected readonly grundbetrag = computed(() => this.zahl(this.base()));
+  protected readonly stundenpreis = computed(() => this.zahl(this.rate()));
+  protected readonly deckelBetrag = computed(() => this.zahl(this.cap()));
 
   protected kostenBei(stunden: number): number {
     return zCostAt(this.base(), this.rate(), this.cap(), stunden);
@@ -304,9 +409,9 @@ export class ZCostChart {
     if (!kasten.width) {
       return;
     }
-    const { x0, x1, width } = Z_CHART_AREA;
-    const inViewBox = ((ereignis.clientX - kasten.left) / kasten.width) * width;
-    this.stunde.set(zCostHourAt((inViewBox - x0) / (x1 - x0), this.geometrie().maxHours));
+    const { x0, x1 } = this.flaeche();
+    const inViewBox = ereignis.clientX - kasten.left;
+    this.gewaehlteStunde.set(zCostHourAt((inViewBox - x0) / (x1 - x0), this.geometrie().maxHours));
     this.zeiger.set(true);
   }
 
@@ -326,7 +431,7 @@ export class ZCostChart {
       return;
     }
     ereignis.preventDefault();
-    this.stunde.set(Math.min(Math.max(ziel[ereignis.key], 0), grenze));
+    this.gewaehlteStunde.set(Math.min(Math.max(ziel[ereignis.key], 0), grenze));
     this.zeiger.set(true);
   }
 }

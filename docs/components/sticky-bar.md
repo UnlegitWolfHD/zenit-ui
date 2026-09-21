@@ -70,8 +70,14 @@ The bar itself has no loading, error or disabled state. The button inside carrie
 
 ## Accessibility
 
-The bar is a plain container; the button inside is an ordinary tab stop and the last element of the
-page in reading order. It casts no shadow and no blur, so nothing about it is only a visual layer.
+The bar covers the bottom of the viewport, so a control focused behind it would be invisible
+(WCAG 2.4.11). It measures itself into the custom property `--z-stickybar` on the document, and the
+stylesheet turns that into `scroll-padding-bottom` and into room below the content, so the browser
+scrolls a focused element clear of the bar instead of behind it. The height is therefore nowhere a
+literal.
+
+Otherwise the bar is a plain container; the button inside is an ordinary tab stop and the last
+element of the page in reading order. It casts no shadow and no blur, so nothing about it is only a visual layer.
 Since it overlaps the page while scrolling, it stays one row tall.
 
 ## Responsive
@@ -95,6 +101,9 @@ for the padding. The 20px price type is a literal value from the reference style
 
 - Addition to the reference: the bottom padding grows by `env(safe-area-inset-bottom, 0px)`, which
   the StickyBar README asks for and `bundle.css` does not carry.
+- Addition to the reference: below 900px a page that holds a `z-stickybar--mobile` gets
+  `scroll-padding-bottom` and the `z-config` above the bar gets a matching bottom padding, both
+  from the measured `--z-stickybar`, so no tab stop ends up behind the bar.
 
 ## Do / Don't
 

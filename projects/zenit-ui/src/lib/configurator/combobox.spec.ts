@@ -114,7 +114,8 @@ describe('ZCombobox', () => {
     expect(eingabe.getAttribute('role')).toBe('combobox');
     expect(eingabe.getAttribute('aria-autocomplete')).toBe('list');
     expect(eingabe.getAttribute('aria-expanded')).toBe('false');
-    expect(eingabe.getAttribute('aria-controls')).toMatch(/^z-listbox-\d+$/);
+    // No aria-controls while there is no panel: it would point at nothing.
+    expect(eingabe.hasAttribute('aria-controls')).toBe(false);
     expect(eingabe.hasAttribute('aria-activedescendant')).toBe(false);
     expect(eingabe.id).toBe('cb-test');
     // The label of the surrounding z-field names the field, its hint describes it.
@@ -230,21 +231,85 @@ describe('ZCombobox', () => {
     expect(document.activeElement).toBe(feld(fixture));
   });
 
-  it('takes an entry on click without losing the focus', () => {
+  it('keeps the focus in the field wherever the pointer lands in the panel', () => {
     const fixture = TestBed.createComponent(ModellHost);
     fixture.detectChanges();
     oeffne(fixture);
-    const nieder = new MouseEvent('mousedown', { bubbles: true, cancelable: true });
-    zeilen()[3].dispatchEvent(nieder);
 
-    // Cancelling mousedown is what keeps the focus in the field.
-    expect(nieder.defaultPrevented).toBe(true);
+    // Not only an entry: the scrollbar, a heading and the empty row are part of
+    // the panel too, and each of them would otherwise blur the field.
+    for (const ziel of [
+      zeilen()[3],
+      panel() as HTMLElement,
+      document.querySelector('.z-listbox__group') as HTMLElement,
+    ]) {
+      const nieder = new MouseEvent('mousedown', { bubbles: true, cancelable: true });
+      ziel.dispatchEvent(nieder);
+      expect(nieder.defaultPrevented).toBe(true);
+    }
 
     zeilen()[3].click();
     fixture.detectChanges();
 
     expect(fixture.componentInstance.version()).toBe('25w14a');
     expect(document.activeElement).toBe(feld(fixture));
+  });
+
+  it('keeps Escape to itself while the panel is open', () => {
+    const fixture = TestBed.createComponent(ModellHost);
+    fixture.detectChanges();
+    const gesehen: string[] = [];
+    const horcher = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        gesehen.push(e.key);
+      }
+    };
+    document.addEventListener('keydown', horcher);
+    oeffne(fixture);
+    taste(fixture, 'Escape');
+
+    // A dialog around the field listens further up; the key stops here.
+    expect(gesehen).toEqual([]);
+
+    taste(fixture, 'Escape');
+
+    // Closed, the key belongs to whatever is around it again.
+    expect(gesehen).toEqual(['Escape']);
+    document.removeEventListener('keydown', horcher);
+  });
+
+  it('names the count of matches in a live region', () => {
+    const fixture = TestBed.createComponent(ModellHost);
+    fixture.detectChanges();
+    const region: HTMLElement = fixture.nativeElement.querySelector('[role="status"]');
+
+    expect(region.classList.contains('z-visually-hidden')).toBe(true);
+    expect(region.textContent?.trim()).toBe('');
+
+    oeffne(fixture);
+    expect(region.textContent?.trim()).toBe('4 Treffer');
+
+    tippe(fixture, '1.2');
+    expect(region.textContent?.trim()).toBe('2 Treffer');
+
+    tippe(fixture, 'gibt es nicht');
+    expect(region.textContent?.trim()).toBe('Keine Version gefunden');
+  });
+
+  it('puts entries of the same group under one heading, wherever they stand', () => {
+    const fixture = TestBed.createComponent(ModellHost);
+    fixture.componentInstance.versionen.set([
+      { value: 'a', label: 'a', group: 'Aktuell' },
+      { value: 'b', label: 'b', group: 'Ältere' },
+      { value: 'c', label: 'c', group: 'Aktuell' },
+    ]);
+    fixture.detectChanges();
+    oeffne(fixture);
+
+    expect(
+      Array.from(document.querySelectorAll('.z-listbox__group')).map((k) => k.textContent?.trim()),
+    ).toEqual(['Aktuell', 'Ältere']);
+    expect(namen()).toEqual(['a', 'c', 'b']);
   });
 
   it('closes on Escape without clearing, and a second Escape takes nothing away', () => {

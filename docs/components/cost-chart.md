@@ -43,8 +43,8 @@ label registry (`chartTitle`, `chartDesc`, `chartMoney`, `chartPlayed`, …), so
 another language sets them once; see [Labels](../labels.md).
 
 The arithmetic is exported as pure functions: `zCostAt`, `zCostCapHour`, `zCostStep`, `zCostTicks`,
-`zCostGeometry`, `zCostTableHours`, `zCostHourAt`, `zCostX`, `zCostY` and the drawing area
-`Z_CHART_AREA`.
+`zCostHourStep`, `zCostGeometry`, `zCostTableHours`, `zCostHourAt`, `zCostX`, `zCostY`, plus
+`zCostArea` and the default drawing area `Z_CHART_AREA`.
 
 ## Examples
 
@@ -98,8 +98,12 @@ const knick = Math.round(zCostCapHour(1.5, 0.088, 10.3) ?? 0); // 100
 | Table  | the same numbers as a real `<table>`                                      | opening "Als Tabelle"        |
 
 Edge cases are handled in the arithmetic, not in the template: a rate of 0 draws a flat line and no
-cap point, a cap at or below the base caps from hour 0, a cap past the axis draws no cap point, and
-`maxHours` at or below 0 becomes 1. Nothing ever renders `NaN`.
+cap point, a cap at or below the base caps from hour 0, a cap past the axis draws no cap point and
+puts the sentence without a cap clause into `<desc>`, and `maxHours` at or below 0 becomes 1. Every
+number a label is handed goes through the same guard the drawing uses, so nothing ever renders
+`NaN` or `Infinity`. The cap hour is rounded up, because the cap holds from the hour the line
+reaches it, and the division is rounded to a millionth first so 8,8 / 0,088 stays 100 instead of
+becoming 101.
 
 ## Accessibility
 
@@ -109,8 +113,11 @@ cap point, a cap at or below the base caps from hour 0, a cap past the axis draw
   `role="slider"` over the hours, which is exactly the keyboard contract the chart offers: left and
   right move the hour by about a thirtieth of the axis, Home and End jump to the ends, and
   `aria-valuenow`, `aria-valuemin`, `aria-valuemax` and `aria-valuetext` carry the reading
-  ("50 h gespielt: 5,90 €"). A `role="img"` on an element that answers arrow keys would announce a
-  picture and hand over a control.
+  ("50 h gespielt: 5,90 €"), with `aria-orientation="horizontal"`. A `role="img"` on an element
+  that answers arrow keys would announce a picture and hand over a control. The table below the
+  chart is the full alternative to it, directly underneath.
+- The hour is clamped to the axis, so `aria-valuenow` never stands past `aria-valuemax` when
+  `maxHours` shrinks.
 - The hit area is the whole plot, pointer and focus show the same cursor, and the tooltip stays
   inside the plot.
 - Below the chart the caption says the chart in words, and "Als Tabelle" opens the same numbers as
@@ -119,8 +126,10 @@ cap point, a cap at or below the base caps from hour 0, a cap past the axis draw
 
 ## Responsive
 
-The SVG has a `viewBox` and fills its container, so it scales instead of reflowing. Below 480px
-every second hour tick steps aside, so the axis stays readable at 360px.
+The chart measures its plot and builds the `viewBox` from that width, so one viewBox unit is one
+CSS pixel and the 12px axis type is 12px at 360px too. It never scales, so it needs no breakpoint
+of its own: the time axis thins its ticks out by the width it has (about 110px per label), and
+below 240px it keeps that minimum rather than shrinking the type.
 
 ## Rendered classes and tokens
 
@@ -151,10 +160,8 @@ and the 5px marker radius are literal values from the reference stylesheet.
   padding that the preview writes as an inline style; a library component carries no inline styles.
 - Addition to the reference: `.z-chart__plot:focus-visible` gets the 2px ring, because the plot is
   a tab stop.
-- Addition to the reference: `.z-chart__tip` and `.z-chart__tip--flip` carry the offset next to the
-  cursor that the reference script writes as an inline transform, so the tooltip stays inside the
-  plot on the right half.
-- Addition to the reference: below 480px `.z-chart__axis--half` hides every second hour tick.
+- The tooltip is placed in pixels from the measured widths of plot and tooltip, so it stays inside
+  the plot at every width. The reference script writes the same offset as an inline transform.
 
 ## Do / Don't
 

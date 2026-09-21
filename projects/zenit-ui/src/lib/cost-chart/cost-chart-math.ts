@@ -5,21 +5,48 @@
  * testable on its own and the component stays a template.
  */
 
-/** The drawing area of the reference (CostChart/preview.html), in viewBox units. */
-export const Z_CHART_AREA = {
-  /** Width of the viewBox. */
-  width: 520,
-  /** Height of the viewBox. */
-  height: 240,
+/** The drawing area of a chart, in viewBox units, which are CSS pixels. */
+export interface ZChartArea {
+  /** Width of the viewBox, which is the measured width of the plot. */
+  width: number;
+  /** Height of the viewBox. Fixed, so the type never scales. */
+  height: number;
   /** Left edge of the plot, where the value axis stands. */
-  x0: 48,
+  x0: number;
   /** Right edge of the plot. */
-  x1: 508,
+  x1: number;
   /** Baseline of the plot, the zero of the value axis. */
-  y0: 200,
+  y0: number;
   /** Top edge of the plot. */
+  y1: number;
+}
+
+/**
+ * The drawing area of the reference (CostChart/preview.html). It is the width
+ * the chart draws with before it has measured itself.
+ */
+export const Z_CHART_AREA: ZChartArea = {
+  width: 520,
+  height: 240,
+  x0: 48,
+  x1: 508,
+  y0: 200,
   y1: 20,
-} as const;
+};
+
+/**
+ * The drawing area for a measured width. One viewBox unit is one CSS pixel, so
+ * the 12px axis type renders at 12px at every width instead of shrinking with
+ * a fixed viewBox.
+ *
+ * @param width Measured width of the plot in CSS pixels.
+ * @returns The area; below 240px the chart keeps that minimum and its
+ * container scrolls rather than the type becoming unreadable.
+ */
+export function zCostArea(width: number): ZChartArea {
+  const breite = Math.max(240, Number.isFinite(width) && width > 0 ? width : Z_CHART_AREA.width);
+  return { ...Z_CHART_AREA, width: breite, x1: breite - 12 };
+}
 
 /** One tick of an axis: what it says and where it sits. */
 export interface ZChartTick {
@@ -31,6 +58,8 @@ export interface ZChartTick {
 
 /** Everything the template of `z-cost-chart` draws, in viewBox units. */
 export interface ZChartGeometry {
+  /** The drawing area this geometry was built for. */
+  area: ZChartArea;
   /** Hours the time axis runs to, at least 1. */
   maxHours: number;
   /** Value the value axis runs to, always above the highest cost drawn. */
@@ -63,12 +92,35 @@ function zahl(wert: number): number {
  *
  * @param hours The hour; outside the axis it is clamped to its edge.
  * @param maxHours Hours the axis runs to.
+ * @param area The drawing area, from {@link zCostArea}.
  * @returns The `x` in viewBox units.
  */
-export function zCostX(hours: number, maxHours: number): number {
-  const { x0, x1 } = Z_CHART_AREA;
+export function zCostX(hours: number, maxHours: number, area: ZChartArea = Z_CHART_AREA): number {
   const spanne = Math.max(1, zahl(maxHours));
-  return x0 + (Math.min(Math.max(zahl(hours), 0), spanne) / spanne) * (x1 - x0);
+  return area.x0 + (Math.min(Math.max(zahl(hours), 0), spanne) / spanne) * (area.x1 - area.x0);
+}
+
+/**
+ * The distance between two ticks of the time axis, wide enough that the labels
+ * do not collide: every label needs about 64px of room.
+ *
+ * @param maxHours Hours the axis runs to.
+ * @param plotWidth Width of the plot between the two axes, in pixels.
+ * @returns The step, always greater than 0.
+ */
+export function zCostHourStep(maxHours: number, plotWidth: number): number {
+  const stunden = Math.max(1, zahl(maxHours));
+  // One label needs about 110px of room, ticks included, so at 520px four of
+  // them fit and at 360px the axis thins itself out instead of colliding.
+  const hoechstens = Math.max(2, Math.round(zahl(plotWidth) / 110) + 1);
+  let schritt = zCostStep(stunden / Math.max(1, hoechstens - 1));
+  // A round step can still yield one tick too many; the next round step up
+  // thins the axis without giving up the round numbers.
+  while (Math.floor(stunden / schritt) + 1 > hoechstens) {
+    schritt = zCostStep(schritt * 2.5);
+  }
+  // Hours are whole: a quarter-hour tick would read "0.25 h".
+  return Math.max(1, schritt);
 }
 
 /**
@@ -78,10 +130,9 @@ export function zCostX(hours: number, maxHours: number): number {
  * @param maxValue Amount the axis runs to.
  * @returns The `y` in viewBox units.
  */
-export function zCostY(value: number, maxValue: number): number {
-  const { y0, y1 } = Z_CHART_AREA;
+export function zCostY(value: number, maxValue: number, area: ZChartArea = Z_CHART_AREA): number {
   const spanne = Math.max(Number.EPSILON, zahl(maxValue));
-  return y0 - (Math.min(Math.max(zahl(value), 0), spanne) / spanne) * (y0 - y1);
+  return area.y0 - (Math.min(Math.max(zahl(value), 0), spanne) / spanne) * (area.y0 - area.y1);
 }
 
 /**
@@ -128,7 +179,9 @@ export function zCostCapHour(base: number, rate: number, cap: number): number | 
   if (preis <= 0) {
     return null;
   }
-  return (deckel - grund) / preis;
+  // Rounded to a millionth: (10,30 - 1,50) / 0,088 lands on 100.00000000000001
+  // in binary floating point, and a cap hour of "101" would follow from it.
+  return Math.round(((deckel - grund) / preis) * 1e6) / 1e6;
 }
 
 /**
@@ -185,7 +238,9 @@ export function zCostGeometry(
   rate: number,
   cap: number,
   maxHours: number,
+  width: number = Z_CHART_AREA.width,
 ): ZChartGeometry {
+  const area = zCostArea(width);
   const stunden = Math.max(1, zahl(maxHours));
   const grund = zahl(base);
   const deckel = zahl(cap);
@@ -196,8 +251,8 @@ export function zCostGeometry(
   // the cap has room and never leaves the plot.
   const maxValue = Math.max(hoechste + wertSchritt / 2, wertSchritt);
 
-  const x = (h: number) => zCostX(h, stunden);
-  const y = (v: number) => zCostY(v, maxValue);
+  const x = (h: number) => zCostX(h, stunden, area);
+  const y = (v: number) => zCostY(v, maxValue, area);
 
   const knick = zCostCapHour(base, rate, cap);
   const knickSichtbar = knick !== null && knick <= stunden;
@@ -207,9 +262,10 @@ export function zCostGeometry(
   }
   punkte.push(`${x(stunden)},${y(zCostAt(base, rate, cap, stunden))}`);
 
-  const stundenSchritt = zCostStep(stunden / 3);
+  const stundenSchritt = zCostHourStep(stunden, area.x1 - area.x0);
 
   return {
+    area,
     maxHours: stunden,
     maxValue,
     capHour: knickSichtbar ? knick : null,
@@ -232,7 +288,10 @@ export function zCostGeometry(
  * @returns The hours in ascending order, without duplicates.
  */
 export function zCostTableHours(capHour: number | null, maxHours: number): number[] {
-  const ende = capHour !== null && capHour > 0 ? Math.round(capHour) : Math.round(zahl(maxHours));
+  // Rounded up, not to the nearest: the cap holds from the hour the line
+  // reaches it, and 2,2 h rounded down to 2 would name an hour that still
+  // costs less than the cap.
+  const ende = capHour !== null && capHour > 0 ? Math.ceil(capHour) : Math.ceil(zahl(maxHours));
   const stufen = [0, Math.round(ende / 4), Math.round(ende / 2), ende];
   return [...new Set(stufen)].sort((a, b) => a - b);
 }

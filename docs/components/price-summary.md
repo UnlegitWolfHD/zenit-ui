@@ -155,8 +155,10 @@ never shown empty.
 - The line items are a `<dl>` of `<dt>`/`<dd>` pairs, which ties every item to its amount.
 - The period is in a `<small>` after the price, so price and period are read together.
 - The button inside is the only primary button of the calculator.
-- While the price is recomputed it carries `aria-busy="true"`, so the number is announced as
-  pending instead of as the final amount.
+- The price is a polite live region (`aria-live="polite"`, `aria-atomic="true"`) that is always in
+  the markup, so a changed amount is announced instead of only redrawn. While it is recomputed it
+  also carries `aria-busy="true"`, and the caller keeps the last confirmed number there, so nothing
+  unconfirmed is ever read out.
 
 ## Responsive
 

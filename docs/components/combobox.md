@@ -49,7 +49,7 @@ No content projection. Forms: implements `ControlValueAccessor` and has the shap
 In a `z-field`, which is where the label and the hint come from:
 
 ```html
-<z-field label="Minecraft-Version" for="cb-version" hint="Leer lassen für die neueste Version.">
+<z-field label="Minecraft-Version" for="cb-version" hint="Tippen filtert die Liste.">
   <z-combobox
     inputId="cb-version"
     [options]="versionen"
@@ -108,6 +108,15 @@ There is no loading state. An error belongs on the surrounding `z-field`.
   `aria-describedby` for hint and error.
 - No match renders one row instead of an empty panel, as a locked `role="option"`, so the listbox
   keeps a valid child and the sentence is announced.
+- A visually hidden `role="status"` beside the field carries the number of matches, or the empty
+  sentence. It is always in the markup and only its text changes, which is the one way a screen
+  reader hears the size of a list it cannot see.
+- `aria-controls` is only present while the panel is: a reference to a missing id is worse than
+  none.
+- While the panel is open Escape belongs to the panel and stops there, so a dialog around the
+  field does not close along with it.
+- Entries of the same `group` land under one heading whatever their order in `options`, so a name
+  never appears twice.
 
 ## Responsive
 
@@ -137,6 +146,10 @@ for the active entry, `--border` for the frame, `--text-muted` for headings and 
 - Addition to the reference: `.z-combo:has(.z-input:disabled)::after` dims the chevron, which would
   otherwise stand at full strength next to a field at 45 percent.
 - Addition to the reference: below 640px `.z-listbox__option` is at least `--control-md` tall.
+- The whole panel cancels its `mousedown`, not only an entry: the scrollbar, a heading and the
+  empty row are part of it too, and each of them would otherwise take the focus out of the field.
+- The panel closes when the field is scrolled out of view (`autoClose` on the reposition scroll
+  strategy) and follows the width of the field on a window resize.
 
 ## Do / Don't
 

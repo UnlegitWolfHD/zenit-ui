@@ -1,6 +1,14 @@
-import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  signal,
+  untracked,
+} from '@angular/core';
 import { form, FormField } from '@angular/forms/signals';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import {
   ZButton,
   ZConfig,
@@ -16,7 +24,6 @@ import {
   ZPriceSummary,
   ZStickyBar,
 } from 'zenit-ui';
-import { SPIELE } from './beispieldaten';
 import {
   ENTHALTEN,
   euro,
@@ -28,6 +35,7 @@ import {
   minusEuro,
   proZeitraum,
   RAM_STUFEN,
+  RECHNER_SPIELE,
   rechnung,
   VORGABE,
 } from './konfigurator-daten';
@@ -47,8 +55,8 @@ const ABRECHNUNGEN: ZOption[] = [
 ];
 
 /** The RAM steps without a version rule: this page orders nothing yet. */
-const RAM_OPTIONEN: ZOption[] = RAM_STUFEN.map((stufe) => ({
-  value: String(stufe.gb),
+const RAM_OPTIONEN: ZOption<number>[] = RAM_STUFEN.map((stufe) => ({
+  value: stufe.gb,
   title: `${stufe.gb}\u00a0GB`,
   description: stufe.spieler,
   badge: stufe.gb === 4 ? 'Empfohlen' : undefined,
@@ -130,7 +138,7 @@ const RAM_OPTIONEN: ZOption[] = RAM_STUFEN.map((stufe) => ({
             [formField]="rechner.abrechnung"
           />
 
-          @if (werte().abrechnung === 'flex') {
+          @if (istFlex()) {
             <div class="demo-diagramm">
               <z-cost-chart
                 [base]="flexGrund"
@@ -150,7 +158,7 @@ const RAM_OPTIONEN: ZOption[] = RAM_STUFEN.map((stufe) => ({
             [period]="zeitraumText()"
             [lines]="posten()"
             [total]="summenZeile()"
-            note="Beispielrechnung dieser Vorschau: 1,74 € Grundbetrag plus Leistungsklasse je GB. Keine gültigen Preise."
+            note="Beispielrechnung dieser Vorschau: Grundbetrag des Spiels plus Leistungsklasse je GB. Keine gültigen Preise."
             legalNote="Gemäß § 19 UStG wird keine Umsatzsteuer berechnet."
           >
             <a
@@ -175,51 +183,63 @@ const RAM_OPTIONEN: ZOption[] = RAM_STUFEN.map((stufe) => ({
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MusterPreisrechnerPage {
-  protected readonly spiele = SPIELE;
+  protected readonly spiele = RECHNER_SPIELE;
   protected readonly klassen = KLASSEN;
   protected readonly ramOptionen = RAM_OPTIONEN;
   protected readonly abrechnungen = ABRECHNUNGEN;
   protected readonly enthalten = ENTHALTEN;
   protected readonly flexGrund = FLEX_GRUNDBETRAG;
 
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+
   /** One form for the whole page: no steps, every default valid. */
   protected readonly werte = signal({
-    spiel: 'Valheim',
+    spiel: RECHNER_SPIELE[1].titel,
     klasse: VORGABE.klasse,
-    ramGb: String(VORGABE.ramGb),
-    tage: String(VORGABE.tage),
+    ramGb: VORGABE.ramGb,
+    tage: VORGABE.tage,
     abrechnung: 'monat',
   });
   protected readonly rechner = form(this.werte);
 
-  private readonly ramZahl = computed(() => Number(this.werte().ramGb));
-  private readonly monatspreis = computed(() => proZeitraum(this.werte().klasse, this.ramZahl()));
-
-  protected readonly laufzeiten = computed(() =>
-    laufzeitOptionen(this.werte().klasse, this.ramZahl()),
+  private readonly grundbetrag = computed(
+    () =>
+      RECHNER_SPIELE.find((spiel) => spiel.titel === this.werte().spiel)?.grundbetrag ??
+      RECHNER_SPIELE[0].grundbetrag,
   );
 
-  protected readonly stundenpreis = computed(() => flexStundenpreis(this.ramZahl()));
+  private readonly monatspreis = computed(() =>
+    proZeitraum(this.grundbetrag(), this.werte().klasse, this.werte().ramGb),
+  );
+
+  protected readonly laufzeiten = computed(() =>
+    laufzeitOptionen(this.werte().klasse, this.werte().ramGb, this.grundbetrag()),
+  );
+
+  protected readonly stundenpreis = computed(() => flexStundenpreis(this.werte().ramGb));
   protected readonly deckel = computed(() => flexDeckel(this.monatspreis()));
 
   private readonly summe = computed(() =>
     rechnung({
       ...VORGABE,
-      klasse: this.werte().klasse,
-      ramGb: this.ramZahl(),
       version: '1.20.1',
-      tage: Number(this.werte().tage),
+      klasse: this.werte().klasse,
+      ramGb: this.werte().ramGb,
+      tage: this.werte().tage,
+      grundbetrag: this.grundbetrag(),
     }),
   );
 
-  private readonly istFlex = computed(() => this.werte().abrechnung === 'flex');
+  protected readonly istFlex = computed(() => this.werte().abrechnung === 'flex');
 
   protected readonly preisText = computed(() =>
     euro(this.istFlex() ? this.deckel() : this.summe().summe),
   );
 
+  // One unit across the page: days, never a month next to it.
   protected readonly zeitraumText = computed(() =>
-    this.istFlex() ? 'höchstens im Monat' : `/ ${this.werte().tage}\u00a0Tage`,
+    this.istFlex() ? 'höchstens je 30\u00a0Tage' : `/ ${this.werte().tage}\u00a0Tage`,
   );
 
   protected readonly summenLabel = computed(
@@ -243,7 +263,7 @@ export class MusterPreisrechnerPage {
         label: 'Leistungsklasse',
         value: this.klassen.find((e) => e.value === this.werte().klasse)?.title ?? '',
       },
-      { label: 'Arbeitsspeicher', value: `${this.ramZahl()}\u00a0GB` },
+      { label: 'Arbeitsspeicher', value: `${this.werte().ramGb}\u00a0GB` },
     ];
     if (this.istFlex()) {
       zeilen.push({ label: 'Grundbetrag', value: euro(FLEX_GRUNDBETRAG) });
@@ -253,11 +273,9 @@ export class MusterPreisrechnerPage {
     zeilen.push({ label: 'Laufzeit', value: `${this.werte().tage}\u00a0Tage` });
     if (this.mitRabatt()) {
       zeilen.push({
-        label: `Preis f\u00fcr ${this.werte().tage}\u00a0Tage`,
+        label: `Preis für ${this.werte().tage}\u00a0Tage`,
         value: euro(zahl.vorRabatt),
       });
-    }
-    if (zahl.laufzeitrabatt) {
       zeilen.push({
         label: 'Laufzeitrabatt',
         value: minusEuro(zahl.laufzeitrabatt),
@@ -270,21 +288,61 @@ export class MusterPreisrechnerPage {
   protected readonly diagrammSatz = computed(() => {
     const klasse = this.klassen.find((e) => e.value === this.werte().klasse)?.title ?? '';
     return (
-      `${klasse} mit ${this.ramZahl()}\u00a0GB: ${euro(FLEX_GRUNDBETRAG)} Grundbetrag plus ` +
-      `${euro(this.stundenpreis())} je Stunde, nie mehr als ${euro(this.deckel())} im Monat.`
+      `${klasse} mit ${this.werte().ramGb}\u00a0GB: ${euro(FLEX_GRUNDBETRAG)} Grundbetrag plus ` +
+      `${euro(this.stundenpreis())} je Stunde, nie mehr als ${euro(this.deckel())} je 30\u00a0Tage.`
     );
   });
 
   protected readonly kurzAlles = computed(
     () =>
-      `${this.werte().spiel}, ${this.ramZahl()}\u00a0GB, ` +
+      `${this.werte().spiel}, ${this.werte().ramGb}\u00a0GB, ` +
       (this.istFlex() ? 'Flex' : `alle ${this.werte().tage}\u00a0Tage`),
   );
 
   /** The whole selection, as the order page reads it back. */
   protected readonly uebergabe = computed(() => ({
+    spiel: this.werte().spiel,
     klasse: this.werte().klasse,
-    ram: this.werte().ramGb,
-    tage: this.werte().tage,
+    ram: String(this.werte().ramGb),
+    tage: String(this.werte().tage),
+    abrechnung: this.werte().abrechnung,
   }));
+
+  constructor() {
+    this.ausUrl();
+
+    // The calculator carries its selection in the URL too, so a link is
+    // shareable and a reload keeps what was chosen.
+    effect(() => {
+      const parameter = this.uebergabe();
+      untracked(() => {
+        void this.router.navigate([], {
+          relativeTo: this.route,
+          queryParams: parameter,
+          queryParamsHandling: 'merge',
+          replaceUrl: true,
+        });
+      });
+    });
+  }
+
+  /** Reads the query parameters, and falls back to the valid default for each. */
+  private ausUrl(): void {
+    const p = this.route.snapshot.queryParamMap;
+    const spiel = RECHNER_SPIELE.find((eintrag) => eintrag.titel === p.get('spiel'));
+    const ram = Number(p.get('ram'));
+    const tage = Number(p.get('tage'));
+    const abrechnung = p.get('abrechnung');
+
+    this.werte.update((alt) => ({
+      ...alt,
+      spiel: spiel?.titel ?? alt.spiel,
+      klasse: KLASSEN.some((e) => e.value === p.get('klasse'))
+        ? (p.get('klasse') as string)
+        : alt.klasse,
+      ramGb: RAM_STUFEN.some((stufe) => stufe.gb === ram) ? ram : alt.ramGb,
+      tage: [30, 90, 180].includes(tage) ? tage : alt.tage,
+      abrechnung: abrechnung === 'flex' || abrechnung === 'monat' ? abrechnung : alt.abrechnung,
+    }));
+  }
 }

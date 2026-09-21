@@ -1,6 +1,7 @@
 // Type-only, so the module carries no import at runtime and a plain vitest run
 // of the spec beside it needs no path alias.
 import type { ZComboOption, ZOption } from 'zenit-ui';
+import { SPIELE } from './beispieldaten';
 
 /*
  * Example data and the whole price and rule logic of the two configurator
@@ -12,8 +13,11 @@ import type { ZComboOption, ZOption } from 'zenit-ui';
  * before the sum is built.
  */
 
-/** Base amount of an order per 30 days, before the performance class. */
-const GRUNDBETRAG = 1.74;
+/**
+ * Base amount of a Minecraft order per 30 days, before the performance class.
+ * Every game has one; this is the one the order page runs on.
+ */
+export const MINECRAFT_GRUNDBETRAG = 1.74;
 
 /** Base amount per month of the flex calculation, independent of the size. */
 export const FLEX_GRUNDBETRAG = 1.5;
@@ -59,6 +63,9 @@ export const KLASSEN: ZOption[] = [
 
 /** Price per GB and 30 days of each performance class. */
 const KLASSENPREIS: Record<string, number> = { budget: 1.25, normal: 1.5 };
+
+/** The smallest RAM step, which is what an "ab" price is built on. */
+export const KLEINSTE_RAM_STUFE = 2;
 
 /** The RAM steps of the example, with the player counts from the preview. */
 export const RAM_STUFEN = [
@@ -144,6 +151,17 @@ export const BEZAHLMETHODEN: ZOption[] = [
   { value: 'guthaben', title: 'Guthaben', description: 'Aus deinem Konto.' },
 ];
 
+/**
+ * The games of the calculator with the base amount they carry. The tile price
+ * is not written down: it is the smallest combination that can really be
+ * ordered, so the "ab" on the tile and the summary can never drift apart.
+ */
+export const RECHNER_SPIELE = SPIELE.map((spiel) => ({
+  titel: spiel.titel,
+  grundbetrag: spiel.grundpreis,
+  preis: `ab ${euro(proZeitraum(spiel.grundpreis, 'budget', KLEINSTE_RAM_STUFE))} / 30\u00a0Tage`,
+}));
+
 /** The three terms with their discount. */
 export const LAUFZEITEN = [
   { tage: 30, rabatt: 0 },
@@ -181,9 +199,11 @@ export interface DemoAuswahl {
   tage: number;
   /** Value of a `BEZAHLMETHODEN` entry, empty until it is chosen. */
   bezahlung: string;
+  /** Base amount of the game per 30 days. */
+  grundbetrag: number;
 }
 
-/** The parts of a price, all unrounded. */
+/** The parts of a price, each already rounded to the cent. */
 export interface DemoRechnung {
   /** Price of 30 days before any discount. */
   proZeitraum: number;
@@ -205,6 +225,7 @@ export const VORGABE: DemoAuswahl = {
   klasse: 'normal',
   tage: 30,
   bezahlung: '',
+  grundbetrag: MINECRAFT_GRUNDBETRAG,
 };
 
 /**
@@ -251,11 +272,11 @@ export function angehobenerRam(ramGb: number, wert: string): number {
  * @param wert The value of a version.
  * @returns The cards in ascending order.
  */
-export function ramOptionen(wert: string): ZOption[] {
+export function ramOptionen(wert: string): ZOption<number>[] {
   const eintrag = version(wert);
   const empfohlen = angehobenerRam(eintrag.mindestRam, wert);
   return RAM_STUFEN.map((stufe) => ({
-    value: String(stufe.gb),
+    value: stufe.gb,
     title: `${stufe.gb}\u00a0GB`,
     description: stufe.spieler,
     badge: stufe.gb === empfohlen ? 'Empfohlen' : undefined,
@@ -273,11 +294,15 @@ export function ramOptionen(wert: string): ZOption[] {
  * @param ramGb Chosen RAM in GB.
  * @returns The cards in ascending order.
  */
-export function laufzeitOptionen(klasse: string, ramGb: number): ZOption[] {
+export function laufzeitOptionen(
+  klasse: string,
+  ramGb: number,
+  grundbetrag = MINECRAFT_GRUNDBETRAG,
+): ZOption<number>[] {
   return LAUFZEITEN.map(({ tage, rabatt }) => ({
-    value: String(tage),
+    value: tage,
     title: `${tage}\u00a0Tage`,
-    price: euro(rechnung({ ...VORGABE, klasse, ramGb, tage }).summe),
+    price: euro(rechnung({ ...VORGABE, klasse, ramGb, tage, grundbetrag }).summe),
     badge: rabatt ? `−${Math.round(rabatt * 100)}\u00a0%` : undefined,
     badgeStatus: 'success' as const,
   }));
@@ -317,15 +342,22 @@ export function gutscheinFehler(code: string): string {
   return ABGELAUFEN[oben] ?? 'Diesen Code gibt es nicht. Prüfe die Schreibweise.';
 }
 
+/** Rounds to the cent. Every part of a price goes through this once. */
+export function cent(betrag: number): number {
+  return Math.round(betrag * 100) / 100;
+}
+
 /**
- * The price of 30 days: base amount plus the performance class per GB.
+ * The price of 30 days: the base amount of the game plus the performance class
+ * per GB.
  *
+ * @param grundbetrag Base amount of the game per 30 days.
  * @param klasse Value of a performance class.
  * @param ramGb Chosen RAM in GB.
- * @returns The amount, unrounded.
+ * @returns The amount, rounded to the cent.
  */
-export function proZeitraum(klasse: string, ramGb: number): number {
-  return GRUNDBETRAG + (KLASSENPREIS[klasse] ?? KLASSENPREIS['normal']) * ramGb;
+export function proZeitraum(grundbetrag: number, klasse: string, ramGb: number): number {
+  return cent(grundbetrag + (KLASSENPREIS[klasse] ?? KLASSENPREIS['normal']) * ramGb);
 }
 
 /**
@@ -337,16 +369,22 @@ export function proZeitraum(klasse: string, ramGb: number): number {
  * @returns Every part of the price, unrounded.
  */
 export function rechnung(auswahl: DemoAuswahl, gutscheinCode = ''): DemoRechnung {
-  const einZeitraum = proZeitraum(auswahl.klasse, angehobenerRam(auswahl.ramGb, auswahl.version));
-  const vorRabatt = einZeitraum * (auswahl.tage / 30);
-  const laufzeitrabatt = vorRabatt * laufzeitRabatt(auswahl.tage);
-  const gutschein = einZeitraum * gutscheinRabatt(gutscheinCode);
+  // Every part is rounded to the cent before the sum is built, so the lines a
+  // customer reads really add up to the amount below them.
+  const einZeitraum = proZeitraum(
+    auswahl.grundbetrag,
+    auswahl.klasse,
+    angehobenerRam(auswahl.ramGb, auswahl.version),
+  );
+  const vorRabatt = cent(einZeitraum * (auswahl.tage / 30));
+  const laufzeitrabatt = cent(vorRabatt * laufzeitRabatt(auswahl.tage));
+  const gutschein = cent(einZeitraum * gutscheinRabatt(gutscheinCode));
   return {
     proZeitraum: einZeitraum,
     vorRabatt,
     laufzeitrabatt,
     gutschein,
-    summe: vorRabatt - laufzeitrabatt - gutschein,
+    summe: cent(vorRabatt - laufzeitrabatt - gutschein),
   };
 }
 

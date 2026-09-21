@@ -26,6 +26,7 @@ Selector: `z-input-action`
 | Input         | Type      | Default | Description                                                          |
 | ------------- | --------- | ------- | -------------------------------------------------------------------- |
 | `label`       | `string`  | `''`    | Visible label above the field. "(optional)" belongs in here.         |
+| `ariaLabel`   | `string`  | `''`    | Accessible name where `label` is empty. A visible label wins over it. |
 | `actionLabel` | `string`  | `''`    | Caption of the button, a verb: "Einlösen", "Prüfen", "Hinzufügen".   |
 | `value`       | `string`  | `''`    | What stands in the field, two-way bindable through `[(value)]`.      |
 | `success`     | `string`  | `''`    | The effect of a successful check, in `success`.                      |
@@ -35,7 +36,7 @@ Selector: `z-input-action`
 
 | Output        | Payload  | Fires when                                                               |
 | ------------- | -------- | ------------------------------------------------------------------------ |
-| `action`      | `string` | the button is pressed or Enter is hit, with the current value            |
+| `action`      | `string` | the button is pressed or Enter is hit, with the **trimmed** value        |
 | `valueChange` | `string` | the field is typed in (the `model()` companion)                          |
 
 No content projection.
@@ -102,6 +103,9 @@ Checking a subdomain:
 
 - The label is a real `<label for>`, never only a placeholder, and "(optional)" belongs in it.
 - Enter in the field triggers the button, but not on an empty field and not while `loading` holds.
+- Without a visible label the field takes `ariaLabel`, so it is never an unnamed control.
+- The payload of `action` is the trimmed value, which is the one the component checked for
+  emptiness a line earlier.
 - Success and error are always in the DOM as live regions, `role="status"` and `role="alert"`, so a
   sentence that appears later is announced instead of arriving silently. Both are tied to the field
   through `aria-describedby`; an error also sets `aria-invalid="true"`.

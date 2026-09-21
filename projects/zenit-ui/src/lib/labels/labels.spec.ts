@@ -51,14 +51,24 @@ describe('Z_LABELS', () => {
     // they are compared by their result instead.
     expect(Z_LABELS_DE.wizardEditFor('Inhalt')).toBe('Inhalt ändern');
     expect(Z_LABELS_EN.wizardEditFor('Content')).toBe('Change Content');
-    expect(Z_LABELS_DE.chartMoney(5.9)).toBe('5,90 €');
+    expect(Z_LABELS_DE.chartMoney(5.9)).toBe('5,90\u00a0€');
     expect(Z_LABELS_EN.chartMoney(5.9)).toBe('€5.90');
-    expect(Z_LABELS_DE.chartAxisMoney(10)).toBe('10 €');
-    expect(Z_LABELS_DE.chartAxisHours(100)).toBe('100 h');
-    expect(Z_LABELS_DE.chartPlayed(50)).toBe('50 h gespielt');
-    expect(Z_LABELS_EN.chartPlayed(50)).toBe('50 h played');
-    expect(Z_LABELS_DE.chartBaseLabel(1.5)).toBe('1,50 € Grundbetrag');
-    expect(Z_LABELS_DE.chartCapLabel(100)).toBe('ab 100 h gedeckelt');
+    expect(Z_LABELS_DE.chartAxisMoney(10)).toBe('10\u00a0€');
+    expect(Z_LABELS_DE.chartAxisHours(100)).toBe('100\u00a0h');
+    expect(Z_LABELS_DE.chartPlayed(50)).toBe('50\u00a0h gespielt');
+    expect(Z_LABELS_EN.chartPlayed(50)).toBe('50\u00a0h played');
+    // The non-breaking space before a unit is a rule of the system, not of the
+    // German language, so the English set keeps it too.
+    expect(Z_LABELS_EN.chartAxisHours(100)).toBe('100\u00a0h');
+    expect(Z_LABELS_EN.chartCapLabel(100)).toBe('capped from 100\u00a0h');
+    expect(Z_LABELS_DE.comboboxResults(1)).toBe('1 Treffer');
+    expect(Z_LABELS_DE.comboboxResults(3)).toBe('3 Treffer');
+    expect(Z_LABELS_EN.comboboxResults(1)).toBe('1 result');
+    expect(Z_LABELS_EN.comboboxResults(3)).toBe('3 results');
+    expect(Z_LABELS_DE.chartDescOpen(1.5, 0.088)).toContain('ohne Deckel');
+    expect(Z_LABELS_EN.chartDescOpen(1.5, 0.088)).toContain('no cap');
+    expect(Z_LABELS_DE.chartBaseLabel(1.5)).toBe('1,50\u00a0€ Grundbetrag');
+    expect(Z_LABELS_DE.chartCapLabel(100)).toBe('ab 100\u00a0h gedeckelt');
     expect(Z_LABELS_DE.chartTableCapRow(100)).toBe('100 und mehr');
     expect(Z_LABELS_DE.chartDesc(1.5, 0.088, 10.3, 100)).toContain('ab 100 Stunden gedeckelt');
     expect(Z_LABELS_EN.chartDesc(1.5, 0.088, 10.3, 100)).toContain('from 100 hours on');
@@ -69,9 +79,11 @@ describe('Z_LABELS', () => {
       'wizardEdit',
       'wizardEditFor',
       'comboboxEmpty',
+      'comboboxResults',
       'summaryRetry',
       'chartTitle',
       'chartDesc',
+      'chartDescOpen',
       'chartPerHour',
       'chartCapPerMonth',
       'chartMoney',

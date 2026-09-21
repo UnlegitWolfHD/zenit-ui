@@ -1,4 +1,14 @@
-import { booleanAttribute, ChangeDetectionStrategy, Component, input } from '@angular/core';
+import {
+  afterRenderEffect,
+  booleanAttribute,
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  DOCUMENT,
+  ElementRef,
+  inject,
+  input,
+} from '@angular/core';
 
 /**
  * Keeps price and next step in view at the bottom edge of small screens, and
@@ -40,6 +50,38 @@ import { booleanAttribute, ChangeDetectionStrategy, Component, input } from '@an
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ZStickyBar {
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly dokument = inject(DOCUMENT);
+
+  constructor() {
+    // The bar covers the bottom of the viewport, so a control focused behind it
+    // would be invisible (WCAG 2.4.11). Its height is not a literal anywhere:
+    // the bar measures itself and writes --z-stickybar into the document, and
+    // the stylesheet keeps that much room free below the content and in
+    // scroll-padding. ResizeObserver is missing on the server, where there is
+    // no layout to keep free either.
+    const wurzel = this.dokument.documentElement;
+    const schreibe = (hoehe: number) =>
+      wurzel.style.setProperty('--z-stickybar', `${Math.round(hoehe)}px`);
+    const beobachter =
+      typeof ResizeObserver === 'undefined'
+        ? undefined
+        : new ResizeObserver(([eintrag]) =>
+            schreibe(eintrag.target.getBoundingClientRect().height),
+          );
+
+    afterRenderEffect(() => {
+      const element = this.host.nativeElement;
+      beobachter?.observe(element);
+      schreibe(element.getBoundingClientRect().height);
+    });
+
+    inject(DestroyRef).onDestroy(() => {
+      beobachter?.disconnect();
+      wurzel.style.removeProperty('--z-stickybar');
+    });
+  }
+
   /**
    * The price, already formatted by the caller: comma as the decimal mark, a
    * non-breaking space before the currency. Shown in `mono-lg`.

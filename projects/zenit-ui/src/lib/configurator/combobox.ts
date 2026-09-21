@@ -7,6 +7,7 @@ import {
   Component,
   computed,
   DestroyRef,
+  DOCUMENT,
   effect,
   ElementRef,
   forwardRef,
@@ -87,7 +88,7 @@ let zaehler = 0;
  *
  * @example
  * ```html
- * <z-field label="Minecraft-Version" for="cb-version" hint="Leer lassen für die neueste Version.">
+ * <z-field label="Minecraft-Version" for="cb-version" hint="Tippen filtert die Liste.">
  *   <z-combobox
  *     inputId="cb-version"
  *     [options]="versionen"
@@ -113,7 +114,7 @@ let zaehler = 0;
         [attr.aria-labelledby]="ariaLabelledby() || null"
         [attr.aria-describedby]="feldRahmen?.beschreibung() ?? null"
         [attr.aria-expanded]="offen()"
-        [attr.aria-controls]="listenId"
+        [attr.aria-controls]="offen() ? listenId : null"
         aria-autocomplete="list"
         [attr.aria-activedescendant]="aktiveId()"
         [placeholder]="placeholder()"
@@ -125,9 +126,23 @@ let zaehler = 0;
         (blur)="aufVerlassen()"
       />
     </span>
+    <!-- How many entries the filter left, or the sentence of the empty row.
+         The region is always in the markup and only its text changes, which is
+         the one way a screen reader hears the count of a list it cannot see. -->
+    <span class="z-visually-hidden" role="status">{{ ansage() }}</span>
 
     <ng-template #panel>
-      <div class="z-listbox" [id]="listenId" role="listbox" [attr.aria-label]="listenname()">
+      <!-- Cancelling mousedown on the whole panel, not just on an entry, is what
+           keeps the focus in the field when the pointer lands on the scrollbar,
+           a heading or the empty row. -->
+      <div
+        class="z-listbox"
+        [id]="listenId"
+        role="listbox"
+        [attr.aria-label]="listenname()"
+        [attr.aria-labelledby]="ariaLabelledby() || null"
+        (mousedown)="$event.preventDefault()"
+      >
         @for (gruppe of gruppen(); track gruppe.name) {
           <!-- A heading is a role="group" with its name. Without one the wrapper
                is presentational, so the entries stay direct children of the listbox. -->
@@ -149,7 +164,6 @@ let zaehler = 0;
                 [id]="listenId + '-' + eintrag.index"
                 [class.z-listbox__option--active]="eintrag.index === aktiverIndex()"
                 [attr.aria-selected]="eintrag.option.value === value()"
-                (mousedown)="$event.preventDefault()"
                 (click)="waehle(eintrag.option.value)"
               >
                 <span class="z-mono">{{ eintrag.option.label }}</span>
@@ -267,6 +281,7 @@ export class ZCombobox implements ControlValueAccessor, FormValueControl<string>
 
   protected readonly feldRahmen = inject(ZField, { optional: true });
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly dokument = inject(DOCUMENT);
   private readonly overlay = inject(Overlay);
   private readonly ansicht = inject(ViewContainerRef);
   private readonly injector = inject(Injector);
@@ -303,18 +318,38 @@ export class ZCombobox implements ControlValueAccessor, FormValueControl<string>
     })),
   );
 
+  /**
+   * Grouped by name, in the order the names first appear. Entries of the same
+   * group that stand apart in `options` land under one heading, so a name never
+   * shows up twice and the tracking key of the list stays unique.
+   */
   protected readonly gruppen = computed<Gruppe[]>(() => {
-    const gruppen: Gruppe[] = [];
+    const nach = new Map<string, Eintrag[]>();
     for (const eintrag of this.eintraege()) {
       const name = eintrag.option.group ?? '';
-      const letzte = gruppen.at(-1);
-      if (letzte?.name === name) {
-        (letzte.eintraege as Eintrag[]).push(eintrag);
+      const vorhanden = nach.get(name);
+      if (vorhanden) {
+        vorhanden.push(eintrag);
       } else {
-        gruppen.push({ name, eintraege: [eintrag] });
+        nach.set(name, [eintrag]);
       }
     }
-    return gruppen;
+    return [...nach].map(([name, eintraege]) => ({ name, eintraege }));
+  });
+
+  /**
+   * What the live region says while the panel is open: how many entries the
+   * filter left, or the sentence of the empty row. Closed it says nothing, so
+   * nothing is announced twice.
+   */
+  protected readonly ansage = computed(() => {
+    if (!this.offen()) {
+      return '';
+    }
+    const anzahl = this.treffer().length;
+    return anzahl
+      ? this.etiketten.comboboxResults(anzahl)
+      : this.emptyText() || this.etiketten.comboboxEmpty;
   });
 
   protected readonly aktiveId = computed(() =>
@@ -341,7 +376,13 @@ export class ZCombobox implements ControlValueAccessor, FormValueControl<string>
       }
     });
 
+    const abbruch = new AbortController();
+    this.dokument.defaultView?.addEventListener('resize', () => this.aufGroessenwechsel(), {
+      signal: abbruch.signal,
+    });
+
     inject(DestroyRef).onDestroy(() => {
+      abbruch.abort();
       this.tasten.destroy();
       this.overlayRef?.dispose();
     });
@@ -380,9 +421,14 @@ export class ZCombobox implements ControlValueAccessor, FormValueControl<string>
   protected aufTaste(ereignis: KeyboardEvent): void {
     if (ereignis.key === 'Escape') {
       // Closes the panel and puts the chosen label back. It never empties the
-      // field, so a second Escape has nothing left to take away.
-      ereignis.preventDefault();
-      this.schliesse();
+      // field, so a second Escape has nothing left to take away. While the
+      // panel is open the key belongs to the panel: it stops here, or a dialog
+      // around the field would close along with it.
+      if (this.offen()) {
+        ereignis.preventDefault();
+        ereignis.stopPropagation();
+        this.schliesse();
+      }
       return;
     }
     if (ereignis.key === 'Enter') {
@@ -451,7 +497,9 @@ export class ZCombobox implements ControlValueAccessor, FormValueControl<string>
           { originX: 'start', originY: 'bottom', overlayX: 'start', overlayY: 'top' },
           { originX: 'start', originY: 'top', overlayX: 'start', overlayY: 'bottom' },
         ]),
-      scrollStrategy: this.overlay.scrollStrategies.reposition(),
+      // autoClose detaches the panel as soon as the field is scrolled out of
+      // view; without it the list would stand alone in the page.
+      scrollStrategy: this.overlay.scrollStrategies.reposition({ autoClose: true }),
     });
     // A pointer on the field itself is not "outside": it opens the panel and
     // would otherwise close it again within the same event.
@@ -460,7 +508,26 @@ export class ZCombobox implements ControlValueAccessor, FormValueControl<string>
         this.schliesse();
       }
     });
+    // The scroll strategy detaches without asking, so the component learns of
+    // it here instead of keeping a state the DOM no longer has.
+    ref.detachments().subscribe(() => {
+      if (this.offen()) {
+        this.offen.set(false);
+        this.aktiverIndex.set(-1);
+        this.suche.set(null);
+        this.text.set(this.gewaehltesLabel());
+      }
+    });
     return ref;
+  }
+
+  /** A resized window changes the width of the field, and with it the panel. */
+  private aufGroessenwechsel(): void {
+    if (!this.offen() || !this.overlayRef) {
+      return;
+    }
+    this.overlayRef.updateSize({ width: this.feld().nativeElement.offsetWidth });
+    this.overlayRef.updatePosition();
   }
 
   /**

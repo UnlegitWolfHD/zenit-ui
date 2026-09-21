@@ -73,6 +73,15 @@ export interface ZLabels {
   /** The one line `z-combobox` shows when nothing matches and `emptyText` is empty. */
   comboboxEmpty: string;
 
+  /**
+   * How many entries are left after filtering in `z-combobox`, for the live
+   * region that a screen reader hears while the list itself stays unseen.
+   *
+   * @param count Number of entries in the open panel, always 1 or more.
+   * @returns The rendered sentence, for example `3 Treffer`.
+   */
+  comboboxResults: (count: number) => string;
+
   /** Caption of the retry button in `z-price-summary`, used when `retryLabel` is empty. */
   summaryRetry: string;
 
@@ -89,6 +98,16 @@ export interface ZLabels {
    * @returns The rendered sentence.
    */
   chartDesc: (base: number, rate: number, cap: number, capHours: number) => string;
+
+  /**
+   * `<desc>` of the SVG in `z-cost-chart` where no cap is reached on the axis:
+   * a flat price per hour, or a cap past the last hour shown.
+   *
+   * @param base Base amount per month.
+   * @param rate Price per hour, unrounded.
+   * @returns The rendered sentence.
+   */
+  chartDescOpen: (base: number, rate: number) => string;
 
   /** Label of the first figure above the chart in `z-cost-chart`. */
   chartPerHour: string;
@@ -191,11 +210,14 @@ export const Z_LABELS_DE = {
   wizardEdit: 'Ändern',
   wizardEditFor: (title) => `${title} ändern`,
   comboboxEmpty: 'Kein Treffer',
+  comboboxResults: (count) => (count === 1 ? '1 Treffer' : `${count} Treffer`),
   summaryRetry: 'Erneut versuchen',
   chartTitle: 'Monatliche Kosten nach gespielten Stunden',
   chartDesc: (base, rate, cap, capHours) =>
     `Start bei ${euroDe(base, 2)} Grundbetrag, plus ${euroDe(rate, 2)} je Stunde, ` +
     `ab ${capHours} Stunden gedeckelt bei ${euroDe(cap, 2)}.`,
+  chartDescOpen: (base, rate) =>
+    `Start bei ${euroDe(base, 2)} Grundbetrag, plus ${euroDe(rate, 2)} je Stunde, ohne Deckel auf dieser Achse.`,
   chartPerHour: 'Pro Stunde',
   chartCapPerMonth: 'Höchstens im Monat',
   chartMoney: (value) => euroDe(value, 2),
@@ -233,19 +255,22 @@ export const Z_LABELS_EN = {
   wizardEdit: 'Change',
   wizardEditFor: (title) => `Change ${title}`,
   comboboxEmpty: 'No match',
+  comboboxResults: (count) => (count === 1 ? '1 result' : `${count} results`),
   summaryRetry: 'Try again',
   chartTitle: 'Monthly cost by hours played',
   chartDesc: (base, rate, cap, capHours) =>
     `Starts at ${euroEn(base, 2)} base, plus ${euroEn(rate, 2)} per hour, ` +
     `capped at ${euroEn(cap, 2)} from ${capHours} hours on.`,
+  chartDescOpen: (base, rate) =>
+    `Starts at ${euroEn(base, 2)} base, plus ${euroEn(rate, 2)} per hour, with no cap on this axis.`,
   chartPerHour: 'Per hour',
   chartCapPerMonth: 'At most per month',
   chartMoney: (value) => euroEn(value, 2),
   chartAxisMoney: (value) => euroEn(value, 0),
-  chartAxisHours: (hours) => `${hours} h`,
+  chartAxisHours: (hours) => `${hours}\u00a0h`,
   chartBaseLabel: (base) => `${euroEn(base, 2)} base`,
-  chartCapLabel: (hours) => `capped from ${hours} h`,
-  chartPlayed: (hours) => `${hours} h played`,
+  chartCapLabel: (hours) => `capped from ${hours}\u00a0h`,
+  chartPlayed: (hours) => `${hours}\u00a0h played`,
   chartTable: 'As a table',
   chartTableHours: 'Hours played',
   chartTableCost: 'Cost per month',

@@ -39,9 +39,11 @@ parameters.
 | `wizardEdit` | `z-wizard-step`, caption of the button on a finished step | `Ändern` | `Change` |
 | `wizardEditFor` | `z-wizard-step`, accessible name of that button | `` `${title} ändern` `` | `` `Change ${title}` `` |
 | `comboboxEmpty` | `z-combobox`, the row shown when nothing matches, if `emptyText` is empty | `Kein Treffer` | `No match` |
+| `comboboxResults` | `z-combobox`, the live region with the number of matches | `` `${count} Treffer` `` | `` `${count} results` `` |
 | `summaryRetry` | `z-price-summary`, caption of the retry button, if `retryLabel` is empty | `Erneut versuchen` | `Try again` |
 | `chartTitle` | `z-cost-chart`, the SVG `<title>` and the name of the plot | `Monatliche Kosten nach gespielten Stunden` | `Monthly cost by hours played` |
 | `chartDesc` | `z-cost-chart`, the SVG `<desc>` | `` `Start bei … plus … ab … Stunden gedeckelt bei ….` `` | `` `Starts at … plus … capped at … from … hours on.` `` |
+| `chartDescOpen` | `z-cost-chart`, the SVG `<desc>` where no cap lies on the axis | `` `… ohne Deckel auf dieser Achse.` `` | `` `… with no cap on this axis.` `` |
 | `chartPerHour` | `z-cost-chart`, label of the first figure | `Pro Stunde` | `Per hour` |
 | `chartCapPerMonth` | `z-cost-chart`, label of the second figure | `Höchstens im Monat` | `At most per month` |
 | `chartMoney` | `z-cost-chart`, an amount in full | `` `5,90 €` `` | `` `€5.90` `` |
@@ -55,14 +57,16 @@ parameters.
 | `chartTableCost` | `z-cost-chart`, header of the cost column | `Kosten im Monat` | `Cost per month` |
 | `chartTableCapRow` | `z-cost-chart`, the last row of that table | `` `100 und mehr` `` | `` `100 and more` `` |
 
-The keys that take parameters are functions: `paginationRange`
+The keys that take parameters are functions: `comboboxResults` (`(count) => string`), `paginationRange`
 (`(from, to, total, itemLabel) => string`, where `from` and `to` are the entry numbers of the
 current page, 1-based), `wizardEditFor` (`(title) => string`), `chartDesc`
 (`(base, rate, cap, capHours) => string`) and the number formats of `z-cost-chart`
 (`chartMoney`, `chartAxisMoney`, `chartAxisHours`, `chartBaseLabel`, `chartCapLabel`,
 `chartPlayed` and `chartTableCapRow`, each `(n: number) => string`). The German formats write a
 comma as the decimal mark and a non-breaking space before the currency; the English ones put the
-currency in front with a point.
+currency in front with a point. The non-breaking space before a unit is a rule of the system, not
+of the German language, so `chartAxisHours`, `chartCapLabel` and `chartPlayed` carry it in both
+sets.
 
 ## Application-wide
 

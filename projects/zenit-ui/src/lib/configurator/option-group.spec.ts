@@ -24,6 +24,7 @@ const STUFEN: readonly ZOption[] = [
     [options]="stufen"
     [(value)]="ram"
     [compact]="kompakt()"
+    [disabled]="gesperrt()"
   />`,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -32,6 +33,7 @@ class ModellHost {
   readonly ram = signal('4');
   readonly hinweis = signal('Spielerzahlen sind Richtwerte');
   readonly kompakt = signal(false);
+  readonly gesperrt = signal(false);
 }
 
 @Component({
@@ -61,6 +63,48 @@ class SignalFormsHost {
   readonly stufen = STUFEN;
   readonly modell = signal({ ram: '4' });
   readonly formular = form(this.modell);
+}
+
+@Component({
+  imports: [ZOptionGroup, ReactiveFormsModule],
+  template: `<z-option-group
+    legend="Arbeitsspeicher"
+    [options]="stufen"
+    [formControl]="steuerung"
+  />`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class AbweisenderHost {
+  readonly stufen = STUFEN;
+  readonly steuerung = new FormControl('4');
+
+  constructor() {
+    // A form that keeps its own value, the way a rule or a server would.
+    this.steuerung.valueChanges.subscribe((wert) => {
+      if (wert !== '4') {
+        this.steuerung.setValue('4', { emitEvent: false });
+      }
+    });
+  }
+}
+
+@Component({
+  imports: [ZOptionGroup],
+  template: `<z-option-group
+    legend="Arbeitsspeicher"
+    [options]="stufen"
+    [(value)]="ram"
+    compact
+  />`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class ZahlenHost {
+  readonly stufen: ZOption<number>[] = [
+    { value: 2, title: '2 GB' },
+    { value: 4, title: '4 GB' },
+    { value: 8, title: '8 GB' },
+  ];
+  readonly ram = signal(4);
 }
 
 function radios(fixture: { nativeElement: HTMLElement }): HTMLInputElement[] {
@@ -198,6 +242,51 @@ describe('ZOptionGroup', () => {
     fixture.detectChanges();
 
     expect(radios(fixture).every((einer) => einer.disabled)).toBe(true);
+  });
+
+  it('writes the model back into the radios when the caller refuses a change', () => {
+    const fixture = TestBed.createComponent(AbweisenderHost);
+    fixture.detectChanges();
+
+    expect(radios(fixture).map((einer) => einer.checked)).toEqual([false, true, false]);
+
+    // The browser checks the third radio before anyone is asked; the form says
+    // no. Without the mirror the DOM would keep a selection the model has not.
+    const dritte = radios(fixture)[2];
+    dritte.checked = true;
+    dritte.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.steuerung.value).toBe('4');
+    expect(radios(fixture).map((einer) => einer.checked)).toEqual([false, true, false]);
+  });
+
+  it('locks the whole group through the disabled input', () => {
+    const fixture = TestBed.createComponent(ModellHost);
+    fixture.detectChanges();
+
+    expect(radios(fixture)[1].disabled).toBe(false);
+
+    fixture.componentInstance.gesperrt.set(true);
+    fixture.detectChanges();
+
+    expect(radios(fixture).every((einer) => einer.disabled)).toBe(true);
+  });
+
+  it('carries numbers as values, not their spelling', () => {
+    const fixture = TestBed.createComponent(ZahlenHost);
+    fixture.detectChanges();
+    const alle: HTMLInputElement[] = Array.from(
+      fixture.nativeElement.querySelectorAll('input[type="radio"]'),
+    );
+
+    expect(alle[1].checked).toBe(true);
+
+    alle[2].checked = true;
+    alle[2].dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.ram()).toBe(8);
   });
 
   it('works with Signal Forms through [formField]', () => {

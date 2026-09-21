@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   angehobenerRam,
+  cent,
   euro,
   flexDeckel,
   flexStundenpreis,
@@ -10,8 +11,10 @@ import {
   laufzeitRabatt,
   mindestRam,
   minusEuro,
+  MINECRAFT_GRUNDBETRAG,
   proZeitraum,
   ramOptionen,
+  RECHNER_SPIELE,
   rechnung,
   VORGABE,
 } from './konfigurator-daten';
@@ -48,11 +51,16 @@ describe('Anheben', () => {
 });
 
 describe('RAM-Optionen', () => {
+  it('keeps the values as numbers, so nothing is converted on the way', () => {
+    expect(ramOptionen('neueste').map((option) => option.value)).toEqual([2, 4, 6, 8, 12]);
+    expect(laufzeitOptionen('normal', 4).map((option) => option.value)).toEqual([30, 90, 180]);
+  });
+
   it('locks every step below the minimum and names the reason', () => {
     const optionen = ramOptionen('neueste');
     const zuKlein = optionen.filter((option) => option.disabled);
 
-    expect(zuKlein.map((option) => option.value)).toEqual(['2']);
+    expect(zuKlein.map((option) => option.value)).toEqual([2]);
     expect(zuKlein[0].disabledReason).toBe('zu wenig für 1.21');
   });
 
@@ -60,21 +68,21 @@ describe('RAM-Optionen', () => {
     const mitBadge = ramOptionen('neueste').filter((option) => option.badge);
 
     expect(mitBadge).toHaveLength(1);
-    expect(mitBadge[0].value).toBe('4');
+    expect(mitBadge[0].value).toBe(4);
     expect(mitBadge[0].badge).toBe('Empfohlen');
   });
 
   it('moves the recommendation up with the version', () => {
     const optionen = ramOptionen('25w14a');
 
-    expect(optionen.filter((option) => option.disabled).map((o) => o.value)).toEqual(['2', '4']);
-    expect(optionen.find((option) => option.badge)?.value).toBe('6');
+    expect(optionen.filter((option) => option.disabled).map((o) => o.value)).toEqual([2, 4]);
+    expect(optionen.find((option) => option.badge)?.value).toBe(6);
   });
 });
 
 describe('Preis', () => {
   it('matches the 7,74 € of the previews for the default selection', () => {
-    expect(proZeitraum('normal', 4)).toBeCloseTo(7.74, 10);
+    expect(proZeitraum(MINECRAFT_GRUNDBETRAG, 'normal', 4)).toBeCloseTo(7.74, 10);
     expect(euro(rechnung(VORGABE).summe)).toBe('7,74\u00a0€');
   });
 
@@ -91,19 +99,56 @@ describe('Preis', () => {
     expect(preise).toEqual(['7,74\u00a0€', '21,83\u00a0€', '42,26\u00a0€']);
   });
 
-  it('rounds only in the view, so the sum keeps the thirds of a cent', () => {
-    const neunzig = rechnung({ ...VORGABE, tage: 90 });
+  it('prices every game from its own base amount', () => {
+    const valheim = RECHNER_SPIELE.find((spiel) => spiel.titel === 'Valheim')!;
+    const rust = RECHNER_SPIELE.find((spiel) => spiel.titel === 'Rust Dedicated Server')!;
 
-    expect(neunzig.vorRabatt).toBeCloseTo(23.22, 10);
-    expect(neunzig.laufzeitrabatt).toBeCloseTo(1.3932, 10);
-    expect(neunzig.summe).toBeCloseTo(21.8268, 10);
-    expect(euro(neunzig.summe)).toBe('21,83\u00a0€');
+    expect(rust.grundbetrag).toBeGreaterThan(valheim.grundbetrag);
+    expect(rechnung({ ...VORGABE, grundbetrag: rust.grundbetrag }).summe).toBeGreaterThan(
+      rechnung({ ...VORGABE, grundbetrag: valheim.grundbetrag }).summe,
+    );
+  });
+
+  it('writes the "ab" price of a tile as the smallest combination that can be ordered', () => {
+    for (const spiel of RECHNER_SPIELE) {
+      const kleinste = rechnung({
+        ...VORGABE,
+        version: '1.20.1',
+        klasse: 'budget',
+        ramGb: 2,
+        grundbetrag: spiel.grundbetrag,
+      });
+
+      expect(spiel.preis).toBe(`ab ${euro(kleinste.summe)} / 30\u00a0Tage`);
+    }
+  });
+
+  it('rounds every part to the cent, so the lines really add up to the sum', () => {
+    const neunzig = rechnung({ ...VORGABE, tage: 90 }, 'ZENIT10');
+
+    expect(euro(neunzig.vorRabatt)).toBe('23,22\u00a0€');
+    expect(euro(neunzig.laufzeitrabatt)).toBe('1,39\u00a0€');
+    expect(euro(neunzig.gutschein)).toBe('0,77\u00a0€');
+    // 23,22 − 1,39 − 0,77 is 21,06, and that is what the summary has to show.
+    expect(neunzig.vorRabatt - neunzig.laufzeitrabatt - neunzig.gutschein).toBeCloseTo(21.06, 10);
+    expect(euro(neunzig.summe)).toBe('21,06\u00a0€');
+  });
+
+  it('keeps the term prices of the preview under that rounding', () => {
+    expect(euro(rechnung({ ...VORGABE, tage: 90 }).summe)).toBe('21,83\u00a0€');
+    expect(euro(rechnung({ ...VORGABE, tage: 180 }).summe)).toBe('42,26\u00a0€');
+  });
+
+  it('rounds to the cent and nothing else', () => {
+    expect(cent(1.3932)).toBe(1.39);
+    expect(cent(0.774)).toBe(0.77);
+    expect(cent(7.74)).toBe(7.74);
   });
 
   it('prices the raised RAM, not the one that was clicked', () => {
     const zuKlein = rechnung({ ...VORGABE, ramGb: 2 });
 
-    expect(zuKlein.summe).toBeCloseTo(proZeitraum('normal', 4), 10);
+    expect(zuKlein.summe).toBeCloseTo(proZeitraum(MINECRAFT_GRUNDBETRAG, 'normal', 4), 10);
   });
 });
 
@@ -117,7 +162,7 @@ describe('Gutschein', () => {
   it('takes it off one period only, not off every one of them', () => {
     const halbesJahr = rechnung({ ...VORGABE, tage: 180 }, 'ZENIT10');
 
-    expect(halbesJahr.gutschein).toBeCloseTo(0.774, 10);
+    expect(euro(halbesJahr.gutschein)).toBe('0,77\u00a0€');
     expect(euro(halbesJahr.summe)).toBe('41,49\u00a0€');
   });
 

@@ -17,6 +17,7 @@ import {
   ZPriceSummary,
   ZStickyBar,
   ZWizard,
+  ZWizardActions,
   ZWizardStep,
 } from 'zenit-ui';
 import {
@@ -67,6 +68,7 @@ const KEINE_TREFFER: ZComboOption[] = [];
     ZPriceSummary,
     ZStickyBar,
     ZWizard,
+    ZWizardActions,
     ZWizardStep,
   ],
   template: `
@@ -371,9 +373,9 @@ export class KonfiguratorPage {
   protected readonly typ = signal('vanilla');
   protected readonly typMc = signal('plugins');
   protected readonly klasse = signal('normal');
-  protected readonly ram = signal('4');
-  protected readonly wizardRam = signal('4');
-  protected readonly laufzeit = signal('30');
+  protected readonly ram = signal(4);
+  protected readonly wizardRam = signal(4);
+  protected readonly laufzeit = signal(30);
   protected readonly version = signal('neueste');
   protected readonly expertenOffen = signal(true);
   protected readonly geaendert = signal('');

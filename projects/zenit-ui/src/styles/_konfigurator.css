@@ -109,8 +109,11 @@ z-option-group, z-combobox, z-wizard-step, z-included-list, z-disclosure, z-inpu
 
 /* Addition to the reference: the action row of a step is a slot. A step
    without actions would otherwise spend the space-5 gap of the body on an
-   empty div. */
+   empty div, and a step with only "Weiter" would put it on the left, where
+   space-between leaves a single child. */
 .z-wstep__actions:empty { display: none; }
+.z-wstep__actions > :only-child { margin-inline-start: auto; }
+.z-wstep__actions > .z-btn--ghost:only-child { margin-inline: 0 auto; }
 
 /* Addition to the reference: bundle.css gives .z-combo no width of its own. In
    a z-field the wrapper is a grid item and stretches, next to a button in
@@ -143,19 +146,20 @@ z-option-group, z-combobox, z-wizard-step, z-included-list, z-disclosure, z-inpu
    2px ring with its 2px offset. The svg already draws outside its box. */
 .z-chart__plot:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: var(--radius-sm); }
 
-/* Addition to the reference: the tooltip is placed by the component through
-   left and top in percent of the plot. The reference script writes the offset
-   next to the cursor as an inline transform; here the two directions are two
-   classes, so no style string is built in TypeScript. --flip puts the tooltip
-   to the left of the cursor, which keeps it inside the plot on the right half. */
-.z-chart__tip { transform: translate(var(--space-2), 0); }
-.z-chart__tip--flip { transform: translate(calc(-100% - var(--space-2)), 0); }
+/* Addition to the reference: a badge sits space-3 above its card and would
+   cover the last pixels of the legend hint at narrow widths, where the first
+   row starts right under it. Only a group that has badges pays for the room. */
+.z-options:has(.z-option__badge) .z-options__legend { margin-bottom: var(--space-3); }
 
-/* Addition to the reference: the svg scales with its viewBox, so at 360px
-   every second hour tick would collide with its neighbour. CostChart/README.md
-   asks for a chart that stays readable there, so half of them step aside. */
-@media (max-width: 480px) {
-  .z-chart__axis--half { display: none; }
+/* Addition to the reference: the sticky bar covers the bottom of the viewport,
+   so a control focused behind it would be invisible (WCAG 2.4.11). z-sticky-bar
+   measures itself into --z-stickybar; the page keeps that much room free below
+   its content and adds it to scroll-padding, so the browser scrolls a focused
+   element clear of the bar instead of behind it. Above 900px the bar is gone
+   and the variable is not used. */
+@media (max-width: 899px) {
+  .z-root:has(.z-stickybar--mobile) { scroll-padding-bottom: calc(var(--z-stickybar, 0px) + var(--space-4)); }
+  .z-config:has(~ .z-stickybar--mobile) { padding-bottom: calc(var(--z-stickybar, 0px) + var(--space-4)); }
 }
 
 /* Addition to the reference: click targets at least 40px on mobile (CLAUDE.md,

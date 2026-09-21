@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ZCostChart } from './cost-chart';
 import {
@@ -7,6 +7,8 @@ import {
   zCostCapHour,
   zCostGeometry,
   zCostHourAt,
+  zCostArea,
+  zCostHourStep,
   zCostStep,
   zCostTableHours,
   zCostTicks,
@@ -33,6 +35,37 @@ const MAX = 150;
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 class Host {}
+
+@Component({
+  imports: [ZCostChart],
+  template: `<z-cost-chart [base]="1.5" [rate]="0.088" [cap]="99" [maxHours]="40" />`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class OhneDeckelHost {}
+
+@Component({
+  imports: [ZCostChart],
+  template: `<z-cost-chart
+    [base]="nichts"
+    [rate]="nichts"
+    [cap]="unendlich"
+    [maxHours]="nichts"
+  />`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class UnsinnHost {
+  readonly nichts = Number.NaN;
+  readonly unendlich = Number.POSITIVE_INFINITY;
+}
+
+@Component({
+  imports: [ZCostChart],
+  template: `<z-cost-chart [base]="1.5" [rate]="0.088" [cap]="10.3" [maxHours]="grenze()" />`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class BeweglichHost {
+  readonly grenze = signal(150);
+}
 
 function plot(fixture: ComponentFixture<Host>): HTMLElement {
   return fixture.nativeElement.querySelector('.z-chart__plot');
@@ -69,8 +102,14 @@ describe('zCostCapHour', () => {
   });
 
   it('survives values that are not finite', () => {
-    expect(zCostCapHour(Number.NaN, RATE, CAP)).toBeCloseTo(CAP / RATE, 10);
+    expect(zCostCapHour(Number.NaN, RATE, CAP)).toBeCloseTo(CAP / RATE, 4);
     expect(zCostCapHour(BASE, Number.POSITIVE_INFINITY, CAP)).toBeNull();
+  });
+
+  it('lands on a whole hour where the arithmetic means one', () => {
+    // 8,8 / 0,088 is 100.00000000000001 in binary floating point, and a chart
+    // that rounds up would print 101.
+    expect(Math.ceil(zCostCapHour(BASE, RATE, CAP) as number)).toBe(100);
   });
 });
 
@@ -175,9 +214,37 @@ describe('zCostGeometry', () => {
   });
 });
 
+describe('zCostArea and zCostHourStep', () => {
+  it('makes one viewBox unit one pixel of the measured width', () => {
+    const area = zCostArea(360);
+
+    expect(area.width).toBe(360);
+    expect(area.x1).toBe(348);
+    expect(area.height).toBe(Z_CHART_AREA.height);
+  });
+
+  it('keeps a floor, so the type never has to shrink', () => {
+    expect(zCostArea(80).width).toBe(240);
+    expect(zCostArea(Number.NaN).width).toBe(Z_CHART_AREA.width);
+  });
+
+  it('thins the time axis out as the plot gets narrower', () => {
+    const breit = zCostHourStep(MAX, 460);
+    const schmal = zCostHourStep(MAX, 180);
+
+    expect(zCostTicks(MAX, breit)).toEqual([0, 50, 100, 150]);
+    expect(schmal).toBeGreaterThanOrEqual(breit);
+    expect(zCostTicks(MAX, schmal).length).toBeLessThanOrEqual(3);
+  });
+});
+
 describe('zCostTableHours', () => {
   it('reaches the support points of the preview', () => {
     expect(zCostTableHours(100, MAX)).toEqual([0, 25, 50, 100]);
+  });
+
+  it('rounds the cap hour up, because the cap holds from the hour it is reached', () => {
+    expect(zCostTableHours(2.2, MAX).at(-1)).toBe(3);
   });
 
   it('falls back to the axis without a cap hour, and drops duplicates', () => {
@@ -234,7 +301,7 @@ describe('ZCostChart', () => {
 
     taste(fixture, 'End');
     expect(plot(fixture).getAttribute('aria-valuenow')).toBe('150');
-    expect(plot(fixture).getAttribute('aria-valuetext')).toBe('150 h gespielt: 10,30 €');
+    expect(plot(fixture).getAttribute('aria-valuetext')).toBe('150\u00a0h gespielt: 10,30\u00a0€');
 
     taste(fixture, 'Home');
     expect(plot(fixture).getAttribute('aria-valuenow')).toBe('0');
@@ -259,13 +326,54 @@ describe('ZCostChart', () => {
 
     expect(fixture.nativeElement.querySelector('.z-chart__cross')).not.toBeNull();
     expect(fixture.nativeElement.querySelector('.z-chart__tip')?.textContent).toContain(
-      '0 h gespielt',
+      '0\u00a0h gespielt',
     );
 
     plot(fixture).dispatchEvent(new FocusEvent('blur'));
     fixture.detectChanges();
 
     expect(fixture.nativeElement.querySelector('.z-chart__tip')).toBeNull();
+  });
+
+  it('says no cap in the description when none lies on the axis', () => {
+    const fixture = TestBed.createComponent(OhneDeckelHost);
+    fixture.detectChanges();
+    const desc = fixture.nativeElement.querySelector('desc') as SVGElement;
+
+    expect(desc.textContent).toContain('ohne Deckel');
+    expect(desc.textContent).not.toContain('gedeckelt bei');
+  });
+
+  it('never writes NaN into a label, whatever it is handed', () => {
+    const fixture = TestBed.createComponent(UnsinnHost);
+    fixture.detectChanges();
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+
+    expect(text).not.toContain('NaN');
+    expect(text).not.toContain('Infinity');
+  });
+
+  it('keeps the hour on the axis when the axis shrinks', () => {
+    const fixture = TestBed.createComponent(BeweglichHost);
+    fixture.detectChanges();
+    const flaeche = fixture.nativeElement.querySelector('.z-chart__plot') as HTMLElement;
+
+    flaeche.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }));
+    fixture.detectChanges();
+    expect(flaeche.getAttribute('aria-valuenow')).toBe('150');
+
+    fixture.componentInstance.grenze.set(50);
+    fixture.detectChanges();
+
+    expect(flaeche.getAttribute('aria-valuemax')).toBe('50');
+    expect(flaeche.getAttribute('aria-valuenow')).toBe('50');
+  });
+
+  it('is a horizontal slider, which is what the arrow keys do', () => {
+    const fixture = TestBed.createComponent(Host);
+    fixture.detectChanges();
+
+    expect(plot(fixture).getAttribute('aria-orientation')).toBe('horizontal');
   });
 
   it('carries the two figures and the caption', () => {
@@ -276,8 +384,8 @@ describe('ZCostChart', () => {
     );
 
     expect(zahlen.map((zahl) => zahl.textContent?.replace(/\s+/g, ' ').trim())).toEqual([
-      'Pro Stunde0,09 €'.replace(/\s+/g, ' '),
-      'Höchstens im Monat10,30 €'.replace(/\s+/g, ' '),
+      'Pro Stunde0,09\u00a0€'.replace(/\s+/g, ' '),
+      'Höchstens im Monat10,30\u00a0€'.replace(/\s+/g, ' '),
     ]);
     expect(fixture.nativeElement.querySelector('.z-chart__caption')?.textContent?.trim()).toBe(
       'Normal mit 4 GB: 1,50 € Grundbetrag plus 0,09 € je Stunde.',
@@ -296,10 +404,10 @@ describe('ZCostChart', () => {
         Array.from(zeile.querySelectorAll('td')).map((z) => z.textContent?.trim()),
       ),
     ).toEqual([
-      ['0', '1,50 €'],
-      ['25', '3,70 €'],
-      ['50', '5,90 €'],
-      ['100 und mehr', '10,30 €'],
+      ['0', '1,50\u00a0€'],
+      ['25', '3,70\u00a0€'],
+      ['50', '5,90\u00a0€'],
+      ['100 und mehr', '10,30\u00a0€'],
     ]);
   });
 });

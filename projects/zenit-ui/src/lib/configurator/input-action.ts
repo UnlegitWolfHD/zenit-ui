@@ -52,6 +52,7 @@ let zaehler = 0;
           class="z-input z-input--mono"
           type="text"
           [id]="feldId"
+          [attr.aria-label]="label() ? null : ariaLabel() || null"
           [value]="value()"
           [disabled]="disabled()"
           [attr.aria-invalid]="error() ? 'true' : null"
@@ -91,6 +92,14 @@ export class ZInputAction {
    * @default ''
    */
   readonly label = input('');
+
+  /**
+   * Accessible name of the field where {@link label} is empty, for example in a
+   * toolbar. A visible label always wins over it.
+   *
+   * @default ''
+   */
+  readonly ariaLabel = input('');
 
   /**
    * Caption of the button, a verb: "Einlösen", "Prüfen", "Hinzufügen".
@@ -154,6 +163,8 @@ export class ZInputAction {
     if (!wert || this.loading() || this.disabled()) {
       return;
     }
-    this.action.emit(this.value());
+    // The trimmed value, because that is what was checked a line above and
+    // what every caller would trim again.
+    this.action.emit(wert);
   }
 }

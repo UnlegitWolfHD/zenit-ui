@@ -48,6 +48,7 @@ const ROUTEN = [
   // The Hero preview sets headingLevel="2", so the hero title joins the
   // outline below the page heading instead of becoming a second h1.
   { pfad: 'werkzeuge', nav: 'Werkzeuge', h1: ['Werkzeuge'] },
+  { pfad: 'konfigurator', nav: 'Konfigurator', h1: ['Konfigurator'] },
   { pfad: 'themes', nav: 'Themes', h1: ['Themes'] },
   { pfad: 'muster/dashboard', nav: 'Dashboard', h1: ['Dashboard'] },
   // The two pattern pages simulate a product page, so their h1 is the page
@@ -58,6 +59,8 @@ const ROUTEN = [
     nav: 'Startseite',
     h1: ['Gameserver aus Nürnberg. In etwa 60 Sekunden online.'],
   },
+  { pfad: 'muster/server-erstellen', nav: 'Server erstellen', h1: ['Server erstellen'] },
+  { pfad: 'muster/preisrechner', nav: 'Preisrechner', h1: ['Preisrechner'] },
 ] as const;
 
 /** Desktop and mobile: below 900px the header menu and the sidebar select appear. */

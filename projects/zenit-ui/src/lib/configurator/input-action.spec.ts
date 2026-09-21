@@ -25,6 +25,13 @@ class Host {
   readonly gerufen = signal<string | null>(null);
 }
 
+@Component({
+  imports: [ZInputAction],
+  template: `<z-input-action ariaLabel="Gutscheincode" actionLabel="Einlösen" value="X" />`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class NameHost {}
+
 function feld(fixture: ComponentFixture<Host>): HTMLInputElement {
   return fixture.nativeElement.querySelector('.z-input-action .z-input');
 }
@@ -128,6 +135,26 @@ describe('ZInputAction', () => {
 
     expect(fehler.textContent).toBe('Dieser Code ist am 31.08.2026 abgelaufen.');
     expect(feld(fixture).getAttribute('aria-invalid')).toBe('true');
+  });
+
+  it('hands out the trimmed value, which is the one it checked', () => {
+    const fixture = TestBed.createComponent(Host);
+    fixture.componentInstance.code.set('  ZENIT10  ');
+    fixture.detectChanges();
+
+    knopf(fixture).click();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.gerufen()).toBe('ZENIT10');
+  });
+
+  it('takes an accessible name where there is no visible label', () => {
+    const fixture = TestBed.createComponent(NameHost);
+    fixture.detectChanges();
+    const eingabe: HTMLInputElement = fixture.nativeElement.querySelector('.z-input');
+
+    expect(fixture.nativeElement.querySelector('label.z-field__label')).toBeNull();
+    expect(eingabe.getAttribute('aria-label')).toBe('Gutscheincode');
   });
 
   it('locks field and button while it is disabled', () => {

@@ -28,24 +28,30 @@ Selector: `z-option-group`
 | --------- | --------------------- | ------- | ------------------------------------------------------------------------------- |
 | `legend`  | `string`              | `''`    | The question or term above the cards, rendered as the `<legend>`.               |
 | `hint`    | `string`              | `''`    | Addition after the legend, in a `<small>`. Empty renders nothing.               |
-| `options` | `readonly ZOption[]`  | `[]`    | The cards in display order, at most six. Tracked by `value`, which is unique.   |
-| `value`   | `string`              | `''`    | The chosen `value`, two-way bindable through `[(value)]`.                       |
+| `options` | `readonly ZOption<T>[]` | `[]`  | The cards in display order, at most six. Tracked by `value`, which is unique.   |
+| `value`   | `T`                   | `undefined` | The chosen `value`, two-way bindable through `[(value)]`.                   |
 | `compact` | `boolean`             | `false` | Narrow cards with the title in mono, for "4 GB" or "90 Tage". Boolean attribute. |
+| `disabled` | `boolean`            | `false` | Locks every card. Independent of the form's disabled state. Boolean attribute. |
 
 | Output        | Payload  | Fires when                                                 |
 | ------------- | -------- | ---------------------------------------------------------- |
 | `valueChange` | `string` | another card is checked (the `model()` companion)          |
 
-`ZOption` is `{ value, title, description?, price?, badge?, badgeStatus?, disabled?,
+The component is generic in the type of its value: `ZOptionGroup<T extends string | number>`,
+inferred from `options`, so RAM steps stay numbers and nothing is converted on the way in or out.
+A radio group has no neutral member of `T`, so an unbound group starts out `undefined` and leaves
+every card unchecked.
+
+`ZOption<T>` is `{ value: T, title, description?, price?, badge?, badgeStatus?, disabled?,
 disabledReason? }`. `value` is what the group reports and the tracking key, `title` the name,
 `description` one sentence, `price` an amount the caller has already formatted, `badge` a short
 word with `badgeStatus` (`info` by default), `disabled` locks this one card and `disabledReason`
 says why.
 
 No content projection. Forms: implements `ControlValueAccessor`, so `ngModel` and `formControl`
-work alongside `[(value)]`, and it has the shape of a Signal Forms `FormValueControl<string>`, so
-`[formField]` works. There is no `disabled` input: the group as a whole is locked from the form
-side, a single card through `disabled` on its option. See [Forms](../forms.md).
+work alongside `[(value)]`, and it has the shape of a Signal Forms `FormValueControl<T>`, so
+`[formField]` works. The group as a whole is locked through `disabled` or from the form side, a
+single card through `disabled` on its option. See [Forms](../forms.md).
 
 ## Examples
 
@@ -123,6 +129,9 @@ There is no loading or error state; the price of a card is a string the caller c
   transparent.
 - A locked card shows its reason in the card and points at it with `aria-describedby`, so the
   reason is never only a colour.
+- The browser checks a radio before the caller is asked. If the caller refuses the new value, the
+  group writes the model back into every radio, so the selection on screen is always the selection
+  in the model.
 - "Empfohlen" appears at most once per group, as `z-badge--info`. A discount is `z-badge--success`
   with the real minus sign U+2212.
 
@@ -154,6 +163,11 @@ compact title. 176px, 104px and the 2px gap are literal values from the referenc
 
 - Addition to the reference: below 640px a compact card is at least `--control-md` tall and centres
   its content, because click targets are at least 40px tall on mobile.
+- Addition to the reference: a group that carries badges gives its legend `--space-3` of room, so
+  the badge, which sits `space-3` above its card, does not cover the legend hint at narrow widths.
+- Addition to the API table: a `disabled` input, for the same reason `z-combobox` and
+  `z-input-action` have one: `15-zustaende.md` asks every control for a designed disabled state, and
+  forms are not the only caller.
 
 ## Do / Don't
 
