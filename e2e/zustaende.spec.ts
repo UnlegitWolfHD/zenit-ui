@@ -443,19 +443,34 @@ async function tastaturFokus(page: Page, baustein: Baustein): Promise<Locator> {
   return ziel;
 }
 
+/** Feste Zeile im Sichtfenster, auf die jedes Ziel gescrollt wird. */
+const ZIEL_OBEN = 160;
+
 /**
- * Scrolls until the 6px of air fit into the viewport. `focus()` scrolls only as
- * far as it has to, so the element ends up flush against an edge and the ring
- * would be recorded cut off. Only the page moves, the element keeps its place
- * on it, so the cut-out shows the same thing as before.
+ * Scrolls the target to a fixed row of the viewport. `focus()` scrolls only as
+ * far as it has to, so the element would end up wherever the page happens to
+ * stand, and the cut-out would move with everything above it: a navigation that
+ * gains a link and wraps to a second line shifts every element screenshot of
+ * the suite. A fixed row makes the cut-out depend on the element alone. Only
+ * the page moves, the element keeps its place on it, so the cut-out shows the
+ * same thing as before. Three passes, because the end of the document can stop
+ * the scroll short; what is left is still at least the 6px of air.
  */
 async function luftSchaffen(page: Page, ziel: Locator): Promise<void> {
   const sicht = page.viewportSize() ?? { width: 1280, height: 720 };
-  const box = await kasten(ziel);
-  const fehltOben = box.y - LUFT;
-  const fehltUnten = box.y + box.height + LUFT - sicht.height;
-  const versatz = fehltOben < 0 ? fehltOben : Math.max(0, fehltUnten);
-  if (versatz !== 0) {
+  // Ein Element in einem CDK-Overlay haengt am Sichtfenster, nicht an der
+  // Seite: Scrollen verschiebt nur das Overlay und bringt keine Luft.
+  const imOverlay = await ziel.evaluate((el) => !!el.closest('.cdk-overlay-container'));
+  if (imOverlay) {
+    return;
+  }
+  for (let versuch = 0; versuch < 3; versuch++) {
+    const box = await kasten(ziel);
+    const zeile = Math.min(ZIEL_OBEN, Math.max(LUFT, sicht.height - box.height - LUFT));
+    const versatz = Math.round(box.y - zeile);
+    if (versatz === 0) {
+      return;
+    }
     await page.evaluate((wert) => window.scrollBy(0, wert), versatz);
   }
 }

@@ -1,0 +1,194 @@
+/* Package konfigurator: OptionCard, Combobox, Wizard, Config, StickyBar,
+   IncludedList, Disclosure, InputAction, CostChart and the PriceSummary states.
+   The section "Erweiterung 3: Konfigurator" of spec/components/bundle.css
+   stands verbatim, followed by the Angular host rules and the additions. */
+
+/* OptionCard */
+.z-options { display: grid; grid-template-columns: repeat(auto-fill, minmax(176px, 1fr)); gap: var(--space-3); margin: 0; padding: 0; border: 0; min-width: 0; }
+.z-options--compact { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); }
+.z-options__legend { grid-column: 1 / -1; padding: 0; margin-bottom: var(--space-1); font-size: 14px; line-height: 20px; font-weight: 600; }
+.z-options__legend small { margin-left: var(--space-2); font-size: 12px; font-weight: 400; color: var(--text-subtle); }
+.z-option { position: relative; display: grid; align-content: start; gap: 2px; padding: var(--space-3) var(--space-4); border: 1px solid var(--border-control); border-radius: var(--radius-md); background: var(--surface); cursor: pointer; min-width: 0; }
+.z-option input { position: absolute; opacity: 0; pointer-events: none; }
+.z-option:hover { border-color: var(--text-muted); }
+.z-option:has(input:checked) { border-color: var(--accent-text); outline: 1px solid var(--accent-text); outline-offset: -2px; background: var(--surface-raised); }
+.z-option:has(input:focus-visible) { outline: 2px solid var(--focus); outline-offset: 2px; }
+.z-option:has(input:disabled) { opacity: 0.45; cursor: not-allowed; }
+.z-theme-mc .z-option:has(input:checked) { border-color: var(--mc-accent); outline-color: var(--mc-accent); }
+.z-option__title { font-weight: 600; }
+.z-option__desc { font-size: 12px; line-height: 16px; color: var(--text-muted); }
+.z-option__price { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 12px; line-height: 16px; color: var(--text-muted); }
+.z-option__badge { position: absolute; top: calc(-1 * var(--space-3)); right: var(--space-2); background-color: var(--surface-raised); border: 1px solid var(--border); }
+.z-options--compact .z-option { padding: var(--space-2) var(--space-3); text-align: center; justify-items: center; }
+.z-options--compact .z-option__title { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+/* Combobox */
+.z-combo { position: relative; display: block; }
+.z-combo .z-input { padding-right: 36px; }
+.z-combo::after { content: ""; position: absolute; right: 14px; top: 20px; width: 7px; height: 7px; margin-top: -6px; border-right: 1.5px solid var(--text-muted); border-bottom: 1.5px solid var(--text-muted); transform: rotate(45deg); pointer-events: none; }
+.z-listbox { display: grid; max-height: 248px; margin-top: var(--space-1); padding: var(--space-1); overflow: auto; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface-raised); box-shadow: var(--shadow-overlay); }
+.z-listbox__group { padding: var(--space-2) var(--space-3) var(--space-1); font-size: 12px; line-height: 16px; color: var(--text-muted); }
+.z-listbox__option { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); min-height: 36px; padding: 0 var(--space-3); border-radius: var(--radius-sm); cursor: pointer; }
+.z-listbox__option:hover, .z-listbox__option--active { background: var(--surface-hover); }
+.z-listbox__option[aria-selected="true"] { font-weight: 600; }
+.z-listbox__option small { font-size: 12px; font-weight: 400; color: var(--text-muted); }
+.z-listbox__empty { padding: var(--space-3); color: var(--text-muted); }
+
+/* Wizard */
+.z-wizard { display: grid; gap: var(--space-3); margin: 0; padding: 0; list-style: none; }
+.z-wstep { border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); min-width: 0; }
+.z-wstep__head { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4); }
+.z-wstep__title { margin: 0; font-size: 14px; line-height: 20px; font-weight: 600; }
+.z-wstep__summary { margin-left: auto; color: var(--text-muted); text-align: right; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.z-wstep__edit { flex: none; padding: 0; border: 0; background: none; cursor: pointer; color: var(--accent-text); font-weight: 500; }
+.z-wstep__body { display: grid; gap: var(--space-5); padding: var(--space-2) var(--space-4) var(--space-5); border-top: 1px solid var(--border); }
+.z-wstep__actions { display: flex; justify-content: space-between; gap: var(--space-2); }
+.z-wstep--locked .z-wstep__head { color: var(--text-muted); }
+.z-wstep--locked .z-wstep__title { font-weight: 400; }
+.z-wstep[aria-current="step"] .z-step__num { border-color: var(--text); background: var(--text); color: var(--bg); }
+.z-wstep--done .z-step__num { border-color: transparent; background: var(--surface-hover); color: var(--text); }
+.z-config { display: grid; gap: var(--space-5); grid-template-columns: minmax(0, 1fr); align-items: start; }
+@media (min-width: 900px) { .z-config { grid-template-columns: minmax(0, 1fr) 340px; } .z-config__aside { position: sticky; top: calc(var(--header) + var(--space-5)); } }
+
+/* PriceSummary: Zustände */
+.z-summary__price--pending { color: var(--text-muted); }
+.z-summary__discount dd { color: var(--success); }
+.z-summary__total { display: flex; justify-content: space-between; gap: var(--space-4); padding-top: var(--space-3); border-top: 1px solid var(--border-control); font-weight: 600; }
+.z-summary__total dd { margin: 0; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+/* StickyBar */
+.z-stickybar { position: sticky; bottom: 0; z-index: var(--z-header); display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-3) var(--space-4); border-top: 1px solid var(--border); background: var(--surface-raised); }
+.z-stickybar__price { display: grid; font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 20px; line-height: 28px; font-weight: 600; }
+.z-stickybar__price small { font-family: var(--font-body); font-size: 12px; line-height: 16px; font-weight: 400; color: var(--text-muted); }
+@media (min-width: 900px) { .z-stickybar--mobile { display: none; } }
+
+/* IncludedList */
+.z-included { display: grid; gap: var(--space-2); margin: 0; padding: 0; list-style: none; color: var(--text-muted); }
+.z-included li { display: flex; align-items: flex-start; gap: var(--space-2); }
+.z-included .z-icon { font-size: 16px; width: 16px; height: 16px; margin-top: 2px; color: var(--success); }
+
+/* Disclosure */
+.z-disclosure { border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); }
+.z-disclosure summary { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4); cursor: pointer; list-style: none; font-weight: 600; }
+.z-disclosure summary::-webkit-details-marker { display: none; }
+.z-disclosure summary small { font-size: 12px; font-weight: 400; color: var(--text-muted); }
+.z-disclosure summary::after { content: "+"; margin-left: auto; font-family: var(--font-mono); color: var(--text-muted); }
+.z-disclosure[open] summary::after { content: "\2212"; }
+.z-disclosure__body { display: grid; gap: var(--space-4); padding: var(--space-4); border-top: 1px solid var(--border); }
+
+/* InputAction */
+.z-input-action { display: flex; gap: var(--space-2); }
+.z-input-action .z-input { flex: 1; min-width: 0; }
+.z-field__success { font-size: 12px; line-height: 16px; color: var(--success); }
+
+/* CostChart */
+.z-chart { display: grid; gap: var(--space-3); min-width: 0; }
+.z-chart__figures { display: flex; flex-wrap: wrap; gap: var(--space-6); }
+.z-chart__figure { display: grid; }
+.z-chart__figure span { font-size: 12px; line-height: 16px; color: var(--text-muted); }
+.z-chart__figure strong { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 20px; line-height: 28px; font-weight: 600; }
+.z-chart__plot { position: relative; }
+.z-chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.z-chart__grid { stroke: var(--border); stroke-width: 1; }
+.z-chart__axis { fill: var(--text-subtle); font-family: var(--font-mono); font-size: 12px; }
+.z-chart__line { fill: none; stroke: var(--text); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.z-chart__cap { stroke: var(--border-control); stroke-width: 1; stroke-dasharray: 4 4; }
+.z-chart__marker { fill: var(--text); stroke: var(--surface); stroke-width: 2; }
+.z-chart__label { fill: var(--text-muted); font-family: var(--font-body); font-size: 12px; }
+.z-chart__cross { stroke: var(--border-control); stroke-width: 1; }
+.z-chart__tip { position: absolute; top: 0; left: 0; padding: var(--space-1) var(--space-2); border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-raised); box-shadow: var(--shadow-overlay); font-size: 12px; line-height: 16px; white-space: nowrap; pointer-events: none; }
+.z-chart__tip strong { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.z-chart__caption { font-size: 12px; line-height: 16px; color: var(--text-muted); }
+
+/* Angular hosts */
+/* These elements wrap the markup of the reference and would be inline
+   otherwise. z-wizard-step is the <li> of the reference; z-wizard, z-config,
+   z-sticky-bar and z-cost-chart carry the reference class on the host and take
+   their display from it. */
+z-option-group, z-combobox, z-wizard-step, z-included-list, z-disclosure, z-input-action { display: block; }
+
+/* Addition to the reference: the action row of a step is a slot. A step
+   without actions would otherwise spend the space-5 gap of the body on an
+   empty div, and a step with only "Weiter" would put it on the left, where
+   space-between leaves a single child. */
+.z-wstep__actions:empty { display: none; }
+.z-wstep__actions > :only-child { margin-inline-start: auto; }
+.z-wstep__actions > .z-btn--ghost:only-child { margin-inline: 0 auto; }
+
+/* Addition to the reference: bundle.css gives .z-combo no width of its own. In
+   a z-field the wrapper is a grid item and stretches, next to a button in
+   .z-input-action it has to fill the row like .z-input does. */
+.z-input-action .z-combo { flex: 1; min-width: 0; }
+
+/* Addition to the reference: the listbox hangs in a CDK overlay, where the
+   pane has no width. The component measures the field and writes the width
+   onto the pane; the panel takes it over so it never reaches past the field. */
+.z-combo-pane .z-listbox { width: 100%; box-sizing: border-box; }
+
+/* Addition to the reference: a combobox that is locked reads like every other
+   locked control. bundle.css dims .z-input:disabled but not the chevron of
+   .z-combo::after, which would stay at full strength next to a 45 % field. */
+.z-combo:has(.z-input:disabled)::after { opacity: 0.45; }
+
+/* Addition to the reference: StickyBar/README.md asks for
+   env(safe-area-inset-bottom) in the padding, which bundle.css does not carry.
+   Only the bottom grows, and only where the device reports an inset. */
+.z-stickybar { padding-bottom: calc(var(--space-3) + env(safe-area-inset-bottom, 0px)); }
+
+/* Addition to the reference: CostChart/preview.html sizes the summary of the
+   "Als Tabelle" disclosure with an inline style (14px/20px, 12px above and
+   below). A library component carries no inline styles, so the same three
+   declarations stand here as a rule. 12px is space-3. */
+.z-chart .z-faq > summary { padding: var(--space-3) 0; font-size: 14px; line-height: 20px; }
+
+/* Addition to the reference: the plot takes the keyboard as well as the
+   pointer (CostChart/README.md), so it is a tab stop and needs room for the
+   2px ring with its 2px offset. The svg already draws outside its box. */
+.z-chart__plot:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: var(--radius-sm); }
+
+/* Addition to the reference: the summary column is 340px wide at every viewport
+   width, so an alert in it never has room for its button beside the text. It
+   wraps there the way bundle.css lets an alert wrap below 640px; the 32px
+   indent is the icon column, as in the reference rule. */
+.z-summary .z-alert { flex-wrap: wrap; }
+.z-summary .z-alert > .z-btn { flex-basis: 100%; margin-left: 32px; }
+
+/* Addition to the reference: bundle.css leaves the hidden radio at its natural
+   13px in the corner of the card. The browser scrolls THAT box into view and
+   draws the focus ring around the card, so a focused card can still sit behind
+   the sticky bar (WCAG 2.4.11). Stretched over the card the focused box is the
+   card. It stays invisible (opacity 0 from the reference) and keeps its place
+   in the layer order, so title, description and badge stay readable.
+   bundle.css also takes it out of the pointer flow entirely; it sits inside its
+   own <label>, so a click reaches it either way, while "pointer-events: none"
+   makes an enabled control read as locked to anything that measures it
+   (e2e/a11y-baum.spec.ts does). A locked card keeps the cursor it inherits, so
+   only the enabled ones get their pointer back. */
+.z-option input { inset: 0; width: 100%; height: 100%; margin: 0; }
+.z-option input:enabled { pointer-events: auto; }
+
+/* Addition to the reference: a badge sits space-3 above its card and would
+   cover the last pixels of the legend hint at narrow widths, where the first
+   row starts right under it. Only a group that has badges pays for the room. */
+.z-options:has(.z-option__badge) .z-options__legend { margin-bottom: var(--space-3); }
+
+/* Addition to the reference: the sticky bar covers the bottom of the viewport,
+   so a control focused behind it would be invisible (WCAG 2.4.11).
+   z-sticky-bar measures its own height into --z-stickybar, and the document
+   adds that to its scroll-padding, so the browser scrolls a focused element
+   clear of the bar. It needs no extra room at the end of the page: the bar is
+   sticky inside the flow and already occupies its own height there. The rule
+   holds for every visible bar, a bulk action bar included; a --mobile bar is
+   display:none from 900px on and then reports 0px. */
+.z-root:has(.z-stickybar) {
+  scroll-padding-bottom: calc(var(--z-stickybar, 0px) + var(--space-4));
+}
+
+/* Addition to the reference: click targets at least 40px on mobile (CLAUDE.md,
+   Abstand und Layout). A listbox entry measures 36px, a compact option 36px,
+   and "Ändern" is a bare text button of one line height. */
+@media (max-width: 640px) {
+  .z-listbox__option { min-height: var(--control-md); }
+  .z-options--compact .z-option { min-height: var(--control-md); align-content: center; }
+  .z-wstep__edit { min-height: var(--control-md); }
+}

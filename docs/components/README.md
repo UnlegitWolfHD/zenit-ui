@@ -109,5 +109,18 @@ It prints a table per file and exits non-zero on any mismatch.
 | SpecList             | [spec-list.md](spec-list.md)         | Facts as term and value pairs.                                    |
 | Faq                  | [faq.md](faq.md)                     | One question with its answer, as a native disclosure.             |
 
-All 36 rows of the API table in `spec/guidelines/40-bibliothek.md` are covered, Icon, Spinner and
+## Configurator
+
+| Row in the API table | File                                   | Summary                                                             |
+| -------------------- | -------------------------------------- | ------------------------------------------------------------------- |
+| OptionCard           | [option-group.md](option-group.md)     | Picks one of a few options that are meant to be compared.           |
+| Combobox             | [combobox.md](combobox.md)             | Picks one value out of a long list by typing and filtering.         |
+| Wizard               | [wizard.md](wizard.md)                 | Leads through an order in two to four steps, summary beside it.     |
+| StickyBar            | [sticky-bar.md](sticky-bar.md)         | Keeps price and next step in view at the bottom of small screens.   |
+| IncludedList         | [included-list.md](included-list.md)   | Lists what every plan includes without a surcharge.                 |
+| Disclosure           | [disclosure.md](disclosure.md)         | Folds away settings most visitors do not need.                      |
+| InputAction          | [input-action.md](input-action.md)     | A field with a button that checks or applies the value right away.  |
+| CostChart            | [cost-chart.md](cost-chart.md)         | Shows how flex costs grow and where the cap takes over.             |
+
+All 44 rows of the API table in `spec/guidelines/40-bibliothek.md` are covered, Icon, Spinner and
 Tooltip among them.

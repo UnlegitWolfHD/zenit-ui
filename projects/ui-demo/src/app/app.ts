@@ -74,10 +74,13 @@ export class App {
     { pfad: '/rueckmeldung', name: 'Rückmeldung' },
     { pfad: '/overlays', name: 'Overlays' },
     { pfad: '/werkzeuge', name: 'Werkzeuge' },
+    { pfad: '/konfigurator', name: 'Konfigurator' },
     { pfad: '/themes', name: 'Themes' },
     { pfad: '/muster/dashboard', name: 'Dashboard' },
     { pfad: '/muster/server-panel', name: 'Server-Panel' },
     { pfad: '/muster/startseite', name: 'Startseite' },
+    { pfad: '/muster/server-erstellen', name: 'Server erstellen' },
+    { pfad: '/muster/preisrechner', name: 'Preisrechner' },
   ];
 
   // setScheme() and setAccent() return false for an id that is not registered.
