@@ -12,3 +12,12 @@ Spielname und Zeitraum als Label, den Preis in `mono-xl`, die Posten als Zeilen,
 - Ändert sich der Preis, wechselt nur die Zahl. Keine Zähl-Animation.
 - Rabatte stehen als eigene Zeile mit Minuszeichen ("Laufzeitrabatt −0,49 €"), nicht als Badge.
 - Im Minecraft-Subtheme wird der Button grün, sonst bleibt alles gleich.
+
+## Zustände
+
+- **Lädt:** die letzte Zahl in `text-muted` (`z-summary__price--pending`) mit Spinner daneben. Nie ein Strich statt eines Preises.
+- **Fehler:** ein Alert `danger` in der Zusammenfassung ("Preis konnte nicht berechnet werden") mit "Erneut versuchen". Der Bestell-Button ist deaktiviert.
+- **Unvollständig:** Button deaktiviert, die Notiz darunter sagt, was fehlt ("Wähle noch eine Bezahlmethode").
+- **Rabatt und Gutschein:** eigene Zeilen mit Minuszeichen, Wert in `success` (`z-summary__discount`). Darunter `z-summary__total`.
+- **Steuerhinweis:** "Gemäß § 19 UStG wird keine Umsatzsteuer berechnet." als letzte Notiz.
+- Validierungsfehler der Auswahl gehören an das jeweilige Feld, nicht hierher. Siehe Leitfaden "Konfigurator".

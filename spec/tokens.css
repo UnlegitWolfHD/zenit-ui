@@ -27,10 +27,10 @@
   --mc-accent: #5fb84e;
   --mc-accent-hover: #4ea03f;
   --on-mc: #06280a;
-  --chart-1: var(--success);
-  --chart-2: var(--danger);
-  --chart-3: var(--warning);
-  --chart-4: var(--info);
+  --chart-1: #3987e5;
+  --chart-2: #d95926;
+  --chart-3: #199e70;
+  --chart-4: #c98500;
   --shadow-overlay: 0 8px 24px rgba(0, 0, 0, 0.5);
 }
 :root {

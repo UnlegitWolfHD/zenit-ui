@@ -1,0 +1,31 @@
+<!-- @dsCard group="Konfigurator" height=340 -->
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+<style>
+  body { margin: 0; padding: 24px; }
+  .demo { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+  .demo + .demo { margin-top: 16px; }
+  .stack { display: grid; gap: 16px; }
+  .cap { font-size: 12px; line-height: 16px; color: var(--text-subtle); width: 100%; }
+</style>
+</head>
+<body class="z-root">
+<div style="max-width:360px">
+  <label class="z-field"><span class="z-field__label">Minecraft-Version</span>
+    <span class="z-combo"><input class="z-input z-mono" id="cb-ver" role="combobox" aria-expanded="true" aria-controls="cb-list" aria-autocomplete="list" value="1.2"></span>
+    <span class="z-field__hint">Leer lassen für die neueste Version.</span></label>
+  <div class="z-listbox" id="cb-list" role="listbox" aria-label="Minecraft-Version">
+    <div class="z-listbox__group">Treffer für "1.2"</div>
+    <div class="z-listbox__option z-listbox__option--active" role="option" aria-selected="false"><span class="z-mono">1.21.11</span><small>mindestens 4 GB</small></div>
+    <div class="z-listbox__option" role="option" aria-selected="true"><span class="z-mono">1.21.4</span><span class="material-icons z-icon" aria-hidden="true" style="font-size:16px;width:16px;height:16px">check</span></div>
+    <div class="z-listbox__option" role="option" aria-selected="false"><span class="z-mono">1.20.6</span><small>mindestens 2 GB</small></div>
+    <div class="z-listbox__option" role="option" aria-selected="false"><span class="z-mono">1.20.1</span><small>mindestens 2 GB</small></div>
+    <div class="z-listbox__option" role="option" aria-selected="false"><span class="z-mono">1.12.2</span><small>mindestens 2 GB</small></div>
+  </div>
+</div>
+</body>
+</html>

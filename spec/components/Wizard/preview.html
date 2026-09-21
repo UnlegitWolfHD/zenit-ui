@@ -1,0 +1,43 @@
+<!-- @dsCard group="Konfigurator" height=360 -->
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+<style>
+  body { margin: 0; padding: 24px; }
+  .demo { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+  .demo + .demo { margin-top: 16px; }
+  .stack { display: grid; gap: 16px; }
+  .cap { font-size: 12px; line-height: 16px; color: var(--text-subtle); width: 100%; }
+</style>
+</head>
+<body class="z-root z-theme-mc">
+<div class="z-config" style="max-width:1000px">
+  <ol class="z-wizard">
+    <li class="z-wstep z-wstep--done"><div class="z-wstep__head"><span class="z-step__num">1</span><h3 class="z-wstep__title">Inhalt</h3><span class="z-wstep__summary">Vanilla, neueste Version</span><button class="z-wstep__edit" type="button">Ändern</button></div></li>
+    <li class="z-wstep" aria-current="step"><div class="z-wstep__head"><span class="z-step__num">2</span><h3 class="z-wstep__title">Größe</h3></div>
+      <div class="z-wstep__body">
+        <fieldset class="z-options z-options--compact"><legend class="z-options__legend">Arbeitsspeicher</legend>
+          <label class="z-option"><input type="radio" name="w-ram" checked><span class="z-option__title">4 GB</span><span class="z-option__desc">etwa 10 Spieler</span></label>
+          <label class="z-option"><input type="radio" name="w-ram"><span class="z-option__title">6 GB</span><span class="z-option__desc">etwa 15 Spieler</span></label>
+          <label class="z-option"><input type="radio" name="w-ram"><span class="z-option__title">8 GB</span><span class="z-option__desc">etwa 20 Spieler</span></label>
+        </fieldset>
+        <div class="z-wstep__actions"><button class="z-btn z-btn--ghost" type="button">Zurück</button><button class="z-btn z-btn--secondary" type="button">Weiter zu Bezahlen</button></div>
+      </div></li>
+    <li class="z-wstep z-wstep--locked"><div class="z-wstep__head"><span class="z-step__num">3</span><h3 class="z-wstep__title">Bezahlen</h3><span class="z-wstep__summary">Name, Laufzeit, Bezahlmethode</span></div></li>
+  </ol>
+  <aside class="z-summary z-config__aside" aria-label="Zusammenfassung">
+    <div><div class="z-summary__label">Minecraft, alle 30 Tage</div><div class="z-summary__price">7,74 €</div></div>
+    <dl class="z-summary__lines">
+      <div class="z-summary__line"><dt>Typ</dt><dd>Vanilla</dd></div>
+      <div class="z-summary__line"><dt>Version</dt><dd>Neueste</dd></div>
+      <div class="z-summary__line"><dt>Arbeitsspeicher</dt><dd>4 GB</dd></div>
+    </dl>
+    <button class="z-btn z-btn--primary z-btn--block" disabled>Kostenpflichtig bestellen</button>
+    <span class="z-summary__note">Bestellen kannst du im letzten Schritt.</span>
+  </aside>
+</div>
+</body>
+</html>

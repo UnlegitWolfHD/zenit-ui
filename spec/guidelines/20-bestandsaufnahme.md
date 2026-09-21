@@ -53,8 +53,8 @@ Sechs Familien sind im Einsatz: Inter, Space Grotesk, JetBrains Mono, Press Star
 
 ## Komponenten-Inventar
 
-Im System dokumentiert (30): Button, Badge, Input, Select, Checkbox, Toggle, Slider, Tabs mit Segment, Stepper, Sidebar, AppHeader, PageHeader, Footer, Panel, Metric mit Meter, ServerList, FileTable, Pagination, Alert, EmptyState, Skeleton, Dialog, Menu, Toast, Console, Hero, GameTile, PriceSummary, SpecList, Faq.
+Im System dokumentiert (38): Button, Badge, Input, Select, Checkbox, Toggle, Slider, Tabs mit Segment, Stepper, Sidebar, AppHeader, PageHeader, Footer, Panel, Metric mit Meter, ServerList, FileTable, Pagination, Alert, EmptyState, Skeleton, Dialog, Menu, Toast, Console, Hero, GameTile, PriceSummary, SpecList, Faq, OptionCard, Combobox, Wizard, StickyBar, IncludedList, Disclosure, InputAction, CostChart.
 
-Auf der Seite gesehen, noch nicht dokumentiert: Tooltip, Diagramm der Abrechnung, Cookie-Banner, Tutorial-Overlay, Broadcast-Banner, Wiki-Artikel, Abstimmungs-Zeile der Vorschläge, Loader-Auswahl auf /minecraft. Die Regeln aus der Übersicht gelten für sie bereits.
+Auf der Seite gesehen, noch nicht dokumentiert: Diagramm der Abrechnung (Regeln stehen bei CostChart), Cookie-Banner, Tutorial-Overlay, Broadcast-Banner, Wiki-Artikel, Abstimmungs-Zeile der Vorschläge, Loader-Auswahl auf /minecraft. Die Regeln aus der Übersicht gelten für sie bereits.
 
-Nicht angesehen: Bestellassistent, Anmeldung und Registrierung, Admin-Bereich, E-Mails, Panels anderer Spiele.
+Angesehen ohne zu bestellen: alle vier Konfiguratoren, siehe Leitfaden "Konfigurator". Nicht angesehen: Anmeldung und Registrierung, Admin-Bereich, E-Mails, Panels anderer Spiele.

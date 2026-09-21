@@ -1,0 +1,72 @@
+<!-- @dsCard group="Konfigurator" height=470 -->
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+<style>
+  body { margin: 0; padding: 24px; }
+  .demo { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+  .demo + .demo { margin-top: 16px; }
+  .stack { display: grid; gap: 16px; }
+  .cap { font-size: 12px; line-height: 16px; color: var(--text-subtle); width: 100%; }
+</style>
+</head>
+<body class="z-root">
+<div class="z-panel" style="max-width:560px"><div class="z-panel__body"><div class="z-chart">
+  <div class="z-chart__figures">
+    <div class="z-chart__figure"><span>Pro Stunde</span><strong>0,09 €</strong></div>
+    <div class="z-chart__figure"><span>Höchstens im Monat</span><strong>10,30 €</strong></div>
+  </div>
+  <div class="z-chart__plot" id="plot">
+    <svg viewBox="0 0 520 240" role="img" aria-labelledby="cc-t cc-d">
+      <title id="cc-t">Monatliche Kosten nach gespielten Stunden</title>
+      <desc id="cc-d">Start bei 1,50 € Grundbetrag, plus 0,09 € je Stunde, ab 100 Stunden gedeckelt bei 10,30 €.</desc>
+      <line class="z-chart__grid" x1="48" x2="508" y1="200" y2="200"/>
+      <line class="z-chart__grid" x1="48" x2="508" y1="125" y2="125"/>
+      <line class="z-chart__grid" x1="48" x2="508" y1="50" y2="50"/>
+      <text class="z-chart__axis" x="40" y="204" text-anchor="end">0 €</text>
+      <text class="z-chart__axis" x="40" y="129" text-anchor="end">5 €</text>
+      <text class="z-chart__axis" x="40" y="54" text-anchor="end">10 €</text>
+      <text class="z-chart__axis" x="48" y="224" text-anchor="middle">0 h</text>
+      <text class="z-chart__axis" x="201" y="224" text-anchor="middle">50 h</text>
+      <text class="z-chart__axis" x="355" y="224" text-anchor="middle">100 h</text>
+      <text class="z-chart__axis" x="508" y="224" text-anchor="end">150 h</text>
+      <line class="z-chart__cap" x1="48" x2="508" y1="45.5" y2="45.5"/>
+      <polyline class="z-chart__line" points="48,177.5 354.7,45.5 508,45.5"/>
+      <circle class="z-chart__marker" cx="354.7" cy="45.5" r="5"/>
+      <text class="z-chart__label" x="56" y="194">1,50 € Grundbetrag</text>
+      <text class="z-chart__label" x="354.7" y="30" text-anchor="middle">ab 100 h gedeckelt</text>
+      <line class="z-chart__cross" id="cross" x1="0" x2="0" y1="20" y2="200" visibility="hidden"/>
+      <circle class="z-chart__marker" id="dot" r="5" visibility="hidden"/>
+      <rect id="hit" x="48" y="20" width="460" height="180" fill="transparent"/>
+    </svg>
+    <div class="z-chart__tip" id="tip" hidden></div>
+  </div>
+  <span class="z-chart__caption">Normal mit 4 GB: 1,50 € Grundbetrag plus 0,09 € je Stunde, nie mehr als 10,30 € im Monat.</span>
+  <details class="z-faq"><summary style="font-size:14px;line-height:20px;padding:12px 0">Als Tabelle</summary>
+    <div class="z-table-wrap"><table class="z-table"><thead><tr><th>Gespielte Stunden</th><th style="text-align:right">Kosten im Monat</th></tr></thead>
+    <tbody><tr><td>0</td><td class="z-table__num">1,50 €</td></tr><tr><td>25</td><td class="z-table__num">3,70 €</td></tr><tr><td>50</td><td class="z-table__num">5,90 €</td></tr><tr><td>100 und mehr</td><td class="z-table__num">10,30 €</td></tr></tbody></table></div></details>
+</div></div></div>
+<script>
+(function () {
+  var base = 1.5, rate = 0.088, cap = 10.3, maxH = 150, x0 = 48, x1 = 508, y0 = 200, perEuro = 15;
+  var svg = document.querySelector('#plot svg'), hit = document.getElementById('hit'), cross = document.getElementById('cross'), dot = document.getElementById('dot'), tip = document.getElementById('tip');
+  function fmt(n) { return n.toFixed(2).replace('.', ',') + ' €'; }
+  function move(e) {
+    var r = svg.getBoundingClientRect(), s = 520 / r.width;
+    var x = Math.max(x0, Math.min(x1, (e.clientX - r.left) * s));
+    var h = Math.round((x - x0) / (x1 - x0) * maxH), cost = Math.min(cap, base + rate * h), y = y0 - cost * perEuro;
+    cross.setAttribute('x1', x); cross.setAttribute('x2', x); cross.setAttribute('visibility', 'visible');
+    dot.setAttribute('cx', x); dot.setAttribute('cy', y); dot.setAttribute('visibility', 'visible');
+    tip.hidden = false; tip.innerHTML = h + ' h gespielt: <strong>' + fmt(cost) + '</strong>';
+    var left = x / s + 12; if (left + tip.offsetWidth > r.width) left = x / s - tip.offsetWidth - 12;
+    tip.style.transform = 'translate(' + left + 'px,' + Math.max(0, y / s - 32) + 'px)';
+  }
+  function leave() { cross.setAttribute('visibility', 'hidden'); dot.setAttribute('visibility', 'hidden'); tip.hidden = true; }
+  hit.addEventListener('pointermove', move); hit.addEventListener('pointerleave', leave);
+})();
+</script>
+</body>
+</html>

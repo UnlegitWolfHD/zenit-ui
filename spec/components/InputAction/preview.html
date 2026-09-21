@@ -1,0 +1,26 @@
+<!-- @dsCard group="Konfigurator" height=220 -->
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+<style>
+  body { margin: 0; padding: 24px; }
+  .demo { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+  .demo + .demo { margin-top: 16px; }
+  .stack { display: grid; gap: 16px; }
+  .cap { font-size: 12px; line-height: 16px; color: var(--text-subtle); width: 100%; }
+</style>
+</head>
+<body class="z-root">
+<div class="stack" style="max-width:420px">
+  <div class="z-field"><label class="z-field__label" for="ia-1">Gutscheincode</label>
+    <div class="z-input-action"><input class="z-input z-mono" id="ia-1" value="ZENIT10"><button class="z-btn z-btn--secondary" type="button">Einlösen</button></div>
+    <span class="z-field__success">ZENIT10 eingelöst: 10 % auf die erste Laufzeit.</span></div>
+  <div class="z-field"><label class="z-field__label" for="ia-2">Gutscheincode</label>
+    <div class="z-input-action"><input class="z-input z-mono" id="ia-2" value="SOMMER" aria-invalid="true"><button class="z-btn z-btn--secondary" type="button">Einlösen</button></div>
+    <span class="z-field__error">Dieser Code ist am 31.08.2026 abgelaufen.</span></div>
+</div>
+</body>
+</html>

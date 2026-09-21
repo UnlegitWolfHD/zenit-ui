@@ -1,0 +1,47 @@
+<!-- @dsCard group="Konfigurator" height=420 -->
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+<style>
+  body { margin: 0; padding: 24px; }
+  .demo { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+  .demo + .demo { margin-top: 16px; }
+  .stack { display: grid; gap: 16px; }
+  .cap { font-size: 12px; line-height: 16px; color: var(--text-subtle); width: 100%; }
+</style>
+</head>
+<body class="z-root">
+<div class="stack" style="max-width:760px">
+  <fieldset class="z-options">
+    <legend class="z-options__legend">Server-Typ</legend>
+    <label class="z-option"><input type="radio" name="typ" checked><span class="z-option__title">Vanilla</span><span class="z-option__desc">Pures Minecraft ohne Plugins oder Mods.</span></label>
+    <label class="z-option"><input type="radio" name="typ"><span class="z-option__title">Plugins</span><span class="z-option__desc">Paper oder Purpur mit Plugins.</span></label>
+    <label class="z-option"><input type="radio" name="typ"><span class="z-option__title">Mods</span><span class="z-option__desc">Fabric, Forge, NeoForge oder Quilt.</span></label>
+    <label class="z-option"><input type="radio" name="typ"><span class="z-option__title">Modpack</span><span class="z-option__desc">Du wählst das Pack, der Rest kommt automatisch.</span></label>
+  </fieldset>
+  <fieldset class="z-options">
+    <legend class="z-options__legend">Leistungsklasse</legend>
+    <label class="z-option"><input type="radio" name="tier" checked><span class="z-option__title">Budget</span><span class="z-option__desc">Für einfache Vanilla-Server.</span><span class="z-option__price">1,25 € / GB RAM</span></label>
+    <label class="z-option"><input type="radio" name="tier"><span class="z-option__title">Normal</span><span class="z-option__desc">Für Modpacks und mehr Spieler.</span><span class="z-option__price">1,50 € / GB RAM</span></label>
+    <label class="z-option"><input type="radio" name="tier" disabled><span class="z-option__title">Flex</span><span class="z-option__desc">Zurzeit sind alle Plätze belegt.</span><span class="z-option__price">ab 0,09 € / Stunde</span></label>
+  </fieldset>
+  <fieldset class="z-options z-options--compact">
+    <legend class="z-options__legend">Arbeitsspeicher<small>Spielerzahlen sind Richtwerte</small></legend>
+    <label class="z-option"><input type="radio" name="ram" disabled><span class="z-option__title">2 GB</span><span class="z-option__desc">zu wenig für 1.21</span></label>
+    <label class="z-option"><input type="radio" name="ram" checked><span class="z-badge z-badge--info z-option__badge">Empfohlen</span><span class="z-option__title">4 GB</span><span class="z-option__desc">etwa 10 Spieler</span></label>
+    <label class="z-option"><input type="radio" name="ram"><span class="z-option__title">6 GB</span><span class="z-option__desc">etwa 15 Spieler</span></label>
+    <label class="z-option"><input type="radio" name="ram"><span class="z-option__title">8 GB</span><span class="z-option__desc">etwa 20 Spieler</span></label>
+    <label class="z-option"><input type="radio" name="ram"><span class="z-option__title">12 GB</span><span class="z-option__desc">etwa 30 Spieler</span></label>
+  </fieldset>
+  <fieldset class="z-options z-options--compact">
+    <legend class="z-options__legend">Laufzeit</legend>
+    <label class="z-option"><input type="radio" name="lz" checked><span class="z-option__title">30 Tage</span><span class="z-option__price">7,74 €</span></label>
+    <label class="z-option"><input type="radio" name="lz"><span class="z-badge z-badge--success z-option__badge">−6 %</span><span class="z-option__title">90 Tage</span><span class="z-option__price">21,83 €</span></label>
+    <label class="z-option"><input type="radio" name="lz"><span class="z-badge z-badge--success z-option__badge">−9 %</span><span class="z-option__title">180 Tage</span><span class="z-option__price">42,26 €</span></label>
+  </fieldset>
+</div>
+</body>
+</html>

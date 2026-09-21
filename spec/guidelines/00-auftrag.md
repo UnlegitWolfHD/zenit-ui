@@ -31,7 +31,7 @@ Die Vorschauen sind statisches HTML. Sie legen Aussehen, Klassen und Markup fest
 | Phase | Ergebnis | Fertig, wenn |
 | --- | --- | --- |
 | 1 Neues Projekt | leerer Ordner, `ng new zenit-ui-workspace --no-create-application`, darin `projects/zenit-ui`, `projects/ui-demo`, `tokens.css`, `zenit-ui.css`, Stylelint, eigenes git-Repo | `ng build zenit-ui` läuft, Stylelint meldet 0 Fehler |
-| 2 Bausteine | alle 30 Komponenten nach der API-Tabelle, dazu Icon, Spinner, Tooltip | jede Komponente steht in `ui-demo` in allen Zuständen aus dem Leitfaden "Zustände" |
+| 2 Bausteine | alle 38 Komponenten nach der API-Tabelle, dazu Icon, Spinner, Tooltip | jede Komponente steht in `ui-demo` in allen Zuständen aus dem Leitfaden "Zustände" |
 | 3 Prüfung der Library | Unit-Tests für Formular-Bausteine, Pagination, Toast; Playwright-Screenshots der Demo in 1440px und 375px; axe ohne Verstöße | Tests grün, kein horizontales Scrollen bei 360px |
 | 4 Einbau (späterer Auftrag) | Tokens und Styles global, Shell (AppHeader, Seitenrahmen, Footer) | App baut, Arial ist verschwunden |
 | 5 Seiten (späterer Auftrag) | eine Route pro Arbeitspaket nach "Seitenmuster", öffentliche Seiten zuerst | je Route die Abnahmepunkte unten |
@@ -137,6 +137,7 @@ Nur im späteren Auftrag für das bestehende Frontend:
 | Rückmeldung | Alert, EmptyState, Skeleton, Toast, Tooltip | `lib/feedback`, `lib/toast`, `lib/tooltip` |
 | Overlays | Dialog, Menu | `lib/dialog`, `lib/menu` |
 | Werkzeuge und Öffentlich | Console, Hero, GameTile, PriceSummary, SpecList, Faq | `lib/console`, `lib/marketing` |
+| Konfigurator | OptionCard, Combobox, Wizard, StickyBar, IncludedList, Disclosure, InputAction, CostChart. In der Demo zusätzlich eine Seite, die den ganzen Konfigurator nach dem Leitfaden "Konfigurator" mit Beispieldaten zeigt | `lib/configurator`, `lib/cost-chart` |
 
 `zenit-ui.css`, `public-api.ts` und die Demo-Seite fassen alle an. Damit es keine Konflikte gibt, schreibt jeder Umsetzer seine Styles in eine eigene Datei `styles/_<paket>.css` und seinen Demo-Abschnitt in eine eigene Komponente. Der Master fügt beides nach der Freigabe zusammen.
 
@@ -155,4 +156,4 @@ Für das neue Projekt ist nichts offen, du kannst sofort beginnen. Die folgenden
 
 - Echte Ordnerstruktur und Namen der bestehenden Komponenten (im DOM gesehen: `app-public-header`, `app-public-footer`, `app-pricing`, `app-flex-calculator`, `app-minecraft-landing`, `app-hardware-page`, `app-toast-container`, `app-cookie-banner`, `app-tutorial-overlay`).
 - Welche `mat-*` Komponenten heute im Einsatz sind. Gesehen: `mat-toolbar`, `mat-icon`, Formularfelder, Select, Slide-Toggle, Paginator.
-- Noch nicht spezifiziert: Tooltip-Inhalte, Diagramm der Abrechnung, Cookie-Banner, Tutorial-Overlay, Wiki-Artikel, Abstimmungs-Zeile, Bestellassistent, Anmeldung, Admin-Bereich. Für sie gelten die Übersicht und die nächstliegende Komponente. Lege vor dem Bau einen kurzen Vorschlag vor.
+- Noch nicht spezifiziert: Tooltip-Inhalte, Diagramm der Abrechnung, Cookie-Banner, Tutorial-Overlay, Wiki-Artikel, Abstimmungs-Zeile, Anmeldung, Admin-Bereich. Für sie gelten die Übersicht und die nächstliegende Komponente. Lege vor dem Bau einen kurzen Vorschlag vor.

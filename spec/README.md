@@ -28,7 +28,7 @@ Zenit-Hosting vermietet Gameserver aus Nürnberg. Die Oberfläche soll wie das W
 - `danger` ist bewusst heller und oranger als `accent-text`, damit ein Fehler nicht wie die Marke aussieht.
 - Trennlinien nehmen `border`. Alles, was man bedienen kann, bekommt `border-control`, weil nur der 3:1 erreicht.
 - Fokus ist überall ein 2px-Ring in `focus` mit 2px Abstand.
-- Diagramme nutzen `chart-1` bis `chart-4` in dieser Reihenfolge, mit Legende und Werten im Tooltip.
+- Diagramme mit mehreren Reihen nutzen `chart-1` bis `chart-4` in fester Reihenfolge, mit Legende und Werten im Tooltip. Eine einzelne Reihe ist neutral in `text`. Statusfarben sind nie Reihenfarben, und Beschriftungen tragen Textfarben, nie die Reihenfarbe.
 
 ## Typografie
 

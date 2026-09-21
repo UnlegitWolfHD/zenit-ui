@@ -96,3 +96,15 @@ Zusätzliche Abnahme je Paket:
 ## Fertig, wenn
 
 Builds, Tests und Stylelint grün, `@angular/material` nirgends, alle 30 Bausteine plus Icon, Spinner, Tooltip in allen Zuständen in `ui-demo`, Style-Prüfung und 360px bestanden, jeder Fokus sichtbar. Kein Push, kein Publish, kein Deploy ohne Freigabe.
+
+## Nachtrag: Paket `konfigurator` (Branch `ui/konfigurator`)
+
+Quelle: Design System Version vom 21.09.2026, 16:26 (`spec/guidelines/12-konfigurator.md`, API-Tabelle mit 8 neuen Zeilen, `bundle.css` Abschnitt "Erweiterung 3", neue Werte für `chart-1` bis `chart-4`). Jetzt 38 Bausteine plus Icon, Spinner, Tooltip.
+
+Bausteine: OptionCard (`z-option-group`), Combobox (`z-combobox`), Wizard (`z-wizard`, `z-wizard-step`, Layout `z-config` mit `[zConfigAside]`), StickyBar (`z-sticky-bar`), IncludedList (`z-included-list`), Disclosure (`z-disclosure`), InputAction (`z-input-action`), CostChart (`z-cost-chart`). Dazu PriceSummary um die Zustände aus `spec/components/PriceSummary/README.md` erweitert.
+
+Dateien: `projects/zenit-ui/src/lib/configurator/**`, `projects/zenit-ui/src/lib/cost-chart/**`, `projects/zenit-ui/src/lib/pakete/konfigurator.ts`, `projects/zenit-ui/src/styles/_konfigurator.css`, je eine Zeile in `public-api.ts` und `zenit-ui.css`, `lib/marketing/price-summary.ts` mit Spec, neue Label-Schlüssel in `lib/labels/labels.ts`, Demo `pages/konfigurator/**` (Bausteine in allen Zuständen), `pages/muster/server-erstellen.page.ts` (Ablauf mit drei Schritten), `pages/muster/preisrechner.page.ts` (Variante ohne Schritte mit CostChart), Routen und Navigation, `e2e/pruefungen.ts` (Routenliste), `e2e/konfigurator.spec.ts`, Doku unter `docs/components/`.
+
+Festlegungen des Masters: PriceSummary bekommt `loading`, `error`, `retryLabel`, `(retry)`, `total`, `legalNote` und das Feld `discount` in `lines`; sichtbare Standardtexte (Wizard "Ändern", CostChart-Beschriftungen, Combobox-Leertext als Rückfall) liegen in der Label-Registrierung und sind überschreibbar; die wörtlich übernommenen Literale aus "Erweiterung 3" (176px, 104px, 340px, 248px, 36px usw.) sind abgenommen.
+
+Zusätzliche Abnahme: Tastaturbedienung von OptionCard (Pfeile, Tab verlässt die Gruppe), Combobox (ARIA-Muster, Fokus bleibt im Feld, Leerzeile) und Wizard; axe ohne Verstöße auf allen Konfigurator-Seiten in allen drei Farbschemata; 360px ohne horizontales Scrollen; StickyBar nur unter 900px; genau ein primary ("Kostenpflichtig bestellen"), deaktiviert bis alles gültig ist; jede Vorgabe gültig und bestellbar; Preis immer eine Zahl; Einheiten nur GB, vCPU, Tage; Auswahl in den Query-Parametern; Unit-Tests für `z-option-group`, `z-combobox`, `z-input-action` und die Knickpunkt-Berechnung von `z-cost-chart`.

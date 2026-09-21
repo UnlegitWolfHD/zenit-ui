@@ -71,6 +71,14 @@ Selektoren und Eingaben sind verbindlich, damit Seiten und Bausteine parallel en
 | GameTile | `z-game-grid`, `button[zGameTile]` | `title`, `price`, `cover`, `selected` |
 | PriceSummary | `z-price-summary` | `label`, `price`, `period`, `lines: {label, value}[]`, `note`; Inhalt ist der Button |
 | SpecList | `z-spec-list` | `items: {term, value, note, mono}[]` |
+| OptionCard | `z-option-group` | `legend`, `hint`, `options: {value, title, description, price, badge, badgeStatus, disabled, disabledReason}[]`, `[(value)]`, `compact`; Forms |
+| Combobox | `z-combobox` | `options: {value, label, note, group}[]`, `[(value)]`, `placeholder`, `emptyText`; Forms; CDK Overlay und a11y |
+| Wizard | `z-wizard`, `z-wizard-step` | `title`, `summary`, `state: 'done' \| 'current' \| 'locked'`, `(edit)`; Layout `z-config` mit `[zConfigAside]` |
+| StickyBar | `z-sticky-bar` | `price`, `summary`, `mobileOnly`; Inhalt ist der Button |
+| IncludedList | `z-included-list` | `items: string[]` |
+| Disclosure | `z-disclosure` | `title`, `summary`, `[(open)]` |
+| InputAction | `z-input-action` | `label`, `actionLabel`, `[(value)]`, `success`, `error`, `loading`, `(action)` |
+| CostChart | `z-cost-chart` | `base`, `rate`, `cap`, `maxHours`, `caption` |
 | Faq | `z-faq` | `question`, `open`; Inhalt ist die Antwort |
 
 ## Reihenfolge der Bausteine
@@ -84,6 +92,7 @@ Selektoren und Eingaben sind verbindlich, damit Seiten und Bausteine parallel en
 | 5 | Dialog, Menu, Toast | Overlays, brauchen CDK |
 | 6 | Sidebar, Console, Slider, Stepper | Panel und Bestellassistent |
 | 7 | Hero, GameTile, PriceSummary, SpecList, Faq | Öffentliche Seiten |
+| 8 | OptionCard, Combobox, Wizard, StickyBar, IncludedList, Disclosure, InputAction, CostChart | Konfigurator |
 
 ## Prüfung
 
