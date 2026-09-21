@@ -17,7 +17,7 @@ files.
 ## Import
 
 ```ts
-import { ZRows, ZRowsHead, ZRow, ZRowMain, ZRowNum } from 'zenit-ui';
+import { ZRows, ZRowsHead, ZRow, ZRowMain, ZRowNum, ZRowTitle, ZRowLink, ZRowAction } from 'zenit-ui';
 ```
 
 ## API
@@ -45,6 +45,32 @@ each of which is a tab stop of its own.
 | `title` | `string` | `''`    | Name of the entry. Without an image its first character, uppercased, fills the thumbnail. |
 | `meta`  | `string` | `''`    | One line under the title with game, version and address. Empty leaves it out.             |
 | `image` | `string` | `''`    | URL of the thumbnail. Empty falls back to the initial of the title.                       |
+
+Content projection:
+
+| Slot          | Where it lands                                                    |
+| ------------- | ----------------------------------------------------------------- |
+| `[zRowTitle]` | in `.z-row__title`, in place of the text of the `title` input |
+
+`title` keeps feeding the initial of the thumbnail, so it stays set even when `[zRowTitle]` renders
+the visible title.
+
+### `[zRowTitle]`
+
+Pure slot marker for the title of a row. It adds no class and no markup, and exists so a link can
+sit in the title. Without it the row falls back to the `title` input.
+
+### `a[zRowLink]`
+
+No inputs, no outputs. The stretched link of a row: it sits on the title, carries the class
+`z-row__link`, and its `::after` covers the whole row, so the row is one link with one tab stop
+while staying a `<div>` that may hold buttons. Everything else in the row lies under that overlay
+and needs `[zRowAction]` to stay clickable.
+
+### `[zRowAction]`
+
+No inputs, no outputs. Adds `z-row__action`, which lifts an action above the stretched link overlay
+so it stays clickable and keeps its own tab stop. An icon-only action needs its own `aria-label`.
 
 ### `[zRowNum]`
 
@@ -89,6 +115,31 @@ A row that is not a link, with its own actions as separate tab stops:
     <span><z-badge status="success" dot>Standard</z-badge></span>
     <button zBtn="ghost" iconOnly size="sm" type="button" aria-label="Zahlungsmittel entfernen">
       <z-icon name="delete" />
+    </button>
+  </div>
+</z-rows>
+```
+
+A row that is both a link and holds its own action. A `<button>` inside an `<a>` is invalid markup,
+so the row stays a `<div>`, the link sits on the title and stretches over the row, and the action
+lies above that overlay:
+
+```html
+<z-rows columns="minmax(0, 2fr) 128px 40px">
+  <div zRow>
+    <z-row-main title="Beispiel-Server 1" meta="Minecraft · 203.0.113.10">
+      <a zRowTitle zRowLink routerLink="/user/server/1">Beispiel-Server 1</a>
+    </z-row-main>
+    <span><z-badge status="success" dot>Online</z-badge></span>
+    <button
+      zRowAction
+      zBtn="ghost"
+      iconOnly
+      type="button"
+      aria-label="Aktionen für Beispiel-Server 1"
+      [cdkMenuTriggerFor]="zeilenAktionen"
+    >
+      <z-icon name="more_vert" />
     </button>
   </div>
 </z-rows>
@@ -141,6 +192,7 @@ With a thumbnail image instead of the initial:
 | Rest    | 1px `border` between the rows                                  | default                                    |
 | Hover   | the whole row turns `surface-raised`                           | pointer over the row                       |
 | Focus   | 2px ring in `focus` with 2px offset around the link row        | Tab, `:focus-visible`                      |
+| Link row | hover and focus ring cover the whole row, the action stays on top | `a[zRowLink]` in the title, `[zRowAction]` on the buttons |
 | Loading | skeleton rows in the same grid, `aria-busy` on the panel       | `busy` on the panel plus `z-skeleton` rows |
 | Empty   | `z-empty-state` instead of the rows, no pagination, no filters | render the empty state                     |
 | Error   | `z-alert` with the cause and the next step                     | render the alert                           |
@@ -152,7 +204,14 @@ the customer cannot open is left out.
 
 - A row as an `<a>` is one link, so the title and the meta line are read as its accessible text. The
   thumbnail image carries an empty `alt`.
-- Actions inside a row are separate tab stops with their own `aria-label`.
+- Actions inside a row are separate tab stops with their own `aria-label`. That is why a row with
+  actions is a `<div>` with `a[zRowLink]` and never an `<a>` around a `<button>`, which is invalid
+  markup and gives the two controls one tab stop.
+- The hit area of `a[zRowLink]` is the whole row, so that is where its focus ring is drawn: on the
+  stretched `::after`, not around the title text. There is exactly one ring, 2px in `focus` with a
+  2px offset.
+- The tab order inside such a row is the DOM order: the link in the title first, then every
+  `[zRowAction]`.
 - The column head disappears below 640px, so it must never hold the only copy of a fact. Repeat the
   fact in the row or in the meta line.
 - The status always stands as a word inside its badge, never as colour alone.
@@ -176,6 +235,8 @@ itself never scrolls sideways.
 | `z-row__title` | inside `z-row-main` |
 | `z-row__meta`  | `meta` is not empty |
 | `z-row__num`   | on `[zRowNum]`      |
+| `z-row__link`  | on `a[zRowLink]`    |
+| `z-row__action` | on `[zRowAction]`  |
 
 Tokens: `--space-2` to `--space-4` for padding and gaps, `--border` for the lines,
 `--surface-raised` for hover, `--surface-hover` and `--font-display` for the thumbnail fallback,
@@ -190,6 +251,16 @@ Tokens: `--space-2` to `--space-4` for padding and gaps, `--border` for the line
 - Addition to the library: `.z-row__text` carries `min-width: 0`, which replaces the inline style
   the reference preview put on the text block of the row, and `.z-row__thumb img` fills the
   thumbnail the same way `.z-game__cover img` does.
+- Addition to the reference: the stretched link. `40-bibliothek.md` asks both for rows that are
+  links and for actions inside a row as their own tab stops, which a `<button>` inside an `<a>`
+  cannot give. A row with `a[zRowLink]` becomes `position: relative`, the link's `::after` is
+  `position: absolute; inset: 0`, and `.z-row__action` takes `position: relative; z-index: 1`. No
+  `transform`, no new value outside the tokens. The overlay escapes the `overflow: hidden` of
+  `.z-row__title` because its containing block is the row.
+- Addition to the reference: `.z-row__link:focus-visible` sets `outline-color: transparent` and the
+  2px/2px ring in `focus` is drawn on its `::after` instead, so the one ring matches the hit area
+  of the link. `transparent` is not a colour of the palette; it only switches off the duplicate
+  ring the global `:focus-visible` rule would draw around the title text.
 
 ## Do / Don't
 
@@ -197,5 +268,10 @@ Tokens: `--space-2` to `--space-4` for padding and gaps, `--border` for the line
 - Do keep the status in the second column throughout.
 - Do right-align amounts with `zRowNum`.
 - Don't put a fact only in the column head; it disappears below 640px.
+- Do reach for `a[zRowLink]` when a row needs both a target and its own actions; `a[zRow]` cannot
+  hold a button.
 - Don't nest a clickable control inside an `a[zRow]` without making it a tab stop of its own.
+- Don't expect to select the text of a row with `a[zRowLink]` by dragging; the overlay swallows it,
+  exactly as the link of an `a[zRow]` does. Facts that have to be copied belong in a detail page or
+  in a `table[zTable]`.
 - Don't change the border or move the row on hover; hover colours the whole row.
