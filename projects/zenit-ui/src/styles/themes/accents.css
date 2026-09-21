@@ -25,9 +25,12 @@
    1. The fill is deepened until white as on-accent clears 4.5:1 on accent AND
       on accent-hover; accent-hover is one step deeper than accent, as in the
       dark scheme.
-   2. The fill also has to keep 3:1 against focus, which is white on the dark
+   2. accent also has to keep 3:1 against focus, which is white on the dark
       grounds and near black on the light one. That is the binding limit on the
       light ground and it is why the light fills are not deeper still.
+      accent-hover is exempt on the light ground (2.41:1 to 2.97:1): it has to
+      be deeper than accent, and the focus ring never touches the fill anyway,
+      because it is drawn with a 2px offset on the surface around the button.
    3. accent-text is pushed away from the ground until it clears 4.5:1 on bg
       and on surface of that scheme.
    4. accent-subtle follows accent-text: 12 % of it on the dark grounds, an

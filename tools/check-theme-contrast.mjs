@@ -12,7 +12,8 @@
  * aliases, composites rgba() over the background it is stated on, and measures
  * WCAG 2.1 contrast for every pair the rules name.
  *
- * Plain Node, no dependencies, exits 1 on the first failing combination.
+ * Plain Node, no dependencies. Every combination is measured and every failure
+ * is listed; the exit code is 1 if there was at least one.
  */
 
 import { readFileSync } from 'node:fs';
@@ -24,9 +25,25 @@ const STYLES = join(WURZEL, 'projects/zenit-ui/src/styles');
 
 /* ------------------------------------------------------------------ CSS ---- */
 
-/** Strips comments and returns every rule as { selector, decls, reihe }. */
+/**
+ * Strips comments and returns every rule as { selector, decls, reihe }.
+ *
+ * The parser knows flat rules only. A block at-rule (@media, @supports,
+ * @layer, @container) would be flattened: its inner rules would count as if
+ * they applied unconditionally, and the gate would measure a cascade that no
+ * browser builds. So it stops instead of guessing.
+ */
 function parseCss(text, datei, reiheAb) {
   const ohneKommentar = text.replace(/\/\*[\s\S]*?\*\//g, '');
+  const atRegel = ohneKommentar.match(/@[\w-]+[^;{}]*\{/);
+  if (atRegel) {
+    console.error(
+      `${datei}: block at-rule "${atRegel[0].replace(/\s+/g, ' ').trim()}" is not supported. ` +
+        'The gate rebuilds a flat cascade and cannot tell when a nested rule applies. ' +
+        'Keep token blocks unconditional, or teach tools/check-theme-contrast.mjs the condition.',
+    );
+    process.exit(2);
+  }
   const regeln = [];
   let reihe = reiheAb;
   for (const treffer of ohneKommentar.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
@@ -199,12 +216,24 @@ const PAARE = [
   ['--on-accent', '--accent-hover', 4.5],
   ['--accent-text', '--bg', 4.5],
   ['--accent-text', '--surface', 4.5],
+  // Links and the ghost/active states inside a menu, a dialog or a hovered row.
+  ['--accent-text', '--surface-raised', 4.5],
+  // The active sidebar entry and a hovered menu item carry text on surface-hover.
+  ['--text', '--surface-hover', 12],
+  // .z-menu__item--danger: the menu lies on surface-raised, its hover on surface-hover.
+  ['--danger', '--surface-raised', 4.5],
+  ['--danger', '--surface-hover', 4.5],
+  // .z-toggle:checked::after, the knob on the checked track: a graphical
+  // object, so 3:1 (WCAG 1.4.11), not text.
+  ['--on-mc', '--success', 3],
   ['--on-mc', '--mc-accent', 4.5],
   ['--on-mc', '--mc-accent-hover', 4.5],
   ['--focus', '--bg', 3],
   ['--focus', '--surface', 3],
   ['--focus', '--surface-raised', 3],
   ['--focus', '--surface-hover', 3],
+  // Not against accent-hover: the ring has a 2px offset and never touches the
+  // fill; see rule 2 in themes/accents.css for why the light fills cannot do it.
   ['--focus', '--accent', 3],
   // .z-side__count in the active sidebar entry: surface-hover is the one
   // ground text-subtle may not be read on, so the count takes text-muted.
@@ -218,9 +247,29 @@ for (const status of ['success', 'warning', 'danger', 'info']) {
   // Control border inside a tinted alert: .z-alert .z-btn--secondary takes
   // text-muted, because border-control misses the 3:1 on the tints. An alert
   // stands either free on bg or inside a panel on surface.
-  PAARE.push(['--text-muted', [`--${status}-subtle`, '--bg'], 3]);
-  PAARE.push(['--text-muted', [`--${status}-subtle`, '--surface'], 3]);
+  // The same colour is the alert body (.z-alert__body), and that is text: 4.5.
+  // The title is text, a link in the body accent-text.
+  for (const grund of ['--bg', '--surface']) {
+    PAARE.push(['--text-muted', [`--${status}-subtle`, grund], 4.5]);
+    PAARE.push(['--text', [`--${status}-subtle`, grund], 12]);
+    PAARE.push(['--accent-text', [`--${status}-subtle`, grund], 4.5]);
+  }
 }
+
+/**
+ * Pairs the reference itself misses. dark with the default accent is
+ * tokens.css, compiled from spec/tokens.json and normative: the gate may not
+ * demand other values there, and it may not hide the miss either. Such a pair
+ * is printed as "Referenz", listed at the end and does not fail the run. An
+ * entry that passes again is an error, so the list cannot go stale.
+ * Both are a link (accent-text) inside a tinted alert that stands in a panel;
+ * docs/theming.md lists them under "Open design questions".
+ */
+const REFERENZ = 'dark / rot';
+const REFERENZ_ABWEICHUNGEN = new Set([
+  '--accent-text auf --warning-subtle auf --surface',
+  '--accent-text auf --info-subtle auf --surface',
+]);
 
 /* -------------------------------------------------------------- Ausfuehren -- */
 
@@ -240,6 +289,7 @@ for (const regel of regeln) {
 
 const markdown = process.argv.includes('--md');
 const fehler = [];
+const hinweise = [];
 const zeilen = [];
 const tiefstwert = new Map();
 
@@ -292,14 +342,19 @@ for (const schema of schemata) {
       if (!fg || !hgRoh || (basisToken && !basis)) continue;
       const hg = basis ? ueber(hgRoh, basis) : hgRoh;
       const wert = kontrast(ueber(fg, hg), hg);
-      tiefste = Math.min(tiefste, wert / soll);
       const beschreibung = basisToken ? `${hgToken} auf ${basisToken}` : hgToken;
-      if (wert + 1e-9 < soll) {
-        fehler.push(
-          `${name}: ${vorne} auf ${beschreibung} = ${wert.toFixed(2)}:1, gefordert ${soll}:1.`,
-        );
+      const paar = `${vorne} auf ${beschreibung}`;
+      const bekannt = name === REFERENZ && REFERENZ_ABWEICHUNGEN.has(paar);
+      const besteht = wert + 1e-9 >= soll;
+      if (bekannt && besteht) {
+        fehler.push(`${name}: ${paar} besteht wieder, aus REFERENZ_ABWEICHUNGEN streichen.`);
+      } else if (bekannt) {
+        hinweise.push(`${name}: ${paar} = ${wert.toFixed(2)}:1, Regel ${soll}:1.`);
+      } else if (!besteht) {
+        fehler.push(`${name}: ${paar} = ${wert.toFixed(2)}:1, gefordert ${soll}:1.`);
       }
-      zeilen.push({ name, paar: `${vorne} auf ${beschreibung}`, wert, soll });
+      if (!bekannt) tiefste = Math.min(tiefste, wert / soll);
+      zeilen.push({ name, paar, wert, soll, bekannt });
     }
 
     // danger darf nicht wie die Marke aussehen: entweder andere Leuchtdichte
@@ -349,7 +404,11 @@ for (const z of zeilen) {
     z.paar.padEnd(bPaar),
     `${z.soll}`.padStart(5),
     z.wert.toFixed(2).padStart(6),
-    z.wert + 1e-9 >= z.soll || (z.ton !== undefined && z.ton >= 30) ? 'ok' : 'FEHLER',
+    z.wert + 1e-9 >= z.soll || (z.ton !== undefined && z.ton >= 30)
+      ? 'ok'
+      : z.bekannt
+        ? 'Referenz'
+        : 'FEHLER',
   ];
   console.log(markdown ? `| ${spalten.join(' | ')} |` : spalten.join(trenner));
 }
@@ -357,6 +416,11 @@ for (const z of zeilen) {
 console.log('\nKnappster Abstand je Kombination (Ist geteilt durch Soll, 1.00 ist gerade noch bestanden):');
 for (const [name, wert] of tiefstwert) {
   console.log(`  ${name.padEnd(bName)}  ${wert.toFixed(2)}`);
+}
+
+if (hinweise.length) {
+  console.log(`\nUnter der Regel, aber Referenz (tokens.css ist normativ), ${hinweise.length} Paare:`);
+  for (const h of hinweise) console.log(`  ${h}`);
 }
 
 if (fehler.length) {

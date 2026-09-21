@@ -9,17 +9,24 @@
       four levels stay apart although the whole ramp is darker.
    2. Text. text is pure white, text-muted and text-subtle are lifted until they
       clear 7:1 and 4.5:1 with room to spare on all three surfaces; in the dark
-      scheme text-subtle sits at about 4.9:1 on surface-raised, here at 8.7:1.
+      scheme text-subtle sits at 4.78:1 on surface-raised, here at 8.77:1.
    3. Borders. This is the one place where a role really changes: border is no
       longer purely decorative. In the dark scheme it is a hairline at about
-      1.3:1; here it reaches about 3:1 on surface, so the line between two rows
-      is visible without relying on the difference between the two surfaces.
-      border-control follows upward.
-   4. Accent. The fill is deepened so white as on-accent clears 4.5:1 with room,
-      and accent-text is brightened so red text clears 4.5:1 on a black ground.
+      1.3:1; here it reaches 3:1 on surface (3.07:1, and 3.29:1 on bg, 2.79:1
+      on surface-raised), so the line between two rows is visible without
+      relying on the difference between the two surfaces. border-control stays
+      clearly above it (2.75:1 between the two lines).
+   4. Accent. The fill is the one of the dark scheme. A deeper fill sinks into
+      the black ground (the former hover #ab1033 stood at 2.85:1 against bg), a
+      lighter one costs white as on-accent its 4.5:1: 4.70:1 on accent, 6.29:1
+      on accent-hover. accent-text is brightened so red text clears 4.5:1 on a
+      black ground.
    5. Status. The four status colours are brightened versions of the dark ones
       and the -subtle fills go from 12 % to 16 % opacity, so a badge is a fill
-      and not a guess. danger keeps its distance from accent-text.
+      and not a guess. danger is pushed towards orange: with a red-green
+      deficiency (deuteranopia) the former #ffa08c sat next to success at a
+      colour difference of about 3.5, #ff9661 at about 17.8. It keeps its
+      distance from accent-text in luminance as well.
    6. focus stays white; against every surface and against accent it is far
       above the required 3:1.
    7. scrim and shadow-overlay go to 80 % black: on a black ground a 50 % scrim
@@ -33,13 +40,13 @@
   --surface: #0b0b0e;
   --surface-raised: #17171d;
   --surface-hover: #24242c;
-  --border: #4a4a56;
+  --border: #5e5e6a;
   --border-control: #a9a9b5;
   --text: #ffffff;
   --text-muted: #d5d9e1;
   --text-subtle: #b0b6c2;
-  --accent: #d1163f;
-  --accent-hover: #ab1033;
+  --accent: #e11d48;
+  --accent-hover: #be123c;
   --on-accent: #ffffff;
   --accent-text: #ff6b85;
   --accent-subtle: rgba(255, 107, 133, 0.16);
@@ -49,8 +56,8 @@
   --success-subtle: rgba(124, 227, 139, 0.16);
   --warning: #ffc75c;
   --warning-subtle: rgba(255, 199, 92, 0.16);
-  --danger: #ffa08c;
-  --danger-subtle: rgba(255, 160, 140, 0.16);
+  --danger: #ff9661;
+  --danger-subtle: rgba(255, 150, 97, 0.16);
   --info: #9ccdff;
   --info-subtle: rgba(156, 205, 255, 0.16);
   --mc-accent: #78d964;
