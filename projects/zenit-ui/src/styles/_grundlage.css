@@ -1,7 +1,7 @@
 /* Package grundlage: head (z-root), Button, Badge, Field/Input/Select, Panel,
    Icon, Spinner and the layout helpers. Verbatim from spec/components/bundle.css. */
 
-.z-root, .z-root * { box-sizing: border-box; }
+.z-root, .z-root *:not(:where(.z-legacy :not(.z-legacy .z-root, .z-legacy .z-root *))) { box-sizing: border-box; }
 .z-root {
   background: var(--bg);
   color: var(--text);
@@ -28,11 +28,68 @@
    change for a setup that was already wrong before; it used to be hidden.
    100%, not 16px: a visitor who raised the browser font size keeps it. */
 html.z-root { font-size: 100%; line-height: normal; }
+/* Addition to the reference: .z-legacy, the class for a subtree that is not
+   migrated yet (docs/legacy.md). An application that adopts the library route
+   by route has z-root on <html> and <body>, and body.z-root hands 14px/20px
+   down to every old page. The absolute line height is what breaks them: a
+   legacy h2 of 27.2px on a 20px line overlaps itself as soon as it wraps. A
+   reset on <body> would take the shell apart, so the reset sits on the content
+   host, and a migrated page puts z-root onto its own container again:
+   html.z-root > body.z-root > .z-legacy > .z-root.
+
+   1. Inherited values. Size and line height go back to what a page has
+      without the library, font smoothing too. Family, colour, background and
+      color-scheme stay as body.z-root set them: the library cannot know what
+      the old <body> rule said, and text in the shell's family and colour on
+      the shell's ground is the readable fallback. The application restates
+      them on the same element (snippet in docs/legacy.md). No custom property
+      for that: it would be a second way to write the same two declarations.
+
+   2. Base rules for bare elements stop at .z-legacy. Every rule of the library
+      that styles an element without a library class carries the exclusion
+        :not(:where(.z-legacy :not(.z-legacy .z-root, .z-legacy .z-root *)))
+      which reads: not inside .z-legacy, unless inside a .z-root that is itself
+      inside .z-legacy. The inner :not() is what lets a nested z-root switch
+      everything on again. It is wrapped in :where(), so it adds (0,0,0) and
+      every specificity written down in this file still holds, including the
+      tie with an application class at (0,1,0) and all a.z-* counter-rules.
+      The rules, all in this file (the other partials style classes only):
+        .z-root *                                   box-sizing     exempt
+        .z-root :where(button, input, select, ...)  font, color    exempt
+        .z-root :focus-visible                      outline        exempt
+        .z-root :where(a), :where(a):hover          color, line    exempt
+        .z-root :where(p, li, ...) a:not(...)       underline      exempt
+      Kept: .z-root itself and html.z-root / body.z-root (they match the class,
+      not a bare element), :where(:root) color-scheme and
+      .z-root:has(.z-stickybar[data-stuck]) (document level), and every class
+      rule.
+      The focus ring is exempt as well, for a measured reason: focus is white
+      in the dark scheme, and outline from this file REPLACES the two-tone ring
+      the browser draws by default. On the light surface of the old page in
+      the demo (/muster/legacy) that is white on near white, 1.04:1, where the
+      browser's own ring was visible. Opting in is one line in the
+      application (.z-legacy :focus-visible { outline: 2px solid ...; }),
+      opting out would be impossible: revert rolls back to the browser's
+      stylesheet, not to the application's rule.
+
+   3. Alternatives, measured. @scope (.z-root) to (.z-legacy) is the natural
+      fit, but Angular 22 builds for "baseline widely available on 2026-05-07",
+      which includes Firefox 119 to 145 and Safari 17.0 to 17.3 without @scope;
+      they would drop every base rule. color: revert inside .z-legacy turned a
+      legacy link from its own colour to the browser's blue and a legacy button
+      from 13px to 13.33px, because revert skips every author rule, and it
+      cannot be undone by a nested z-root.
+
+   Ceiling: one level of re-entry. A .z-legacy inside a z-root inside a
+   .z-legacy counts as migrated; nearest-ancestor matching needs @scope.
+   A library component placed straight into .z-legacy, without a z-root around
+   it, loses exactly the rules listed under 2; docs/legacy.md has the list. */
+.z-legacy { font-size: 1rem; line-height: normal; -webkit-font-smoothing: auto; }
 /* Deviation from the reference: bundle.css lists the four elements one by one
    (specificity 0,1,1) and thereby beats .z-btn--primary/--ghost/--danger
    (0,1,0). :where() lowers the rule to 0,1,0, the values stay the same. */
-.z-root :where(button, input, select, textarea) { font: inherit; color: inherit; }
-.z-root :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.z-root :where(button, input, select, textarea):not(:where(.z-legacy :not(.z-legacy .z-root, .z-legacy .z-root *))) { font: inherit; color: inherit; }
+.z-root :focus-visible:not(:where(.z-legacy :not(.z-legacy .z-root, .z-legacy .z-root *))) { outline: 2px solid var(--focus); outline-offset: 2px; }
 /* Deviation from the reference: bundle.css writes .z-root a (0,1,1), which beats
    every class an application can put on a link (0,1,0). In the first real
    integration that made the application's own skip link red on red (1.29:1) and
@@ -72,10 +129,10 @@ html.z-root { font-size: 100%; line-height: normal; }
    cannot be switched off from an application stylesheet. Its own escape hatch is
    a:not([class*="z-"]), so any class whose name contains "z-" opts a link out,
    including by accident ("quiz-link"). That is a side effect of the selector,
-   not a documented API; a separate package is to add a documented .z-legacy
-   subtree class for that job. */
-.z-root :where(a) { color: var(--accent-text); text-decoration: none; }
-.z-root :where(a):hover { text-decoration: underline; }
+   not a documented API; the documented way to keep the library out of a
+   subtree is .z-legacy above. */
+.z-root :where(a):not(:where(.z-legacy :not(.z-legacy .z-root, .z-legacy .z-root *))) { color: var(--accent-text); text-decoration: none; }
+.z-root :where(a):hover:not(:where(.z-legacy :not(.z-legacy .z-root, .z-legacy .z-root *))) { text-decoration: underline; }
 /* Deviation from the reference: bundle.css underlines a link on hover only. A
    link inside running text then differs from the words around it by colour
    alone, and accent-text against text stays below 3:1 in 11 of the 12 scheme
@@ -90,7 +147,7 @@ html.z-root { font-size: 100%; line-height: normal; }
    font size is the only kind that fits 12px hints and 16px body alike; it
    moves the line clear of the descenders of g, j and y. No px literal is added.
    Weight (0,2,1), the same as .z-root a.z-btn below. */
-.z-root :where(p, li, dd, label, .z-alert__body, .z-faq__body, .z-empty__body, .z-field__hint):not(:where(nav, .z-header, .z-footer) *) a:not([class*="z-"]) {
+.z-root :where(p, li, dd, label, .z-alert__body, .z-faq__body, .z-empty__body, .z-field__hint):not(:where(nav, .z-header, .z-footer) *) a:not([class*="z-"]):not(:where(.z-legacy :not(.z-legacy .z-root, .z-legacy .z-root *))) {
   text-decoration: underline;
   text-underline-offset: 0.15em;
 }

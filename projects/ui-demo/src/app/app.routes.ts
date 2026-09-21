@@ -64,4 +64,10 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./pages/muster/preisrechner.page').then((m) => m.MusterPreisrechnerPage),
   },
+  // Not in the demo navigation: the page carries an old stylesheet on purpose
+  // and is exempt from the style rules the generic suites check on every route.
+  {
+    path: 'muster/legacy',
+    loadComponent: () => import('./pages/muster/legacy.page').then((m) => m.LegacyPage),
+  },
 ];

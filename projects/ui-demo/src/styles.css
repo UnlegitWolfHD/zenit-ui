@@ -344,3 +344,10 @@
 .demo-diagramm {
   max-width: var(--measure);
 }
+
+/* Page "Legacy": room around the old page and around the migrated page inside
+   it. Everything else on that page comes from its own old stylesheet. */
+.demo-legacy-host,
+.demo-legacy-seite {
+  padding: var(--space-5);
+}
