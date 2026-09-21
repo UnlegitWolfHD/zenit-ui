@@ -1,4 +1,5 @@
 export * from './tabs';
+export * from './tab-group';
 export * from './stepper';
 export * from './sidebar';
 export * from './app-header';
