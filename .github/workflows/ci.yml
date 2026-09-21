@@ -33,11 +33,20 @@ jobs:
 
       - run: npx ng build ui-demo
 
+      # The example application consumes the built package from dist/zenit-ui,
+      # so it only builds after the library. `npm run lint` above already
+      # covers it, because `ng lint` runs every project with a lint target.
+      - run: npx ng build beispiel-app
+
       - run: npx ng test zenit-ui --watch=false
+
+      - run: npx ng test beispiel-app --watch=false
 
       - run: npx playwright install --with-deps chromium
 
       - run: npm run e2e
+
+      - run: npm run e2e:beispiel
 
       - uses: actions/upload-artifact@v4
         if: failure()

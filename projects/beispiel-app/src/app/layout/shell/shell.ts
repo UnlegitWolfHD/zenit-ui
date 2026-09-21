@@ -1,0 +1,98 @@
+import { Component } from '@angular/core';
+import { RouterLink, RouterOutlet } from '@angular/router';
+import {
+  ZAppHeader,
+  ZBrand,
+  ZFooter,
+  ZFooterBase,
+  ZHeaderEnd,
+  ZHeaderLink,
+  ZToastOutlet,
+} from 'zenit-ui';
+import { GUTHABEN, KUNDEN_LINKS, NUTZER } from '../../gameserver/beispieldaten';
+
+/**
+ * Layout of the customer area: header, content, footer (10-seitenmuster.md,
+ * "Seite im Kundenbereich"). Every page of a real application sits in here, so
+ * the shell is the only place that knows about navigation and toast outlet.
+ */
+@Component({
+  selector: 'app-shell',
+  imports: [
+    RouterLink,
+    RouterOutlet,
+    ZAppHeader,
+    ZBrand,
+    ZFooter,
+    ZFooterBase,
+    ZHeaderEnd,
+    ZHeaderLink,
+    ZToastOutlet,
+  ],
+  template: `
+    <!-- First tab stop of the page, visible only while focused. -->
+    <a class="app-skip body-sm" href="#inhalt">Zum Hauptinhalt springen</a>
+
+    <!-- Header, content and footer share the same z-container, so brand,
+         page title and copyright stand on one line at every width. -->
+    <div class="z-container">
+      <z-app-header navLabel="Hauptnavigation">
+        <!-- The logo file belongs to the repository of the real site; the design
+           system ships none, so the brand is its name in the display face. -->
+        <span zBrand>Zenit</span>
+        @for (link of links; track link.name) {
+          @if (link.route) {
+            <a zHeaderLink [routerLink]="link.route" active>{{ link.name }}</a>
+          } @else {
+            <!-- The other pages of the customer area are not part of this
+               example. They stay links so the header keeps its real shape. -->
+            <a zHeaderLink href="#" (click)="$event.preventDefault()">{{ link.name }}</a>
+          }
+        }
+        <!-- Credit in mono without a red pill, and a link to the billing page
+           (AppHeader README). The label spells out what the number is, because
+           "25,00 €" alone says nothing when read out loud. -->
+        <a
+          zHeaderLink
+          zHeaderEnd
+          class="z-mono"
+          href="#"
+          aria-label="Guthaben 25,00 Euro, zur Abrechnung"
+          (click)="$event.preventDefault()"
+          >{{ guthaben }}</a
+        >
+        <!-- Decorative: the name is already in the account menu of a real app. -->
+        <span zHeaderEnd class="z-avatar" aria-hidden="true">{{ nutzer }}</span>
+      </z-app-header>
+    </div>
+
+    <!-- tabindex="-1" lets the skip link move the focus here. z-container keeps
+         the content at most the container width and left aligned. -->
+    <main id="inhalt" tabindex="-1" class="z-container app-main">
+      <router-outlet />
+    </main>
+
+    <div class="z-container">
+      <z-footer>
+        <!-- Customer area: only the bottom row, copyright left and the legal
+             links right, no link columns (Footer README). Both parts carry
+             zFooterBase, because the row spreads its own children. -->
+        <span zFooterBase>© 2026 Zenit-Hosting</span>
+        <span zFooterBase class="z-cluster">
+          @for (link of rechtliches; track link) {
+            <a href="#" (click)="$event.preventDefault()">{{ link }}</a>
+          }
+        </span>
+      </z-footer>
+    </div>
+
+    <!-- Once per application, at the end of the layout (README, step 4). -->
+    <z-toast-outlet />
+  `,
+})
+export class Shell {
+  protected readonly guthaben = GUTHABEN;
+  protected readonly nutzer = NUTZER;
+  protected readonly links = KUNDEN_LINKS;
+  protected readonly rechtliches = ['Impressum', 'Datenschutz', 'AGB', 'Widerruf'];
+}
