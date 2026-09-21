@@ -34,9 +34,26 @@ export class NotizDialog {
   protected readonly ref = inject<DialogRef<string>>(DialogRef);
 }
 
+/**
+ * The static dialog for the screenshot uses `z-dialog` itself, because the
+ * layout also works standalone and then generates the id of its heading.
+ * The static menu below stays hand-written markup: `z-menu` only ever renders
+ * through `cdkMenuTriggerFor` inside a CDK overlay, so there is no way to show
+ * it open and in place.
+ */
 @Component({
   selector: 'demo-overlays-page',
-  imports: [CdkMenuTrigger, Z_MENU, ZButton, ZField, ZIcon, ZInput, ZPanel],
+  imports: [
+    CdkMenuTrigger,
+    Z_MENU,
+    ZButton,
+    ZDialogActions,
+    ZDialogLayout,
+    ZField,
+    ZIcon,
+    ZInput,
+    ZPanel,
+  ],
   template: `
     <h1 class="heading-1 demo-title">Overlays</h1>
     <p class="demo-lead">
@@ -75,30 +92,26 @@ export class NotizDialog {
       }
 
       <p class="demo-cap caption">
-        Dasselbe Markup ohne Overlay, damit der Dialog auf einem Screenshot steht. role und
-        aria-modal setzt im Betrieb der Container des CDK. Bestätigen bleibt gesperrt, bis der
-        Servername genau so im Feld steht.
+        Derselbe Baustein ohne Overlay, damit der Dialog auf einem Screenshot steht: z-dialog
+        arbeitet auch allein und vergibt dann die id seiner Überschrift selbst. role und aria-modal
+        setzt im Betrieb der Container des CDK. Bestätigen bleibt gesperrt, bis der Servername genau
+        so im Feld steht.
       </p>
       <z-panel flush>
         <div class="z-scrim">
-          <div class="z-dialog">
-            <div class="z-dialog__header">
-              <h2 class="z-dialog__title">Server "Test" löschen?</h2>
-            </div>
-            <div class="z-dialog__body">
-              <span>
-                Welt, Konfiguration und alle 3 Backups werden sofort gelöscht. Das lässt sich nicht
-                rückgängig machen. Verbrauchte 0,65&nbsp;€ werden abgerechnet.
-              </span>
-              <z-field label="Gib zur Bestätigung den Servernamen ein" for="demo-dlg-confirm">
-                <input zInput mono id="demo-dlg-confirm" placeholder="Test" />
-              </z-field>
-            </div>
-            <div class="z-dialog__footer">
-              <button zBtn="ghost">Abbrechen</button>
-              <button zBtn="danger" disabled>Server löschen</button>
-            </div>
-          </div>
+          <z-dialog title='Server "Test" löschen?'>
+            <span>
+              Welt, Konfiguration und alle 3 Backups werden sofort gelöscht. Das lässt sich nicht
+              rückgängig machen. Verbrauchte 0,65&nbsp;€ werden abgerechnet.
+            </span>
+            <z-field label="Gib zur Bestätigung den Servernamen ein" for="demo-dlg-confirm">
+              <input zInput mono id="demo-dlg-confirm" placeholder="Test" />
+            </z-field>
+            <ng-container zDialogActions>
+              <button zBtn="ghost" type="button">Abbrechen</button>
+              <button zBtn="danger" type="button" disabled>Server löschen</button>
+            </ng-container>
+          </z-dialog>
         </div>
       </z-panel>
     </section>
@@ -184,7 +197,7 @@ export class OverlaysPage {
         title: 'Server "Test" löschen?',
         body:
           'Welt, Konfiguration und alle 3 Backups werden sofort gelöscht. Das lässt sich nicht ' +
-          'rückgängig machen. Verbrauchte 0,65 € werden abgerechnet.',
+          'rückgängig machen. Verbrauchte 0,65\u00a0€ werden abgerechnet.',
         confirmLabel: 'Server löschen',
         cancelLabel: 'Abbrechen',
         danger: true,
