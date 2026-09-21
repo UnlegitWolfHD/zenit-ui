@@ -6,14 +6,33 @@ registers the stylesheets, sets `z-root`, pulls in `@angular/cdk` and the four
 self-hosted fonts and mounts the toast outlet.
 
 ```bash
-ng add zenit-ui
+ng add ./zenit-ui-0.1.0.tgz
 ```
 
-## What it does
+Name the tarball, not the package: `zenit-ui` is unclaimed on the public
+registry, see the warning in the package README.
 
-Every step is idempotent: running the schematic a second time changes nothing,
-existing entries are never duplicated, and an existing but wrongly ordered
-`styles` array is put back into the order the README prescribes.
+## Guarantees
+
+- **Idempotent.** A second run changes nothing (the CLI prints "Nothing to be
+  done"), existing entries are never duplicated, and a wrongly ordered `styles`
+  array is put back into the order the README prescribes.
+- **A source file is fully patched or untouched.** All changes to one file are
+  computed against its original text and applied in one pass. When a file cannot
+  be patched safely (see the cases below), nothing in it changes and the final
+  log lists the manual step under "left for you". The log only reports a step as
+  done when it was done.
+- **Only files of the project are written.** Nothing under `node_modules` and
+  nothing outside the project root.
+- **Line endings are kept.** Inserted text uses the dominant line ending of the
+  file it goes into, so a CRLF file stays CRLF.
+
+The Angular CLI formats every file a schematic touched with Prettier when the
+workspace has Prettier installed (a fresh `ng new` application does). That can
+reindent `index.html` beyond the lines listed here; it is the CLI's doing, not
+the schematic's. The init script carries a `<!-- prettier-ignore -->`.
+
+## What it does
 
 1. **`angular.json`** – the `styles` of the project's `build` target (and of the
    `test` target when it already has a `styles` option) get these entries in
@@ -29,11 +48,29 @@ existing entries are never duplicated, and an existing but wrongly ordered
    ```
 
    With `--themes` the entry `zenit-ui/styles/themes.css` follows directly after
-   `tokens.css`.
+   `tokens.css`. Existing entries are recognised in both spellings
+   (`zenit-ui/styles/tokens.css` and `node_modules/zenit-ui/styles/tokens.css`)
+   and in object form; they are moved into place as they are, so
+   `{ "input": …, "bundleName": …, "inject": … }` keeps its keys. A `themes.css`
+   entry that is already there stays, in its canonical place, also when the
+   schematic runs without `--themes`.
+
+   Only `options` is written. `styles` inside a configuration replace the ones
+   from `options`; such configurations are left alone and named in the log.
 
 2. **`src/index.html`** – the class `z-root` is merged into the class lists of
-   `<html>` and `<body>`. A `lang` attribute is only added (`lang="de"`) when
-   the `<html>` tag carries none.
+   `<html>` and `<body>`. `lang="de"` is only added when `<html>` has no `lang`.
+   A fresh `ng new` application has `lang="en"`, which is left as it is; the log
+   then says `lang left as "en": set it to your UI language` (the built-in
+   labels of zenit-ui are German).
+
+   The file is read with a small tolerant tag scanner, not with a regular
+   expression: tags inside comments, `<script>`, `<style>`, `<textarea>` and
+   `<title>` are ignored, attribute values may contain `>`, values may be
+   double-quoted, single-quoted or unquoted (`class=app` becomes
+   `class="app z-root"`), tag names may be upper case and tags may span lines.
+   When `<html>` or `<body>` (or, with `--themes`, `<head>`) is missing, the
+   file is left alone.
 
 3. **`@angular/cdk`** – added to `dependencies` with the range of the installed
    Angular major (`^22.0.0` for Angular 22) when it is missing, followed by a
@@ -41,16 +78,37 @@ existing entries are never duplicated, and an existing but wrongly ordered
 
 4. **Fonts** – `material-icons`, `@fontsource/inter`, `@fontsource/space-grotesk`
    and `@fontsource/jetbrains-mono` land in `devDependencies`, and their
-   `@import` rules are prepended to the project's global stylesheet. The
-   `layer(schriften)` around Material Icons is required, see the README. The
-   same block is valid in SCSS, because every URL ends in `.css` and Sass
-   (from 1.71) passes such rules through as plain CSS imports.
+   `@import` rules are prepended to the project's global stylesheet: the first
+   `styles` entry of the build target that is a `.css`, `.scss` or `.less` file
+   inside the project. Entries under `node_modules` (such as
+   `node_modules/material-icons/iconfont/material-icons.css`), absolute paths
+   and paths outside the project root never qualify. Without such an entry the
+   log names the manual step. The `layer(schriften)` around Material Icons is
+   required, see the README. The same block is valid in SCSS, because every URL
+   ends in `.css` and Sass (from 1.71) passes such rules through as plain CSS
+   imports.
 
 5. **Toast outlet** – `<z-toast-outlet />` is appended to the root component's
-   template and `ZToastOutlet` is added to its `imports`. The root component is
-   located through the build target's `main.ts` and the `bootstrapApplication()`
-   call in it. When that fails, the schematic logs what to do by hand instead of
-   guessing.
+   template and `ZToastOutlet` is added to its `imports`, together with the
+   import statement. The root component is the class passed to
+   `bootstrapApplication()` in the build target's main file. It is patched when
+   - its template is a `templateUrl` file or an inline `template` written as a
+     template literal without `${…}`, in any position relative to `imports`, and
+   - `imports` is an array literal (`[RouterOutlet]`, `[]`, `[...SHARED, Other]`)
+     or absent, in which case the property is added.
+
+   It is left untouched, with the manual steps in the log, when `imports` is an
+   identifier (`imports: SHARED`), a shorthand, a call or a spread-only array,
+   when there is neither `templateUrl` nor a template literal, when the template
+   file is missing, or when `zenit-ui` is imported as a namespace. The template
+   counts as done when it contains the element `<z-toast-outlet`; a comment that
+   merely mentions it does not count.
+
+   An **NgModule application** (`bootstrapModule()` in the main file) is not
+   changed either. The log then names the right steps: `ZToastOutlet` goes into
+   the `imports` of the NgModule that declares the root component, the tag into
+   that component's template, and with `--themes` `provideZenitTheme()` into the
+   `providers` of the root NgModule.
 
 6. **Theme, only with `--themes`** – three steps that keep a stored colour
    scheme from flashing in the default scheme first (`docs/theming.md`, "No
@@ -58,8 +116,9 @@ existing entries are never duplicated, and an existing but wrongly ordered
    - The output of `zenitThemeInitScript()` goes into `src/index.html` as an
      inline `<script>`, right after `<meta charset>` (which has to stay within
      the first 1024 bytes) or as the first child of `<head>` when there is none.
-     It carries the marker comment `zenit-theme-init`; a file that already
-     contains the marker is left alone.
+     It is written in the same pass as `z-root`. It carries the marker comment
+     `zenit-theme-init`; a file that already contains the marker gets no second
+     script.
    - `optimization.styles.inlineCritical` is set to `false` in the `production`
      configuration of the build target. The CLI otherwise inlines only the CSS
      that matches `index.html` and loads the rest without blocking;
@@ -68,8 +127,7 @@ existing entries are never duplicated, and an existing but wrongly ordered
      `optimization: false` and `styles: false` are left alone.
    - `provideZenitTheme()` is added to the application config, when the
      `bootstrapApplication()` call and its config can be resolved and no
-     `provideZenitTheme(` is there yet. Otherwise the schematic logs the
-     instruction.
+     `provideZenitTheme(` is there yet. Otherwise the log names the step.
 
    The script matches the default config. If you pass a config to
    `provideZenitTheme()`, replace the script with the output of
@@ -79,41 +137,51 @@ existing entries are never duplicated, and an existing but wrongly ordered
 
 | Option | Type | Default | Meaning |
 | --- | --- | --- | --- |
-| `--project` | string | workspace default | Application to wire up. Without it the first application of the workspace is used. |
-| `--themes` | boolean | `false` | Also register `zenit-ui/styles/themes.css` and wire the theme without a flash: init script, `provideZenitTheme()`, `inlineCritical: false`. |
+| `--project` | string | the only application | Application to wire up. It must have `projectType: "application"` and a `build` target whose builder ends in `:application`, `:browser` or `:browser-esbuild`; a library or an unknown name fails with a `SchematicsException` before anything is written. Without the option the workspace must have exactly one application, whose name is logged; with none or several the schematic fails and lists them. |
+| `--themes` | boolean | `false` | Also register `zenit-ui/styles/themes.css` and wire the theme without a flash: init script in `index.html`, `provideZenitTheme()`, `inlineCritical: false` for production. |
 | `--fonts` | boolean | `true` | Add the font packages and their imports. |
 | `--toast-outlet` | boolean | `true` | Mount `<z-toast-outlet />` in the root component. |
 
-## Running it against the local tarball
+## Running it against the local build
 
-The library is not published, so `ng add` needs a local package:
+The library is not published, so the schematic runs from a local package:
 
 ```bash
-ng build zenit-ui
-node tools/build-schematics.mjs
+npm run build:lib                     # ng build zenit-ui + tools/build-schematics.mjs
 cd dist/zenit-ui && npm pack          # zenit-ui-0.1.0.tgz
 ```
 
-In the application:
+In the application, either let `ng add` install the tarball and run the
+schematic:
+
+```bash
+ng add ../path/to/zenit-ui-0.1.0.tgz --themes
+```
+
+or install first and run the schematic on its own. `npm i` of a tarball does not
+run it, and this is also the way to run it again later:
 
 ```bash
 npm i ../path/to/zenit-ui-0.1.0.tgz
-ng add zenit-ui
+ng generate zenit-ui:ng-add --project my-app --themes
 ```
 
-`npm i` of a tarball does not run `ng add`, so the second command is needed.
-Alternatively the collection can be run straight from `dist` without installing
-anything:
+`ng generate` also takes the path of a collection, which runs the build output
+without installing it: `ng generate ../path/to/dist/zenit-ui/schematics/collection.json:ng-add --project my-app`.
+Add `--dry-run` to any of them to see the file list without writing.
 
-```bash
-npx schematics /path/to/dist/zenit-ui/schematics/collection.json:ng-add --project my-app
-```
+`npx schematics …` is not one of the supported ways: the name `schematics` on
+npm is an unrelated package. The binary of that name belongs to
+`@angular-devkit/schematics-cli`, which is not a dependency of this workspace
+and was not tested here. If you use it (`npx -p @angular-devkit/schematics-cli
+schematics <path>/collection.json:ng-add --project my-app --dry-run=false`), mind
+that it defaults to a dry run for a local collection path.
 
 ## Building and testing
 
 ```bash
-ng build zenit-ui && node tools/build-schematics.mjs   # = build:lib
-node tools/test-schematics.mjs                         # = test:schematics
+npm run build:lib          # ng build zenit-ui && node tools/build-schematics.mjs
+npm run test:schematics    # node tools/test-schematics.mjs
 ```
 
 `tools/build-schematics.mjs` compiles `projects/zenit-ui/schematics` with
@@ -127,9 +195,13 @@ Node read the compiled factories as ESM.
 through `require()`, so they must exist as JavaScript) and then runs the specs
 with **Vitest**, which is already a devDependency of the workspace. Node's
 built-in test runner would need `@types/node` plus a second compile step for the
-specs; Vitest runs the TypeScript specs directly. The suite has 14 tests in
-`projects/zenit-ui/schematics/ng-add/index.spec.ts` and builds its fixtures with
-the `workspace` and `application` schematics of `@schematics/angular`.
+specs; Vitest runs the TypeScript specs directly. The suite is
+`projects/zenit-ui/schematics/ng-add/index.spec.ts`. It builds its fixtures with
+the `workspace`, `application` and `library` schematics of `@schematics/angular`
+and has one block of regression tests per finding of the consumer review
+(property order in the root component, non-literal `imports`, `node_modules`
+stylesheets, style entry spellings, `index.html` scanning, project selection,
+line endings, NgModule applications, `lang`).
 
 `ng build zenit-ui` never sees the schematics: `tsconfig.lib.json` only includes
 `src/**`, and `ng-package.json` only copies `src/styles`. `ng test zenit-ui`
@@ -137,20 +209,26 @@ ignores them for the same reason (`tsconfig.spec.json` includes `src/**` only).
 
 ## Limits
 
-- The schematic writes the style entries in the package-specifier form
-  (`zenit-ui/styles/tokens.css`) that the README documents. Applications that
-  import the stylesheets via `@import` in their own entry stylesheet instead get
-  a duplicate registration and have to remove the `angular.json` entries.
-- Only the `options` of a target are touched, not per-configuration overrides.
-  A project that sets `styles` inside a configuration has to be adjusted by hand.
-- The root component is only found for standalone applications bootstrapped
-  with `bootstrapApplication()`. For an `NgModule` based application the
-  schematic logs the two manual steps.
-- Inline templates are only extended when they are written as a template literal
-  (backticks). A template in a plain string is left alone with a warning.
+- Applications that import the library stylesheets via `@import` in their own
+  entry stylesheet instead of `angular.json` get a second registration and have
+  to remove the `angular.json` entries.
+- Only the `options` of a target are written. `styles` inside a configuration
+  are reported, not patched.
+- The root component is only patched for standalone applications bootstrapped
+  with `bootstrapApplication(Component, …)` where `Component` is imported by a
+  relative path in the main file. NgModule applications and every case listed
+  under "Toast outlet" get manual steps instead.
+- An inline template in a plain string (`template: '<router-outlet />'`) or with
+  `${…}` is not extended.
+- A global stylesheet in the indented `.sass` syntax does not get the font
+  imports, the block is not valid there.
+- The `index.html` scanner is not an HTML parser. It handles what the list
+  above names; it does not know conditional comments, CDATA or a `<html>` that
+  only exists after server-side templating.
 - `zenit-ui/styles/themes.css` ships with the package (`styles/themes.css` and
   `styles/themes/*.css`). `--themes` writes the init script for the default
   config only and always onto `<html>`; with a custom `target` remove it again.
+  The check for an existing provider is textual (`provideZenitTheme(`).
 - The font package ranges are pinned in the schematic
   (`projects/zenit-ui/schematics/ng-add/index.ts`, `FONT_PACKAGES`) and have to
   be bumped together with the workspace's own devDependencies.
