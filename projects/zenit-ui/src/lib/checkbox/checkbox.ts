@@ -3,10 +3,13 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
+  ElementRef,
   forwardRef,
   input,
   model,
   signal,
+  viewChild,
 } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 
@@ -20,8 +23,8 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
   template: `
     <label class="z-check">
       <input
+        #feld
         type="checkbox"
-        [checked]="checked()"
         [disabled]="gesperrt()"
         [attr.aria-label]="ariaLabel() || null"
         (change)="aufAenderung($event)"
@@ -45,6 +48,20 @@ export class ZCheckbox implements ControlValueAccessor {
 
   private melde?: (wert: boolean) => void;
   private aufBeruehrt?: () => void;
+
+  private readonly feld = viewChild.required<ElementRef<HTMLInputElement>>('feld');
+
+  constructor() {
+    // Der Haken steht direkt am Element, nicht ueber eine Bindung [checked].
+    // Ein Klick aendert die Checkedness am Element selbst. Dreht eine
+    // Steuerung die Eingabe zurueck, bevor eine Change Detection lief, traegt
+    // der Ausdruck denselben Wert wie zuletzt gerendert, und die Bindung
+    // wuerde nicht schreiben: Feld und Steuerung liefen auseinander. Angulars
+    // eigene Accessors schreiben deshalb auch direkt auf das Element.
+    effect(() => {
+      this.feld().nativeElement.checked = this.checked();
+    });
+  }
 
   protected aufAenderung(ereignis: Event): void {
     const wert = (ereignis.target as HTMLInputElement).checked;

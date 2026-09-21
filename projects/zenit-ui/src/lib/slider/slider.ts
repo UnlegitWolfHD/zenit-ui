@@ -3,11 +3,14 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
+  ElementRef,
   forwardRef,
   input,
   model,
   numberAttribute,
   signal,
+  viewChild,
 } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 
@@ -28,13 +31,10 @@ let laufendeNummer = 0;
       <span class="z-range__value">{{ anzeige() }}</span>
     </div>
     <input
+      #feld
       type="range"
       [id]="id"
       [attr.aria-label]="label() ? null : ariaLabel() || null"
-      [min]="min()"
-      [max]="max()"
-      [step]="step()"
-      [value]="value()"
       [disabled]="gesperrt()"
       [attr.aria-valuetext]="anzeige()"
       [attr.aria-describedby]="hint() ? hinweisId : null"
@@ -83,6 +83,25 @@ export class ZSlider implements ControlValueAccessor {
 
   private melde?: (wert: number) => void;
   private aufBeruehrt?: () => void;
+
+  private readonly feld = viewChild.required<ElementRef<HTMLInputElement>>('feld');
+
+  constructor() {
+    // Skala und Wert stehen direkt am Element, nicht ueber Bindungen. Eine
+    // Zeigereingabe aendert den Wert am Element selbst. Dreht eine Steuerung
+    // sie zurueck, bevor eine Change Detection lief, traegt der Ausdruck
+    // denselben Wert wie zuletzt gerendert, und eine Bindung [value] wuerde
+    // nicht schreiben: Schiene und Steuerung liefen auseinander. min, max und
+    // step stehen mit im Effekt, weil der Browser den Wert sonst auf die noch
+    // ungesetzte Standardskala 0 bis 100 begrenzt.
+    effect(() => {
+      const schiene = this.feld().nativeElement;
+      schiene.min = String(this.min());
+      schiene.max = String(this.max());
+      schiene.step = String(this.step());
+      schiene.value = String(this.value());
+    });
+  }
 
   protected aufEingabe(ereignis: Event): void {
     const wert = (ereignis.target as HTMLInputElement).valueAsNumber;
