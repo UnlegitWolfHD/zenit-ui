@@ -1,0 +1,239 @@
+import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
+import {
+  ZAppHeader,
+  ZBrand,
+  ZButton,
+  ZFaq,
+  ZFooter,
+  ZFooterBase,
+  ZFooterCol,
+  ZGameGrid,
+  ZGameTile,
+  ZHeaderEnd,
+  ZHeaderLink,
+  ZHero,
+  ZHeroActions,
+  ZPriceLine,
+  ZPriceSummary,
+  ZSegment,
+  ZSegmentOption,
+  ZSlider,
+  ZSpecList,
+} from 'zenit-ui';
+import { euro, OEFFENTLICHE_LINKS, SPIELE, TECHNIK } from './beispieldaten';
+
+/*
+ * Example calculation for this preview only. The rates are made up for the
+ * demo and are written out in the note under the summary, so the page never
+ * claims a real price.
+ */
+const PREIS_JE_GB = 0.45;
+const PREIS_JE_STECKPLATZ = 0.2;
+
+/**
+ * Oeffentliche Seite nach 10-seitenmuster.md: Kopf, dann das Werkzeug der
+ * Seite, dann Fakten, FAQ und der einzige zentrierte Block, der Abschluss-CTA.
+ */
+@Component({
+  selector: 'demo-muster-startseite-page',
+  imports: [
+    ZAppHeader,
+    ZBrand,
+    ZButton,
+    ZFaq,
+    ZFooter,
+    ZFooterBase,
+    ZFooterCol,
+    ZGameGrid,
+    ZGameTile,
+    ZHeaderEnd,
+    ZHeaderLink,
+    ZHero,
+    ZHeroActions,
+    ZPriceSummary,
+    ZSegment,
+    ZSlider,
+    ZSpecList,
+  ],
+  template: `
+    <z-app-header navLabel="Hauptnavigation">
+      <span zBrand>Zenit</span>
+      @for (link of links; track link) {
+        <a zHeaderLink href="#" (click)="$event.preventDefault()">{{ link }}</a>
+      }
+      <a zBtn="secondary" size="sm" zHeaderEnd href="#" (click)="$event.preventDefault()"
+        >Zum Dashboard</a
+      >
+    </z-app-header>
+
+    <z-hero
+      title="Gameserver aus Nürnberg. In etwa 60 Sekunden online."
+      lead="Spiel wählen, Arbeitsspeicher einstellen, starten. Dedizierte NVMe-Hardware, nach Stunden abgerechnet und monatlich kündbar."
+      note="Keine Kreditkarte nötig · DDoS-Schutz inklusive · Keine Einrichtungsgebühr"
+    >
+      <div zHeroActions>
+        <a zBtn="secondary" size="lg" href="#rechner">Server zusammenstellen</a>
+      </div>
+    </z-hero>
+
+    <section id="rechner" class="z-section">
+      <div class="z-stack">
+        <h2 class="heading-2 demo-flach">Server zusammenstellen</h2>
+        <p class="body demo-lead">
+          Beispielrechnung für diese Vorschau. Die Werte stammen aus den Vorschauen der Bausteine
+          und sind keine gültigen Preise.
+        </p>
+
+        <z-game-grid>
+          @for (eintrag of spiele; track eintrag.titel) {
+            <button
+              zGameTile
+              type="button"
+              [title]="eintrag.titel"
+              [price]="eintrag.preis"
+              [selected]="spiel() === eintrag.titel"
+              (click)="spiel.set(eintrag.titel)"
+            ></button>
+          }
+        </z-game-grid>
+
+        <div class="demo-grid">
+          <div class="z-stack">
+            <z-slider
+              label="Arbeitsspeicher"
+              unit="GB"
+              [min]="2"
+              [max]="16"
+              [step]="2"
+              [ticks]="arbeitsspeicherStufen"
+              hint="Empfohlen für Valheim mit bis zu 10 Spielern: 6 GB."
+              [(value)]="arbeitsspeicher"
+            />
+            <z-slider
+              label="Steckplätze"
+              unit="Spieler"
+              [min]="2"
+              [max]="20"
+              [step]="2"
+              [ticks]="steckplatzStufen"
+              hint="Jeder Steckplatz kostet 0,20 € im Monat."
+              [(value)]="steckplaetze"
+            />
+            <div class="z-stack">
+              <span class="z-field__label" id="muster-laufzeit">Laufzeit</span>
+              <z-segment
+                [options]="laufzeiten"
+                [(value)]="laufzeit"
+                ariaLabel="Laufzeit in Monaten"
+              />
+            </div>
+          </div>
+
+          <z-price-summary
+            [label]="spiel() + ', monatlich'"
+            [price]="preisText()"
+            period="/ Monat"
+            [lines]="posten()"
+            note="Beispielrechnung dieser Vorschau: Grundpreis des Spiels, dazu 0,45 € je GB über 2 GB und 0,20 € je Steckplatz über 2. Keine gültigen Preise."
+          >
+            <button zBtn="primary" block type="button">Server erstellen</button>
+          </z-price-summary>
+        </div>
+      </div>
+    </section>
+
+    <section class="z-section">
+      <div class="z-stack">
+        <h2 class="heading-2 demo-flach">Hardware und Plattform</h2>
+        <z-spec-list [items]="technik" />
+      </div>
+    </section>
+
+    <section class="z-section">
+      <div class="z-stack">
+        <h2 class="heading-2 demo-flach">Häufige Fragen</h2>
+        <div>
+          <z-faq question="Wie schnell ist mein Server online?" open>
+            Nach der Bestellung dauert die Einrichtung in der Regel etwa 60 Sekunden. Große Modpacks
+            brauchen beim ersten Start länger, weil sie erst heruntergeladen werden.
+          </z-faq>
+          <z-faq question="Kann ich später mehr RAM buchen?">
+            Ja, im Panel unter Upgrade. Der neue Preis gilt ab der nächsten Stunde.
+          </z-faq>
+          <z-faq question="Wie wird abgerechnet?">
+            Nach Stunden von deinem Guthaben, nach oben gedeckelt auf den Monatspreis.
+          </z-faq>
+        </div>
+      </div>
+    </section>
+
+    <section class="z-section demo-cta">
+      <h2 class="display-lg demo-flach">Server erstellen</h2>
+      <a zBtn="primary" size="lg" href="#rechner">Server zusammenstellen</a>
+    </section>
+
+    <z-footer>
+      <z-footer-col heading="Hosting">
+        <li><a href="#">Minecraft</a></li>
+        <li><a href="#">Preise</a></li>
+        <li><a href="#">Hardware</a></li>
+      </z-footer-col>
+      <z-footer-col heading="Hilfe">
+        <li><a href="#">Wiki</a></li>
+        <li><a href="#">Vorschläge</a></li>
+        <li><a href="#">Discord</a></li>
+      </z-footer-col>
+      <z-footer-col heading="Rechtliches">
+        <li><a href="#">Impressum</a></li>
+        <li><a href="#">Datenschutz</a></li>
+        <li><a href="#">AGB</a></li>
+        <li><a href="#">Widerruf</a></li>
+      </z-footer-col>
+      <span zFooterBase>© 2026 Zenit-Hosting</span>
+      <a zFooterBase href="#">Cookie-Einstellungen</a>
+    </z-footer>
+  `,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class MusterStartseitePage {
+  protected readonly links = OEFFENTLICHE_LINKS;
+  protected readonly spiele = SPIELE;
+  protected readonly technik = TECHNIK;
+
+  protected readonly arbeitsspeicherStufen = [2, 4, 6, 8, 10, 12, 14, 16];
+  protected readonly steckplatzStufen = [2, 8, 14, 20];
+
+  protected readonly laufzeiten: ZSegmentOption[] = [
+    { value: '1', label: '1 Monat' },
+    { value: '3', label: '3 Monate' },
+    { value: '6', label: '6 Monate' },
+    { value: '12', label: '12 Monate' },
+  ];
+
+  protected readonly spiel = signal('Valheim');
+  protected readonly arbeitsspeicher = signal(6);
+  protected readonly steckplaetze = signal(10);
+  protected readonly laufzeit = signal('6');
+
+  private readonly monatspreis = computed(() => {
+    const gewaehlt = SPIELE.find((eintrag) => eintrag.titel === this.spiel()) ?? SPIELE[0];
+    return (
+      gewaehlt.grundpreis +
+      (this.arbeitsspeicher() - 2) * PREIS_JE_GB +
+      (this.steckplaetze() - 2) * PREIS_JE_STECKPLATZ
+    );
+  });
+
+  protected readonly preisText = computed(() => euro(this.monatspreis()));
+
+  protected readonly posten = computed<ZPriceLine[]>(() => {
+    const monate = Number(this.laufzeit());
+    const zeitraum = monate === 1 ? '1\u00a0Monat' : `${monate}\u00a0Monate`;
+    return [
+      { label: 'Arbeitsspeicher', value: `${this.arbeitsspeicher()}\u00a0GB` },
+      { label: 'Steckplätze', value: `${this.steckplaetze()}\u00a0Spieler` },
+      { label: 'Einrichtung', value: euro(0) },
+      { label: `Summe für ${zeitraum}`, value: euro(this.monatspreis() * monate) },
+    ];
+  });
+}
