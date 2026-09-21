@@ -37,7 +37,7 @@ class AktionenHost {}
 class PaginationHost {}
 
 describe('ZPanel', () => {
-  it('rendert den Titel als h3.z-panel__title und kein natives title-Attribut', () => {
+  it('renders the title as h3.z-panel__title and no native title attribute', () => {
     const fixture = TestBed.createComponent(PanelHost);
     fixture.detectChanges();
     const panel = fixture.nativeElement.querySelector('z-panel');
@@ -47,7 +47,7 @@ describe('ZPanel', () => {
     expect(panel.hasAttribute('title')).toBe(false);
   });
 
-  it('zeigt ohne Titel, aber mit Aktionen den Kopf ohne leeres h3', () => {
+  it('shows the header without an empty h3 when there are actions but no title', () => {
     const fixture = TestBed.createComponent(AktionenHost);
     fixture.detectChanges();
     const kopf = fixture.nativeElement.querySelector('.z-panel__header');
@@ -57,7 +57,7 @@ describe('ZPanel', () => {
     expect(kopf.querySelector('button[zPanelActions]')).not.toBeNull();
   });
 
-  it('laesst ohne Titel und ohne Aktionen den Kopf ganz weg', () => {
+  it('leaves the header out entirely without title and without actions', () => {
     const fixture = TestBed.createComponent(PanelHost);
     fixture.componentInstance.titel.set('');
     fixture.detectChanges();
@@ -66,7 +66,7 @@ describe('ZPanel', () => {
     expect(fixture.nativeElement.querySelector('.z-panel__body')).not.toBeNull();
   });
 
-  it('setzt bei flush die Klasse am Body', () => {
+  it('sets the class on the body for flush', () => {
     const fixture = TestBed.createComponent(PanelHost);
     fixture.detectChanges();
     const body = fixture.nativeElement.querySelector('.z-panel__body');
@@ -79,7 +79,7 @@ describe('ZPanel', () => {
     expect(body.classList.contains('z-panel__body--flush')).toBe(true);
   });
 
-  it('meldet busy als aria-busy="true"', () => {
+  it('reports busy as aria-busy="true"', () => {
     const fixture = TestBed.createComponent(PanelHost);
     fixture.detectChanges();
     const panel = fixture.nativeElement.querySelector('z-panel');
@@ -92,7 +92,7 @@ describe('ZPanel', () => {
     expect(panel.getAttribute('aria-busy')).toBe('true');
   });
 
-  it('setzt eine projizierte z-pagination hinter den Body ans Ende', () => {
+  it('puts a projected z-pagination after the body at the end', () => {
     const fixture = TestBed.createComponent(PaginationHost);
     fixture.detectChanges();
     const panel = fixture.nativeElement.querySelector('z-panel');

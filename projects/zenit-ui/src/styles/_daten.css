@@ -1,5 +1,5 @@
-/* Paket daten: Metric, ServerList, Table und Pagination.
-   Woertlich aus spec/components/bundle.css. */
+/* Package daten: Metric, ServerList, Table and Pagination.
+   Verbatim from spec/components/bundle.css. */
 
 /* Metric */
 .z-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
@@ -53,13 +53,13 @@
 .z-pager { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-3); padding: var(--space-2) var(--space-4); border-top: 1px solid var(--border); font-size: 12px; line-height: 16px; color: var(--text-muted); }
 .z-pager__nav { display: flex; align-items: center; gap: var(--space-1); }
 
-/* ---------- Angular-Hosts und Ergaenzungen der Library ---------- */
+/* ---------- Angular hosts and additions of the library ---------- */
 
 .z-table-wrap, z-pagination { display: block; }
 .z-rows__head > *, .z-row > * { min-width: 0; }
-/* Ersetzt das inline style="min-width:0" der Vorschau am Textblock der Zeile. */
+/* Replaces the inline style="min-width:0" of the preview on the text block of the row. */
 .z-row__text { min-width: 0; }
-/* Wie .z-game__cover img in bundle.css: das Bild fuellt die Flaeche des Thumbs. */
+/* Like .z-game__cover img in bundle.css: the image fills the area of the thumb. */
 .z-row__thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-/* Ergänzung zur Referenz: div[zRow] ist nicht klickbar. */
+/* Addition to the reference: div[zRow] is not clickable. */
 .z-root div.z-row { cursor: auto; }

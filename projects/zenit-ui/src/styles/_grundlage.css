@@ -1,5 +1,5 @@
-/* Paket grundlage: Kopf (z-root), Button, Badge, Field/Input/Select, Panel,
-   Icon, Spinner und die Layout-Helfer. Woertlich aus spec/components/bundle.css. */
+/* Package grundlage: head (z-root), Button, Badge, Field/Input/Select, Panel,
+   Icon, Spinner and the layout helpers. Verbatim from spec/components/bundle.css. */
 
 .z-root, .z-root * { box-sizing: border-box; }
 .z-root {
@@ -10,9 +10,9 @@
   line-height: 20px;
   -webkit-font-smoothing: antialiased;
 }
-/* Abweichung von der Referenz: bundle.css listet die vier Elemente einzeln auf
-   (Spezifitaet 0,1,1) und schlaegt damit .z-btn--primary/--ghost/--danger
-   (0,1,0). :where() senkt die Regel auf 0,1,0, die Werte bleiben gleich. */
+/* Deviation from the reference: bundle.css lists the four elements one by one
+   (specificity 0,1,1) and thereby beats .z-btn--primary/--ghost/--danger
+   (0,1,0). :where() lowers the rule to 0,1,0, the values stay the same. */
 .z-root :where(button, input, select, textarea) { font: inherit; color: inherit; }
 .z-root :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .z-root a { color: var(--accent-text); text-decoration: none; }
@@ -100,14 +100,14 @@
 .z-panel__body { padding: var(--space-4); }
 .z-panel__body--flush { padding: 0; }
 
-/* ---------- Angular-Hosts und Ergaenzungen der Library ---------- */
+/* ---------- Angular hosts and additions of the library ---------- */
 
 html.z-root, body.z-root { margin: 0; min-height: 100%; }
 .z-root a.z-btn, .z-root a.z-btn:hover { text-decoration: none; }
 .z-root a.z-btn--primary { color: var(--on-accent); }
 .z-root a.z-btn--secondary { color: var(--text); }
-/* Luecke der Referenz: .z-root a (0,1,1) schlaegt .z-btn--ghost/--danger (0,1,0);
-   fuer primary und secondary steht die Gegenregel schon in bundle.css. */
+/* Gap in the reference: .z-root a (0,1,1) beats .z-btn--ghost/--danger (0,1,0);
+   for primary and secondary the counter rule is already in bundle.css. */
 .z-root a.z-btn--ghost { color: var(--text-muted); }
 .z-root a.z-btn--ghost:hover { color: var(--text); }
 .z-root a.z-btn--danger { color: var(--danger); }
@@ -128,7 +128,7 @@ textarea.z-input { height: auto; min-height: 96px; padding: var(--space-2) var(-
   @keyframes z-spin { to { transform: rotate(360deg); } }
 }
 
-/* Layout-Helfer */
+/* Layout helpers */
 .z-container { width: 100%; max-width: var(--container); margin-inline: auto; padding-inline: var(--space-4); }
 @media (min-width: 640px) { .z-container { padding-inline: var(--space-5); } }
 .z-stack { display: grid; gap: var(--space-5); }
@@ -138,7 +138,7 @@ textarea.z-input { height: auto; min-height: 96px; padding: var(--space-2) var(-
 .z-panel-shell { display: grid; gap: var(--space-5); grid-template-columns: minmax(0, 1fr); }
 @media (min-width: 900px) { .z-panel-shell { grid-template-columns: var(--sidebar) minmax(0, 1fr); align-items: start; } }
 
-/* Ergänzung zur Referenz: Klickziele mobil mindestens 40px (CLAUDE.md, Abstand und Layout). */
+/* Addition to the reference: click targets at least 40px on mobile (CLAUDE.md, Abstand und Layout). */
 @media (max-width: 640px) {
   .z-btn--sm { height: var(--control-md); }
   .z-btn--icon.z-btn--sm { width: var(--control-md); }

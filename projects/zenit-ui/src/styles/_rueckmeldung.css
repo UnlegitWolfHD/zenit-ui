@@ -1,5 +1,5 @@
-/* Paket rueckmeldung: Alert, EmptyState, Skeleton, Toast, Toast-Outlet und
-   Tooltip. Woertlich aus spec/components/bundle.css. */
+/* Package rueckmeldung: Alert, EmptyState, Skeleton, Toast, Toast outlet and
+   Tooltip. Verbatim from spec/components/bundle.css. */
 
 /* Alert */
 .z-alert { display: flex; align-items: flex-start; gap: var(--space-3); padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); background: var(--surface-raised); }
@@ -11,9 +11,9 @@
 .z-alert--warning { background: var(--warning-subtle); } .z-alert--warning .z-icon { color: var(--warning); }
 .z-alert--danger { background: var(--danger-subtle); } .z-alert--danger .z-icon { color: var(--danger); }
 @media (max-width: 640px) { .z-alert { flex-wrap: wrap; } .z-alert > .z-btn { margin-left: 32px; } }
-/* Ergaenzung zur Referenz: erst mit flex-basis bricht der Button unter den
-   Text um (Alert/README.md "Mobil bricht der Button unter den Text um"). Der
-   Einzug von 32px setzt ihn unter den Text, nicht unter das Icon. */
+/* Addition to the reference: only with flex-basis does the button wrap below
+   the text (Alert/README.md "Mobil bricht der Button unter den Text um"). The
+   indent of 32px puts it below the text, not below the icon. */
 @media (max-width: 640px) { .z-alert > .z-btn { flex-basis: 100%; } }
 
 /* EmptyState */
@@ -36,7 +36,7 @@
 .z-toast--danger .z-icon { color: var(--danger); }
 .z-toast__action { margin-left: var(--space-2); padding: 0; border: 0; background: none; cursor: pointer; color: var(--accent-text); font-weight: 500; white-space: nowrap; }
 
-/* Toast-Outlet */
+/* Toast outlet */
 .z-toast-outlet { position: fixed; right: var(--space-5); bottom: var(--space-5); z-index: var(--z-toast); display: grid; justify-items: end; gap: var(--space-2); pointer-events: none; }
 .z-toast-outlet .z-toast { pointer-events: auto; }
 .z-toast__close { margin-left: var(--space-1); }
@@ -48,10 +48,10 @@
 /* Tooltip */
 .z-tooltip { max-width: 240px; padding: var(--space-1) var(--space-2); border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-raised); box-shadow: var(--shadow-overlay); color: var(--text); font-size: 12px; line-height: 16px; }
 
-/* Ergaenzung zur Referenz: Klickziele mobil mindestens 40px (CLAUDE.md,
-   Abstand und Layout). Die Hoehe des Schliessen-Buttons kommt aus der Regel
-   fuer z-btn--sm in _grundlage.css; hier bleibt nur, dass die Buttons im
-   Toast nicht schrumpfen und die Aktion selbst 40px hoch wird. */
+/* Addition to the reference: click targets at least 40px on mobile (CLAUDE.md,
+   Abstand und Layout). The height of the close button comes from the rule for
+   z-btn--sm in _grundlage.css; all that remains here is that the buttons in
+   the toast do not shrink and the action itself becomes 40px tall. */
 @media (max-width: 640px) {
   .z-toast .z-btn, .z-toast__action { flex: none; }
   .z-toast__action { display: inline-flex; align-items: center; min-height: var(--control-md); }

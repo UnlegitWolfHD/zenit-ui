@@ -59,7 +59,7 @@ class BedingtHost {
 }
 
 describe('ZSelect', () => {
-  it('traegt die Klassen der Huelle', async () => {
+  it('carries the classes of the wrapper', async () => {
     const fixture = TestBed.createComponent(SelectHost);
     fixture.detectChanges();
     await fixture.whenStable();
@@ -74,7 +74,7 @@ describe('ZSelect', () => {
     expect(huelle.classList.contains('z-select--sm')).toBe(true);
   });
 
-  it('arbeitet mit formControl in beide Richtungen', async () => {
+  it('works with formControl in both directions', async () => {
     const fixture = TestBed.createComponent(FormControlHost);
     fixture.detectChanges();
     await fixture.whenStable();
@@ -94,7 +94,7 @@ describe('ZSelect', () => {
     expect(feld.value).toBe('eu');
   });
 
-  it('wird ueber die Forms deaktiviert', async () => {
+  it('is disabled through forms', async () => {
     const fixture = TestBed.createComponent(FormControlHost);
     fixture.detectChanges();
     await fixture.whenStable();
@@ -108,7 +108,7 @@ describe('ZSelect', () => {
     expect(feld.disabled).toBe(true);
   });
 
-  it('setzt aria-describedby am inneren select innerhalb eines z-field', async () => {
+  it('sets aria-describedby on the inner select inside a z-field', async () => {
     const fixture = TestBed.createComponent(FeldHost);
     fixture.detectChanges();
     await fixture.whenStable();
@@ -123,7 +123,7 @@ describe('ZSelect', () => {
     expect(feld.getAttribute('aria-describedby')).toBe('standort-error');
   });
 
-  it('setzt aria-describedby auch an einem select, das erst spaeter erscheint', async () => {
+  it('sets aria-describedby on a select that only appears later as well', async () => {
     const fixture = TestBed.createComponent(BedingtHost);
     fixture.detectChanges();
     await fixture.whenStable();

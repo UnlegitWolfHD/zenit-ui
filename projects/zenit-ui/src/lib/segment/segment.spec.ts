@@ -51,7 +51,7 @@ function knoepfe(fixture: { nativeElement: HTMLElement }): HTMLButtonElement[] {
 }
 
 describe('ZSegment', () => {
-  it('rendert je Option einen button[type=button] mit aria-pressed, genau einer gedrueckt', () => {
+  it('renders one button[type=button] with aria-pressed per option, exactly one pressed', () => {
     const fixture = TestBed.createComponent(ModellHost);
     fixture.detectChanges();
     const alle = knoepfe(fixture);
@@ -65,7 +65,7 @@ describe('ZSegment', () => {
     expect(alle[0].getAttribute('aria-pressed')).toBe('true');
   });
 
-  it('traegt am Host role="group" mit aria-label', () => {
+  it('carries role="group" with aria-label on the host', () => {
     const fixture = TestBed.createComponent(ModellHost);
     fixture.detectChanges();
     const gruppe: HTMLElement = fixture.nativeElement.querySelector('z-segment');
@@ -80,7 +80,7 @@ describe('ZSegment', () => {
     expect(gruppe.hasAttribute('aria-label')).toBe(false);
   });
 
-  it('arbeitet mit model() in beide Richtungen', async () => {
+  it('works with model() in both directions', async () => {
     const fixture = TestBed.createComponent(ModellHost);
     fixture.detectChanges();
     const alle = knoepfe(fixture);
@@ -99,11 +99,11 @@ describe('ZSegment', () => {
     expect(alle.filter((einer) => einer.getAttribute('aria-pressed') === 'true')).toHaveLength(1);
   });
 
-  it('arbeitet mit ngModel in beide Richtungen', async () => {
+  it('works with ngModel in both directions', async () => {
     const fixture = TestBed.createComponent(NgModelHost);
     fixture.detectChanges();
     await fixture.whenStable();
-    // ngModel setzt den Startwert erst in einem Microtask.
+    // ngModel sets the initial value only in a microtask.
     fixture.detectChanges();
     const alle = knoepfe(fixture);
 
@@ -120,7 +120,7 @@ describe('ZSegment', () => {
     expect(alle[0].getAttribute('aria-pressed')).toBe('true');
   });
 
-  it('arbeitet mit formControl in beide Richtungen', () => {
+  it('works with formControl in both directions', () => {
     const fixture = TestBed.createComponent(FormControlHost);
     fixture.detectChanges();
     const alle = knoepfe(fixture);
@@ -138,7 +138,7 @@ describe('ZSegment', () => {
     expect(steuerung.value).toBe('raster');
   });
 
-  it('bricht bei writeValue(null) nicht und laesst dann keine Sicht gedrueckt', () => {
+  it('does not break on writeValue(null) and then leaves no view pressed', () => {
     const fixture = TestBed.createComponent(FormControlHost);
     fixture.detectChanges();
 
@@ -150,7 +150,7 @@ describe('ZSegment', () => {
     ).toEqual([]);
   });
 
-  it('meldet nur die Nutzereingabe, nicht das Schreiben aus den Forms', () => {
+  it('reports only the user input, not the write coming from forms', () => {
     const fixture = TestBed.createComponent(FormControlHost);
     fixture.detectChanges();
     const steuerung = fixture.componentInstance.steuerung;
@@ -166,10 +166,10 @@ describe('ZSegment', () => {
     expect(steuerung.value).toBe('raster');
   });
 
-  // Der Baustein bricht in waehle() ab, wenn der Wert schon steht. Ein Klick auf
-  // die gewaehlte Sicht meldet deshalb nichts zurueck, die Steuerung bleibt
+  // The component bails out in waehle() when the value is already set. A click
+  // on the chosen view therefore reports nothing back and the control stays
   // pristine.
-  it('meldet den Klick auf die schon gewaehlte Sicht nicht erneut', () => {
+  it('does not report the click on the already chosen view again', () => {
     const fixture = TestBed.createComponent(FormControlHost);
     fixture.detectChanges();
     const steuerung = fixture.componentInstance.steuerung;
@@ -180,7 +180,7 @@ describe('ZSegment', () => {
     expect(steuerung.pristine).toBe(true);
   });
 
-  it('meldet touched nach dem blur', () => {
+  it('reports touched after the blur', () => {
     const fixture = TestBed.createComponent(FormControlHost);
     fixture.detectChanges();
     const steuerung = fixture.componentInstance.steuerung;
@@ -192,7 +192,7 @@ describe('ZSegment', () => {
     expect(steuerung.touched).toBe(true);
   });
 
-  it('wird ueber die Forms gesperrt und wieder freigegeben', () => {
+  it('is locked and released again through forms', () => {
     const fixture = TestBed.createComponent(FormControlHost);
     fixture.detectChanges();
 
@@ -209,7 +209,7 @@ describe('ZSegment', () => {
     expect(knoepfe(fixture).some((einer) => einer.disabled)).toBe(false);
   });
 
-  it('sperrt ueber den Input disabled alle Knoepfe und laesst den Klick wirkungslos', () => {
+  it('locks every button through the disabled input and leaves the click without effect', () => {
     const fixture = TestBed.createComponent(ModellHost);
     fixture.componentInstance.gesperrt.set(true);
     fixture.detectChanges();

@@ -39,7 +39,7 @@ class FormControlHost {
 }
 
 describe('ZToggle', () => {
-  it('rendert ein natives input[type=checkbox] mit role="switch"', () => {
+  it('renders a native input[type=checkbox] with role="switch"', () => {
     const fixture = TestBed.createComponent(ModellHost);
     fixture.detectChanges();
     const feld: HTMLInputElement = fixture.nativeElement.querySelector('input');
@@ -49,10 +49,10 @@ describe('ZToggle', () => {
     expect(feld.classList.contains('z-toggle')).toBe(true);
   });
 
-  // Ein natives input[type=checkbox] mit role="switch" meldet seinen Zustand
-  // ueber die eigene Checkedness. Ein zusaetzliches aria-checked waere eine
-  // zweite Quelle, die auseinanderlaufen kann, und steht deshalb nicht da.
-  it('fuehrt den Schaltzustand ueber natives checked, nicht ueber aria-checked', async () => {
+  // A native input[type=checkbox] with role="switch" reports its state through
+  // its own checkedness. An additional aria-checked would be a second source
+  // that can drift apart, which is why it is not there.
+  it('carries the switch state through native checked, not through aria-checked', async () => {
     const fixture = TestBed.createComponent(ModellHost);
     fixture.detectChanges();
     const feld: HTMLInputElement = fixture.nativeElement.querySelector('input');
@@ -67,7 +67,7 @@ describe('ZToggle', () => {
     expect(feld.hasAttribute('aria-checked')).toBe(false);
   });
 
-  it('traegt ariaLabel und ariaLabelledby und laesst beide sonst weg', () => {
+  it('puts ariaLabel and ariaLabelledby on and leaves both out otherwise', () => {
     const fixture = TestBed.createComponent(ModellHost);
     fixture.detectChanges();
     const feld: HTMLInputElement = fixture.nativeElement.querySelector('input');
@@ -83,7 +83,7 @@ describe('ZToggle', () => {
     expect(feld.getAttribute('aria-labelledby')).toBe('neustart-titel');
   });
 
-  it('arbeitet mit model() in beide Richtungen', async () => {
+  it('works with model() in both directions', async () => {
     const fixture = TestBed.createComponent(ModellHost);
     fixture.detectChanges();
     const feld: HTMLInputElement = fixture.nativeElement.querySelector('input');
@@ -101,11 +101,11 @@ describe('ZToggle', () => {
     expect(feld.checked).toBe(false);
   });
 
-  it('arbeitet mit ngModel in beide Richtungen', async () => {
+  it('works with ngModel in both directions', async () => {
     const fixture = TestBed.createComponent(NgModelHost);
     fixture.detectChanges();
     await fixture.whenStable();
-    // ngModel setzt den Startwert erst in einem Microtask.
+    // ngModel sets the initial value only in a microtask.
     fixture.detectChanges();
     const feld: HTMLInputElement = fixture.nativeElement.querySelector('input');
 
@@ -122,7 +122,7 @@ describe('ZToggle', () => {
     expect(feld.checked).toBe(true);
   });
 
-  it('arbeitet mit formControl in beide Richtungen', () => {
+  it('works with formControl in both directions', () => {
     const fixture = TestBed.createComponent(FormControlHost);
     fixture.detectChanges();
     const feld: HTMLInputElement = fixture.nativeElement.querySelector('input');
@@ -140,7 +140,7 @@ describe('ZToggle', () => {
     expect(steuerung.value).toBe(false);
   });
 
-  it('bricht bei writeValue(null) nicht', () => {
+  it('does not break on writeValue(null)', () => {
     const fixture = TestBed.createComponent(FormControlHost);
     fixture.detectChanges();
     const feld: HTMLInputElement = fixture.nativeElement.querySelector('input');
@@ -151,7 +151,7 @@ describe('ZToggle', () => {
     expect(feld.checked).toBe(false);
   });
 
-  it('meldet nur die Nutzereingabe, nicht das Schreiben aus den Forms', () => {
+  it('reports only the user input, not the write coming from forms', () => {
     const fixture = TestBed.createComponent(FormControlHost);
     fixture.detectChanges();
     const feld: HTMLInputElement = fixture.nativeElement.querySelector('input');
@@ -168,10 +168,10 @@ describe('ZToggle', () => {
     expect(steuerung.value).toBe(false);
   });
 
-  // Der Klick setzt die Checkedness am Element selbst. Nimmt eine Steuerung
-  // die Eingabe zurueck, bevor eine Change Detection gelaufen ist, muss der
-  // Schalter ihr trotzdem folgen.
-  it('folgt der Steuerung, wenn setValue die Eingabe sofort zuruecknimmt', async () => {
+  // The click sets the checkedness on the element itself. If a control reverts
+  // the input before a change detection has run, the switch still has to follow
+  // it.
+  it('follows the control when setValue reverts the input right away', async () => {
     const fixture = TestBed.createComponent(FormControlHost);
     fixture.detectChanges();
     const feld: HTMLInputElement = fixture.nativeElement.querySelector('input');
@@ -185,7 +185,7 @@ describe('ZToggle', () => {
     expect(feld.checked).toBe(false);
   });
 
-  it('meldet touched nach dem blur', () => {
+  it('reports touched after the blur', () => {
     const fixture = TestBed.createComponent(FormControlHost);
     fixture.detectChanges();
     const steuerung = fixture.componentInstance.steuerung;
@@ -197,7 +197,7 @@ describe('ZToggle', () => {
     expect(steuerung.touched).toBe(true);
   });
 
-  it('wird ueber die Forms gesperrt und wieder freigegeben', () => {
+  it('is locked and released again through forms', () => {
     const fixture = TestBed.createComponent(FormControlHost);
     fixture.detectChanges();
     const feld: HTMLInputElement = fixture.nativeElement.querySelector('input');
@@ -215,7 +215,7 @@ describe('ZToggle', () => {
     expect(feld.disabled).toBe(false);
   });
 
-  it('sperrt ueber den Input disabled und laesst den Klick dann wirkungslos', () => {
+  it('locks through the disabled input and then leaves the click without effect', () => {
     const fixture = TestBed.createComponent(ModellHost);
     fixture.componentInstance.gesperrt.set(true);
     fixture.detectChanges();

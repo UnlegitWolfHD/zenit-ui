@@ -45,7 +45,7 @@ function nav(fixture: { nativeElement: HTMLElement }): HTMLButtonElement[] {
 }
 
 describe('ZPagination', () => {
-  it('schreibt den Bereich der ersten Seite', () => {
+  it('writes the range of the first page', () => {
     const fixture = TestBed.createComponent(PagerHost);
     fixture.detectChanges();
 
@@ -55,7 +55,7 @@ describe('ZPagination', () => {
     );
   });
 
-  it('schreibt auf der letzten Seite den angebrochenen Bereich', async () => {
+  it('writes the partial range on the last page', async () => {
     const fixture = TestBed.createComponent(PagerHost);
     fixture.componentInstance.seite.set(5);
     fixture.detectChanges();
@@ -64,7 +64,7 @@ describe('ZPagination', () => {
     expect(bereich(fixture)).toBe('101 bis 118 von 118 Transaktionen');
   });
 
-  it('rechnet mit einem anderen pageSize', () => {
+  it('counts with a different pageSize', () => {
     const fixture = TestBed.createComponent(PagerHost);
     fixture.componentInstance.proSeite.set(50);
     fixture.detectChanges();
@@ -75,7 +75,7 @@ describe('ZPagination', () => {
     );
   });
 
-  it('sperrt Zurueck auf der ersten und Weiter auf der letzten Seite', async () => {
+  it('locks back on the first page and forward on the last one', async () => {
     const fixture = TestBed.createComponent(PagerHost);
     fixture.detectChanges();
     const [zurueck, weiter] = nav(fixture);
@@ -91,7 +91,7 @@ describe('ZPagination', () => {
     expect(weiter.disabled).toBe(true);
   });
 
-  it('blaettert per Klick und meldet die Seite zurueck', async () => {
+  it('pages on click and reports the page back', async () => {
     const fixture = TestBed.createComponent(PagerHost);
     fixture.detectChanges();
     const [zurueck, weiter] = nav(fixture);
@@ -109,7 +109,7 @@ describe('ZPagination', () => {
     expect(bereich(fixture)).toBe('1 bis 25 von 118 Transaktionen');
   });
 
-  it('rendert nichts, wenn die Liste leer ist', () => {
+  it('renders nothing when the list is empty', () => {
     const fixture = TestBed.createComponent(PagerHost);
     fixture.componentInstance.gesamt.set(0);
     fixture.detectChanges();
@@ -117,7 +117,7 @@ describe('ZPagination', () => {
     expect(fixture.nativeElement.querySelector('.z-pager')).toBeNull();
   });
 
-  it('rendert nichts, wenn alles auf eine Seite passt', () => {
+  it('renders nothing when everything fits on one page', () => {
     const fixture = TestBed.createComponent(PagerHost);
     fixture.componentInstance.gesamt.set(25);
     fixture.detectChanges();
@@ -130,7 +130,7 @@ describe('ZPagination', () => {
     expect(fixture.nativeElement.querySelector('.z-pager')).not.toBeNull();
   });
 
-  it('klemmt die Seite, wenn total schrumpft', async () => {
+  it('clamps the page when total shrinks', async () => {
     const fixture = TestBed.createComponent(PagerHost);
     fixture.componentInstance.seite.set(5);
     fixture.detectChanges();
@@ -146,7 +146,7 @@ describe('ZPagination', () => {
     expect(bereich(fixture)).toBe('26 bis 30 von 30 Transaktionen');
   });
 
-  it('nimmt einen eigenen rangeLabel und eigene aria-Label fuer die Knoepfe', () => {
+  it('takes an own rangeLabel and own aria labels for the buttons', () => {
     const fixture = TestBed.createComponent(EigenerTextHost);
     fixture.detectChanges();
     const [zurueck, weiter] = nav(fixture);
@@ -156,7 +156,7 @@ describe('ZPagination', () => {
     expect(weiter.getAttribute('aria-label')).toBe('Eine Seite weiter');
   });
 
-  it('beschriftet die Knoepfe ohne eigene Angabe deutsch', () => {
+  it('labels the buttons in German when nothing else is given', () => {
     const fixture = TestBed.createComponent(PagerHost);
     fixture.detectChanges();
     const [zurueck, weiter] = nav(fixture);

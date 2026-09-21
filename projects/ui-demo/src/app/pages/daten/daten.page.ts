@@ -360,7 +360,7 @@ export class DatenPage {
     },
   ];
 
-  /** Breiten der Platzhalter wie in spec/components/Skeleton/preview.html. */
+  /** Widths of the placeholders as in spec/components/Skeleton/preview.html. */
   protected readonly platzhalter = [
     { titel: '40%', meta: '60%' },
     { titel: '30%', meta: '50%' },

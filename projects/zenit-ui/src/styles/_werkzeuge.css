@@ -1,5 +1,5 @@
-/* Paket werkzeuge: Console, Hero, GameTile, PriceSummary, SpecList, Faq.
-   Woertlich aus spec/components/bundle.css. */
+/* Package werkzeuge: Console, Hero, GameTile, PriceSummary, SpecList, Faq.
+   Verbatim from spec/components/bundle.css. */
 
 /* GameTile */
 .z-games { display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: var(--space-4); }
@@ -66,25 +66,25 @@
 .z-faq[open] summary::after { content: "\2212"; }
 .z-faq__body { max-width: var(--measure); margin: 0; padding: 0 0 var(--space-5); font-size: 16px; line-height: 24px; color: var(--text-muted); }
 
-/* ---------- Angular-Hosts und Ergaenzungen der Library ---------- */
+/* ---------- Angular hosts and additions of the library ---------- */
 
 .z-console, z-faq, z-spec-list, z-price-summary { display: block; }
 
-/* Jede Frage steht in einem eigenen z-faq. Damit ist jedes details das
-   :last-of-type seines Hosts und bekaeme eine zweite Linie. Nur die letzte
-   Frage behaelt sie, sonst stuenden zwischen den Fragen 2px. */
+/* Every question sits in a z-faq of its own. That makes every details the
+   :last-of-type of its host and it would get a second line. Only the last
+   question keeps it, otherwise there would be 2px between the questions. */
 z-faq:not(:last-of-type) .z-faq { border-bottom: 0; }
 
-/* Der Button "Zum Ende" kommt in der Vorschau nicht vor, weil sie nicht
-   scrollt. Er sitzt zwischen Log und Eingabe. Nur Tokens. */
+/* The button "Zum Ende" does not appear in the preview, because the preview
+   does not scroll. It sits between log and input. Tokens only. */
 .z-console__end { display: flex; justify-content: center; padding: var(--space-2); border-top: 1px solid var(--border); }
 
-/* Deaktivierte Eingabe wie .z-btn:disabled: 45 % und not-allowed. */
+/* Disabled input like .z-btn:disabled: 45 % and not-allowed. */
 .z-console__input input:disabled { opacity: 0.45; cursor: not-allowed; }
 
-/* Ergänzung zur Referenz: der Leerzustand im Log ist Fließtext, kein Log. Das
-   umschliessende pre setzt mono, 12px und white-space: pre-wrap; hier gilt
-   wieder body-sm mit normalem Umbruch. */
+/* Addition to the reference: the empty state in the log is running text, not a
+   log. The enclosing pre sets mono, 12px and white-space: pre-wrap; here
+   body-sm with normal wrapping applies again. */
 .z-console__log .z-empty {
   font-family: var(--font-body);
   font-size: 14px;

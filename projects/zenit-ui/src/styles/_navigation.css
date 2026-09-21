@@ -1,6 +1,6 @@
-/* Paket navigation: Tabs, Sidebar, AppHeader, PageHeader, Stepper, Footer.
-   Woertlich aus spec/components/bundle.css. Der Transition-Block und die
-   Layout-Helfer stehen schon in _grundlage.css, .z-segment gehoert zu
+/* Package navigation: Tabs, Sidebar, AppHeader, PageHeader, Stepper, Footer.
+   Verbatim from spec/components/bundle.css. The transition block and the
+   layout helpers are already in _grundlage.css, .z-segment belongs to
    _formulare.css. */
 
 /* Tabs */
@@ -62,7 +62,7 @@
 .z-footer__base { display: flex; justify-content: space-between; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-7); padding-top: var(--space-4); border-top: 1px solid var(--border); font-size: 12px; line-height: 16px; color: var(--text-subtle); }
 .z-root .z-footer__base a { color: var(--text-muted); }
 
-/* ---------- Angular-Hosts und Ergaenzungen der Library ---------- */
+/* ---------- Angular hosts and additions of the library ---------- */
 
 .z-root a.z-tab, .z-root a.z-tab:hover { color: var(--text-muted); text-decoration: none; }
 .z-root a.z-tab:hover, .z-root a.z-tab[aria-current="page"] { color: var(--text); }
@@ -71,21 +71,21 @@
 .z-root a.z-side__item:hover, .z-root a.z-side__item[aria-current="page"] { color: var(--text); }
 .z-footer, z-stepper { display: block; }
 
-/* Neu, weil bundle.css es nicht abdeckt:
-   1. z-sidebar traegt Liste und Select, erst die Liste darin ist .z-side.
-   2. Unter 900px wird die Sidebar zum Select (Sidebar/README), darueber ist
-      das Select verborgen. 899px statt 900px, damit sich die Regel nicht mit
-      .z-panel-shell (min-width: 900px) ueberschneidet.
-   3. Im Kundenbereich hat der Fuss keine Spalten (Footer/README). Das leere
-      Raster faellt zusammen, der Abstand darueber entfaellt dann auch.
-   4. Unter 900px klappt die Navigation in ein Menue, das Guthaben bleibt
-      sichtbar (AppHeader/README). Das Menue liegt als Flaeche unter der
-      Leiste, damit die Leiste ihre Hoehe behaelt.
-   5. Unter 900px darf die Leiste umbrechen: oeffentlich stehen rechts zwei
-      Buttons, die bei 360px sonst waagerecht aus der Seite laufen. Die Hoehe
-      header bleibt als Mindesthoehe.
-   6. Unter 900px sind die Links der Kopfzeile so hoch wie ein Bedienelement,
-      weil Klickziele mobil mindestens 40px hoch sind. */
+/* New, because bundle.css does not cover it:
+   1. z-sidebar carries list and select, only the list inside it is .z-side.
+   2. Below 900px the sidebar turns into the select (Sidebar/README), above it
+      the select is hidden. 899px instead of 900px, so the rule does not
+      overlap with .z-panel-shell (min-width: 900px).
+   3. In the customer area the footer has no columns (Footer/README). The empty
+      grid collapses, and the gap above it then falls away too.
+   4. Below 900px the navigation folds into a menu while the balance stays
+      visible (AppHeader/README). The menu sits as a surface below the bar, so
+      the bar keeps its height.
+   5. Below 900px the bar may wrap: on public pages two buttons stand on the
+      right, which would otherwise run out of the page horizontally at 360px.
+      The height header remains as the minimum height.
+   6. Below 900px the links of the header are as tall as a control, because
+      click targets are at least 40px tall on mobile. */
 z-sidebar { display: block; }
 z-sidebar > .z-select { display: none; }
 .z-footer__cols:empty + .z-footer__base { margin-top: 0; }
@@ -105,11 +105,11 @@ z-sidebar > .z-select { display: none; }
   }
 }
 
-/* Ergänzung zur Referenz: Klickziele mobil mindestens 40px (CLAUDE.md, Abstand und Layout).
-   Betroffen sind nur die Links im Fuss (Spalten und Basiszeile) und der
-   Sidebar-Eintrag mit seinen 36px. Tab, Sidebar-Select, Kopfzeilen-Links,
-   Menue-Knopf und die Aktionen im PageHeader sind schon control-md hoch, der
-   Stepper ist nicht bedienbar. Die Basiszeile bleibt flex mit Umbruch. */
+/* Addition to the reference: click targets at least 40px on mobile (CLAUDE.md, Abstand und Layout).
+   Affected are only the links in the footer (columns and base row) and the
+   sidebar entry with its 36px. Tab, sidebar select, header links, menu button
+   and the actions in the PageHeader are already control-md tall, and the
+   stepper cannot be operated. The base row stays flex with wrapping. */
 @media (max-width: 640px) {
   .z-footer__list a, .z-footer__base a, .z-side__item {
     display: inline-flex; align-items: center; min-height: var(--control-md);

@@ -215,7 +215,7 @@ export class WerkzeugePage {
   protected readonly zeilen = signal<ZConsoleLine[]>([...STARTZEILEN]);
   protected readonly gewaehlt = signal('Terraria');
 
-  /** Sekunden seit Mitternacht, weiter ab der letzten Zeile der Vorschau. */
+  /** Seconds since midnight, continuing from the last line of the preview. */
   private uhr = 12 * 3600 + 7 * 60 + 15;
 
   protected readonly guenstigste = [
@@ -268,7 +268,7 @@ export class WerkzeugePage {
     this.zeilen.set([]);
   }
 
-  /** Zeitstempel wie in der Vorschau, eine Sekunde je Zeile. */
+  /** Timestamps as in the preview, one second per line. */
   private zeit(): string {
     this.uhr += 1;
     const zwei = (n: number) => String(n).padStart(2, '0');

@@ -47,7 +47,7 @@ class LinkHost {
 class AriaHost {}
 
 describe('ZButton', () => {
-  it('ist ohne Wert und mit leerem zBtn secondary', () => {
+  it('is secondary without a value and with an empty zBtn', () => {
     const fixture = TestBed.createComponent(StandardHost);
     fixture.detectChanges();
 
@@ -59,7 +59,7 @@ describe('ZButton', () => {
     }
   });
 
-  it('setzt fuer jede Variante die eigene Klasse', () => {
+  it('sets its own class for every variant', () => {
     const fixture = TestBed.createComponent(ButtonHost);
     fixture.detectChanges();
     const button = fixture.nativeElement.querySelector('button');
@@ -77,7 +77,7 @@ describe('ZButton', () => {
     }
   });
 
-  it('setzt die Groessenklasse nur fuer sm und lg', () => {
+  it('sets the size class only for sm and lg', () => {
     const fixture = TestBed.createComponent(ButtonHost);
     fixture.detectChanges();
     const button = fixture.nativeElement.querySelector('button');
@@ -95,7 +95,7 @@ describe('ZButton', () => {
     expect(button.classList.contains('z-btn--lg')).toBe(true);
   });
 
-  it('setzt block und iconOnly als Klassen', () => {
+  it('sets block and iconOnly as classes', () => {
     const fixture = TestBed.createComponent(ButtonHost);
     fixture.detectChanges();
     const button = fixture.nativeElement.querySelector('button');
@@ -111,7 +111,7 @@ describe('ZButton', () => {
     expect(button.classList.contains('z-btn--icon')).toBe(true);
   });
 
-  it('zeigt im Ladezustand den Spinner vor dem Inhalt, sperrt und meldet aria-busy', () => {
+  it('shows the spinner in front of the content while loading, locks and reports aria-busy', () => {
     const fixture = TestBed.createComponent(ButtonHost);
     fixture.detectChanges();
     const button = fixture.nativeElement.querySelector('button');
@@ -133,7 +133,7 @@ describe('ZButton', () => {
     expect(spinner).toBeLessThan(text);
   });
 
-  it('sperrt den Button ueber disabled', () => {
+  it('locks the button through disabled', () => {
     const fixture = TestBed.createComponent(ButtonHost);
     fixture.detectChanges();
     const button = fixture.nativeElement.querySelector('button');
@@ -147,7 +147,7 @@ describe('ZButton', () => {
     expect(button.getAttribute('aria-busy')).toBeNull();
   });
 
-  it('sperrt ein a[zBtn] ueber aria-disabled und tabindex und faengt den Klick ab', () => {
+  it('locks an a[zBtn] through aria-disabled and tabindex and swallows the click', () => {
     const fixture = TestBed.createComponent(LinkHost);
     fixture.componentInstance.gesperrt.set(true);
     fixture.detectChanges();
@@ -162,7 +162,7 @@ describe('ZButton', () => {
     expect(klick.defaultPrevented).toBe(true);
   });
 
-  it('laesst ein offenes a[zBtn] normal klicken', () => {
+  it('lets an open a[zBtn] be clicked normally', () => {
     const fixture = TestBed.createComponent(LinkHost);
     fixture.detectChanges();
     const link = fixture.nativeElement.querySelector('a');
@@ -175,19 +175,19 @@ describe('ZButton', () => {
     expect(klick.defaultPrevented).toBe(false);
   });
 
-  it('behaelt ein statisches aria-disabled am button und laesst ihn fokussierbar', () => {
+  it('keeps a static aria-disabled on the button and leaves it focusable', () => {
     const fixture = TestBed.createComponent(AriaHost);
     fixture.detectChanges();
     const button = fixture.nativeElement.querySelector('button');
 
     expect(button.getAttribute('aria-disabled')).toBe('true');
-    // Kein echtes disabled und kein tabindex: der Button bleibt erreichbar,
-    // damit sein Tooltip den Grund zeigen kann.
+    // No real disabled and no tabindex: the button stays reachable so its
+    // tooltip can show the reason.
     expect(button.hasAttribute('disabled')).toBe(false);
     expect(button.hasAttribute('tabindex')).toBe(false);
   });
 
-  it('faengt den Klick auf einem button mit aria-disabled ab', () => {
+  it('swallows the click on a button with aria-disabled', () => {
     const fixture = TestBed.createComponent(AriaHost);
     fixture.detectChanges();
     const button = fixture.nativeElement.querySelector('button');

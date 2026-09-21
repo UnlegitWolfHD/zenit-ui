@@ -13,7 +13,7 @@ import {
   ZPanel,
 } from 'zenit-ui';
 
-/** Eigener Dialog über ZDialog.open(): ein kurzes Formular mit einem Feld. */
+/** Custom dialog through ZDialog.open(): a short form with one field. */
 @Component({
   selector: 'demo-notiz-dialog',
   imports: [ZButton, ZDialogActions, ZDialogLayout, ZField, ZInput],
