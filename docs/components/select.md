@@ -72,6 +72,20 @@ Bound to a form control:
 </z-select>
 ```
 
+A select in error: the caller sets `aria-invalid` on the native `<select>`, the same way
+`input[zInput]` takes `invalid`. `z-field` adds the sentence and wires `aria-describedby`:
+
+```html
+<z-field label="Zahlungsmittel" for="sel-pay" error="Wähle ein Zahlungsmittel, sonst lässt sich das Guthaben nicht aufladen.">
+  <z-select>
+    <select id="sel-pay" aria-invalid="true">
+      <option>Bitte wählen</option>
+      <option>PayPal</option>
+    </select>
+  </z-select>
+</z-field>
+```
+
 A disabled select, with the reason next to it:
 
 ```html
@@ -96,10 +110,12 @@ A disabled select, with the reason next to it:
 | Hover    | border moves to `text-muted`                                        | pointer over the control     |
 | Focus    | 2px ring in `focus` with 2px offset                                 | Tab, `:focus-visible`        |
 | Open     | the browser's own option list                                       | click or Space               |
+| Error    | 1px border in `danger`, sentence below it from `z-field`            | `aria-invalid="true"` on the `<select>` |
 | Disabled | 45 percent opacity, `cursor: not-allowed`                           | `disabled` on the `<select>` |
 
-There is no error state of its own: the surrounding `z-field` shows the sentence, and the browser
-keeps the value inside the option list.
+The error state is set by the caller, not by the component: `aria-invalid="true"` goes on the native
+`<select>`, exactly as `invalid` goes on `input[zInput]`. `z-field` owns the sentence below it and
+the `aria-describedby` that points at it.
 
 ## Accessibility
 
@@ -108,6 +124,8 @@ keeps the value inside the option list.
   the hint or the error, and it is kept in sync after every content check, so a `<select>` that
   appears later behind an `@if` is wired too.
 - A select without a visible label, for example in a filter row, needs an `aria-label`.
+- `aria-invalid="true"` announces the error and draws the border; the sentence in `z-field` names
+  the cause and the next step, so colour is never the only carrier.
 - The first option names the normal case ("Alle Status"), not "Bitte wählen".
 
 ## Responsive
@@ -122,6 +140,8 @@ two columns below 640px. The sidebar uses the same surface for its select below 
 | `z-select`     | always (host) |
 | `z-select--sm` | `size="sm"`   |
 
+The `<select>` in error carries no class of its own; the rule hangs off its `aria-invalid`.
+
 The inner `<select>` shares its rules with `.z-input`. Tokens: `--control-md`, `--control-sm`,
 `--space-3`, `--border-control`, `--radius-sm`, `--surface`, `--text`, `--text-muted` for the arrow
 and the hover border, `--focus` for the ring. The arrow itself is a 7px box with 1.5px borders, a
@@ -129,14 +149,20 @@ literal value from the reference stylesheet.
 
 ## Deviations from the reference
 
-Addition to the reference: below 640px `z-select--sm select` is raised to `control-md`, because
-click targets are at least 40px tall on mobile.
+- Addition to the reference: below 640px `z-select--sm select` is raised to `control-md`, because
+  click targets are at least 40px tall on mobile.
+- Addition to the reference: `.z-select select[aria-invalid="true"]` takes a `danger` border.
+  `bundle.css` styles `.z-input[aria-invalid="true"]` only, while `15-zustaende.md` asks every field
+  in error for a `danger` border plus the sentence below it, the select included. Same single
+  declaration as the input, so both fields read alike. `--danger` on `--surface` is guarded at 4.5:1
+  in every scheme by `tools/check-theme-contrast.mjs`, well over the 3:1 a border needs.
 
 ## Do / Don't
 
 - Do keep the `<select>` native and let the browser render the option list.
 - Do name the normal case in the first option.
 - Do use `size="sm"` in filter rows and `md` in forms.
+- Do set `aria-invalid="true"` on the `<select>` itself when the field is in error.
 - Don't reach for a select when four comparable options would read better as a segment.
 - Don't build a custom dropdown; the native control carries keyboard, screen reader and mobile
   behaviour for free.

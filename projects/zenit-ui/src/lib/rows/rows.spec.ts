@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { ZRow, ZRowMain, ZRowNum, ZRows, ZRowsHead } from './rows';
+import { ZRow, ZRowAction, ZRowLink, ZRowMain, ZRowNum, ZRows, ZRowsHead, ZRowTitle } from './rows';
 
 @Component({
   imports: [ZRow, ZRowMain, ZRowNum, ZRows, ZRowsHead],
@@ -25,6 +25,21 @@ class RowsHost {
   readonly meta = signal('Nürnberg, 4 GB');
   readonly bild = signal('');
 }
+
+/** A row with a target and its own action: stretched link plus row action. */
+@Component({
+  imports: [ZRow, ZRowAction, ZRowLink, ZRowMain, ZRows, ZRowTitle],
+  template: `<z-rows>
+    <div zRow>
+      <z-row-main title="Beispiel-Server 1" meta="Minecraft · 203.0.113.10">
+        <a zRowTitle zRowLink href="#server-1">Beispiel-Server 1</a>
+      </z-row-main>
+      <button zRowAction type="button" aria-label="Aktionen für Beispiel-Server 1">…</button>
+    </div>
+  </z-rows>`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class LinkZeileHost {}
 
 describe('ZRows', () => {
   it('sets columns as the CSS variable --z-cols on z-rows', () => {
@@ -106,6 +121,33 @@ describe('ZRows', () => {
     expect(fixture.nativeElement.querySelector('z-row-main .z-row__thumb').textContent.trim()).toBe(
       '',
     );
+  });
+
+  it('projects [zRowTitle] into the title instead of the title text', () => {
+    const fixture = TestBed.createComponent(LinkZeileHost);
+    fixture.detectChanges();
+    const titel = fixture.nativeElement.querySelector('.z-row__title');
+
+    expect(titel.textContent.trim()).toBe('Beispiel-Server 1');
+    expect(titel.firstElementChild?.tagName).toBe('A');
+    expect(titel.querySelector('a').getAttribute('href')).toBe('#server-1');
+    // The title input keeps feeding the initial of the thumbnail.
+    expect(fixture.nativeElement.querySelector('.z-row__thumb').textContent.trim()).toBe('B');
+    expect(fixture.nativeElement.querySelector('.z-row__meta').textContent.trim()).toBe(
+      'Minecraft · 203.0.113.10',
+    );
+  });
+
+  it('gives a[zRowLink] and [zRowAction] their classes inside a div row', () => {
+    const fixture = TestBed.createComponent(LinkZeileHost);
+    fixture.detectChanges();
+    const zeile = fixture.nativeElement.querySelector('div[zRow]');
+
+    expect(zeile.classList).toContain('z-row');
+    expect(zeile.querySelector('a[zRowLink]').classList).toContain('z-row__link');
+    expect(zeile.querySelector('button[zRowAction]').classList).toContain('z-row__action');
+    // The action is a sibling of z-row-main, never a child of the link.
+    expect(zeile.querySelector('a[zRowLink] button')).toBeNull();
   });
 
   it('gives [zRowNum] the number class in head and row', () => {

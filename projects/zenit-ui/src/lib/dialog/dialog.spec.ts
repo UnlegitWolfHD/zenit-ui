@@ -1,6 +1,6 @@
 import { Dialog, DialogRef } from '@angular/cdk/dialog';
 import { OverlayContainer } from '@angular/cdk/overlay';
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, inject } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { ZConfirmConfig } from './confirm-dialog';
 import { ZDialog } from './dialog';
@@ -308,6 +308,81 @@ describe('ZDialog', () => {
       TestBed.tick();
 
       expect(container()?.getAttribute('aria-labelledby')).toBe('eigene-ueberschrift');
+    });
+  });
+
+  describe('restoreFocusTo', () => {
+    let ausloeser: HTMLButtonElement;
+    let ziel: HTMLButtonElement;
+
+    beforeEach(() => {
+      ausloeser = document.createElement('button');
+      ausloeser.textContent = 'Menüeintrag';
+      ziel = document.createElement('button');
+      ziel.id = 'z-test-menue-ausloeser';
+      ziel.textContent = 'Aktionen';
+      document.body.append(ausloeser, ziel);
+      ausloeser.focus();
+    });
+
+    afterEach(() => {
+      ausloeser.remove();
+      ziel.remove();
+    });
+
+    /** Closing runs the focus restore of the CDK in a task of its own. */
+    async function geschlossen(): Promise<void> {
+      TestBed.tick();
+      await new Promise((fertig) => setTimeout(fertig));
+    }
+
+    it('returns focus to the element that was focused before, without it', async () => {
+      bestaetige();
+
+      klicke(fussButtons()[1]);
+      await geschlossen();
+
+      expect(document.activeElement).toBe(ausloeser);
+    });
+
+    it('returns focus to restoreFocusTo after confirm, cancel and Escape', async () => {
+      for (const schliessen of [
+        () => klicke(fussButtons()[1]),
+        () => klicke(fussButtons()[0]),
+        () => {
+          container()?.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'Escape', keyCode: 27, bubbles: true }),
+          );
+        },
+      ]) {
+        ausloeser.focus();
+        bestaetige({ restoreFocusTo: ziel });
+
+        schliessen();
+        await geschlossen();
+
+        expect(document.activeElement).toBe(ziel);
+      }
+
+      expect(ergebnisse).toEqual([true, false, false]);
+    });
+
+    it('takes an ElementRef and a CSS selector as well', async () => {
+      ausloeser.focus();
+      dienst.open(UmbenennenDialog, { restoreFocusTo: new ElementRef(ziel) });
+      TestBed.tick();
+      klicke(fussButtons()[0]);
+      await geschlossen();
+
+      expect(document.activeElement).toBe(ziel);
+
+      ausloeser.focus();
+      dienst.open(UmbenennenDialog, { restoreFocusTo: `#${ziel.id}` });
+      TestBed.tick();
+      klicke(fussButtons()[0]);
+      await geschlossen();
+
+      expect(document.activeElement).toBe(ziel);
     });
   });
 });

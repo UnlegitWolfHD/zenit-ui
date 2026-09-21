@@ -17,10 +17,13 @@ import {
   ZPanel,
   ZPanelActions,
   ZRow,
+  ZRowAction,
+  ZRowLink,
   ZRowMain,
   ZRowNum,
   ZRows,
   ZRowsHead,
+  ZRowTitle,
   ZSkeleton,
   ZTable,
   ZTableContainer,
@@ -82,10 +85,13 @@ interface DemoDatei {
     ZPanel,
     ZPanelActions,
     ZRow,
+    ZRowAction,
+    ZRowLink,
     ZRowMain,
     ZRowNum,
     ZRows,
     ZRowsHead,
+    ZRowTitle,
     ZSkeleton,
     ZTable,
     ZTableContainer,
@@ -200,6 +206,50 @@ interface DemoDatei {
           </div>
         </z-rows>
       </z-panel>
+
+      <p class="demo-cap caption">
+        Zeile als Link mit eigener Aktion: ein Button in einem a ist ungültiges Markup, deshalb ist
+        die Zeile ein div, der Link sitzt auf dem Titel (zRowLink) und deckt über sein ::after die
+        ganze Zeile ab. Die Aktion trägt zRowAction, liegt darüber und bleibt ein eigener Tab-Stopp.
+        Tab-Reihenfolge: erst der Link, dann das Menü. Der Fokus-Ring umschließt die ganze Zeile.
+      </p>
+      <z-panel title="Zuletzt geöffnet" flush>
+        <z-rows columns="minmax(0, 2fr) 128px 40px">
+          <z-rows-head>
+            <span>Server</span>
+            <span>Status</span>
+            <span></span>
+          </z-rows-head>
+          @for (eintrag of zuletzt; track eintrag.name) {
+            <div zRow>
+              <z-row-main [title]="eintrag.name" [meta]="eintrag.meta">
+                <a zRowTitle zRowLink href="#">{{ eintrag.name }}</a>
+              </z-row-main>
+              <span>
+                <z-badge [status]="eintrag.status" dot>{{ eintrag.statusText }}</z-badge>
+              </span>
+              <button
+                zRowAction
+                zBtn="ghost"
+                iconOnly
+                [attr.aria-label]="'Aktionen für ' + eintrag.name"
+                [cdkMenuTriggerFor]="zeilenAktionen"
+              >
+                <z-icon name="more_vert" />
+              </button>
+            </div>
+          }
+        </z-rows>
+      </z-panel>
+
+      <ng-template #zeilenAktionen>
+        <z-menu>
+          <button zMenuItem icon="play_arrow">Starten</button>
+          <button zMenuItem icon="content_copy">Adresse kopieren</button>
+          <z-menu-separator />
+          <button zMenuItem icon="delete" danger>Löschen</button>
+        </z-menu>
+      </ng-template>
 
       <p class="demo-cap caption">
         Lädt: Skelettzeilen im selben Grid wie die echten Zeilen, damit beim Eintreffen der Daten
@@ -504,6 +554,9 @@ export class DatenPage {
       kosten: '1,24',
     },
   ];
+
+  /** The two rows of the "Zeile als Link mit eigener Aktion" example. */
+  protected readonly zuletzt = this.server.slice(0, 2);
 
   /** Widths of the placeholders as in spec/components/Skeleton/preview.html. */
   protected readonly platzhalter = [

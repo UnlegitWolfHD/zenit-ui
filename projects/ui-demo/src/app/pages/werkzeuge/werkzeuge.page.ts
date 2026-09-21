@@ -113,14 +113,14 @@ const STARTZEILEN: ZConsoleLine[] = [
     <section class="demo-section">
       <h2 class="heading-2">Hero</h2>
       <p class="demo-cap caption">
-        Kopf der Startseite. Der primäre Button der Seite steht hier. Preise sind Beispieltext.
-        z-hero rendert seinen Titel immer als h1 und stellt damit die Überschrift der Seite. Auf
-        dieser Komponentenseite steht er neben dem eigenen h1 "Werkzeuge", deshalb trägt das
-        Dokument hier ausnahmsweise zwei h1. Auf einer echten Seite gibt es genau einen Hero und
-        damit genau ein h1; siehe /muster/startseite.
+        Kopf der Startseite. Der primäre Button der Seite steht hier. Preise sind Beispieltext. Auf
+        einer öffentlichen Seite ist der Titel das h1 der Seite; hier steht er unter dem h1
+        "Werkzeuge", deshalb setzt die Vorschau headingLevel="2". Die Größe bleibt dieselbe. Siehe
+        /muster/startseite für den Regelfall.
       </p>
 
       <z-hero
+        headingLevel="2"
         title="Gameserver aus Nürnberg. In etwa 60 Sekunden online."
         lead="Spiel wählen, RAM einstellen, starten. Dedizierte NVMe-Hardware ab 1,98&nbsp;€ im Monat, monatlich kündbar."
         note="Keine Kreditkarte nötig · DDoS-Schutz inklusive · Keine Einrichtungsgebühr"

@@ -24,11 +24,17 @@ import { ZHero, ZHeroActions, ZHeroAside } from 'zenit-ui';
 
 ### `z-hero`
 
-| Input   | Type     | Default | Description                                                                                             |
-| ------- | -------- | ------- | ------------------------------------------------------------------------------------------------------- |
-| `title` | `string` | `''`    | The `<h1>` of the page: what there is and where it comes from. One colour throughout.                   |
-| `lead`  | `string` | `''`    | One sentence with the three strongest facts (process, hardware, price). Empty leaves the paragraph out. |
-| `note`  | `string` | `''`    | One line with at most three promises, separated by middle dots. Empty leaves the line out.              |
+| Input          | Type          | Default | Description                                                                                             |
+| -------------- | ------------- | ------- | ------------------------------------------------------------------------------------------------------- |
+| `title`        | `string`      | `''`    | The heading of the page: what there is and where it comes from. One colour throughout.                  |
+| `lead`         | `string`      | `''`    | One sentence with the three strongest facts (process, hardware, price). Empty leaves the paragraph out. |
+| `note`         | `string`      | `''`    | One line with at most three promises, separated by middle dots. Empty leaves the line out.              |
+| `headingLevel` | `1 \| 2 \| 3` | `1`     | Tag of the heading. The visual size never changes with it.                                              |
+
+`headingLevel` stays at `1` on a public page, where the hero is the page heading. Lower it only
+where the page already owns its `<h1>`, for example on a component page that shows a hero as an
+example: two `<h1>` in one document is the thing it prevents. `headingLevel="2"` as a static
+attribute works, the string is coerced to a number.
 
 No outputs. Content projection:
 
@@ -70,6 +76,13 @@ The start page, with the price list as the right column:
     </z-rows>
   </z-panel>
 </z-hero>
+```
+
+A hero as an example on a page that already owns its `<h1>`:
+
+```html
+<h1 class="heading-1">Werkzeuge</h1>
+<z-hero headingLevel="2" title="Gameserver aus Nürnberg. In etwa 60 Sekunden online." />
 ```
 
 A sub-page, single column and with one action:
@@ -118,7 +131,9 @@ buttons inside it and the panel in the right column bring their own.
 
 ## Accessibility
 
-- `title` is the page `<h1>`. There is exactly one hero per page for that reason.
+- `title` is the page `<h1>`. There is exactly one hero per page for that reason. Where the page
+  already has an `<h1>`, `headingLevel` lowers the hero to `<h2>` or `<h3>` so the document keeps
+  one `<h1>` and the outline stays in order.
 - The lead is a `<p>` right after the heading, and the note another one after the actions, so the
   order in the DOM matches the reading order.
 - The heading has one colour throughout; the second line is never tinted.
@@ -128,16 +143,16 @@ buttons inside it and the panel in the right column bring their own.
 ## Responsive
 
 Two columns in a 7 to 5 ratio, single column below 900px, where the vertical padding drops from
-`space-9` to `space-8`. Below 640px the `<h1>` drops from `display-xl` (56px) to `display-lg`
-(40px) and the lead from 20px to 16px. The height comes from the content; there is no `100vh` and
-no background image.
+`space-9` to `space-8`. Below 640px the heading drops from `display-xl` (56px) to `display-lg`
+(40px) and the lead from 20px to 16px. The size sits in `z-hero__title` and does not follow
+`headingLevel`. The height comes from the content; there is no `100vh` and no background image.
 
 ## Rendered classes and tokens
 
 | Class             | Applies when                    |
 | ----------------- | ------------------------------- |
 | `z-hero`          | on the host, always             |
-| `z-hero__title`   | on the `<h1>`, always           |
+| `z-hero__title`   | on the heading, always          |
 | `z-hero__lead`    | `lead` is not empty             |
 | `z-hero__actions` | on the `[zHeroActions]` element |
 | `z-hero__note`    | `note` is not empty             |
@@ -153,6 +168,7 @@ stylesheet.
   screenshot of the panel.
 - Do keep `display-xl` for the start page and `/minecraft`; sub-pages take `display-lg` and often no
   right column.
+- Do leave `headingLevel` at `1` on a real page and lower it only in a preview.
 - Do take prices from the price service; never hard-code them.
 - Don't use an illustration, a background image or an animation.
 - Don't tint the second line of the heading.

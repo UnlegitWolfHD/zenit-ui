@@ -63,3 +63,20 @@
 .z-row__thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 /* Addition to the reference: div[zRow] is not clickable. */
 .z-root div.z-row { cursor: auto; }
+
+/* Addition to the reference: the stretched link. 40-bibliothek.md asks for rows
+   that are links and for actions inside a row as their own tab stops, and a
+   <button> inside an <a> is invalid markup. So the row stays a div, the link
+   sits on the title, and its ::after covers the row: one link, one tab stop,
+   the whole row clickable. The overlay escapes the overflow of .z-row__title
+   because its containing block is the row. No transform, only tokens. */
+.z-row:has(.z-row__link) { position: relative; }
+.z-root div.z-row:has(.z-row__link) { cursor: pointer; }
+.z-root a.z-row__link, .z-root a.z-row__link:hover { color: inherit; text-decoration: none; }
+.z-row__link::after { content: ""; position: absolute; inset: 0; }
+.z-row__action { position: relative; z-index: 1; }
+/* The hit area of the link is the whole row, so that is where its focus ring
+   belongs: the 2px/2px ring in focus is drawn on the stretched ::after, and the
+   ring around the title text alone is turned off so there are not two. */
+.z-root .z-row__link:focus-visible { outline-color: transparent; }
+.z-root .z-row__link:focus-visible::after { outline: 2px solid var(--focus); outline-offset: 2px; }

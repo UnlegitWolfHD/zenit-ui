@@ -73,6 +73,10 @@ export class ZRowsHead {}
  * focus ring and keyboard handling. As a `<div>` the row is not clickable and
  * holds its own actions, each of which is a tab stop of its own.
  *
+ * A row that needs both, a target and its own actions, is a `<div>` with an
+ * {@link ZRowLink} on the title and {@link ZRowAction} on the buttons: a
+ * `<button>` inside an `<a>` would be invalid markup.
+ *
  * @example
  * ```html
  * <a zRow routerLink="/server/1">…</a>
@@ -86,6 +90,70 @@ export class ZRowsHead {}
 export class ZRow {}
 
 /**
+ * Pure slot marker for the title of a row, so `z-row-main` can hold a link or
+ * any other markup instead of its {@link ZRowMain.title} text. It adds no class
+ * and no markup. Without it the row falls back to the `title` input.
+ *
+ * @example
+ * ```html
+ * <z-row-main title="Beispiel-Server 1" meta="Minecraft · 203.0.113.10">
+ *   <a zRowTitle zRowLink routerLink="/user/server/1">Beispiel-Server 1</a>
+ * </z-row-main>
+ * ```
+ */
+@Directive({ selector: '[zRowTitle]' })
+export class ZRowTitle {}
+
+/**
+ * Link inside a `div[zRow]` that makes the whole row clickable: the link sits
+ * on the title and carries the class `z-row__link`, whose stretched `::after`
+ * covers the row. The row keeps its hover colour, and the focus ring of the
+ * link is drawn around the whole row rather than around the title text.
+ *
+ * Everything the row holds stays under that overlay, so buttons and menus in
+ * the row need {@link ZRowAction} to stay clickable and keep their own tab
+ * stop. As with any stretched link, text in the row cannot be selected by
+ * dragging, exactly as in an `a[zRow]`.
+ *
+ * @example
+ * ```html
+ * <div zRow>
+ *   <z-row-main title="Beispiel-Server 1" meta="Minecraft · 203.0.113.10">
+ *     <a zRowTitle zRowLink routerLink="/user/server/1">Beispiel-Server 1</a>
+ *   </z-row-main>
+ *   <span><z-badge status="success" dot>Online</z-badge></span>
+ *   <button zRowAction zBtn="ghost" iconOnly aria-label="Aktionen für Beispiel-Server 1">
+ *     <z-icon name="more_vert" />
+ *   </button>
+ * </div>
+ * ```
+ */
+@Directive({
+  selector: 'a[zRowLink]',
+  host: { class: 'z-row__link' },
+})
+export class ZRowLink {}
+
+/**
+ * Action inside a row that holds an {@link ZRowLink}: adds the class
+ * `z-row__action`, which lifts the element above the stretched link overlay so
+ * it stays clickable and remains a tab stop of its own. It renders nothing
+ * itself and needs its own `aria-label` when it shows only an icon.
+ *
+ * @example
+ * ```html
+ * <button zRowAction zBtn="ghost" iconOnly aria-label="Freigabe entfernen">
+ *   <z-icon name="close" />
+ * </button>
+ * ```
+ */
+@Directive({
+  selector: '[zRowAction]',
+  host: { class: 'z-row__action' },
+})
+export class ZRowAction {}
+
+/**
  * First column of a row: thumbnail, title and one meta line.
  *
  * Renders `<span class="z-row__thumb">` with the image or, without one, the
@@ -94,6 +162,10 @@ export class ZRow {}
  * `title` attribute is cleared, so the {@link title} input never becomes a
  * browser tooltip. The image is decorative and gets an empty `alt`, the
  * accessible text of the row comes from title and meta.
+ *
+ * A `[zRowTitle]` element takes the place of the title text, which is how a
+ * link gets into the title of a row. {@link title} still feeds the initial of
+ * the thumbnail, so it stays set either way.
  *
  * @example
  * ```html
@@ -111,7 +183,9 @@ export class ZRow {}
       }
     </span>
     <div class="z-row__text">
-      <div class="z-row__title">{{ title() }}</div>
+      <div class="z-row__title">
+        <ng-content select="[zRowTitle]">{{ title() }}</ng-content>
+      </div>
       @if (meta()) {
         <div class="z-row__meta">{{ meta() }}</div>
       }
