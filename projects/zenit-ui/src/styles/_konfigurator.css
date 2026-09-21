@@ -146,6 +146,20 @@ z-option-group, z-combobox, z-wizard-step, z-included-list, z-disclosure, z-inpu
    2px ring with its 2px offset. The svg already draws outside its box. */
 .z-chart__plot:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: var(--radius-sm); }
 
+/* Addition to the reference: the summary column is 340px wide at every viewport
+   width, so an alert in it never has room for its button beside the text. It
+   wraps there the way bundle.css lets an alert wrap below 640px; the 32px
+   indent is the icon column, as in the reference rule. */
+.z-summary .z-alert { flex-wrap: wrap; }
+.z-summary .z-alert > .z-btn { flex-basis: 100%; margin-left: 32px; }
+
+/* Addition to the reference: bundle.css takes the radio out of the pointer
+   flow entirely. It sits inside its own <label>, so a click reaches it either
+   way, while "pointer-events: none" makes an enabled control read as locked to
+   anything that measures it (e2e/a11y-baum.spec.ts does). A locked card keeps
+   the cursor it inherits, so only the enabled ones get their pointer back. */
+.z-option input:enabled { pointer-events: auto; }
+
 /* Addition to the reference: a badge sits space-3 above its card and would
    cover the last pixels of the legend hint at narrow widths, where the first
    row starts right under it. Only a group that has badges pays for the room. */

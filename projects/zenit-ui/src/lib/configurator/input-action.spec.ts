@@ -119,8 +119,10 @@ describe('ZInputAction', () => {
     const fehler: HTMLElement = fixture.nativeElement.querySelector('.z-field__error');
 
     // Both exist while they are empty; that is what makes a later sentence announce.
+    // Both polite: the answer belongs to an action the visitor just took, so it
+    // waits its turn instead of interrupting (role="alert" would not).
     expect(erfolg.getAttribute('role')).toBe('status');
-    expect(fehler.getAttribute('role')).toBe('alert');
+    expect(fehler.getAttribute('role')).toBe('status');
     expect(erfolg.textContent).toBe('');
     expect(feld(fixture).getAttribute('aria-describedby')).toBe(`${erfolg.id} ${fehler.id}`);
     expect(feld(fixture).hasAttribute('aria-invalid')).toBe(false);

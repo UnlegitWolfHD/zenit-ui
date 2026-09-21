@@ -22,9 +22,11 @@ let zaehler = 0;
  * Accessibility: the label is a real `<label for>`, never only a placeholder,
  * and "(optional)" belongs in it. Enter in the field triggers the button, but
  * not on an empty field and not while it is loading. Success and error are
- * always in the DOM as live regions, `role="status"` and `role="alert"`, so a
- * sentence that appears later is announced; both are tied to the field through
- * `aria-describedby`, and an error also sets `aria-invalid` on it.
+ * always in the DOM as polite live regions (`role="status"`), so a sentence that
+ * appears later is announced; both are tied to the field through
+ * `aria-describedby`, and an error also sets `aria-invalid` on it. Polite, not
+ * `role="alert"`: the answer belongs to an action the visitor just took, so it
+ * waits its turn instead of interrupting whatever is being read.
  *
  * @example
  * ```html
@@ -78,7 +80,7 @@ let zaehler = 0;
         <span class="z-field__success" [id]="feldId + '-success'" role="status">{{
           success()
         }}</span>
-        <span class="z-field__error" [id]="feldId + '-error'" role="alert">{{ error() }}</span>
+        <span class="z-field__error" [id]="feldId + '-error'" role="status">{{ error() }}</span>
       </div>
     </div>
   `,

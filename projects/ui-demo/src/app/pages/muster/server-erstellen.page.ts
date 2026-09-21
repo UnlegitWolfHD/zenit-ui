@@ -117,6 +117,7 @@ type Parameter = Record<string, string>;
       <z-config>
         <z-wizard>
           <z-wizard-step
+            headingLevel="2"
             title="Inhalt"
             [state]="zustand(1)"
             [summary]="schritt() > 1 ? kurzInhalt() : 'Server-Typ und Version'"
@@ -141,6 +142,7 @@ type Parameter = Record<string, string>;
           </z-wizard-step>
 
           <z-wizard-step
+            headingLevel="2"
             title="Größe"
             [state]="zustand(2)"
             [summary]="schritt() > 2 ? kurzGroesse() : 'Arbeitsspeicher und Leistungsklasse'"
@@ -168,6 +170,7 @@ type Parameter = Record<string, string>;
           </z-wizard-step>
 
           <z-wizard-step
+            headingLevel="2"
             title="Bezahlen"
             [state]="zustand(3)"
             summary="Name, Gutschein, Laufzeit, Bezahlmethode"
