@@ -209,7 +209,7 @@ Both implement `ControlValueAccessor`, so `[(ngModel)]` and `[formControl]` keep
 ```
 
 ```html
-<!-- after -->
+<!-- after, when the views may have a URL: this is the variant to aim for -->
 <nav zTabs aria-label="Serverbereiche">
   <a zTab routerLink="uebersicht" [active]="bereich() === 'uebersicht'">Übersicht</a>
   <a zTab routerLink="speicher" [active]="bereich() === 'speicher'">Speicher</a>
@@ -217,7 +217,17 @@ Both implement `ControlValueAccessor`, so `[(ngModel)]` and `[formControl]` keep
 <router-outlet />
 ```
 
-See section 4.7: these are links, not tab panels.
+```html
+<!-- after, when no route may be added -->
+<z-tab-group ariaLabel="Serverbereiche" [(value)]="bereich">
+  <z-tab-panel value="uebersicht" label="Übersicht"><app-overview /></z-tab-panel>
+  <z-tab-panel value="speicher" label="Speicher"><app-storage /></z-tab-panel>
+</z-tab-group>
+```
+
+`[(selectedIndex)]` is index based and `[(value)]` is not; `docs/components/tabs.md`, part 2, has
+the mapping table, the adapter that keeps an index-based handler working, and what lazy panels and
+`keepAlive` really do. See section 4.7 for which of the two variants to pick.
 
 ### 3.9 `mat-button-toggle-group` → `z-segment`
 
@@ -611,14 +621,16 @@ These are the places where a one-to-one template swap changes what the page actu
 - There is no `labelPosition`. The toggle projects no text: use `ariaLabel`, or `ariaLabelledby` pointing at the `titleId` of the surrounding `z-setting`.
 - The Toggle is `role="switch"`, not `checkbox`, so screen-reader output changes wording.
 
-### 4.7 Tabs are links, not tab panels
+### 4.7 Tabs are links first, a tab list second
 
 This is the one row of the mapping table where the specification contradicts itself, so read it carefully.
 
 - `30-angular.md` ("Was nativ bleibt") says: tabs are **links in a `<nav>` with `aria-current="page"`**. The API table in `40-bibliothek.md` agrees: `nav[zTabs]`, `a[zTab]`, `active`. The library implements exactly that — `active` sets `aria-current="page"`, and that attribute is also what draws the 2px underline.
 - `spec/components/Tabs/README.md` and `Tabs/preview.html` say the opposite: `role="tablist"` with `<button role="tab" aria-selected="true">`. That is a real defect in the specification and is listed in `docs/design-system-feedback.md`.
-- **Follow the library.** Each tab is its own URL with its own route, as the Tabs README itself says in its last line. A `mat-tab-group` that switches content without changing the URL therefore needs child routes added — and adding routes is outside the scope of this job. Where that happens, stop and report it to the master rather than inventing a route.
-- Consequences: no lazy `ng-template matTabContent`, no `selectedIndexChange`, no animation between panels. The browser's normal navigation does the work, and the back button now works on these tabs, which it did not before.
+- **The library has both.** `nav[zTabs]` with `a[zTab]` is the link variant, `z-tab-group` with `z-tab-panel` is the tab list of the preview. Neither reading of the specification is left unimplemented.
+- **Prefer the links.** Each tab is its own URL with its own route, as the Tabs README itself says in its last line, and a link can be bookmarked, opened in a new tab and walked back to. A `mat-tab-group` that switches content without changing the URL therefore wants child routes — and adding routes is outside the scope of this job. Where the route would be right, stop and report it to the master rather than inventing one.
+- **Use `z-tab-group` where the route is not yours to add**, or where the view genuinely has no address: a dialog with two forms, a section inside a panel, anything that must not land in the history. That unblocks a `mat-tab-group` without touching the routing, which is what this job may not do.
+- Consequences of the link variant: no `selectedIndexChange`, no animation between panels; the browser's navigation does the work and the back button starts working on these tabs. Consequences of `z-tab-group`: `[(value)]` instead of `[(selectedIndex)]`, no animation, and panels that are lazy in the DOM but not in the component tree (`docs/components/tabs.md`, part 2).
 
 ### 4.8 `zTooltip` has no options
 
@@ -734,7 +746,7 @@ The existing frontend was deliberately not inspected — `00-auftrag.md` forbids
 - **The real file and folder structure.** `30-angular.md` states plainly that the source is not known and that its filenames are suggestions. The component names in `00-auftrag.md` (`app-public-header`, `app-public-footer`, `app-pricing`, `app-flex-calculator`, `app-minecraft-landing`, `app-hardware-page`, `app-toast-container`, `app-cookie-banner`, `app-tutorial-overlay`) come from the DOM, not from the repository.
 - **The exact Material version and API shape.** The "before" snippets are written for a recent Angular Material. If the application is on an older version, the details differ — `mat-raised-button` instead of `mat-flat-button`, `MatDialogRef.afterClosed()` versus `closed`, the pre-M3 theming API.
 - **Whether `provideAnimations` is only there for Material.** Section 5 makes the removal conditional for exactly this reason.
-- **Whether every `mat-tab-group` can become routed tabs.** Section 4.7 flags this as the one change that may require new routes, which this job is not allowed to add.
+- **Whether every `mat-tab-group` should become routed tabs.** Section 4.7 flags this as the one change that may require new routes, which this job is not allowed to add. Since the library also has `z-tab-group`, no `mat-tab-group` is blocked by it any more; what still has to be decided per occurrence is whether the view deserves a URL.
 - **How custom the existing styling is.** Every `::ng-deep` into a Material component, every `--mat-sys-*` override and every custom `panelClass` is work that this guide cannot size.
 - **The not-yet-specified areas.** `00-auftrag.md` lists tooltip contents, the billing chart, cookie banner, tutorial overlay, wiki articles, the voting row, the order assistant, login and the admin area as unspecified, and `20-bestandsaufnahme.md` adds the broadcast banner and the loader picker on `/minecraft`. For each of those, the overview plus the nearest component applies, and a short proposal goes to the human before anything is built.
 - **The defects in `20-bestandsaufnahme.md`.** The overlapping text at 375px on `/user/games`, the clipped badges, the duplicated address in the panel head, the naming mismatches ("Gameserver" versus "Game-Server", "Abrechnung" versus "Finanzen") and the e-mail addresses visible on `/vorschlaege` were observed from outside. Whether they are template bugs — fixable here — or come from services and data has to be determined in the code, and if they come from the data they are outside this job's scope.
