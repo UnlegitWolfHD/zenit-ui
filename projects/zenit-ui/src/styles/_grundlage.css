@@ -171,3 +171,10 @@ textarea.z-input { height: auto; min-height: 96px; padding: var(--space-2) var(-
    that file is being changed elsewhere at the same time, so it lives here.
    tools/check-theme-contrast.mjs guards the pairs for every scheme x accent. */
 .z-alert .z-btn--secondary { border-color: var(--text-muted); }
+
+/* Addition to the reference: the error frame of a native select. bundle.css
+   styles .z-input[aria-invalid="true"] only, while 15-zustaende.md asks every
+   field in error for a danger border plus the sentence below it, the select
+   included. Same declaration as the input, so both fields read alike. The
+   caller sets aria-invalid on the native <select>, as with input[zInput]. */
+.z-select select[aria-invalid="true"] { border-color: var(--danger); }

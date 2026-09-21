@@ -211,7 +211,7 @@ import {
           error="Wähle ein Zahlungsmittel, sonst lässt sich das Guthaben nicht aufladen."
         >
           <z-select>
-            <select id="sel-pay">
+            <select id="sel-pay" aria-invalid="true">
               <option>Bitte wählen</option>
               <option>PayPal</option>
               <option>SEPA-Lastschrift</option>
@@ -220,8 +220,8 @@ import {
         </z-field>
       </div>
       <p class="demo-grund caption">
-        Fehler am Select: der Satz steht in danger unter dem Feld und hängt über aria-describedby am
-        select. Einen roten Rahmen wie beim Input sieht die Referenz für das Select nicht vor.
+        Fehler am Select: Rahmen in danger und der Satz darunter, genau wie beim Input. Der Satz
+        hängt über aria-describedby am select. aria-invalid setzt der Aufrufer am nativen select.
       </p>
     </section>
 
