@@ -117,6 +117,9 @@ There is no loading state. An error belongs on the surrounding `z-field`.
   field does not close along with it.
 - Entries of the same `group` land under one heading whatever their order in `options`, so a name
   never appears twice.
+- The panel belongs to its field: scrolling the page or an inner container such as a dialog body
+  moves it along, and it closes once the field is out of that container, so the list never points
+  at something that is no longer there. Scrolling inside the list itself changes nothing.
 
 ## Responsive
 
@@ -148,8 +151,13 @@ for the active entry, `--border` for the frame, `--text-muted` for headings and 
 - Addition to the reference: below 640px `.z-listbox__option` is at least `--control-md` tall.
 - The whole panel cancels its `mousedown`, not only an entry: the scrollbar, a heading and the
   empty row are part of it too, and each of them would otherwise take the focus out of the field.
-- The panel closes when the field is scrolled out of view (`autoClose` on the reposition scroll
-  strategy) and follows the width of the field on a window resize.
+- Addition to the reference: while the panel is open the component listens for `scroll` on the
+  document in the capture phase. The panel follows the field whenever anything around it scrolls,
+  and closes once the field has left the container that moved. The CDK scroll strategies all run
+  on `ScrollDispatcher`, which hears the page and containers marked `cdkScrollable` and nothing
+  else, so a field inside a scrolling dialog body kept a panel hanging where the field no longer
+  was. Capture hears every scroller without asking a caller to annotate its container. The panel
+  also follows the width of the field on a window resize.
 
 ## Do / Don't
 

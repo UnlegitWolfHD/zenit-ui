@@ -70,11 +70,19 @@ The bar itself has no loading, error or disabled state. The button inside carrie
 
 ## Accessibility
 
-The bar covers the bottom of the viewport, so a control focused behind it would be invisible
-(WCAG 2.4.11). It measures itself into the custom property `--z-stickybar` on the document, and the
-stylesheet turns that into `scroll-padding-bottom` and into room below the content, so the browser
-scrolls a focused element clear of the bar instead of behind it. The height is therefore nowhere a
-literal.
+A bar that lies at the bottom edge of the viewport covers what is behind it, so a control focused
+there would be invisible (WCAG 2.4.11). Each bar measures itself: while it really sticks to that
+edge and is displayed, it carries the attribute `data-stuck`, and the tallest stuck bar writes its
+height into the custom property `--z-stickybar` on the document. The stylesheet turns that into
+`scroll-padding-bottom` for a page that holds a stuck bar, so the browser scrolls a focused element
+clear of the bar instead of behind it. The height is therefore nowhere a literal.
+
+Sticking is measured, not assumed: `getBoundingClientRect().bottom` has to meet the height of the
+viewport, and a hidden bar measures 0 everywhere. One passive `scroll` and `resize` listener per
+document and a `ResizeObserver` on the bar and on the document keep the measurement current; on the
+server, where there is no layout to keep clear, none of it runs. A bar that stands in the page
+instead of at its edge covers nothing and costs the page no padding: a framed bar in a gallery, a
+bar above the fold, and a `mobileOnly` bar from 900px on, which is `display: none` there.
 
 Otherwise the bar is a plain container; the button inside is an ordinary tab stop and the last
 element of the page in reading order. It casts no shadow and no blur, so nothing about it is only a visual layer.
@@ -92,6 +100,7 @@ bottom padding grows by `env(safe-area-inset-bottom)` on a device that reports a
 | `z-stickybar`          | always (host)         |
 | `z-stickybar--mobile`  | with `mobileOnly`     |
 | `z-stickybar__price`   | price and summary     |
+| `[data-stuck]`         | while it lies at the bottom edge of the viewport (host attribute) |
 
 Tokens: `--surface-raised` for the fill, `--border` for the 1px line, `--text-muted` for the
 summary, `--font-mono` for the amount, `--z-header` for the stacking, `--space-3` and `--space-4`
@@ -101,9 +110,10 @@ for the padding. The 20px price type is a literal value from the reference style
 
 - Addition to the reference: the bottom padding grows by `env(safe-area-inset-bottom, 0px)`, which
   the StickyBar README asks for and `bundle.css` does not carry.
-- Addition to the reference: below 900px a page that holds a `z-stickybar--mobile` gets
-  `scroll-padding-bottom` and the `z-config` above the bar gets a matching bottom padding, both
-  from the measured `--z-stickybar`, so no tab stop ends up behind the bar.
+- Addition to the reference: a page that holds a bar with `data-stuck` gets
+  `scroll-padding-bottom` from the measured `--z-stickybar`, so no tab stop ends up behind the bar.
+  It needs no extra room at the end of the page: the bar is sticky inside the flow and already
+  occupies its own height there.
 
 ## Do / Don't
 

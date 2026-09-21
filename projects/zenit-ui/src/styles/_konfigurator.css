@@ -167,20 +167,30 @@ z-option-group, z-combobox, z-wizard-step, z-included-list, z-disclosure, z-inpu
 .z-option input { inset: 0; width: 100%; height: 100%; margin: 0; }
 .z-option input:enabled { pointer-events: auto; }
 
+/* Addition to the reference: the stretched radio above is positioned and the
+   texts are not, so the radio paints over them and the mouse selects nothing
+   inside an enabled card. Position the texts and they are back on top; a click
+   on them still reaches the card, because they sit inside its <label>. The
+   badge is left out on purpose: it is already positioned (absolute, above) and
+   "relative" here would take its place away. */
+.z-option > span { position: relative; }
+
 /* Addition to the reference: a badge sits space-3 above its card and would
    cover the last pixels of the legend hint at narrow widths, where the first
    row starts right under it. Only a group that has badges pays for the room. */
 .z-options:has(.z-option__badge) .z-options__legend { margin-bottom: var(--space-3); }
 
-/* Addition to the reference: the sticky bar covers the bottom of the viewport,
-   so a control focused behind it would be invisible (WCAG 2.4.11).
-   z-sticky-bar measures its own height into --z-stickybar, and the document
-   adds that to its scroll-padding, so the browser scrolls a focused element
-   clear of the bar. It needs no extra room at the end of the page: the bar is
-   sticky inside the flow and already occupies its own height there. The rule
-   holds for every visible bar, a bulk action bar included; a --mobile bar is
-   display:none from 900px on and then reports 0px. */
-.z-root:has(.z-stickybar) {
+/* Addition to the reference: a sticky bar that really lies at the bottom edge
+   of the viewport covers what is behind it, so a control focused there would be
+   invisible (WCAG 2.4.11). z-sticky-bar measures itself, marks itself with
+   data-stuck while it sticks AND is displayed, and writes the height of the
+   tallest stuck bar into --z-stickybar; the document adds that to its
+   scroll-padding. It needs no extra room at the end of the page: the bar is
+   sticky inside the flow and already occupies its own height there. A bar that
+   stands in the page instead (a framed demo of the gallery) and a --mobile bar
+   from 900px on cover nothing and are not marked, so the page keeps its
+   padding at 0. */
+.z-root:has(.z-stickybar[data-stuck]) {
   scroll-padding-bottom: calc(var(--z-stickybar, 0px) + var(--space-4));
 }
 

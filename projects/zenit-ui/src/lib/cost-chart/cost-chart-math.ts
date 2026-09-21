@@ -117,7 +117,7 @@ export function zCostX(hours: number, maxHours: number, area: ZChartArea = Z_CHA
 
 /**
  * The distance between two ticks of the time axis, wide enough that the labels
- * do not collide: every label needs about 64px of room.
+ * do not collide: every label needs about 110px of room.
  *
  * @param maxHours Hours the axis runs to.
  * @param plotWidth Width of the plot between the two axes, in pixels. One

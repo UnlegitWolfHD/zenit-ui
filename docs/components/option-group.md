@@ -131,7 +131,10 @@ There is no loading or error state; the price of a card is a string the caller c
   reason is never only a colour.
 - The browser checks a radio before the caller is asked. If the caller refuses the new value, the
   group writes the model back into every radio, so the selection on screen is always the selection
-  in the model.
+  in the model. That guarantee holds where the caller owns the value: `[(value)]`, `formControl`,
+  `ngModel` and `[formField]`. With a one-way `[value]` whose parent keeps its own value unchanged,
+  the child's model and the DOM move anyway, because that is what `model()` does with a one-way
+  binding. Bind both ways or use a form when the selection has to be refused.
 - "Empfohlen" appears at most once per group, as `z-badge--info`. A discount is `z-badge--success`
   with the real minus sign U+2212.
 
