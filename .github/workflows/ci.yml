@@ -69,6 +69,11 @@ jobs:
 
       - run: npx ng test beispiel-app --watch=false
 
+      # The same specs the way an installed consumer runs them: zenit-ui stays
+      # outside the test bundle, so no linker touches it and the JIT compiler
+      # compiles its partial declarations while the module loads.
+      - run: npm run test:beispiel:jit
+
       - run: npm run test:schematics
 
       # No --with-deps: installing system dependencies is an Ubuntu-only step
