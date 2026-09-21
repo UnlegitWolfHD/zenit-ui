@@ -48,7 +48,12 @@ import {
           Satz, das Setzen des Hakens nimmt ihn wieder weg.
         </p>
         <div class="demo-feld">
-          <z-checkbox [formField]="bestellung.agb" ariaDescribedby="agb-fehler">
+          <!-- Only while the sentence is on the page: a reference to an id that
+               is not there describes nothing. -->
+          <z-checkbox
+            [formField]="bestellung.agb"
+            [ariaDescribedby]="agbFehler() ? 'agb-fehler' : ''"
+          >
             Ich habe die <a href="#">AGB</a> gelesen und bestelle.
           </z-checkbox>
           @if (agbFehler(); as satz) {

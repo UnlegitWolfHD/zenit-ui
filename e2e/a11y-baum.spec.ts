@@ -11,8 +11,9 @@ import { expect, test, type Page } from '@playwright/test';
  * 1440px and at 375px, because the header menu and the sidebar select change
  * the tree on mobile.
  *
- * Findings that describe a real defect are marked with `// Finding:` above the
- * check and stay active.
+ * Every check is asserted. Where the demo deviates from the rule on purpose,
+ * the reason stands above the check and the expectation spells the deviation
+ * out, so a different deviation still fails.
  *
  * Run:
  *   E2E_PORT=4480 npx playwright test e2e/a11y-baum.spec.ts
@@ -23,20 +24,19 @@ import { expect, test, type Page } from '@playwright/test';
  * page is expected to carry as `h1`.
  *
  * Usually the `h1` is the navigation link, as CLAUDE.md demands ("Seitentitel
- * und Navigationslink heißen gleich"). Four routes deviate: two component
- * pages preview components that bring their own page heading, and the two
+ * und Navigationslink heißen gleich"). Three routes deviate: one component
+ * page previews a component that brings its own page heading, and the two
  * pattern pages carry the heading of the product page they imitate. The
  * expected headings are written out per route, so any other change still fails.
  */
 const ROUTEN = [
   { pfad: 'grundlage', nav: 'Grundlage', h1: ['Grundlage'] },
   { pfad: 'formulare', nav: 'Formulare', h1: ['Formulare'] },
-  // Finding: /navigation carries four h1. z-page-header renders its title as
-  // the page h1 (page-header.ts), and the page previews three of them, so
-  // jumping by h1 lands on previews instead of on the page. Accepted for the
-  // component gallery, which has to show the real markup; the fix would be a
-  // heading level input on z-page-header
-  // (projects/zenit-ui/src/lib/navigation/page-header.ts).
+  // /navigation carries four h1: z-page-header renders its title as the page
+  // h1 (page-header.ts) and the page previews three of them, so jumping by h1
+  // lands on previews instead of on the page. Accepted for the component
+  // gallery, which has to show the real markup; a heading level input on
+  // z-page-header would be the fix if a product ever needs one.
   {
     pfad: 'navigation',
     nav: 'Navigation',
@@ -45,16 +45,9 @@ const ROUTEN = [
   { pfad: 'daten', nav: 'Daten', h1: ['Daten'] },
   { pfad: 'rueckmeldung', nav: 'Rückmeldung', h1: ['Rückmeldung'] },
   { pfad: 'overlays', nav: 'Overlays', h1: ['Overlays'] },
-  // Finding: /werkzeuge carries two h1. The Hero preview renders its title as
-  // an h1 (hero.ts), so the component page has "Werkzeuge" and the hero title.
-  // The page documents the exception in its own caption, so it is accepted
-  // here; the fix would be a heading level input on z-hero
-  // (projects/zenit-ui/src/lib/marketing/hero.ts).
-  {
-    pfad: 'werkzeuge',
-    nav: 'Werkzeuge',
-    h1: ['Werkzeuge', 'Gameserver aus Nürnberg. In etwa 60 Sekunden online.'],
-  },
+  // The Hero preview sets headingLevel="2", so the hero title joins the
+  // outline below the page heading instead of becoming a second h1.
+  { pfad: 'werkzeuge', nav: 'Werkzeuge', h1: ['Werkzeuge'] },
   { pfad: 'themes', nav: 'Themes', h1: ['Themes'] },
   { pfad: 'muster/dashboard', nav: 'Dashboard', h1: ['Dashboard'] },
   // The two pattern pages simulate a product page, so their h1 is the page
@@ -104,8 +97,9 @@ const WIDGETS = new Set([
  * Every Material icon ligature the demo uses, collected from `<z-icon name="…">`
  * and the `icon="…"` inputs. A ligature renders as text, so an accessible name
  * that contains one means the icon leaked into the name instead of a label.
- * Matched case sensitively as a whole word, because German labels are
- * capitalised ("Info" is a word, `info` is the icon).
+ * Matched case sensitively and delimited by whitespace, because German labels
+ * are capitalised ("Info" is a word, `info` is the icon) and a file name may
+ * well begin with one ("backup-2026-09-20.zip").
  */
 const LIGATUREN = [
   'account_balance_wallet',
@@ -616,13 +610,11 @@ for (const route of ROUTEN) {
           'contentinfo auf Seitenebene',
         ).toBeLessThanOrEqual(1);
 
-        // Finding: z-app-header and z-footer render a <z-app-header>/<z-footer>
-        // element with a class, not <header>/<footer>, so a product built from
-        // them has no banner and no contentinfo landmark at all. In the demo
-        // that keeps the previews out of the page landmarks, which is why the
-        // counts above stay at one. Fix: host element header/footer or
-        // role="banner"/"contentinfo" in
-        // projects/zenit-ui/src/lib/navigation/app-header.ts and footer.ts.
+        // z-app-header and z-footer carry role="banner" and role="contentinfo"
+        // on their host, so a product built from them has both landmarks. Every
+        // z-app-header and z-footer of this demo is a preview inside <main>,
+        // where a banner would be wrong, so all of them pass [landmark]="false"
+        // and the page landmarks stay the ones of the demo shell.
         const kopfVorschau = b.dom.filter((d) => d.tag === 'z-app-header').length;
         const fussVorschau = b.dom.filter((d) => d.tag === 'z-footer').length;
         if (kopfVorschau || fussVorschau) {
@@ -631,23 +623,26 @@ for (const route of ROUTEN) {
             `banner im Baum: ${landmarken.filter((l) => l.rolle === 'banner').length}, contentinfo: ${landmarken.filter((l) => l.rolle === 'contentinfo').length}`,
           ]);
         }
+        expect(
+          landmarken
+            .filter(
+              (l) =>
+                ['banner', 'contentinfo'].includes(l.rolle) &&
+                l.landmarken.some((e) => e.startsWith('main')),
+            )
+            .map((l) => `${l.rolle}: ${l.wo}`),
+          'banner oder contentinfo innerhalb von main',
+        ).toEqual([]);
 
         const ohneNamen = landmarken
           .filter((l) => ['complementary', 'region', 'navigation'].includes(l.rolle) && !l.name)
           .map((l) => `${l.rolle}: ${l.wo}`);
         expect(ohneNamen, 'navigation, region und complementary ohne Namen').toEqual([]);
 
-        // Finding: three routes hand out the same landmark name twice.
-        // /navigation: both z-app-header previews use navLabel="Hauptnavigation"
-        //   (projects/ui-demo/src/app/pages/navigation/navigation.page.ts).
-        // /daten: four z-pagination on one page are four navigation landmarks
-        //   called "Seitennavigation", because the name only comes from the
-        //   label registry (projects/zenit-ui/src/lib/pagination/pagination.ts
-        //   needs a navLabel input, as z-sidebar and z-app-header have one).
-        // /daten at 375px: both z-table-container previews carry the ariaLabel
-        //   "Dateien, seitlich scrollbar", so both scrollable regions have one
-        //   name (projects/ui-demo/src/app/pages/daten/daten.page.ts).
-        // In a list of landmarks none of them can be told apart.
+        // Two landmarks of one role with one name cannot be told apart in a
+        // list of landmarks, so every navigation and every region on a page
+        // names what it navigates or holds ("Seiten der Transaktionen",
+        // "Dateien werden geladen, seitlich scrollbar").
         const namen = landmarken
           .filter((l) => l.rolle === 'navigation' || l.rolle === 'region')
           .map((l) => `${l.rolle} "${l.name}"`);
@@ -680,14 +675,10 @@ for (const route of ROUTEN) {
           ]);
         }
 
-        // Finding: z-panel always renders its title as h3
-        // (projects/zenit-ui/src/lib/panel/panel.ts). Where a panel is the
-        // first thing under the page heading, the outline jumps from h1 to h3:
-        // /muster/dashboard ("Meine Server"), /muster/startseite
-        // ("Kundenbereich") and /werkzeuge ("Günstigste Spiele" in the hero).
-        // Both pattern pages are meant to be copied into the product, so the
-        // jump travels with them. Fix: a heading level input on z-panel (and
-        // an h2 above the first panel of the pattern pages).
+        // No level may be skipped. z-panel renders its title as h3 by default;
+        // a panel that sits directly under the page heading is a section of its
+        // own and sets headingLevel="2" (the pattern pages and the example
+        // app do, and they are meant to be copied into a product).
         const spruenge: string[] = [];
         let vorige = 0;
         for (const u of liste) {
@@ -710,9 +701,7 @@ for (const route of ROUTEN) {
         ).toEqual([]);
 
         const ligaturen = liste
-          .filter((k) =>
-            LIGATUREN.some((l) => new RegExp(`(^|[^a-z_])${l}([^a-z_]|$)`).test(k.name)),
-          )
+          .filter((k) => LIGATUREN.some((l) => new RegExp(`(^|\\s)${l}(\\s|$)`).test(k.name)))
           .map((k) => `${k.rolle} "${k.name}": ${k.wo}`);
         expect(ligaturen, 'Namen, die eine Icon-Ligatur enthalten').toEqual([]);
 
@@ -730,14 +719,9 @@ for (const route of ROUTEN) {
         }
         const mehrfach = [...gruppen.entries()].filter(([, ks]) => ks.length > 1);
         if (mehrfach.length) {
-          // Finding: icon-only buttons named "Weitere Aktionen" appear more
-          // than once inside one landmark, so the list of elements shows the
-          // same entry twice without saying which row it belongs to. On the
-          // demo pages they are variants of one button; in a product the row
-          // name belongs in the label ("Weitere Aktionen für
-          // Beispiel-Server 1"). The rest of the duplicates are the deliberate
-          // variants of a component page (the same button in primary,
-          // secondary and ghost), so the list is reported, not asserted.
+          // The remaining duplicates are the deliberate variants of a component
+          // page (the same button as primary, secondary and ghost), so the full
+          // list is reported, not asserted.
           melden(
             `Doppelte Namen /${route.pfad} ${breite}px`,
             mehrfach.map(
@@ -748,6 +732,20 @@ for (const route of ROUTEN) {
             ),
           );
         }
+        // Asserted for the icon-only row menu: "Weitere Aktionen" says nothing
+        // on its own, so every one of them names its object ("Weitere Aktionen
+        // für Beispiel-Server 1") and no two of them are alike.
+        const aktionsNamen = liste
+          .filter((k) => k.rolle === 'button' && k.name.startsWith('Weitere Aktionen'))
+          .map((k) => k.name);
+        expect(
+          aktionsNamen.filter((n) => n === 'Weitere Aktionen'),
+          '"Weitere Aktionen" ohne Objekt im Namen',
+        ).toEqual([]);
+        expect(
+          [...new Set(aktionsNamen.filter((n, i) => aktionsNamen.indexOf(n) !== i))],
+          'zwei Menü-Knöpfe mit demselben Namen',
+        ).toEqual([]);
         // Ambiguous for real: the same link text leading somewhere else.
         const zweideutig = mehrfach
           .filter(([, ks]) => ks[0].rolle === 'link')
@@ -878,20 +876,13 @@ for (const route of ROUTEN) {
             tabelle.kopf.length,
             `"${tabelle.panel}": Kopfzelle je Spalte`,
           ).toBeGreaterThanOrEqual(tabelle.spalten);
-          // Finding: the loading copy of the FileTable has an empty checkbox
-          // header cell, so that column has no name while the skeleton rows
-          // are shown. Fix: an aria-label on the th in
-          // projects/ui-demo/src/app/pages/daten/daten.page.ts, as the live
-          // table has through its "Alle auswählen" checkbox.
-          const leer = tabelle.kopf.filter((k) => !k.name).length;
-          if (tabelle.busy) {
-            expect(leer, `"${tabelle.panel}" lädt: leere Kopfzellen`).toBeLessThanOrEqual(1);
-          } else {
-            expect(
-              tabelle.kopf.map((k) => k.name || '(leer)'),
-              `"${tabelle.panel}": jede Kopfzelle hat einen Namen`,
-            ).not.toContain('(leer)');
-          }
+          // Loading too: the checkbox column of the skeleton table names itself
+          // through a visually hidden word, as the live table does through its
+          // "Alle auswählen" checkbox.
+          expect(
+            tabelle.kopf.map((k) => k.name || '(leer)'),
+            `"${tabelle.panel}"${tabelle.busy ? ' lädt' : ''}: jede Kopfzelle hat einen Namen`,
+          ).not.toContain('(leer)');
           const ohneDateiname = tabelle.zeilen
             .filter((z) => z.kastenName !== null && !z.kastenName.includes(z.name))
             .map((z) => `${z.name}: Kästchen heißt "${z.kastenName}"`);

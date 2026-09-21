@@ -153,7 +153,7 @@ interface SeitenEintrag {
         Unter 900px klappt die Navigation in ein Menü, das Guthaben bleibt sichtbar.
       </p>
       <z-panel flush>
-        <z-app-header navLabel="Hauptnavigation">
+        <z-app-header navLabel="Hauptnavigation" [landmark]="false">
           <span zBrand>Zenit</span>
           @for (link of kundenLinks; track link) {
             <a
@@ -183,7 +183,7 @@ interface SeitenEintrag {
         nebeneinander, auf einer echten Seite ist es höchstens einer je Bildschirmhöhe.
       </p>
       <z-panel flush>
-        <z-app-header navLabel="Hauptnavigation">
+        <z-app-header navLabel="Öffentliche Navigation" [landmark]="false">
           <span zBrand>Zenit</span>
           @for (link of oeffentlicheLinks; track link) {
             <a
@@ -227,7 +227,7 @@ interface SeitenEintrag {
         kein Rot. Auch der Fuß steht hier zur Ansicht in einem Panel.
       </p>
       <z-panel flush>
-        <z-footer>
+        <z-footer [landmark]="false">
           <z-footer-col heading="Hosting">
             <li><a href="#">Minecraft</a></li>
             <li><a href="#">Preise</a></li>
@@ -253,7 +253,7 @@ interface SeitenEintrag {
         Kundenbereich: nur die untere Zeile, Copyright links und die rechtlichen Links rechts.
       </p>
       <z-panel flush>
-        <z-footer>
+        <z-footer [landmark]="false">
           <span zFooterBase>© 2026 Zenit-Hosting</span>
           <span zFooterBase class="z-cluster">
             <a href="#">Impressum</a>

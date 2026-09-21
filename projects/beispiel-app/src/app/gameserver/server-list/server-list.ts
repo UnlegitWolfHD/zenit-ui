@@ -94,7 +94,7 @@ const PLATZHALTER = [1, 2, 3];
         </button>
       </z-alert>
     } @else {
-      <z-panel title="Meine Server" flush [busy]="zustand() === 'skelett'">
+      <z-panel title="Meine Server" headingLevel="2" flush [busy]="zustand() === 'skelett'">
         <!-- #region zustaende -->
         @switch (zustand()) {
           @case ('start') {

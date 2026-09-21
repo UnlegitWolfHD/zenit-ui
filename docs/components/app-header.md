@@ -25,6 +25,7 @@ import { ZAppHeader, ZBrand, ZHeaderLink, ZHeaderEnd } from 'zenit-ui';
 | Input       | Type     | Default  | Description                                                                                |
 | ----------- | -------- | -------- | ------------------------------------------------------------------------------------------ |
 | `navLabel`  | `string` | `''`     | Accessible name of the `<nav>` landmark. Empty means no `aria-label` at all.               |
+| `landmark`  | `boolean` | `true`  | Whether the host is the `banner` landmark. Pass `[landmark]="false"` for a preview inside `<main>`. |
 | `menuLabel` | `string` | `'Menü'` | `aria-label` of the menu button shown below 900px. German default, meant to be overridden. |
 
 No outputs. Content projection:
@@ -104,8 +105,11 @@ There is no disabled, loading, error or empty state.
 
 ## Accessibility
 
+- The host carries `role="banner"`, so the header is the banner landmark of the page. A page has one
+  of them, and it sits outside `<main>`: a preview of the header inside the content passes
+  `[landmark]="false"`.
 - The `<nav>` is a navigation landmark and takes its name from `navLabel`. Set it; the page usually
-  has more than one navigation.
+  has more than one navigation, and two navigations must not share a name.
 - The active link carries `aria-current="page"`, which also drives the `accent-subtle` background.
 - The menu button is a `<button type="button">` with `aria-label` from `menuLabel`, `aria-expanded`
   reflecting the open state and `aria-controls` pointing at the generated id of the `<nav>`.

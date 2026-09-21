@@ -21,7 +21,11 @@ import { ZFooter, ZFooterCol, ZFooterBase } from 'zenit-ui';
 
 ### `z-footer`
 
-No inputs, no outputs. Content projection:
+| Input      | Type      | Default | Description                                                                                          |
+| ---------- | --------- | ------- | ---------------------------------------------------------------------------------------------------- |
+| `landmark` | `boolean` | `true`  | Whether the host is the `contentinfo` landmark. Pass `[landmark]="false"` for a preview inside `<main>`. |
+
+No outputs. Content projection:
 
 | Slot            | Where it lands                                        |
 | --------------- | ----------------------------------------------------- |
@@ -101,6 +105,9 @@ There is no active, disabled, loading, error or empty state. Red is not used in 
 
 ## Accessibility
 
+- The host carries `role="contentinfo"`, so the footer is the contentinfo landmark of the page. A
+  page has one of them, and it sits outside `<main>`: a preview of the footer inside the content
+  passes `[landmark]="false"`.
 - Each column heading is an `<h2>`, so the footer takes part in the heading outline. Leave `heading`
   empty rather than rendering an empty level.
 - The links sit in a real `<ul>`, so their number is announced.

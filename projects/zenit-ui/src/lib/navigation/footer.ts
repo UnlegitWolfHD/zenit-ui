@@ -1,4 +1,10 @@
-import { ChangeDetectionStrategy, Component, Directive, input } from '@angular/core';
+import {
+  booleanAttribute,
+  ChangeDetectionStrategy,
+  Component,
+  Directive,
+  input,
+} from '@angular/core';
 
 /**
  * Marks the bottom row of the footer: copyright on the left, the legal links on
@@ -60,7 +66,8 @@ export class ZFooterCol {
  *
  * Renders `<div class="z-footer__cols">` with the projected `z-footer-col`
  * elements and `<div class="z-footer__base">` with the `[zFooterBase]` slot;
- * the host carries `z-footer`. Without columns the grid stays empty and
+ * the host carries `z-footer` and, unless {@link landmark} is off, the
+ * `contentinfo` role of the page. Without columns the grid stays empty and
  * collapses, so the same element serves both cases. Content that matches
  * neither slot is not rendered.
  *
@@ -83,7 +90,21 @@ export class ZFooterCol {
     <div class="z-footer__cols"><ng-content select="z-footer-col" /></div>
     <div class="z-footer__base"><ng-content select="[zFooterBase]" /></div>
   `,
-  host: { class: 'z-footer' },
+  host: {
+    class: 'z-footer',
+    '[attr.role]': `landmark() ? "contentinfo" : null`,
+  },
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ZFooter {}
+export class ZFooter {
+  /**
+   * Whether the host is the `contentinfo` landmark of the page. The reference
+   * markup is a `<footer>` at page level, so this is on. Switch it off with
+   * `[landmark]="false"` wherever the footer is not the page footer but a
+   * preview inside `<main>`: a contentinfo must not sit inside the main
+   * content.
+   *
+   * @default true
+   */
+  readonly landmark = input(true, { transform: booleanAttribute });
+}

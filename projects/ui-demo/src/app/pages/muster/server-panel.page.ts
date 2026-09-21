@@ -129,7 +129,7 @@ const STATUS: Record<string, { wort: string; badge: ZBadgeStatus }> = {
         </z-select>
       </div>
 
-      <z-app-header navLabel="Hauptnavigation">
+      <z-app-header navLabel="Hauptnavigation" [landmark]="false">
         <span zBrand>Zenit</span>
         @for (link of kundenLinks; track link) {
           <a
@@ -209,7 +209,7 @@ const STATUS: Record<string, { wort: string; badge: ZBadgeStatus }> = {
             zBtn="ghost"
             iconOnly
             type="button"
-            aria-label="Weitere Aktionen"
+            [attr.aria-label]="'Weitere Aktionen für ' + servername"
             [cdkMenuTriggerFor]="weitere"
           >
             <z-icon name="more_vert" />

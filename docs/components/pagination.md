@@ -29,6 +29,7 @@ Selector: `z-pagination`
 | `total`         | `number`                                                                 | `0`                 | Number of entries in the whole list, not just on the current page.                                            |
 | `itemLabel`     | `string`                                                                 | `''`                | What the list contains, for example "Rechnungen".                                                             |
 | `rangeLabel`    | `(von: number, bis: number, total: number, itemLabel: string) => string` | German default      | Builds the sentence in front of the buttons. Override it so the wording comes from the caller.                |
+| `ariaLabel`     | `string`                                                                 | `'Seitennavigation'` | Accessible name of the `<nav>` around the pager. Name what is paged ("Seiten der Transaktionen") wherever a page has more than one pager. |
 | `ariaLabelPrev` | `string`                                                                 | `'Vorherige Seite'` | `aria-label` of the back button. German default, overridable.                                                 |
 | `ariaLabelNext` | `string`                                                                 | `'Nächste Seite'`   | `aria-label` of the forward button. German default, overridable.                                              |
 
@@ -108,6 +109,8 @@ There is no loading or error state; the list above the pager carries those.
 
 ## Accessibility
 
+- The pager sits in a `<nav>` named by `ariaLabel`, so it is a navigation landmark. Two landmarks of
+  one role must not share a name: on a page with several pagers, name each one after its list.
 - Both buttons are icon-only ghost buttons in size `sm` with an `aria-label` from `ariaLabelPrev`
   and `ariaLabelNext`. Override the German defaults if the rest of the page is in another language.
 - The buttons are natively `disabled` on the first and the last page, so they leave the tab order
