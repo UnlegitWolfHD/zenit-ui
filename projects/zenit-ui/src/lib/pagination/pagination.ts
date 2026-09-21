@@ -42,6 +42,7 @@ import { ZIcon } from '../icon';
         <span>{{ rangeLabel()(von(), bis(), total(), itemLabel()) }}</span>
         <div class="z-pager__nav">
           <button
+            type="button"
             zBtn="ghost"
             iconOnly
             size="sm"
@@ -53,6 +54,7 @@ import { ZIcon } from '../icon';
           </button>
           <span class="z-mono">{{ seite() }} / {{ seiten() }}</span>
           <button
+            type="button"
             zBtn="ghost"
             iconOnly
             size="sm"

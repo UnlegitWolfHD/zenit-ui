@@ -7,7 +7,7 @@ import { ZSidebar, ZSidebarGroup, ZSidebarItem } from './sidebar';
   template: `<z-sidebar [ariaLabel]="bereich()">
     <z-sidebar-group>
       <button type="button" zSidebarItem icon="dashboard" [active]="aktiv() === 0">
-        Übersicht
+        {{ uebersicht() }}
       </button>
       <button type="button" zSidebarItem icon="terminal" [active]="aktiv() === 1">Konsole</button>
     </z-sidebar-group>
@@ -20,6 +20,7 @@ import { ZSidebar, ZSidebarGroup, ZSidebarItem } from './sidebar';
 class SidebarHost {
   readonly bereich = signal('Serverbereiche');
   readonly aktiv = signal(0);
+  readonly uebersicht = signal('Übersicht');
 }
 
 function eintraege(fixture: { nativeElement: HTMLElement }): HTMLButtonElement[] {
@@ -100,6 +101,20 @@ describe('ZSidebar', () => {
       'Konsole',
       'Backups',
     ]);
+  });
+
+  it('follows an item label that changes at runtime', async () => {
+    const fixture = TestBed.createComponent(SidebarHost);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(select(fixture).options[0].textContent!.trim()).toBe('Übersicht');
+
+    fixture.componentInstance.uebersicht.set('Zusammenfassung');
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(select(fixture).options[0].textContent!.trim()).toBe('Zusammenfassung');
   });
 
   it('lets the selected option follow the active item', async () => {

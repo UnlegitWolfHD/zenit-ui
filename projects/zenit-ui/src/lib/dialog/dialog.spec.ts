@@ -145,6 +145,15 @@ describe('ZDialog', () => {
       expect(abbrechen.compareDocumentPosition(loeschen)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     });
 
+    it('gives both footer buttons type="button"', () => {
+      bestaetige();
+
+      expect(fussButtons().map((knopf) => knopf.getAttribute('type'))).toEqual([
+        'button',
+        'button',
+      ]);
+    });
+
     it('uses primary for the confirm button without danger', () => {
       bestaetige();
       const loeschen = fussButtons()[1];

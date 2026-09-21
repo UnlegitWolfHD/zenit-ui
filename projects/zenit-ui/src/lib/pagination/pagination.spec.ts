@@ -55,6 +55,13 @@ describe('ZPagination', () => {
     );
   });
 
+  it('gives both nav buttons type="button" so a pager inside a form does not submit', () => {
+    const fixture = TestBed.createComponent(PagerHost);
+    fixture.detectChanges();
+
+    expect(nav(fixture).map((knopf) => knopf.getAttribute('type'))).toEqual(['button', 'button']);
+  });
+
   it('writes the partial range on the last page', async () => {
     const fixture = TestBed.createComponent(PagerHost);
     fixture.componentInstance.seite.set(5);

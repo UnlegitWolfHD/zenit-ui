@@ -76,7 +76,9 @@ export interface ZConsoleLine {
       }}{{ letzte ? '' : umbruch }}</span>} @empty {<ng-content />}</pre>
     @if (!amEnde()) {
       <div class="z-console__end">
-        <button zBtn="secondary" size="sm" (click)="zumEnde()">{{ endLabel() }}</button>
+        <button type="button" zBtn="secondary" size="sm" (click)="zumEnde()">
+          {{ endLabel() }}
+        </button>
       </div>
     }
     <label class="z-console__input"

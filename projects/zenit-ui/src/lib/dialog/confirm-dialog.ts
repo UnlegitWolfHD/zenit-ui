@@ -69,8 +69,11 @@ export interface ZConfirmConfig {
         </z-field>
       }
       <ng-container zDialogActions>
-        <button zBtn="ghost" (click)="ref.close(false)">{{ daten.cancelLabel }}</button>
+        <button type="button" zBtn="ghost" (click)="ref.close(false)">
+          {{ daten.cancelLabel }}
+        </button>
         <button
+          type="button"
           [zBtn]="daten.danger ? 'danger' : 'primary'"
           [disabled]="gesperrt()"
           (click)="ref.close(true)"

@@ -37,6 +37,10 @@ export type ZButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
  * tooltip, which a real `disabled` would prevent, and its click is swallowed
  * as well. Icon-only buttons need an `aria-label` from the caller.
  *
+ * The component never touches `type`: the native default stays, so a
+ * `<button zBtn>` inside a form submits it. A button that only triggers an
+ * action therefore carries `type="button"` from the caller.
+ *
  * @example
  * ```html
  * <button zBtn="primary" size="lg" [loading]="laeuft()">Server erstellen</button>

@@ -216,6 +216,12 @@ describe('ZConsole', () => {
     expect(endeButton()?.textContent?.trim()).toBe('Zum Ende');
   });
 
+  it('gives the end button type="button" so a console inside a form does not submit', () => {
+    scrolle(0);
+
+    expect(endeButton()?.getAttribute('type')).toBe('button');
+  });
+
   it('scrolls back to the end, hides the button and focuses the input', () => {
     scrolle(0);
     endeButton()?.click();
