@@ -1,0 +1,35 @@
+<!-- @dsCard group="Navigation" height=170 -->
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+<style>
+  body { margin: 0; padding: 24px; }
+  .demo { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+  .demo + .demo { margin-top: 16px; }
+  .stack { display: grid; gap: 16px; }
+  .cap { font-size: 12px; line-height: 16px; color: var(--text-subtle); width: 100%; }
+</style>
+</head>
+<body class="z-root">
+<div class="stack">
+  <div class="z-tabs" role="tablist">
+    <button class="z-tab" role="tab" aria-selected="true">Übersicht</button>
+    <button class="z-tab" role="tab" aria-selected="false">Apps</button>
+    <button class="z-tab" role="tab" aria-selected="false">Speicher</button>
+    <button class="z-tab" role="tab" aria-selected="false">Pakete</button>
+    <button class="z-tab" role="tab" aria-selected="false">Einstellungen</button>
+  </div>
+  <div class="demo"><span class="cap">Segment: gleichartige Sichten auf dieselben Daten</span>
+    <div class="z-segment" role="group" aria-label="Zeitraum">
+      <button aria-pressed="false">3 Monate</button><button aria-pressed="true">6 Monate</button><button aria-pressed="false">12 Monate</button>
+    </div>
+    <div class="z-segment" role="group" aria-label="Ticketstatus">
+      <button aria-pressed="true">Offen</button><button aria-pressed="false">Geschlossen</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,28 @@
+<!-- @dsCard group="Layout" height=190 -->
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+<style>
+  body { margin: 0; padding: 24px; }
+  .demo { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+  .demo + .demo { margin-top: 16px; }
+  .stack { display: grid; gap: 16px; }
+  .cap { font-size: 12px; line-height: 16px; color: var(--text-subtle); width: 100%; }
+</style>
+</head>
+<body class="z-root">
+<div class="stack">
+  <div class="z-pagehead">
+    <div><h1 class="z-pagehead__title">Gameserver</h1><p class="z-pagehead__sub">3 Server, 2 online</p></div>
+    <div class="z-pagehead__actions"><button class="z-btn z-btn--secondary">Bestellungen</button><button class="z-btn z-btn--primary"><span class="material-icons z-icon" aria-hidden="true">add</span>Server erstellen</button></div>
+  </div>
+  <div class="z-pagehead">
+    <div><h1 class="z-pagehead__title">Abrechnung</h1><p class="z-pagehead__sub">Guthaben <span class="z-mono" style="color:var(--text)">25,00 €</span></p></div>
+    <div class="z-pagehead__actions"><button class="z-btn z-btn--secondary">Gutschein einlösen</button><button class="z-btn z-btn--primary">Aufladen</button></div>
+  </div>
+</div>
+</body>
+</html>

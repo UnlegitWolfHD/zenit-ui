@@ -1,0 +1,31 @@
+<!-- @dsCard group="Formulare" height=200 -->
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+<style>
+  body { margin: 0; padding: 24px; }
+  .demo { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+  .demo + .demo { margin-top: 16px; }
+  .stack { display: grid; gap: 16px; }
+  .cap { font-size: 12px; line-height: 16px; color: var(--text-subtle); width: 100%; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+</style>
+</head>
+<body class="z-root">
+<div class="grid">
+  <label class="z-field"><span class="z-field__label">Servername</span>
+    <input class="z-input" id="in-name" value="PaperMC Server">
+    <span class="z-field__hint">Nur für dich sichtbar.</span></label>
+  <label class="z-field"><span class="z-field__label">Maximale Spieler</span>
+    <input class="z-input z-mono" id="in-max" value="200" aria-invalid="true">
+    <span class="z-field__error">Dein Tarif erlaubt höchstens 100 Spieler.</span></label>
+  <label class="z-field"><span class="z-field__label">Suche</span>
+    <span class="z-input-wrap"><span class="material-icons z-icon" aria-hidden="true">search</span><input class="z-input" id="in-search" placeholder="Name, Spiel oder Adresse"></span></label>
+  <label class="z-field"><span class="z-field__label">Subdomain</span>
+    <input class="z-input" id="in-dis" value="mein-server.user.zenit-hosting.de" disabled></label>
+</div>
+</body>
+</html>

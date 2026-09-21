@@ -1,0 +1,41 @@
+<!-- @dsCard group="Aktionen" height=310 -->
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+<style>
+  body { margin: 0; padding: 24px; }
+  .demo { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+  .demo + .demo { margin-top: 16px; }
+  .stack { display: grid; gap: 16px; }
+  .cap { font-size: 12px; line-height: 16px; color: var(--text-subtle); width: 100%; }
+</style>
+</head>
+<body class="z-root">
+<div class="demo">
+  <button class="z-btn z-btn--primary"><span class="material-icons z-icon" aria-hidden="true">add</span>Server erstellen</button>
+  <button class="z-btn z-btn--secondary">Preis berechnen</button>
+  <button class="z-btn z-btn--ghost">Abbrechen</button>
+  <button class="z-btn z-btn--danger"><span class="material-icons z-icon" aria-hidden="true">power_settings_new</span>Hart beenden</button>
+  <button class="z-btn z-btn--primary" disabled>Wird gestartet</button>
+</div>
+<div class="demo">
+  <button class="z-btn z-btn--primary z-btn--lg">Server erstellen</button>
+  <button class="z-btn z-btn--secondary">Aufladen</button>
+  <button class="z-btn z-btn--secondary z-btn--sm"><span class="material-icons z-icon" aria-hidden="true">upload</span>Hochladen</button>
+  <button class="z-btn z-btn--ghost z-btn--icon" aria-label="Aktualisieren"><span class="material-icons z-icon" aria-hidden="true">refresh</span></button>
+</div>
+<div class="demo">
+  <span class="cap">Panel-Kopf: eine Hauptaktion je Zustand, Rest neutral</span>
+  <button class="z-btn z-btn--secondary"><span class="material-icons z-icon" aria-hidden="true">restart_alt</span>Neustart</button>
+  <button class="z-btn z-btn--secondary"><span class="material-icons z-icon" aria-hidden="true">stop</span>Stoppen</button>
+  <button class="z-btn z-btn--ghost z-btn--icon" aria-label="Weitere Aktionen"><span class="material-icons z-icon" aria-hidden="true">more_vert</span></button>
+</div>
+<div class="demo z-theme-mc">
+  <span class="cap">Minecraft-Subtheme</span>
+  <button class="z-btn z-btn--primary"><span class="material-icons z-icon" aria-hidden="true">tune</span>Server konfigurieren</button>
+</div>
+</body>
+</html>

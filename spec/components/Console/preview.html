@@ -1,0 +1,28 @@
+<!-- @dsCard group="Werkzeuge" height=300 -->
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+<style>
+  body { margin: 0; padding: 24px; }
+  .demo { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+  .demo + .demo { margin-top: 16px; }
+  .stack { display: grid; gap: 16px; }
+  .cap { font-size: 12px; line-height: 16px; color: var(--text-subtle); width: 100%; }
+</style>
+</head>
+<body class="z-root">
+<div class="z-console">
+<pre class="z-console__log" tabindex="0" aria-label="Serverlog"><span class="z-log__time">[12:04:27]</span> Starting minecraft server version 1.21.4
+<span class="z-log__time">[12:04:29]</span> Preparing level "world"
+<span class="z-log__time">[12:04:31]</span> Done (4.213s)! For help, type "help"
+<span class="z-log--warn"><span class="z-log__time">[12:06:02]</span> WARN Can't keep up! Is the server overloaded? Running 2140ms behind</span>
+<span class="z-log--error"><span class="z-log__time">[12:06:40]</span> ERROR Could not load 'plugins/WorldGuard.jar': missing dependency WorldEdit</span>
+<span class="z-log--cmd"><span class="z-log__time">[12:07:15]</span> &gt; whitelist add Steve</span>
+<span class="z-log__time">[12:07:15]</span> Added Steve to the whitelist</pre>
+<label class="z-console__input"><span aria-hidden="true">&gt;</span><input id="con-in" placeholder="Befehl eingeben, Enter sendet" aria-label="Befehl"></label>
+</div>
+</body>
+</html>

@@ -1,0 +1,24 @@
+<!-- @dsCard group="Formulare" height=170 -->
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+<style>
+  body { margin: 0; padding: 24px; }
+  .demo { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+  .demo + .demo { margin-top: 16px; }
+  .stack { display: grid; gap: 16px; }
+  .cap { font-size: 12px; line-height: 16px; color: var(--text-subtle); width: 100%; }
+</style>
+</head>
+<body class="z-root">
+<div style="max-width:480px"><div class="z-range">
+  <div class="z-range__head"><label class="z-field__label" for="rng-ram">Arbeitsspeicher</label><span class="z-range__value">6 GB</span></div>
+  <input type="range" id="rng-ram" min="2" max="16" step="2" value="6" aria-valuetext="6 GB">
+  <div class="z-range__ticks"><span>2</span><span>4</span><span>6</span><span>8</span><span>10</span><span>12</span><span>14</span><span>16</span></div>
+  <span class="z-field__hint">Empfohlen für Valheim mit bis zu 10 Spielern: 6 GB.</span>
+</div></div>
+</body>
+</html>

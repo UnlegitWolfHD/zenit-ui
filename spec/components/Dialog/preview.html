@@ -1,0 +1,29 @@
+<!-- @dsCard group="Overlays" height=380 -->
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+<style>
+  body { margin: 0; padding: 24px; }
+  .demo { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+  .demo + .demo { margin-top: 16px; }
+  .stack { display: grid; gap: 16px; }
+  .cap { font-size: 12px; line-height: 16px; color: var(--text-subtle); width: 100%; }
+  body { padding: 0; }
+</style>
+</head>
+<body class="z-root">
+<div class="z-scrim" style="min-height:380px">
+  <div class="z-dialog" role="dialog" aria-modal="true" aria-labelledby="dlg-t">
+    <div class="z-dialog__header"><h2 class="z-dialog__title" id="dlg-t">Server "Test" löschen?</h2></div>
+    <div class="z-dialog__body">
+      <span>Welt, Konfiguration und alle 3 Backups werden sofort gelöscht. Das lässt sich nicht rückgängig machen. Verbrauchte 0,65 € werden abgerechnet.</span>
+      <label class="z-field"><span class="z-field__label" style="color:var(--text)">Gib zur Bestätigung den Servernamen ein</span><input class="z-input z-mono" id="dlg-confirm" placeholder="Test"></label>
+    </div>
+    <div class="z-dialog__footer"><button class="z-btn z-btn--ghost">Abbrechen</button><button class="z-btn z-btn--danger" disabled>Server löschen</button></div>
+  </div>
+</div>
+</body>
+</html>

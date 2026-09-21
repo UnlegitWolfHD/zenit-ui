@@ -1,0 +1,97 @@
+<!-- @dsCard height=320 -->
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400&family=Space+Grotesk:wght@700&display=swap">
+<style>
+  body { margin: 0; background: var(--bg); }
+  .cover { position: relative; width: 960px; height: 320px; overflow: hidden; background: var(--bg); }
+  .cover svg { position: absolute; inset: 0; display: block; }
+  .words { position: absolute; left: var(--space-6); bottom: var(--space-6); max-width: 440px; }
+  .name { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 96px; line-height: 0.95; letter-spacing: -0.03em; color: var(--text); }
+  .tag { margin: var(--space-3) 0 0; font-family: var(--font-body); font-size: 14px; line-height: 20px; color: var(--text-muted); }
+  .b-accent { fill: var(--accent); rx: var(--radius-md); }
+  .b-raised { fill: var(--surface-raised); rx: var(--radius-md); }
+  .b-ink { fill: var(--text); rx: var(--radius-md); }
+  .b-mc { fill: var(--mc-accent); rx: var(--radius-md); }
+  .b-line { fill: var(--border-control); rx: var(--radius-sm); }
+  .dot { fill: var(--accent-text); }
+</style>
+</head>
+<body>
+<div class="cover">
+  <!--
+    Blöcke: accent 192x200 (8 x space-5, oben angeschnitten), surface-raised 232x176 (rechts angeschnitten), text 96x64, mc-accent 80x64, border-control 232x32.
+    Anordnung: eine hohe rote Platte mit Satelliten, wie Rack-Einschübe unterschiedlicher Höhe; alles rechts von x = 480.
+    Muster: Punktraster im Abstand space-5 (24px), weil das System technisch ist, Mono-Zahlen nutzt und auf einem 4px-Raster steht; 54 Punkte in accent-text auf der dunklen Platte.
+    Schritte und Radien: space-3, space-4, space-5, space-6; radius-md für Platten, radius-sm für die Leiste.
+  -->
+  <svg width="960" height="320" viewBox="0 0 960 320" aria-hidden="true">
+    <rect class="b-accent" x="528" y="-8" width="192" height="200"/>
+    <rect class="b-raised" x="736" y="48" width="232" height="176"/>
+    <rect class="b-ink" x="528" y="208" width="96" height="64"/>
+    <rect class="b-mc" x="640" y="208" width="80" height="64"/>
+    <rect class="b-line" x="736" y="240" width="232" height="32"/>
+    <circle class="dot" cx="760" cy="72" r="2"/>
+    <circle class="dot" cx="784" cy="72" r="2"/>
+    <circle class="dot" cx="808" cy="72" r="2"/>
+    <circle class="dot" cx="832" cy="72" r="2"/>
+    <circle class="dot" cx="856" cy="72" r="2"/>
+    <circle class="dot" cx="880" cy="72" r="2"/>
+    <circle class="dot" cx="904" cy="72" r="2"/>
+    <circle class="dot" cx="928" cy="72" r="2"/>
+    <circle class="dot" cx="952" cy="72" r="2"/>
+    <circle class="dot" cx="760" cy="96" r="2"/>
+    <circle class="dot" cx="784" cy="96" r="2"/>
+    <circle class="dot" cx="808" cy="96" r="2"/>
+    <circle class="dot" cx="832" cy="96" r="2"/>
+    <circle class="dot" cx="856" cy="96" r="2"/>
+    <circle class="dot" cx="880" cy="96" r="2"/>
+    <circle class="dot" cx="904" cy="96" r="2"/>
+    <circle class="dot" cx="928" cy="96" r="2"/>
+    <circle class="dot" cx="952" cy="96" r="2"/>
+    <circle class="dot" cx="760" cy="120" r="2"/>
+    <circle class="dot" cx="784" cy="120" r="2"/>
+    <circle class="dot" cx="808" cy="120" r="2"/>
+    <circle class="dot" cx="832" cy="120" r="2"/>
+    <circle class="dot" cx="856" cy="120" r="2"/>
+    <circle class="dot" cx="880" cy="120" r="2"/>
+    <circle class="dot" cx="904" cy="120" r="2"/>
+    <circle class="dot" cx="928" cy="120" r="2"/>
+    <circle class="dot" cx="952" cy="120" r="2"/>
+    <circle class="dot" cx="760" cy="144" r="2"/>
+    <circle class="dot" cx="784" cy="144" r="2"/>
+    <circle class="dot" cx="808" cy="144" r="2"/>
+    <circle class="dot" cx="832" cy="144" r="2"/>
+    <circle class="dot" cx="856" cy="144" r="2"/>
+    <circle class="dot" cx="880" cy="144" r="2"/>
+    <circle class="dot" cx="904" cy="144" r="2"/>
+    <circle class="dot" cx="928" cy="144" r="2"/>
+    <circle class="dot" cx="952" cy="144" r="2"/>
+    <circle class="dot" cx="760" cy="168" r="2"/>
+    <circle class="dot" cx="784" cy="168" r="2"/>
+    <circle class="dot" cx="808" cy="168" r="2"/>
+    <circle class="dot" cx="832" cy="168" r="2"/>
+    <circle class="dot" cx="856" cy="168" r="2"/>
+    <circle class="dot" cx="880" cy="168" r="2"/>
+    <circle class="dot" cx="904" cy="168" r="2"/>
+    <circle class="dot" cx="928" cy="168" r="2"/>
+    <circle class="dot" cx="952" cy="168" r="2"/>
+    <circle class="dot" cx="760" cy="192" r="2"/>
+    <circle class="dot" cx="784" cy="192" r="2"/>
+    <circle class="dot" cx="808" cy="192" r="2"/>
+    <circle class="dot" cx="832" cy="192" r="2"/>
+    <circle class="dot" cx="856" cy="192" r="2"/>
+    <circle class="dot" cx="880" cy="192" r="2"/>
+    <circle class="dot" cx="904" cy="192" r="2"/>
+    <circle class="dot" cx="928" cy="192" r="2"/>
+    <circle class="dot" cx="952" cy="192" r="2"/>
+  </svg>
+  <div class="words">
+    <h1 class="name">Zenit-<br>Hosting</h1>
+    <p class="tag">Technisch, ruhig, dicht. Ein System für Website, Kundenbereich und Server-Panel.</p>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,23 @@
+<!-- @dsCard group="Formulare" height=320 -->
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+<style>
+  body { margin: 0; padding: 24px; }
+  .demo { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+  .demo + .demo { margin-top: 16px; }
+  .stack { display: grid; gap: 16px; }
+  .cap { font-size: 12px; line-height: 16px; color: var(--text-subtle); width: 100%; }
+</style>
+</head>
+<body class="z-root">
+<div class="z-panel" style="max-width:560px"><div class="z-panel__body">
+  <div class="z-setting"><div class="z-setting__text"><span class="z-setting__title">PvP</span><span class="z-subtle z-mono" style="font-size:12px">pvp</span><span class="z-muted">Spieler können sich gegenseitig angreifen.</span></div><input class="z-toggle" type="checkbox" role="switch" id="tg-1" checked aria-label="PvP"></div>
+  <div class="z-setting"><div class="z-setting__text"><span class="z-setting__title">Hardcore</span><span class="z-subtle z-mono" style="font-size:12px">hardcore</span><span class="z-muted">Bann bei Tod, Schwierigkeit fest auf schwer.</span></div><input class="z-toggle" type="checkbox" role="switch" id="tg-2" aria-label="Hardcore"></div>
+  <div class="z-setting"><div class="z-setting__text"><span class="z-setting__title">Whitelist</span><span class="z-muted">Greift nach dem nächsten Neustart.</span></div><input class="z-toggle" type="checkbox" role="switch" id="tg-3" disabled aria-label="Whitelist"></div>
+</div></div>
+</body>
+</html>

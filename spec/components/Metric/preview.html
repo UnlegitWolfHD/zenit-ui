@@ -1,0 +1,24 @@
+<!-- @dsCard group="Daten" height=190 -->
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+<style>
+  body { margin: 0; padding: 24px; }
+  .demo { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+  .demo + .demo { margin-top: 16px; }
+  .stack { display: grid; gap: 16px; }
+  .cap { font-size: 12px; line-height: 16px; color: var(--text-subtle); width: 100%; }
+</style>
+</head>
+<body class="z-root">
+<div class="z-panel"><div class="z-metrics">
+  <div class="z-metric"><span class="z-metric__label">CPU</span><span class="z-metric__value">0,2 <small>%</small></span><div class="z-meter" role="meter" aria-valuenow="0.2" aria-valuemin="0" aria-valuemax="100" aria-label="CPU"><span class="z-meter__fill" style="width:1%"></span></div></div>
+  <div class="z-metric"><span class="z-metric__label">RAM</span><span class="z-metric__value">1,16 <small>/ 8,4 GB</small></span><div class="z-meter" role="meter" aria-valuenow="14" aria-valuemin="0" aria-valuemax="100" aria-label="RAM"><span class="z-meter__fill" style="width:14%"></span></div></div>
+  <div class="z-metric"><span class="z-metric__label">Speicher</span><span class="z-metric__value">21,4 <small>/ 24 GB</small></span><div class="z-meter z-meter--warning" role="meter" aria-valuenow="89" aria-valuemin="0" aria-valuemax="100" aria-label="Speicher"><span class="z-meter__fill" style="width:89%"></span></div><span class="z-metric__sub">89 % belegt</span></div>
+  <div class="z-metric"><span class="z-metric__label">Laufzeit</span><span class="z-metric__value">2d 21h</span><span class="z-metric__sub">TPS 20 · Ping 91 ms</span></div>
+</div></div>
+</body>
+</html>

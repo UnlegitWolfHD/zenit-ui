@@ -1,0 +1,25 @@
+<!-- @dsCard group="Öffentlich" height=330 -->
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+<style>
+  body { margin: 0; padding: 24px; }
+  .demo { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+  .demo + .demo { margin-top: 16px; }
+  .stack { display: grid; gap: 16px; }
+  .cap { font-size: 12px; line-height: 16px; color: var(--text-subtle); width: 100%; }
+</style>
+</head>
+<body class="z-root">
+<div class="z-games" style="max-width:720px">
+  <button class="z-game" aria-pressed="true"><span class="z-game__cover">Terraria</span><span class="z-game__title">Terraria</span><span class="z-game__price">ab 1,98 € / Monat</span></button>
+  <button class="z-game" aria-pressed="false"><span class="z-game__cover">Valheim</span><span class="z-game__title">Valheim</span><span class="z-game__price">ab 2,70 € / Monat</span></button>
+  <button class="z-game" aria-pressed="false"><span class="z-game__cover">7 Days to Die</span><span class="z-game__title">7 Days to Die</span><span class="z-game__price">ab 3,95 € / Monat</span></button>
+  <button class="z-game" aria-pressed="false"><span class="z-game__cover">Rust</span><span class="z-game__title">Rust Dedicated Server</span><span class="z-game__price">ab 9,43 € / Monat</span></button>
+</div>
+<p class="cap" style="margin-top:16px">Die Vorschau zeigt den Text-Fallback. Mit Cover liegt ein img in z-game__cover.</p>
+</body>
+</html>

@@ -1,0 +1,23 @@
+<!-- @dsCard group="Overlays" height=240 -->
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+<style>
+  body { margin: 0; padding: 24px; }
+  .demo { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+  .demo + .demo { margin-top: 16px; }
+  .stack { display: grid; gap: 16px; }
+  .cap { font-size: 12px; line-height: 16px; color: var(--text-subtle); width: 100%; }
+</style>
+</head>
+<body class="z-root">
+<div class="stack" style="justify-items:start">
+  <div class="z-toast z-toast--success" role="status"><span class="material-icons z-icon" aria-hidden="true">check_circle</span><span>Eigenschaften gespeichert</span><button class="z-toast__action">Rückgängig</button></div>
+  <div class="z-toast z-toast--danger" role="alert"><span class="material-icons z-icon" aria-hidden="true">error</span><span>Backup fehlgeschlagen: Speicher voll</span><button class="z-toast__action">Speicher ansehen</button></div>
+  <div class="z-toast" role="status"><span class="material-icons z-icon" aria-hidden="true">content_copy</span><span>Adresse kopiert</span></div>
+</div>
+</body>
+</html>

@@ -1,0 +1,34 @@
+<!-- @dsCard group="Navigation" height=110 -->
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+<style>
+  body { margin: 0; padding: 24px; }
+  .demo { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+  .demo + .demo { margin-top: 16px; }
+  .stack { display: grid; gap: 16px; }
+  .cap { font-size: 12px; line-height: 16px; color: var(--text-subtle); width: 100%; }
+  body { padding: 0 0 24px; }
+</style>
+</head>
+<body class="z-root">
+<header class="z-header">
+  <span class="z-header__brand">Zenit</span>
+  <nav class="z-header__nav" aria-label="Hauptnavigation">
+    <a class="z-header__link" href="#">Dashboard</a>
+    <a class="z-header__link" href="#" aria-current="page">Gameserver</a>
+    <a class="z-header__link" href="#">Hosting</a>
+    <a class="z-header__link" href="#">Domains</a>
+    <a class="z-header__link" href="#">Abrechnung</a>
+    <a class="z-header__link" href="#">Support</a>
+  </nav>
+  <div class="z-header__end">
+    <a class="z-header__link z-mono" href="#" aria-label="Guthaben 25,00 Euro, zur Abrechnung">25,00 €</a>
+    <span class="z-avatar" aria-hidden="true">K</span>
+  </div>
+</header>
+</body>
+</html>

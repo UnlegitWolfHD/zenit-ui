@@ -1,0 +1,40 @@
+<!-- @dsCard group="Navigation" height=610 -->
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+<style>
+  body { margin: 0; padding: 24px; }
+  .demo { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+  .demo + .demo { margin-top: 16px; }
+  .stack { display: grid; gap: 16px; }
+  .cap { font-size: 12px; line-height: 16px; color: var(--text-subtle); width: 100%; }
+</style>
+</head>
+<body class="z-root z-theme-mc">
+<nav class="z-side" aria-label="Minecraft-Panel">
+  <div class="z-side__group">
+    <button class="z-side__item" aria-current="page"><span class="material-icons z-icon" aria-hidden="true">dashboard</span>Übersicht</button>
+    <button class="z-side__item"><span class="material-icons z-icon" aria-hidden="true">terminal</span>Konsole</button>
+    <button class="z-side__item"><span class="material-icons z-icon" aria-hidden="true">folder</span>Dateien</button>
+  </div>
+  <div class="z-side__group"><span class="z-side__label">Spiel</span>
+    <button class="z-side__item"><span class="material-icons z-icon" aria-hidden="true">group</span>Spieler<span class="z-side__count">0</span></button>
+    <button class="z-side__item"><span class="material-icons z-icon" aria-hidden="true">tune</span>Eigenschaften</button>
+    <button class="z-side__item"><span class="material-icons z-icon" aria-hidden="true">public</span>Welten</button>
+    <button class="z-side__item"><span class="material-icons z-icon" aria-hidden="true">extension</span>Mods und Plugins</button>
+  </div>
+  <div class="z-side__group"><span class="z-side__label">Betrieb</span>
+    <button class="z-side__item"><span class="material-icons z-icon" aria-hidden="true">backup</span>Backups</button>
+    <button class="z-side__item"><span class="material-icons z-icon" aria-hidden="true">schedule</span>Zeitplan</button>
+    <button class="z-side__item"><span class="material-icons z-icon" aria-hidden="true">monitoring</span>Statistiken</button>
+  </div>
+  <div class="z-side__group"><span class="z-side__label">Server</span>
+    <button class="z-side__item"><span class="material-icons z-icon" aria-hidden="true">settings</span>Einstellungen</button>
+    <button class="z-side__item"><span class="material-icons z-icon" aria-hidden="true">upgrade</span>Upgrade</button>
+  </div>
+</nav>
+</body>
+</html>

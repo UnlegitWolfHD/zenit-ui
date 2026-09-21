@@ -1,0 +1,23 @@
+<!-- @dsCard group="Status" height=290 -->
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+<style>
+  body { margin: 0; padding: 24px; }
+  .demo { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+  .demo + .demo { margin-top: 16px; }
+  .stack { display: grid; gap: 16px; }
+  .cap { font-size: 12px; line-height: 16px; color: var(--text-subtle); width: 100%; }
+</style>
+</head>
+<body class="z-root">
+<div class="stack" style="max-width:720px">
+  <div class="z-alert z-alert--info"><span class="material-icons z-icon" aria-hidden="true">info</span><div class="z-alert__text"><span class="z-alert__title">Dein Lieblingsspiel fehlt?</span><span class="z-alert__body">Stimme für Vorschläge ab oder reiche ein neues Spiel ein.</span></div><button class="z-btn z-btn--secondary z-btn--sm">Vorschläge ansehen</button></div>
+  <div class="z-alert z-alert--warning"><span class="material-icons z-icon" aria-hidden="true">restart_alt</span><div class="z-alert__text"><span class="z-alert__title">2 Änderungen greifen erst nach einem Neustart</span><span class="z-alert__body">PvP und maximale Spieler.</span></div><button class="z-btn z-btn--secondary z-btn--sm">Jetzt neu starten</button></div>
+  <div class="z-alert z-alert--danger"><span class="material-icons z-icon" aria-hidden="true">error</span><div class="z-alert__text"><span class="z-alert__title">Installation fehlgeschlagen</span><span class="z-alert__body">SteamCMD hat nach 120 Sekunden nicht geantwortet. Starte die Installation erneut oder öffne ein Ticket.</span></div><button class="z-btn z-btn--secondary z-btn--sm">Erneut installieren</button></div>
+</div>
+</body>
+</html>
