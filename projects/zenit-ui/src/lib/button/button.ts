@@ -10,11 +10,39 @@ import {
 } from '@angular/core';
 import { ZSpinner } from '../spinner';
 
+/**
+ * The four button variants. `primary` is the one main action per screen,
+ * `secondary` every further action, `ghost` cancel and icon actions in
+ * toolbars, `danger` only irreversible actions.
+ */
 export type ZButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 
 /**
- * Button auf `<button>` oder `<a>`. Der Ladezustand zeigt den Spinner vor dem
- * Text und sperrt die Schaltflaeche.
+ * Triggers an action, on a native `<button>` or on an `<a>`. The component
+ * brings no element of its own: it attaches to the host through the attribute
+ * `zBtn`, so links keep their `href` and their routing.
+ *
+ * Renders the class `z-btn` on the host plus one variant class
+ * (`z-btn--primary`, `z-btn--secondary`, `z-btn--ghost`, `z-btn--danger`) and,
+ * where set, `z-btn--sm`, `z-btn--lg`, `z-btn--icon` and `z-btn--block`. Size
+ * `md` adds no class. The content is projected as is; while {@link loading} is
+ * set a `z-spinner` sits in front of it.
+ *
+ * Accessibility: on a `<button>`, {@link disabled} and {@link loading} set the
+ * native `disabled` attribute; {@link loading} additionally sets
+ * `aria-busy="true"`. An `<a>` cannot be disabled natively, so it gets
+ * `aria-disabled="true"` and `tabindex="-1"` instead, and the click is
+ * swallowed. A caller may also write a static `aria-disabled="true"` onto a
+ * `<button>`: the button then stays focusable and can explain the reason in a
+ * tooltip, which a real `disabled` would prevent, and its click is swallowed
+ * as well. Icon-only buttons need an `aria-label` from the caller.
+ *
+ * @example
+ * ```html
+ * <button zBtn="primary" size="lg" [loading]="laeuft()">Server erstellen</button>
+ * <button zBtn="ghost" iconOnly size="sm" aria-label="Mehr"><z-icon name="more_vert" /></button>
+ * <a zBtn routerLink="/user/server">Alle anzeigen</a>
+ * ```
  */
 @Component({
   selector: 'button[zBtn], a[zBtn]',
@@ -39,20 +67,62 @@ export type ZButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ZButton {
-  /** Leerer Wert bedeutet secondary. */
+  /**
+   * Variant of the button. The bare attribute `zBtn` carries the empty string,
+   * which counts as `secondary`, so `<button zBtn>` is the secondary button.
+   *
+   * @default 'secondary'
+   */
   readonly zBtn = input<ZButtonVariant | ''>('secondary');
+
+  /**
+   * Height of the button: `sm` for toolbars, `md` everywhere, `lg` only in the
+   * hero and in the closing call to action. `md` adds no class.
+   *
+   * @default 'md'
+   */
   readonly size = input<'sm' | 'md' | 'lg'>('md');
+
+  /**
+   * Stretches the button over the full width of its container, for a form on a
+   * phone. Boolean attribute.
+   *
+   * @default false
+   */
   readonly block = input(false, { transform: booleanAttribute });
+
+  /**
+   * Square button that holds an icon and no text. The caller supplies the
+   * `aria-label`. Boolean attribute.
+   *
+   * @default false
+   */
   readonly iconOnly = input(false, { transform: booleanAttribute });
+
+  /**
+   * Shows a spinner in front of the content, sets `aria-busy="true"` and locks
+   * the button just like {@link disabled}. Boolean attribute.
+   *
+   * @default false
+   */
   readonly loading = input(false, { transform: booleanAttribute });
+
+  /**
+   * Locks the button. On a `<button>` this is the native `disabled` attribute,
+   * on an `<a>` it is `aria-disabled="true"` with `tabindex="-1"` and a
+   * swallowed click. Boolean attribute.
+   *
+   * @default false
+   */
   readonly disabled = input(false, { transform: booleanAttribute });
 
   protected readonly istLink =
     inject<ElementRef<HTMLElement>>(ElementRef).nativeElement.nodeName === 'A';
   /**
-   * Statisches `aria-disabled="true"` des Aufrufers. So bleibt ein `<button>`
-   * fokussierbar und kann den Grund per Tooltip zeigen, was ein echtes
-   * `disabled` verhindert. Ohne diese Abfrage loescht die Bindung das Attribut.
+   * Static `aria-disabled="true"` written by the caller. That keeps a
+   * `<button>` focusable so it can show the reason in a tooltip, which a real
+   * `disabled` would prevent. Without reading it here the host binding would
+   * delete the attribute.
    */
   protected readonly ariaGesperrt =
     inject(new HostAttributeToken('aria-disabled'), { optional: true }) === 'true';
@@ -60,10 +130,9 @@ export class ZButton {
   protected readonly gesperrt = computed(() => this.disabled() || this.loading());
 
   /**
-   * Ein `<a>` und ein `<button aria-disabled="true">` bleiben klickbar. Der
-   * Klick wird deshalb abgefangen, bevor ihn ein anderer Listener auf
-   * demselben Element sieht (zum Beispiel routerLink). `href` bleibt
-   * unangetastet.
+   * An `<a>` and a `<button aria-disabled="true">` stay clickable. The click is
+   * therefore caught before another listener on the same element sees it (for
+   * example `routerLink`). `href` is left untouched.
    */
   protected aufKlick(ereignis: Event): void {
     if (this.ariaGesperrt || (this.istLink && this.gesperrt())) {
