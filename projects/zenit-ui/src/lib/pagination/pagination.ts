@@ -12,8 +12,26 @@ import { ZButton } from '../button';
 import { ZIcon } from '../icon';
 
 /**
- * Blaettert durch Listen mit mehr als `pageSize` Eintraegen und steht als
- * letzte Zeile im Panel. Passt alles auf eine Seite, rendert sie nichts.
+ * Pages through lists with more than {@link pageSize} entries and sits as the
+ * last row inside a panel.
+ *
+ * Renders `<div class="z-pager">` with the range sentence on the left and
+ * `.z-pager__nav` on the right: a back button, `page / pages` in the mono face
+ * and a forward button. Both buttons are icon-only ghost buttons in size `sm`
+ * with an `aria-label`, and they are `disabled` on the first and the last page.
+ * As long as everything fits on one page the component renders nothing at all,
+ * so an empty list shows no pager.
+ *
+ * The component does not slice the data. It reports the wanted page through
+ * {@link page}, the caller cuts the list.
+ *
+ * @example
+ * ```html
+ * <z-panel title="Transaktionen" flush>
+ *   <z-rows>…</z-rows>
+ *   <z-pagination [(page)]="seite" [total]="118" itemLabel="Transaktionen" />
+ * </z-panel>
+ * ```
  */
 @Component({
   selector: 'z-pagination',
@@ -51,23 +69,68 @@ import { ZIcon } from '../icon';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ZPagination {
-  /** 1-basiert. */
+  /**
+   * Current page, 1-based and two-way bindable. The component keeps it inside
+   * the valid range: a page below 1 or beyond the last one is written back
+   * clamped, which also happens when {@link total} or {@link pageSize} change.
+   *
+   * @default 1
+   */
   readonly page = model(1);
+
+  /**
+   * Entries per page. The spec fixes this at 25 and offers no per-page picker;
+   * values below 1 are treated as 1.
+   *
+   * @default 25
+   */
   readonly pageSize = input(25, { transform: numberAttribute });
+
+  /**
+   * Number of entries in the whole list, not just on the current page.
+   *
+   * @default 0
+   */
   readonly total = input(0, { transform: numberAttribute });
-  /** Gegenstand der Liste, zum Beispiel "Rechnungen". */
+
+  /**
+   * What the list contains, for example "Rechnungen". Passed to
+   * {@link rangeLabel} as the last argument.
+   *
+   * @default ''
+   */
   readonly itemLabel = input('');
-  /** Satz ueber dem Blaetterwerk. Ueberschreibbar, damit der Text von aussen kommt. */
+
+  /**
+   * Builds the sentence in front of the buttons from the first and last entry
+   * number of the current page, the total and {@link itemLabel}. German default
+   * ("1 bis 25 von 112 Rechnungen"), overridable so the wording comes from the
+   * caller.
+   *
+   * @default (von, bis, total, label) => `${von} bis ${bis} von ${total} ${label}`
+   */
   readonly rangeLabel = input<(von: number, bis: number, total: number, itemLabel: string) => string>(
     (von, bis, total, label) => `${von} bis ${bis} von ${total} ${label}`,
   );
+
+  /**
+   * `aria-label` of the back button. German default, overridable.
+   *
+   * @default 'Vorherige Seite'
+   */
   readonly ariaLabelPrev = input('Vorherige Seite');
+
+  /**
+   * `aria-label` of the forward button. German default, overridable.
+   *
+   * @default 'Nächste Seite'
+   */
   readonly ariaLabelNext = input('Nächste Seite');
 
   protected readonly seiten = computed(() =>
     Math.max(1, Math.ceil(this.total() / Math.max(1, this.pageSize()))),
   );
-  /** Die angezeigte Seite liegt immer im gueltigen Bereich. */
+  /** The page shown is always inside the valid range. */
   protected readonly seite = computed(() =>
     Math.min(Math.max(1, Math.trunc(this.page())), this.seiten()),
   );
@@ -76,8 +139,8 @@ export class ZPagination {
   protected readonly bis = computed(() => Math.min(this.seite() * this.pageSize(), this.total()));
 
   constructor() {
-    // Aendern sich total oder pageSize, wandert eine zu hohe Seite zurueck in
-    // den gueltigen Bereich.
+    // When total or pageSize change, a page beyond the end moves back into the
+    // valid range.
     effect(() => {
       const geklemmt = this.seite();
       if (untracked(this.page) !== geklemmt) {
