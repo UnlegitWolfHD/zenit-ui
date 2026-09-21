@@ -500,9 +500,6 @@ function baue(name, statement, deklaration, paket, datei) {
   if (ts.isClassDeclaration(statement)) {
     const deko = dekorator(statement, ['Component', 'Directive', 'Service', 'Injectable', 'Pipe']);
     const literal = deko?.literal;
-    const implementiert = (statement.heritageClauses ?? [])
-      .filter((h) => h.token === ts.SyntaxKind.ImplementsKeyword)
-      .flatMap((h) => h.types.map((t) => zeile(t.getText())));
     if (deko && ['Component', 'Directive'].includes(deko.name)) {
       return {
         ...basis,
@@ -510,15 +507,16 @@ function baue(name, statement, deklaration, paket, datei) {
         selektor: stringWert(eigenschaft(literal, 'selector')) ?? '',
         slots: deko.name === 'Component' ? slotsVon(literal) : [],
         hosts: hostDirektiven(literal),
-        implementiert,
+        // The forms note hangs on the value accessor, which is what actually
+        // makes [formControl], [(ngModel)] and [formField] work.
         cva: /NG_VALUE_ACCESSOR/.test(literal?.getText() ?? ''),
         mitglieder: mitgliederVon(statement),
       };
     }
     if (deko && ['Service', 'Injectable'].includes(deko.name)) {
-      return { ...basis, art: 'service', methoden: methodenVon(statement), implementiert };
+      return { ...basis, art: 'service', methoden: methodenVon(statement) };
     }
-    return { ...basis, art: 'class', mitglieder: mitgliederVon(statement), implementiert };
+    return { ...basis, art: 'class', mitglieder: mitgliederVon(statement) };
   }
   if (ts.isInterfaceDeclaration(statement)) {
     return { ...basis, art: 'interface', felder: felderVon(statement) };
