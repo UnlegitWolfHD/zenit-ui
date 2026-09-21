@@ -139,15 +139,20 @@ describe('ZDialogLayout', () => {
    * still count as invisible.
    */
   function sichtbarMachen(): void {
-    vi.spyOn(Element.prototype, 'getClientRects').mockImplementation(function (this: Element) {
-      // jsdom does not inherit `display: none` down the tree, so the ancestors
-      // are asked as well, the way a browser would.
-      for (let el: Element | null = this; el; el = el.parentElement) {
+    // jsdom does not inherit `display: none` down the tree, so the ancestors are
+    // asked as well, the way a browser would.
+    const sichtbar = (element: Element): boolean => {
+      for (let el: Element | null = element; el; el = el.parentElement) {
         if (getComputedStyle(el).display === 'none' || (el as HTMLElement).hidden) {
-          return [] as unknown as DOMRectList;
+          return false;
         }
       }
-      return [{ width: 10, height: 10 }] as unknown as DOMRectList;
+      return true;
+    };
+    vi.spyOn(Element.prototype, 'getClientRects').mockImplementation(function (
+      this: Element,
+    ): DOMRectList {
+      return (sichtbar(this) ? [{ width: 10, height: 10 }] : []) as unknown as DOMRectList;
     });
   }
 

@@ -198,6 +198,10 @@ export class ZTooltip {
     this.flaeche = this.overlayRef.attach(new ComponentPortal(ZTooltipPanel));
     this.flaeche.instance.text.set(text);
     this.flaeche.instance.id.set(this.tooltipId);
+    // The panel is rendered here and now: `aria-describedby` of the trigger
+    // points at its id from this moment on, and a reference into nothing is
+    // what a screen reader would read out.
+    this.flaeche.changeDetectorRef.detectChanges();
     this.verankert = this.host.nativeElement.getBoundingClientRect();
     this.sichtbar.set(true);
     this.beschreibe(true);
