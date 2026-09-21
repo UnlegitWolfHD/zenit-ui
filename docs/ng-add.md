@@ -12,6 +12,8 @@ ng add ./zenit-ui-0.1.0.tgz
 Name the tarball, not the package: `zenit-ui` is unclaimed on the public
 registry, see the warning in the package README.
 
+The collection has a second schematic for applications that come from Angular Material: `ng generate zenit-ui:migrate-material --path src/app/<route>` rewrites the mechanical usages (icons, buttons, tooltips, spinners, static chips, `imports`) and reports the rest. It is described in [`migrate-material.md`](migrate-material.md).
+
 ## Guarantees
 
 - **Idempotent.** A second run changes nothing (the CLI prints "Nothing to be

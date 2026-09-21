@@ -31,6 +31,8 @@ Phases 4 to 6 of `00-auftrag.md` and "Einbau in die App" in `40-bibliothek.md` a
 6. **Stylelint for `src/` from warning to error**, once the last route is migrated.
 7. **Remove Material**: the package, the theme, every `Mat*` import, and `provideAnimations` if it was only there for Material.
 
+The mechanical part of step 5 is a schematic: `ng generate zenit-ui:migrate-material --path src/app/<route> --dry-run` rewrites `mat-icon`, the button attributes, `matTooltip`, standalone `mat-spinner`, static `mat-chip` and the matching `imports`, and writes a report (file, line, rule, reason, suggested fix) for everything it leaves to you, which is every other row of the table below. Rules, options and limits are in [`migrate-material.md`](migrate-material.md).
+
 Phase 4 is done when the application builds and Arial is gone. Phase 6 is done when `grep -r "@angular/material" src` finds nothing and `npm ls @angular/material` is empty.
 
 ## 3. Mapping table

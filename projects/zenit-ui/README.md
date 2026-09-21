@@ -234,6 +234,10 @@ ng add ./zenit-ui-0.1.0.tgz --themes
 
 It registers the stylesheets in `angular.json` in the prescribed order, merges `z-root` into `<html>` and `<body>`, adds `@angular/cdk` and the four font packages with their `@import` rules, and mounts `<z-toast-outlet />` in the root component. With `--themes` it also registers `themes.css`, puts the theme init script into `index.html`, adds `provideZenitTheme()` and sets `inlineCritical: false` for production. Every step is idempotent, and a source file is either fully patched or left untouched with the manual step in the log (NgModule applications, `imports` that are not an array literal). An existing `lang` on `<html>` is kept. To run it again after the package is installed: `ng generate zenit-ui:ng-add --project my-app`. What it changes exactly, which options it takes and its limits are in [`docs/ng-add.md`](../../docs/ng-add.md).
 
+### Coming from Angular Material
+
+`ng generate zenit-ui:migrate-material --path src/app/billing --dry-run` rewrites what can be rewritten mechanically (`mat-icon`, `mat-*-button`, `matTooltip`, standalone `mat-spinner`, static `mat-chip` and the `imports` of the components) by source span, leaves form fields, selects, dialogs, tables, menus and all styles alone, and writes a Markdown and a JSON report with file, line, rule, reason and suggested fix for every spot it did not convert. Run it per route, without `--dry-run` once the report looks right; a second run changes nothing. Details: [`docs/migrate-material.md`](../../docs/migrate-material.md).
+
 ## Documented deviations from the reference styles
 
 `spec/components/bundle.css` in the repository of the design system is the reference for all styles. These deviations are deliberate:
@@ -295,7 +299,7 @@ Inside the workspace `zenit-ui-workspace`:
 ```bash
 npm run build:lib      # library into dist/zenit-ui plus the compiled schematics
 ng test zenit-ui       # unit tests of the library
-npm run test:schematics # the ng add schematic against generated fixtures
+npm run test:schematics # the schematics (ng add, migrate-material) against fixtures
 npm run check:themes   # contrast gate over every scheme and accent
 npm run lint           # ESLint over library, demo and example app
 npm run lint:css       # Stylelint over projects/**/*.css
