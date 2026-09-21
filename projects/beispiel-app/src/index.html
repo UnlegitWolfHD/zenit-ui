@@ -2,6 +2,12 @@
 <html lang="de" class="z-root">
   <head>
     <meta charset="utf-8" />
+    <!-- zenit-theme-init: the output of zenitThemeInitScript({ defaultScheme: 'system' }), the same config as
+         provideZenitTheme() in app.config.ts. It sets data-theme and data-accent before
+         the first paint; ZTheme only gets to it after bootstrap, a few frames late.
+         Generated, not written: a test in projects/zenit-ui/schematics compares it. -->
+    <!-- prettier-ignore -->
+    <script>(function(k,S,A,ds,da){var s=ds,a=da,d=document.documentElement,m=function(q,f){try{return matchMedia(q).matches}catch(e){return f}};try{var v=JSON.parse((k&&localStorage.getItem(k))||'null');if(v&&typeof v==='object'){if(v.scheme==='system'||S.indexOf(v.scheme)>-1)s=v.scheme;if(A.indexOf(v.accent)>-1)a=v.accent}}catch(e){}if(s==='system')s=S.indexOf('contrast')>-1&&m('(prefers-contrast: more)',false)?'contrast':m('(prefers-color-scheme: dark)',true)?'dark':'light';d.setAttribute('data-theme',s);if(a!==da)d.setAttribute('data-accent',a)})("zenit-theme",["dark","light","contrast"],["rot","blau","gruen","violett"],"system","rot")</script>
     <title>Gameserver · Zenit-Hosting Beispiel</title>
     <base href="/" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />

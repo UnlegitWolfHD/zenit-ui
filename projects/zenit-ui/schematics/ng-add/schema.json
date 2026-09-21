@@ -14,8 +14,8 @@
     "themes": {
       "type": "boolean",
       "default": false,
-      "description": "Register zenit-ui/styles/themes.css as well (requires the theming package).",
-      "x-prompt": "Register the theme stylesheet?"
+      "description": "Register zenit-ui/styles/themes.css and wire the theme without a flash: init script in index.html, provideZenitTheme() in the application config, inlineCritical off for production.",
+      "x-prompt": "Set up the colour schemes (theme stylesheet, init script, provideZenitTheme)?"
     },
     "fonts": {
       "type": "boolean",

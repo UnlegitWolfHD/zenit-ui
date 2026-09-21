@@ -80,11 +80,19 @@ export class App {
     { pfad: '/muster/startseite', name: 'Startseite' },
   ];
 
+  // setScheme() and setAccent() return false for an id that is not registered.
+  // The select then jumps back, so it never shows a value that is not applied.
   protected schemaWaehlen(ereignis: Event): void {
-    this.theme.setScheme((ereignis.target as HTMLSelectElement).value);
+    const feld = ereignis.target as HTMLSelectElement;
+    if (!this.theme.setScheme(feld.value)) {
+      feld.value = this.theme.scheme();
+    }
   }
 
   protected akzentWaehlen(ereignis: Event): void {
-    this.theme.setAccent((ereignis.target as HTMLSelectElement).value);
+    const feld = ereignis.target as HTMLSelectElement;
+    if (!this.theme.setAccent(feld.value)) {
+      feld.value = this.theme.accent();
+    }
   }
 }

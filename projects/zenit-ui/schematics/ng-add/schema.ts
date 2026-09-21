@@ -2,7 +2,10 @@
 export interface Schema {
   /** Name of the application the library is wired into. Defaults to the workspace default. */
   project?: string;
-  /** Register `zenit-ui/styles/themes.css` as well. */
+  /**
+   * Register `zenit-ui/styles/themes.css` and wire the theme without a flash: init
+   * script in `index.html`, `provideZenitTheme()`, `inlineCritical` off.
+   */
   themes?: boolean;
   /** Add the self-hosted fonts as devDependencies and import them. */
   fonts?: boolean;
