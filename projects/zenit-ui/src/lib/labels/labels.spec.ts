@@ -46,6 +46,50 @@ describe('Z_LABELS', () => {
     expect(labels.paginationRange(1, 25, 118, 'transactions')).toBe('1 to 25 of 118 transactions');
   });
 
+  it('renders every function key in both languages', () => {
+    // Keys that take parameters are exempt from the string comparison below, so
+    // they are compared by their result instead.
+    expect(Z_LABELS_DE.wizardEditFor('Inhalt')).toBe('Inhalt ändern');
+    expect(Z_LABELS_EN.wizardEditFor('Content')).toBe('Change Content');
+    expect(Z_LABELS_DE.chartMoney(5.9)).toBe('5,90 €');
+    expect(Z_LABELS_EN.chartMoney(5.9)).toBe('€5.90');
+    expect(Z_LABELS_DE.chartAxisMoney(10)).toBe('10 €');
+    expect(Z_LABELS_DE.chartAxisHours(100)).toBe('100 h');
+    expect(Z_LABELS_DE.chartPlayed(50)).toBe('50 h gespielt');
+    expect(Z_LABELS_EN.chartPlayed(50)).toBe('50 h played');
+    expect(Z_LABELS_DE.chartBaseLabel(1.5)).toBe('1,50 € Grundbetrag');
+    expect(Z_LABELS_DE.chartCapLabel(100)).toBe('ab 100 h gedeckelt');
+    expect(Z_LABELS_DE.chartTableCapRow(100)).toBe('100 und mehr');
+    expect(Z_LABELS_DE.chartDesc(1.5, 0.088, 10.3, 100)).toContain('ab 100 Stunden gedeckelt');
+    expect(Z_LABELS_EN.chartDesc(1.5, 0.088, 10.3, 100)).toContain('from 100 hours on');
+  });
+
+  it('holds the new keys of the configurator, in both languages', () => {
+    for (const schluessel of [
+      'wizardEdit',
+      'wizardEditFor',
+      'comboboxEmpty',
+      'summaryRetry',
+      'chartTitle',
+      'chartDesc',
+      'chartPerHour',
+      'chartCapPerMonth',
+      'chartMoney',
+      'chartAxisMoney',
+      'chartAxisHours',
+      'chartBaseLabel',
+      'chartCapLabel',
+      'chartPlayed',
+      'chartTable',
+      'chartTableHours',
+      'chartTableCost',
+      'chartTableCapRow',
+    ] as (keyof ZLabels)[]) {
+      expect(Z_LABELS_DE[schluessel]).toBeDefined();
+      expect(Z_LABELS_EN[schluessel]).toBeDefined();
+    }
+  });
+
   it('covers the same keys in German and English', () => {
     // The `satisfies ZLabels` on both constants already rules out a missing or
     // a stray key at compile time; this compares them at runtime as well.

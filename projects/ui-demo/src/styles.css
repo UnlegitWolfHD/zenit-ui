@@ -339,3 +339,24 @@
   gap: var(--space-1);
   justify-items: start;
 }
+
+/* Configurator gallery. A sticky bar belongs at the window edge; on the
+   gallery page it would then cover the page itself, so it sticks to the bottom
+   of this frame instead and the pattern pages keep the real thing. */
+.demo-rahmen {
+  display: grid;
+  align-content: space-between;
+  min-height: calc(var(--control-md) * 4);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+.demo-rahmen > p {
+  padding: var(--space-4);
+}
+
+/* The chart scales with its viewBox, so full container width would make it
+   over 500px tall. One measure is as wide as the reference panel. */
+.demo-diagramm {
+  max-width: var(--measure);
+}

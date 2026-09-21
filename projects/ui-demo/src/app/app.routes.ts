@@ -32,6 +32,11 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/werkzeuge/werkzeuge.page').then((m) => m.WerkzeugePage),
   },
   {
+    path: 'konfigurator',
+    loadComponent: () =>
+      import('./pages/konfigurator/konfigurator.page').then((m) => m.KonfiguratorPage),
+  },
+  {
     path: 'themes',
     loadComponent: () => import('./pages/themes/themes.page').then((m) => m.ThemesPage),
   },
@@ -48,5 +53,15 @@ export const routes: Routes = [
     path: 'muster/startseite',
     loadComponent: () =>
       import('./pages/muster/startseite.page').then((m) => m.MusterStartseitePage),
+  },
+  {
+    path: 'muster/server-erstellen',
+    loadComponent: () =>
+      import('./pages/muster/server-erstellen.page').then((m) => m.MusterServerErstellenPage),
+  },
+  {
+    path: 'muster/preisrechner',
+    loadComponent: () =>
+      import('./pages/muster/preisrechner.page').then((m) => m.MusterPreisrechnerPage),
   },
 ];

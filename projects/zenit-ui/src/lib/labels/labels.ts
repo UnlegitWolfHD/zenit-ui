@@ -58,6 +58,119 @@ export interface ZLabels {
 
   /** Accessible name of the scrollable region `z-table-container`. */
   tableRegion: string;
+
+  /** Caption of the "Ändern" button on a finished step of `z-wizard-step`. */
+  wizardEdit: string;
+
+  /**
+   * Accessible name of that button, so several of them stay distinguishable.
+   *
+   * @param title Title of the step, for example "Inhalt".
+   * @returns The rendered name, for example `Inhalt ändern`.
+   */
+  wizardEditFor: (title: string) => string;
+
+  /** The one line `z-combobox` shows when nothing matches and `emptyText` is empty. */
+  comboboxEmpty: string;
+
+  /** Caption of the retry button in `z-price-summary`, used when `retryLabel` is empty. */
+  summaryRetry: string;
+
+  /** `<title>` of the SVG in `z-cost-chart`, and the accessible name of the plot. */
+  chartTitle: string;
+
+  /**
+   * `<desc>` of the SVG in `z-cost-chart`: the chart in one sentence.
+   *
+   * @param base Base amount per month.
+   * @param rate Price per hour, unrounded.
+   * @param cap Upper limit per month.
+   * @param capHours Hour at which the cap takes over, rounded for display.
+   * @returns The rendered sentence.
+   */
+  chartDesc: (base: number, rate: number, cap: number, capHours: number) => string;
+
+  /** Label of the first figure above the chart in `z-cost-chart`. */
+  chartPerHour: string;
+
+  /** Label of the second figure above the chart in `z-cost-chart`. */
+  chartCapPerMonth: string;
+
+  /**
+   * An amount in `z-cost-chart`, in full: comma as the decimal mark, a
+   * non-breaking space before the currency.
+   *
+   * @param value The amount.
+   * @returns The rendered amount, for example `5,90 €`.
+   */
+  chartMoney: (value: number) => string;
+
+  /**
+   * An amount on the value axis of `z-cost-chart`, without the decimals.
+   *
+   * @param value The amount.
+   * @returns The rendered tick, for example `10 €`.
+   */
+  chartAxisMoney: (value: number) => string;
+
+  /**
+   * An hour on the time axis of `z-cost-chart`.
+   *
+   * @param hours The hour.
+   * @returns The rendered tick, for example `100 h`.
+   */
+  chartAxisHours: (hours: number) => string;
+
+  /**
+   * The direct label at the start of the line in `z-cost-chart`.
+   *
+   * @param base Base amount per month.
+   * @returns The rendered label, for example `1,50 € Grundbetrag`.
+   */
+  chartBaseLabel: (base: number) => string;
+
+  /**
+   * The direct label at the point where the cap takes over in `z-cost-chart`.
+   *
+   * @param hours That hour, rounded for display.
+   * @returns The rendered label, for example `ab 100 h gedeckelt`.
+   */
+  chartCapLabel: (hours: number) => string;
+
+  /**
+   * The hours in the tooltip and in `aria-valuetext` of `z-cost-chart`.
+   *
+   * @param hours The hour under the cursor.
+   * @returns The rendered text, for example `50 h gespielt`.
+   */
+  chartPlayed: (hours: number) => string;
+
+  /** Caption of the disclosure that holds the table in `z-cost-chart`. */
+  chartTable: string;
+
+  /** Header of the hours column in that table. */
+  chartTableHours: string;
+
+  /** Header of the cost column in that table. */
+  chartTableCost: string;
+
+  /**
+   * The last row of that table, which stands for every hour from the cap on.
+   *
+   * @param hours The hour at which the cap takes over.
+   * @returns The rendered cell, for example `100 und mehr`.
+   */
+  chartTableCapRow: (hours: number) => string;
+}
+
+/** German amount: comma as the decimal mark, non-breaking space before the currency. */
+function euroDe(wert: number, stellen: number): string {
+  return `${wert.toFixed(stellen).replace('.', ',')}\u00a0€`;
+}
+
+/** English amount: the currency in front, point as the decimal mark. */
+function euroEn(wert: number, stellen: number): string {
+  return `€${wert.toFixed(stellen)}`;
 }
 
 /**
@@ -75,6 +188,26 @@ export const Z_LABELS_DE = {
   headerMenu: 'Menü',
   toastClose: 'Schließen',
   tableRegion: 'Tabelle, seitlich scrollbar',
+  wizardEdit: 'Ändern',
+  wizardEditFor: (title) => `${title} ändern`,
+  comboboxEmpty: 'Kein Treffer',
+  summaryRetry: 'Erneut versuchen',
+  chartTitle: 'Monatliche Kosten nach gespielten Stunden',
+  chartDesc: (base, rate, cap, capHours) =>
+    `Start bei ${euroDe(base, 2)} Grundbetrag, plus ${euroDe(rate, 2)} je Stunde, ` +
+    `ab ${capHours} Stunden gedeckelt bei ${euroDe(cap, 2)}.`,
+  chartPerHour: 'Pro Stunde',
+  chartCapPerMonth: 'Höchstens im Monat',
+  chartMoney: (value) => euroDe(value, 2),
+  chartAxisMoney: (value) => euroDe(value, 0),
+  chartAxisHours: (hours) => `${hours}\u00a0h`,
+  chartBaseLabel: (base) => `${euroDe(base, 2)} Grundbetrag`,
+  chartCapLabel: (hours) => `ab ${hours}\u00a0h gedeckelt`,
+  chartPlayed: (hours) => `${hours}\u00a0h gespielt`,
+  chartTable: 'Als Tabelle',
+  chartTableHours: 'Gespielte Stunden',
+  chartTableCost: 'Kosten im Monat',
+  chartTableCapRow: (hours) => `${hours} und mehr`,
 } satisfies ZLabels;
 
 /**
@@ -97,6 +230,26 @@ export const Z_LABELS_EN = {
   headerMenu: 'Menu',
   toastClose: 'Close',
   tableRegion: 'Table, scrollable horizontally',
+  wizardEdit: 'Change',
+  wizardEditFor: (title) => `Change ${title}`,
+  comboboxEmpty: 'No match',
+  summaryRetry: 'Try again',
+  chartTitle: 'Monthly cost by hours played',
+  chartDesc: (base, rate, cap, capHours) =>
+    `Starts at ${euroEn(base, 2)} base, plus ${euroEn(rate, 2)} per hour, ` +
+    `capped at ${euroEn(cap, 2)} from ${capHours} hours on.`,
+  chartPerHour: 'Per hour',
+  chartCapPerMonth: 'At most per month',
+  chartMoney: (value) => euroEn(value, 2),
+  chartAxisMoney: (value) => euroEn(value, 0),
+  chartAxisHours: (hours) => `${hours} h`,
+  chartBaseLabel: (base) => `${euroEn(base, 2)} base`,
+  chartCapLabel: (hours) => `capped from ${hours} h`,
+  chartPlayed: (hours) => `${hours} h played`,
+  chartTable: 'As a table',
+  chartTableHours: 'Hours played',
+  chartTableCost: 'Cost per month',
+  chartTableCapRow: (hours) => `${hours} and more`,
 } satisfies ZLabels;
 
 /**

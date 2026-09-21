@@ -15,6 +15,7 @@ export * from './lib/pakete/daten';
 export * from './lib/pakete/rueckmeldung';
 export * from './lib/pakete/overlays';
 export * from './lib/pakete/werkzeuge';
+export * from './lib/pakete/konfigurator';
 
 export * from './lib/labels';
 export * from './lib/pakete/theming';
