@@ -1,0 +1,11 @@
+/** Options of the `ng add zenit-ui` schematic. */
+export interface Schema {
+  /** Name of the application the library is wired into. Defaults to the workspace default. */
+  project?: string;
+  /** Register `zenit-ui/styles/themes.css` as well. */
+  themes?: boolean;
+  /** Add the self-hosted fonts as devDependencies and import them. */
+  fonts?: boolean;
+  /** Mount `<z-toast-outlet />` in the root component. */
+  toastOutlet?: boolean;
+}

@@ -1,0 +1,34 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "SchematicsZenitUiNgAdd",
+  "title": "zenit-ui ng-add schema",
+  "type": "object",
+  "properties": {
+    "project": {
+      "type": "string",
+      "description": "Name of the application the library is wired into.",
+      "$default": {
+        "$source": "projectName"
+      }
+    },
+    "themes": {
+      "type": "boolean",
+      "default": false,
+      "description": "Register zenit-ui/styles/themes.css as well (requires the theming package).",
+      "x-prompt": "Register the theme stylesheet?"
+    },
+    "fonts": {
+      "type": "boolean",
+      "default": true,
+      "description": "Add the self-hosted fonts (Material Icons, Inter, Space Grotesk, JetBrains Mono).",
+      "x-prompt": "Add the self-hosted fonts?"
+    },
+    "toastOutlet": {
+      "type": "boolean",
+      "default": true,
+      "description": "Mount <z-toast-outlet /> in the root component.",
+      "x-prompt": "Mount the toast outlet in the root component?"
+    }
+  },
+  "additionalProperties": false
+}
