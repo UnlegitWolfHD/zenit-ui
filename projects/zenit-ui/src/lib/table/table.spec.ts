@@ -131,7 +131,7 @@ describe('ZTable', () => {
     const ausRegistry = mitUeberlauf(TableHost, true);
     const mitEingabe = mitUeberlauf(EigenesLabelHost, true);
 
-    expect(huelle(ausRegistry).getAttribute('aria-label')).toBe('Table, scrolls sideways');
+    expect(huelle(ausRegistry).getAttribute('aria-label')).toBe('Table, scrollable horizontally');
     expect(huelle(mitEingabe).getAttribute('aria-label')).toBe('Rechnungen, seitlich scrollbar');
   });
 

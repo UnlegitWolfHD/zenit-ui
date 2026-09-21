@@ -5,14 +5,13 @@ import {
   Component,
   computed,
   ElementRef,
-  inject,
   input,
   output,
   signal,
   viewChild,
 } from '@angular/core';
 import { ZButton } from '../button';
-import { Z_LABELS } from '../labels';
+import { injectZLabels } from '../labels';
 
 /**
  * Severity of a log line. `warn` is coloured `warning`, `error` is `danger`,
@@ -166,7 +165,7 @@ export class ZConsole {
    */
   readonly endLabel = input<string>();
 
-  private readonly labels = inject(Z_LABELS);
+  private readonly labels = injectZLabels();
 
   protected readonly logText = computed(() => this.logLabel() ?? this.labels.consoleLog);
   protected readonly feldText = computed(() => this.inputLabel() ?? this.labels.consoleInput);

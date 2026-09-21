@@ -1,4 +1,6 @@
+import { EnvironmentInjector, PLATFORM_ID, createEnvironmentInjector } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { zenitThemeInitScript } from './init-script';
 import { ZTheme, ZThemeConfig, provideZenitTheme } from './theme';
 
 /** Minimal MediaQueryList whose `matches` can be flipped from the test. */
@@ -58,6 +60,7 @@ class Ablage implements Storage {
 }
 
 let abfrage: MedienAbfrage;
+let kontrastAbfrage: MedienAbfrage;
 let ablage: Ablage;
 let ziel: HTMLElement;
 let echtesMatchMedia: typeof window.matchMedia | undefined;
@@ -65,18 +68,22 @@ let echteAblage: PropertyDescriptor | undefined;
 
 beforeEach(() => {
   abfrage = new MedienAbfrage(true);
+  kontrastAbfrage = new MedienAbfrage(false);
   ablage = new Ablage();
   ziel = document.createElement('div');
   document.body.appendChild(ziel);
 
   echtesMatchMedia = window.matchMedia;
-  window.matchMedia = ((): MediaQueryList =>
-    abfrage as unknown as MediaQueryList) as typeof window.matchMedia;
+  window.matchMedia = ((text: string): MediaQueryList =>
+    (text.includes('prefers-contrast')
+      ? kontrastAbfrage
+      : abfrage) as unknown as MediaQueryList) as typeof window.matchMedia;
   echteAblage = Object.getOwnPropertyDescriptor(window, 'localStorage');
   Object.defineProperty(window, 'localStorage', { value: ablage, configurable: true });
 });
 
 afterEach(() => {
+  vi.restoreAllMocks();
   ziel.remove();
   if (echtesMatchMedia) window.matchMedia = echtesMatchMedia;
   if (echteAblage) Object.defineProperty(window, 'localStorage', echteAblage);
@@ -249,5 +256,324 @@ describe('ZTheme', () => {
     expect(theme.accent()).toBe('blau');
     expect(ziel.getAttribute('data-theme')).toBe('light');
     expect(ziel.getAttribute('data-accent')).toBe('blau');
+  });
+
+  it('resolves system to contrast while prefers-contrast: more matches', () => {
+    kontrastAbfrage.matches = true;
+    const theme = dienst({ defaultScheme: 'system' });
+
+    expect(theme.scheme()).toBe('system');
+    expect(theme.resolvedScheme()).toBe('contrast');
+    expect(ziel.getAttribute('data-theme')).toBe('contrast');
+
+    kontrastAbfrage.wechseln(false);
+
+    expect(theme.resolvedScheme()).toBe('dark');
+    expect(ziel.getAttribute('data-theme')).toBe('dark');
+  });
+
+  it('ignores prefers-contrast when contrast is not a registered scheme', () => {
+    kontrastAbfrage.matches = true;
+    const theme = dienst({ defaultScheme: 'system', schemes: ['dark', 'light'] });
+
+    expect(theme.resolvedScheme()).toBe('dark');
+  });
+
+  it('survives a localStorage getter that throws a SecurityError', () => {
+    Object.defineProperty(window, 'localStorage', {
+      configurable: true,
+      get: () => {
+        throw new DOMException('The operation is insecure.', 'SecurityError');
+      },
+    });
+
+    const theme = dienst();
+
+    expect(theme.scheme()).toBe('dark');
+    expect(theme.setScheme('light')).toBe(true);
+    expect(theme.setAccent('blau')).toBe(true);
+    expect(ziel.getAttribute('data-theme')).toBe('light');
+    expect(() => theme.reset()).not.toThrow();
+    expect(ziel.getAttribute('data-theme')).toBe('dark');
+  });
+
+  it('works with a MediaQueryList that has no addEventListener', () => {
+    const alt = { matches: false } as MediaQueryList;
+    window.matchMedia = (() => alt) as typeof window.matchMedia;
+
+    const theme = dienst({ defaultScheme: 'system' });
+
+    expect(theme.resolvedScheme()).toBe('light');
+    expect(() => TestBed.resetTestingModule()).not.toThrow();
+  });
+
+  it('follows a change made in another tab', () => {
+    const theme = dienst();
+
+    ablage.setItem('zenit-theme', JSON.stringify({ scheme: 'light', accent: 'blau' }));
+    window.dispatchEvent(new StorageEvent('storage', { key: 'zenit-theme' }));
+
+    expect(theme.scheme()).toBe('light');
+    expect(theme.accent()).toBe('blau');
+    expect(ziel.getAttribute('data-theme')).toBe('light');
+    expect(ziel.getAttribute('data-accent')).toBe('blau');
+
+    // The other tab called reset(), or cleared the whole storage (key null).
+    ablage.clear();
+    window.dispatchEvent(new StorageEvent('storage', { key: null }));
+
+    expect(theme.scheme()).toBe('dark');
+    expect(ziel.hasAttribute('data-accent')).toBe(false);
+  });
+
+  it('ignores storage events of other keys', () => {
+    const theme = dienst();
+    ablage.setItem('zenit-theme', JSON.stringify({ scheme: 'light' }));
+
+    window.dispatchEvent(new StorageEvent('storage', { key: 'etwas-anderes' }));
+
+    expect(theme.scheme()).toBe('dark');
+  });
+
+  it('removes every listener when the injector is destroyed', () => {
+    const theme = dienst({ defaultScheme: 'system' });
+
+    expect(abfrage.hoerer.size).toBe(1);
+    expect(kontrastAbfrage.hoerer.size).toBe(1);
+
+    TestBed.resetTestingModule();
+
+    expect(abfrage.hoerer.size).toBe(0);
+    expect(kontrastAbfrage.hoerer.size).toBe(0);
+
+    ablage.setItem('zenit-theme', JSON.stringify({ scheme: 'light' }));
+    window.dispatchEvent(new StorageEvent('storage', { key: 'zenit-theme' }));
+
+    expect(theme.scheme()).toBe('system');
+    expect(ziel.getAttribute('data-theme')).toBe('dark');
+  });
+
+  it('clears the attributes on the previous element when the target changes', () => {
+    const zweites = document.createElement('div');
+    let aktuell: HTMLElement = ziel;
+    const theme = dienst({ target: () => aktuell });
+    theme.setAccent('blau');
+
+    aktuell = zweites;
+    theme.setScheme('light');
+
+    expect(ziel.hasAttribute('data-theme')).toBe(false);
+    expect(ziel.hasAttribute('data-accent')).toBe(false);
+    expect(zweites.getAttribute('data-theme')).toBe('light');
+    expect(zweites.getAttribute('data-accent')).toBe('blau');
+  });
+
+  it('warns in dev mode about an unknown id and still returns false', () => {
+    const warnung = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const theme = dienst();
+
+    expect(theme.setScheme('sepia')).toBe(false);
+    expect(theme.setAccent('orange')).toBe(false);
+
+    expect(warnung).toHaveBeenCalledTimes(2);
+    expect(warnung.mock.calls[0][0]).toContain('setScheme("sepia")');
+    expect(warnung.mock.calls[1][0]).toContain('setAccent("orange")');
+  });
+
+  it('warns in dev mode about defaults that are not registered', () => {
+    const warnung = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+    dienst({ defaultScheme: 'sepia', defaultAccent: 'orange' });
+
+    expect(warnung.mock.calls.map((aufruf) => String(aufruf[0]))).toEqual([
+      expect.stringContaining('defaultScheme "sepia"'),
+      expect.stringContaining('defaultAccent "orange"'),
+    ]);
+  });
+
+  it('warns about a second config below the root and keeps the first', () => {
+    const warnung = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const theme = dienst({ defaultScheme: 'light' });
+
+    expect(warnung).not.toHaveBeenCalled();
+
+    createEnvironmentInjector(
+      [provideZenitTheme({ defaultScheme: 'contrast' })],
+      TestBed.inject(EnvironmentInjector),
+    );
+
+    expect(warnung).toHaveBeenCalledTimes(1);
+    expect(warnung.mock.calls[0][0]).toContain('application root');
+    expect(theme.scheme()).toBe('light');
+  });
+});
+
+describe('ZTheme on the server', () => {
+  /** Every browser global the service could reach for fails the test when touched. */
+  function globaleSperren(): void {
+    window.matchMedia = (() => {
+      throw new Error('matchMedia touched on the server');
+    }) as typeof window.matchMedia;
+    Object.defineProperty(window, 'localStorage', {
+      configurable: true,
+      get: () => {
+        throw new Error('localStorage touched on the server');
+      },
+    });
+    vi.spyOn(window, 'addEventListener').mockImplementation(() => {
+      throw new Error('window.addEventListener touched on the server');
+    });
+  }
+
+  function serverDienst(config: ZThemeConfig = {}): ZTheme {
+    TestBed.configureTestingModule({
+      providers: [{ provide: PLATFORM_ID, useValue: 'server' }, provideZenitTheme(config)],
+    });
+    return TestBed.inject(ZTheme);
+  }
+
+  it('touches no browser global and writes a fixed default into the document', () => {
+    globaleSperren();
+
+    const theme = serverDienst({ defaultScheme: 'light' });
+
+    expect(theme.scheme()).toBe('light');
+    expect(document.documentElement.getAttribute('data-theme')).toBe('light');
+    expect(document.documentElement.hasAttribute('data-accent')).toBe(false);
+    // Switching on the server changes the signals and nothing else.
+    expect(theme.setScheme('contrast')).toBe(true);
+    expect(theme.setAccent('blau')).toBe(true);
+    theme.reset();
+    expect(document.documentElement.getAttribute('data-theme')).toBe('light');
+  });
+
+  it('writes nothing for system, which only the browser can resolve', () => {
+    globaleSperren();
+
+    serverDienst({ defaultScheme: 'system' });
+
+    expect(document.documentElement.hasAttribute('data-theme')).toBe(false);
+  });
+
+  it('never calls a custom target', () => {
+    globaleSperren();
+    const target = vi.fn(() => ziel);
+
+    serverDienst({ target });
+
+    expect(target).not.toHaveBeenCalled();
+    expect(document.documentElement.hasAttribute('data-theme')).toBe(false);
+  });
+});
+
+describe('zenitThemeInitScript', () => {
+  /** Runs the script the way a `<script>` in `<head>` would: against the globals. */
+  function ausfuehren(config?: ZThemeConfig): { theme: string | null; accent: string | null } {
+    document.documentElement.removeAttribute('data-theme');
+    document.documentElement.removeAttribute('data-accent');
+    new Function(zenitThemeInitScript(config))();
+    return {
+      theme: document.documentElement.getAttribute('data-theme'),
+      accent: document.documentElement.getAttribute('data-accent'),
+    };
+  }
+
+  it('is a pure string without eval and cannot close its script element', () => {
+    const quelle = zenitThemeInitScript({ storageKey: '</script><script>alert(1)//' });
+
+    expect(quelle).not.toMatch(/eval|new Function/);
+    expect(quelle).not.toContain('<');
+    expect(zenitThemeInitScript()).toBe(zenitThemeInitScript({}));
+    expect(zenitThemeInitScript()).toContain('"zenit-theme"');
+  });
+
+  it('applies the defaults without a stored choice', () => {
+    expect(ausfuehren()).toEqual({ theme: 'dark', accent: null });
+  });
+
+  it('never reads the storage with storageKey null', () => {
+    ablage.wirft = true;
+
+    expect(ausfuehren({ storageKey: null, defaultScheme: 'light' })).toEqual({
+      theme: 'light',
+      accent: null,
+    });
+  });
+
+  it('survives a localStorage getter that throws', () => {
+    Object.defineProperty(window, 'localStorage', {
+      configurable: true,
+      get: () => {
+        throw new DOMException('The operation is insecure.', 'SecurityError');
+      },
+    });
+
+    expect(ausfuehren()).toEqual({ theme: 'dark', accent: null });
+  });
+
+  const GESPEICHERT: (string | null)[] = [
+    null,
+    '',
+    'kein json',
+    '"light"',
+    '[]',
+    '{}',
+    JSON.stringify({ scheme: 'light', accent: 'violett' }),
+    JSON.stringify({ scheme: 'contrast' }),
+    JSON.stringify({ accent: 'gruen' }),
+    JSON.stringify({ scheme: 'system', accent: 'rot' }),
+    JSON.stringify({ scheme: 'sepia', accent: 'orange' }),
+    JSON.stringify({ scheme: ['light'], accent: 5 }),
+    JSON.stringify({ scheme: 'tuerkis-schema', accent: 'tuerkis' }),
+  ];
+  const CONFIGS: ZThemeConfig[] = [
+    {},
+    { defaultScheme: 'system' },
+    { defaultScheme: 'system', schemes: ['dark', 'light'] },
+    { defaultScheme: 'light', defaultAccent: 'blau' },
+    { schemes: ['dark', 'tuerkis-schema'], accents: ['rot', 'tuerkis'], storageKey: 'eigener' },
+  ];
+
+  it('writes exactly what ZTheme writes, for every stored value, config and system setting', () => {
+    let faelle = 0;
+    for (const config of CONFIGS) {
+      for (const roh of GESPEICHERT) {
+        for (const [dunkel, kontrast] of [
+          [true, false],
+          [false, false],
+          [true, true],
+          [false, true],
+        ]) {
+          abfrage.matches = dunkel;
+          kontrastAbfrage.matches = kontrast;
+          ablage.clear();
+          if (roh !== null) ablage.setItem(config.storageKey ?? 'zenit-theme', roh);
+
+          const vomSkript = ausfuehren(config);
+
+          document.documentElement.removeAttribute('data-theme');
+          document.documentElement.removeAttribute('data-accent');
+          TestBed.resetTestingModule();
+          TestBed.configureTestingModule({ providers: [provideZenitTheme(config)] });
+          TestBed.inject(ZTheme);
+          const vomDienst = {
+            theme: document.documentElement.getAttribute('data-theme'),
+            accent: document.documentElement.getAttribute('data-accent'),
+          };
+
+          expect(vomSkript, `${JSON.stringify(config)} / ${roh} / ${dunkel} / ${kontrast}`).toEqual(
+            vomDienst,
+          );
+          faelle++;
+        }
+      }
+    }
+    expect(faelle).toBe(CONFIGS.length * GESPEICHERT.length * 4);
+  });
+
+  it('resolves system to dark without matchMedia, like the service', () => {
+    (window as { matchMedia?: unknown }).matchMedia = undefined;
+
+    expect(ausfuehren({ defaultScheme: 'system' })).toEqual({ theme: 'dark', accent: null });
   });
 });

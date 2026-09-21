@@ -12,7 +12,7 @@ import {
   input,
   signal,
 } from '@angular/core';
-import { Z_LABELS } from '../labels';
+import { injectZLabels } from '../labels';
 
 /**
  * Wrapper around `table[zTable]`. Below 640px the table scrolls sideways in
@@ -63,7 +63,7 @@ export class ZTableContainer {
    */
   readonly ariaLabel = input<string>();
 
-  private readonly labels = inject(Z_LABELS);
+  private readonly labels = injectZLabels();
   private readonly el = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly tabelle = contentChild(ZTable, { read: ElementRef });
   private beobachter?: ResizeObserver;

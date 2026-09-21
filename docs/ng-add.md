@@ -52,12 +52,35 @@ existing entries are never duplicated, and an existing but wrongly ordered
    call in it. When that fails, the schematic logs what to do by hand instead of
    guessing.
 
+6. **Theme, only with `--themes`** – three steps that keep a stored colour
+   scheme from flashing in the default scheme first (`docs/theming.md`, "No
+   flash of the wrong theme"):
+   - The output of `zenitThemeInitScript()` goes into `src/index.html` as an
+     inline `<script>`, right after `<meta charset>` (which has to stay within
+     the first 1024 bytes) or as the first child of `<head>` when there is none.
+     It carries the marker comment `zenit-theme-init`; a file that already
+     contains the marker is left alone.
+   - `optimization.styles.inlineCritical` is set to `false` in the `production`
+     configuration of the build target. The CLI otherwise inlines only the CSS
+     that matches `index.html` and loads the rest without blocking;
+     `[data-theme="light"]` matches nothing there, so the page would still paint
+     dark first. An existing `optimization` object keeps its other settings,
+     `optimization: false` and `styles: false` are left alone.
+   - `provideZenitTheme()` is added to the application config, when the
+     `bootstrapApplication()` call and its config can be resolved and no
+     `provideZenitTheme(` is there yet. Otherwise the schematic logs the
+     instruction.
+
+   The script matches the default config. If you pass a config to
+   `provideZenitTheme()`, replace the script with the output of
+   `zenitThemeInitScript(config)`.
+
 ## Options
 
 | Option | Type | Default | Meaning |
 | --- | --- | --- | --- |
 | `--project` | string | workspace default | Application to wire up. Without it the first application of the workspace is used. |
-| `--themes` | boolean | `false` | Also register `zenit-ui/styles/themes.css`. |
+| `--themes` | boolean | `false` | Also register `zenit-ui/styles/themes.css` and wire the theme without a flash: init script, `provideZenitTheme()`, `inlineCritical: false`. |
 | `--fonts` | boolean | `true` | Add the font packages and their imports. |
 | `--toast-outlet` | boolean | `true` | Mount `<z-toast-outlet />` in the root component. |
 
@@ -125,8 +148,9 @@ ignores them for the same reason (`tsconfig.spec.json` includes `src/**` only).
   schematic logs the two manual steps.
 - Inline templates are only extended when they are written as a template literal
   (backticks). A template in a plain string is left alone with a warning.
-- `zenit-ui/styles/themes.css` is not part of the package yet. Use `--themes`
-  only once the theming package has landed.
+- `zenit-ui/styles/themes.css` ships with the package (`styles/themes.css` and
+  `styles/themes/*.css`). `--themes` writes the init script for the default
+  config only and always onto `<html>`; with a custom `target` remove it again.
 - The font package ranges are pinned in the schematic
   (`projects/zenit-ui/schematics/ng-add/index.ts`, `FONT_PACKAGES`) and have to
   be bumped together with the workspace's own devDependencies.

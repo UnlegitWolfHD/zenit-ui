@@ -12,6 +12,20 @@ import {
   provideEnvironmentInitializer,
   signal,
 } from '@angular/core';
+import {
+  ABFRAGE_DUNKEL,
+  ABFRAGE_KONTRAST,
+  ATTRIBUT_AKZENT,
+  ATTRIBUT_SCHEMA,
+  SCHEMA_DUNKEL,
+  SCHEMA_HELL,
+  SCHEMA_KONTRAST,
+  SCHEMA_SYSTEM,
+  ZThemeInitConfig,
+  themeEinstellung,
+} from './init-script';
+
+declare const ngDevMode: boolean | undefined;
 
 /**
  * Configuration of {@link provideZenitTheme}. Every field is optional; the
@@ -26,89 +40,34 @@ import {
  * });
  * ```
  */
-export interface ZThemeConfig {
-  /**
-   * Ids of the selectable colour schemes. Each id is written to the target as
-   * `data-theme="<id>"` and needs a matching CSS block; the ids shipped with
-   * the library are `dark`, `light` and `contrast`. Own ids are allowed and are
-   * validated against exactly this list.
-   *
-   * @default ['dark', 'light', 'contrast']
-   */
-  readonly schemes?: readonly string[];
-
-  /**
-   * Ids of the selectable accents, written as `data-accent="<id>"`. The first
-   * entry of {@link defaultAccent} carries no attribute, because the default
-   * accent already lives in `tokens.css` and in the scheme blocks.
-   *
-   * @default ['rot', 'blau', 'gruen', 'violett']
-   */
-  readonly accents?: readonly string[];
-
-  /**
-   * Scheme before the first choice of the user. Either one of {@link schemes}
-   * or `'system'`, which follows `prefers-color-scheme` and resolves to `dark`
-   * or `light`.
-   *
-   * @default 'dark'
-   */
-  readonly defaultScheme?: string;
-
-  /**
-   * Accent before the first choice of the user. It has to be one of
-   * {@link accents} and gets no `data-accent` attribute.
-   *
-   * @default 'rot'
-   */
-  readonly defaultAccent?: string;
-
-  /**
-   * Key under which the choice is stored in `localStorage`. `null` turns
-   * persistence off: the theme then resets on every load.
-   *
-   * @default 'zenit-theme'
-   */
-  readonly storageKey?: string | null;
-
+export interface ZThemeConfig extends ZThemeInitConfig {
   /**
    * Element that carries `data-theme` and `data-accent`. A getter, not the
    * element, so nothing touches the DOM while the providers are built; it is
-   * called on the browser only.
+   * called on the browser only. Return a stable element: when the getter
+   * starts returning another one, the attributes are removed from the previous
+   * element on the next change, not before. `zenitThemeInitScript` and the
+   * server-side rendering of `data-theme` only know `<html>` and are skipped
+   * for a custom target.
    *
    * @default () => document.documentElement
    */
   readonly target?: () => Element;
 }
 
-/** Config as it reaches the service: everything filled in. */
-type ZThemeEinstellung = Required<Omit<ZThemeConfig, 'target'>> & {
-  readonly target: (() => Element) | null;
-};
-
-const STANDARD: ZThemeEinstellung = {
-  schemes: ['dark', 'light', 'contrast'],
-  accents: ['rot', 'blau', 'gruen', 'violett'],
-  defaultScheme: 'dark',
-  defaultAccent: 'rot',
-  storageKey: 'zenit-theme',
-  target: null,
-};
-
 const Z_THEME_CONFIG = new InjectionToken<ZThemeConfig>('Z_THEME_CONFIG', {
   providedIn: 'root',
   factory: () => ({}),
 });
 
-/** Merges a config onto the defaults, ignoring fields left out or `undefined`. */
-function einstellung(config: ZThemeConfig): ZThemeEinstellung {
-  const zusammen = { ...STANDARD };
-  for (const [name, wert] of Object.entries(config)) {
-    if (wert !== undefined) {
-      (zusammen as Record<string, unknown>)[name] = wert;
-    }
+/** The config each service instance was built from, for the check in the provider. */
+const GENUTZTE_CONFIG = /* @__PURE__ */ new WeakMap<object, ZThemeConfig>();
+
+/** Dev-mode only; production builds drop the branch together with `ngDevMode`. */
+function warnen(text: string): void {
+  if (typeof ngDevMode === 'undefined' || ngDevMode) {
+    console.warn(`zenit-ui: ${text}`);
   }
-  return zusammen;
 }
 
 /**
@@ -116,11 +75,20 @@ function einstellung(config: ZThemeConfig): ZThemeEinstellung {
  * choice as soon as the application starts. Without this provider `ZTheme`
  * still works, but with the defaults and nothing applied up front.
  *
+ * Application root only. `ZTheme` is a root service and reads the config of
+ * the root injector once; a second `provideZenitTheme` in the `providers` of a
+ * route (or a second one at the root) is ignored, with a `console.warn` in dev
+ * mode.
+ *
+ * "As soon as the application starts" is still several frames after the first
+ * paint. To avoid a flash of the default scheme put
+ * {@link zenitThemeInitScript} into `index.html` (see `docs/theming.md`).
+ *
  * The stylesheets are not part of this: include `zenit-ui/styles/themes.css`
  * after `zenit-ui/styles/tokens.css` (see `docs/theming.md`).
  *
  * @param config Deviations from the defaults; see {@link ZThemeConfig}.
- * @returns Providers for `bootstrapApplication` or a route.
+ * @returns Providers for the application root (`bootstrapApplication`).
  *
  * @example
  * ```ts
@@ -133,7 +101,14 @@ function einstellung(config: ZThemeConfig): ZThemeEinstellung {
 export function provideZenitTheme(config: ZThemeConfig = {}): EnvironmentProviders {
   return makeEnvironmentProviders([
     { provide: Z_THEME_CONFIG, useValue: config },
-    provideEnvironmentInitializer(() => void inject(ZTheme)),
+    provideEnvironmentInitializer(() => {
+      if (GENUTZTE_CONFIG.get(inject(ZTheme)) !== config) {
+        warnen(
+          'provideZenitTheme() was called more than once or outside the application root. ' +
+            'ZTheme is a root service and uses one config only; this one is ignored.',
+        );
+      }
+    }),
   ]);
 }
 
@@ -142,17 +117,21 @@ export function provideZenitTheme(config: ZThemeConfig = {}): EnvironmentProvide
  * readonly signals and three methods; everything else is CSS.
  *
  * What it does on the browser: it writes `data-theme` and `data-accent` onto
- * the target element, keeps the choice in `localStorage`, and while the scheme
- * is `'system'` it follows `prefers-color-scheme` live. On the server it does
- * none of that: `document`, `window`, `matchMedia` and `localStorage` are never
- * touched outside the browser, so the service is safe to inject during SSR and
- * simply reports the defaults.
+ * the target element, keeps the choice in `localStorage`, follows a change made
+ * in another tab (`storage` event), and while the scheme is `'system'` it
+ * follows `prefers-color-scheme` and `prefers-contrast` live. On the server
+ * `window`, `matchMedia` and `localStorage` are never touched, so the service
+ * is safe to inject during SSR and reports the defaults. The one thing it does
+ * there: a `defaultScheme` other than `'system'` is written as `data-theme`
+ * onto `<html>` of the server document, so the delivered HTML already carries
+ * it.
  *
  * Unknown ids are rejected: {@link setScheme} and {@link setAccent} return
  * `false` and change nothing. They do not throw, because the usual caller is a
  * `<select>` whose value comes from outside the application (a stored value, a
- * query parameter) and a broken value there must not take the page down. A
- * stored unknown id is ignored the same way.
+ * query parameter) and a broken value there must not take the page down; in
+ * dev mode a `console.warn` names the id. A stored unknown id is ignored the
+ * same way.
  *
  * @example
  * ```ts
@@ -180,11 +159,16 @@ export function provideZenitTheme(config: ZThemeConfig = {}): EnvironmentProvide
 export class ZTheme {
   private readonly dok = inject(DOCUMENT);
   private readonly imBrowser = isPlatformBrowser(inject(PLATFORM_ID));
-  private readonly einst = einstellung(inject(Z_THEME_CONFIG));
+  private readonly config = inject(Z_THEME_CONFIG);
+  private readonly einst = themeEinstellung(this.config);
 
   private readonly gewaehltesSchema = signal(this.einst.defaultScheme);
   private readonly gewaehlterAkzent = signal(this.einst.defaultAccent);
   private readonly systemDunkel = signal(true);
+  private readonly systemKontrast = signal(false);
+
+  /** The element written to last, so a changed `target` leaves no attributes behind. */
+  private letztesZiel: Element | null = null;
 
   /**
    * The chosen scheme, exactly as it was set: one of `schemes`, or `'system'`
@@ -200,39 +184,73 @@ export class ZTheme {
   readonly accent = this.gewaehlterAkzent.asReadonly();
 
   /**
-   * The scheme that is applied. Equal to {@link scheme}, except for `'system'`,
-   * which resolves to `'dark'` or `'light'` and follows a change of
-   * `prefers-color-scheme` without a reload.
+   * The scheme that is applied. Equal to {@link scheme}, except for `'system'`:
+   * that resolves to `'contrast'` while `prefers-contrast: more` matches and
+   * `'contrast'` is one of `schemes`, otherwise to `'dark'` or `'light'` after
+   * `prefers-color-scheme`. Both follow a change without a reload.
    */
   readonly resolvedScheme = computed(() => {
     const gewaehlt = this.gewaehltesSchema();
-    return gewaehlt === 'system' ? (this.systemDunkel() ? 'dark' : 'light') : gewaehlt;
+    if (gewaehlt !== SCHEMA_SYSTEM) {
+      return gewaehlt;
+    }
+    if (this.systemKontrast() && this.einst.schemes.includes(SCHEMA_KONTRAST)) {
+      return SCHEMA_KONTRAST;
+    }
+    return this.systemDunkel() ? SCHEMA_DUNKEL : SCHEMA_HELL;
   });
 
   constructor() {
-    if (!this.imBrowser) {
-      return;
+    GENUTZTE_CONFIG.set(this, this.config);
+    if (!this.kenntSchema(this.einst.defaultScheme)) {
+      warnen(`defaultScheme "${this.einst.defaultScheme}" is neither "system" nor one of schemes.`);
     }
-    const fenster = this.dok.defaultView;
-    const abfrage = fenster?.matchMedia?.('(prefers-color-scheme: dark)');
-    if (abfrage) {
-      this.systemDunkel.set(abfrage.matches);
-      const beiWechsel = (ereignis: MediaQueryListEvent) => {
-        this.systemDunkel.set(ereignis.matches);
-        this.anwenden();
-      };
-      abfrage.addEventListener('change', beiWechsel);
-      inject(DestroyRef).onDestroy(() => abfrage.removeEventListener('change', beiWechsel));
+    if (!this.einst.accents.includes(this.einst.defaultAccent)) {
+      warnen(`defaultAccent "${this.einst.defaultAccent}" is not one of accents.`);
     }
 
-    const gespeichert = this.lesen();
-    if (gespeichert?.scheme && this.kenntSchema(gespeichert.scheme)) {
-      this.gewaehltesSchema.set(gespeichert.scheme);
+    if (!this.imBrowser) {
+      // The server knows neither the stored choice nor the operating system,
+      // so only a fixed default can go into the HTML. A custom target is a
+      // browser-only getter and stays untouched.
+      if (!this.einst.target && this.einst.defaultScheme !== SCHEMA_SYSTEM) {
+        this.dok.documentElement?.setAttribute(ATTRIBUT_SCHEMA, this.einst.defaultScheme);
+      }
+      return;
     }
-    if (gespeichert?.accent && this.einst.accents.includes(gespeichert.accent)) {
-      this.gewaehlterAkzent.set(gespeichert.accent);
+
+    const zerstoert = inject(DestroyRef);
+    const fenster = this.dok.defaultView;
+    const folgen = (abfrageText: string, ziel: { set(wert: boolean): void }) => {
+      const abfrage = fenster?.matchMedia?.(abfrageText);
+      if (!abfrage) {
+        return;
+      }
+      ziel.set(abfrage.matches);
+      const beiWechsel = (ereignis: MediaQueryListEvent) => {
+        ziel.set(ereignis.matches);
+        this.anwenden();
+      };
+      // Optional calls: test doubles and old engines only know addListener.
+      abfrage.addEventListener?.('change', beiWechsel);
+      zerstoert.onDestroy(() => abfrage.removeEventListener?.('change', beiWechsel));
+    };
+    folgen(ABFRAGE_DUNKEL, this.systemDunkel);
+    folgen(ABFRAGE_KONTRAST, this.systemKontrast);
+
+    const key = this.einst.storageKey;
+    if (key && fenster) {
+      // Another tab changed or dropped the choice. `key` is null after clear().
+      const beiSpeicher = (ereignis: StorageEvent) => {
+        if (ereignis.key === null || ereignis.key === key) {
+          this.uebernehmen();
+        }
+      };
+      fenster.addEventListener('storage', beiSpeicher);
+      zerstoert.onDestroy(() => fenster.removeEventListener('storage', beiSpeicher));
     }
-    this.anwenden();
+
+    this.uebernehmen();
   }
 
   /**
@@ -243,6 +261,7 @@ export class ZTheme {
    */
   setScheme(id: string): boolean {
     if (!this.kenntSchema(id)) {
+      warnen(`setScheme("${id}") ignored, the id is neither "system" nor one of schemes.`);
       return false;
     }
     this.gewaehltesSchema.set(id);
@@ -259,6 +278,7 @@ export class ZTheme {
    */
   setAccent(id: string): boolean {
     if (!this.einst.accents.includes(id)) {
+      warnen(`setAccent("${id}") ignored, the id is not one of accents.`);
       return false;
     }
     this.gewaehlterAkzent.set(id);
@@ -276,14 +296,23 @@ export class ZTheme {
   }
 
   private kenntSchema(id: string): boolean {
-    return id === 'system' || this.einst.schemes.includes(id);
+    return id === SCHEMA_SYSTEM || this.einst.schemes.includes(id);
   }
 
-  private ziel(): Element | null {
-    if (!this.imBrowser) {
-      return null;
-    }
-    return this.einst.target ? this.einst.target() : this.dok.documentElement;
+  /** Takes the stored choice, the defaults where nothing valid is stored, and applies it. */
+  private uebernehmen(): void {
+    const gespeichert = this.lesen();
+    const schema = gespeichert?.scheme;
+    const akzent = gespeichert?.accent;
+    this.gewaehltesSchema.set(
+      typeof schema === 'string' && this.kenntSchema(schema) ? schema : this.einst.defaultScheme,
+    );
+    this.gewaehlterAkzent.set(
+      typeof akzent === 'string' && this.einst.accents.includes(akzent)
+        ? akzent
+        : this.einst.defaultAccent,
+    );
+    this.anwenden();
   }
 
   /**
@@ -291,19 +320,27 @@ export class ZTheme {
    * choice looks exactly like a page that never heard of this service.
    */
   private anwenden(): void {
-    const ziel = this.ziel();
-    if (!ziel) {
+    if (!this.imBrowser) {
       return;
     }
-    ziel.setAttribute('data-theme', this.resolvedScheme());
+    const ziel = this.einst.target ? this.einst.target() : this.dok.documentElement;
+    if (this.letztesZiel && this.letztesZiel !== ziel) {
+      this.letztesZiel.removeAttribute(ATTRIBUT_SCHEMA);
+      this.letztesZiel.removeAttribute(ATTRIBUT_AKZENT);
+    }
+    this.letztesZiel = ziel;
+    ziel.setAttribute(ATTRIBUT_SCHEMA, this.resolvedScheme());
     if (this.gewaehlterAkzent() === this.einst.defaultAccent) {
-      ziel.removeAttribute('data-accent');
+      ziel.removeAttribute(ATTRIBUT_AKZENT);
     } else {
-      ziel.setAttribute('data-accent', this.gewaehlterAkzent());
+      ziel.setAttribute(ATTRIBUT_AKZENT, this.gewaehlterAkzent());
     }
   }
 
-  /** `localStorage` throws in a private window and when site data is blocked. */
+  /**
+   * `localStorage` throws in a private window and when site data is blocked,
+   * and it is the property access itself that throws (`SecurityError`).
+   */
   private speicher(): Storage | null {
     if (!this.imBrowser || !this.einst.storageKey) {
       return null;
@@ -315,7 +352,7 @@ export class ZTheme {
     }
   }
 
-  private lesen(): { scheme?: string; accent?: string } | null {
+  private lesen(): { scheme?: unknown; accent?: unknown } | null {
     const key = this.einst.storageKey;
     if (!key) {
       return null;
@@ -323,9 +360,7 @@ export class ZTheme {
     try {
       const roh = this.speicher()?.getItem(key);
       const wert: unknown = roh ? JSON.parse(roh) : null;
-      return wert && typeof wert === 'object'
-        ? (wert as { scheme?: string; accent?: string })
-        : null;
+      return wert && typeof wert === 'object' ? wert : null;
     } catch {
       return null;
     }

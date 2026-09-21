@@ -1,4 +1,9 @@
-import { EnvironmentProviders, InjectionToken, makeEnvironmentProviders } from '@angular/core';
+import {
+  EnvironmentProviders,
+  InjectionToken,
+  inject,
+  makeEnvironmentProviders,
+} from '@angular/core';
 
 /**
  * Every default text the library ships, in one place.
@@ -91,7 +96,7 @@ export const Z_LABELS_EN = {
   consoleJumpToEnd: 'Jump to end',
   headerMenu: 'Menu',
   toastClose: 'Close',
-  tableRegion: 'Table, scrolls sideways',
+  tableRegion: 'Table, scrollable horizontally',
 } satisfies ZLabels;
 
 /**
@@ -99,7 +104,9 @@ export const Z_LABELS_EN = {
  * {@link Z_LABELS_DE}.
  *
  * Provide it directly on a component to change the texts for that subtree
- * only, or application-wide through {@link provideZenitLabels}.
+ * only, or through {@link provideZenitLabels} for the application or a route.
+ * Read it with {@link injectZLabels}, not with `inject(Z_LABELS)`: a provider
+ * written by hand may be incomplete, and only the function fills the gaps.
  *
  * @example
  * ```ts
@@ -114,8 +121,11 @@ export const Z_LABELS = new InjectionToken<ZLabels>('Z_LABELS', {
 });
 
 /**
- * Overrides label defaults for the whole application. Keys that are left out
- * keep their German default, so a partial translation stays valid.
+ * Overrides label defaults, for the whole application or for a route. Keys
+ * that are left out keep the value of the enclosing injector: a route that
+ * overrides one key inside an English application stays English otherwise.
+ * Without an enclosing provider they keep their German default, so a partial
+ * translation stays valid.
  *
  * @param labels The keys to replace.
  * @returns Providers for `bootstrapApplication` or a route's `providers`.
@@ -128,5 +138,36 @@ export const Z_LABELS = new InjectionToken<ZLabels>('Z_LABELS', {
  * ```
  */
 export function provideZenitLabels(labels: Partial<ZLabels>): EnvironmentProviders {
-  return makeEnvironmentProviders([{ provide: Z_LABELS, useValue: { ...Z_LABELS_DE, ...labels } }]);
+  return makeEnvironmentProviders([
+    {
+      provide: Z_LABELS,
+      useFactory: (): ZLabels => ({
+        ...(inject(Z_LABELS, { skipSelf: true, optional: true }) ?? Z_LABELS_DE),
+        ...labels,
+      }),
+    },
+  ]);
+}
+
+/**
+ * Reads the label registry of the current injector, complete. This is what the
+ * components of the library call, and what your own components should call.
+ *
+ * `{ provide: Z_LABELS, useValue: { toastClose: 'Close' } }` compiles when the
+ * value is cast or comes from JSON, and would leave every other key
+ * `undefined`: an icon-only button without `aria-label`, a `TypeError` for
+ * `paginationRange`. The function therefore lays the provided value over
+ * {@link Z_LABELS_DE}. Call it in an injection context.
+ *
+ * @returns Every key of {@link ZLabels}, the German default where the provider has none.
+ *
+ * @example
+ * ```ts
+ * export class Pager {
+ *   private readonly labels = injectZLabels();
+ * }
+ * ```
+ */
+export function injectZLabels(): ZLabels {
+  return { ...Z_LABELS_DE, ...inject(Z_LABELS) };
 }

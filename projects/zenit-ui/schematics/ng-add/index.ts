@@ -4,6 +4,9 @@
  * Performs the setup that `projects/zenit-ui/README.md` documents by hand:
  * style entries in `angular.json`, `z-root` in `index.html`, `@angular/cdk`,
  * the four self-hosted fonts and `<z-toast-outlet />` in the root component.
+ * With `--themes` it also wires the theme so that the stored scheme is on the
+ * page before the first paint: init script in `index.html`, render-blocking
+ * stylesheet, `provideZenitTheme()` in the application config.
  *
  * Every step is idempotent. Running the schematic twice leaves the workspace
  * unchanged, existing entries are never duplicated, and a wrong style order is
@@ -22,6 +25,7 @@ import {
   ProjectDefinition,
   TargetDefinition,
   addDependency,
+  addRootProvider,
   readWorkspace,
   updateWorkspace,
 } from '@schematics/angular/utility';
@@ -33,13 +37,16 @@ import {
 import { Change, InsertChange } from '@schematics/angular/utility/change';
 import { latestVersions } from '@schematics/angular/utility/latest-versions';
 import { resolveBootstrappedComponentData } from '@schematics/angular/utility/standalone/app_component';
+import { findAppConfig } from '@schematics/angular/utility/standalone/app_config';
 import {
   applyChangesToFile,
+  findBootstrapApplicationCall,
   getMainFilePath,
   getSourceFile,
 } from '@schematics/angular/utility/standalone/util';
-import { Path, dirname, join, normalize } from '@angular-devkit/core';
+import { JsonObject, Path, dirname, join, normalize } from '@angular-devkit/core';
 import ts from 'typescript';
+import { zenitThemeInitScript } from './init-script';
 import { Schema } from './schema';
 
 /** Style entries the schematic owns, in the order the README prescribes. */
@@ -99,6 +106,7 @@ export function ngAdd(options: Schema): Rule {
       }),
       options.fonts === false ? noop : fontRule(project),
       options.toastOutlet === false ? noop : toastOutletRule(name),
+      options.themes === true ? themeRule(name, project) : noop,
       nextSteps(options),
     ]);
   };
@@ -439,7 +447,159 @@ function addImportsEntry(
 }
 
 // --------------------------------------------------------------------------
-// 6. Next steps
+// 6. Theme without a flash (--themes)
+// --------------------------------------------------------------------------
+
+/** Marker comment of the init script; its presence makes the step idempotent. */
+const THEME_MARKER = 'zenit-theme-init';
+const THEME_PROVIDER = 'provideZenitTheme';
+
+/**
+ * Three steps that only work together. `ZTheme` applies the stored scheme after
+ * bootstrap, which is several frames after the first paint, so:
+ *
+ * 1. the init script sets `data-theme` and `data-accent` in `<head>`,
+ * 2. `inlineCritical` is switched off for the production build. The CLI would
+ *    otherwise inline only the CSS that matches `index.html` and load the full
+ *    stylesheet without blocking; `[data-theme="light"]` matches nothing there,
+ *    so the page would still paint in the default scheme until the full
+ *    stylesheet arrives,
+ * 3. `provideZenitTheme()` goes into the application config, so the service
+ *    takes over from the script with the same defaults.
+ */
+function themeRule(projectName: string, project: ProjectDefinition): Rule {
+  return chain([
+    initScriptRule(project),
+    inlineCriticalRule(projectName),
+    themeProviderRule(projectName),
+  ]);
+}
+
+function initScriptRule(project: ProjectDefinition): Rule {
+  return (tree, context) => {
+    const path = indexPath(project);
+    const updated = tree.exists(path) ? insertInitScript(tree.readText(path)) : undefined;
+    if (updated === undefined) {
+      context.logger.warn(
+        `zenit-ui: no <head> found in ${path}. Put the output of zenitThemeInitScript() ` +
+          'into a <script> at the top of <head> yourself, see docs/theming.md.',
+      );
+
+      return;
+    }
+    if (updated !== tree.readText(path)) {
+      tree.overwrite(path, updated);
+    }
+  };
+}
+
+/**
+ * Puts the script in front of every stylesheet: right after `<meta charset>`,
+ * which has to stay within the first 1024 bytes of the document, or as the
+ * first child of `<head>` when there is none. `undefined` without a `<head>`.
+ */
+function insertInitScript(html: string): string | undefined {
+  if (html.includes(THEME_MARKER)) {
+    return html;
+  }
+
+  const charset = /<meta\s[^>]*charset[^>]*>/i.exec(html);
+  const anchor = charset ?? /<head(?=[\s>])[^>]*>/i.exec(html);
+  if (!anchor) {
+    return undefined;
+  }
+
+  const lineStart = html.lastIndexOf('\n', anchor.index) + 1;
+  const before = html.slice(lineStart, anchor.index);
+  const indent = (/^\s*$/.test(before) ? before : '') + (charset ? '' : '  ');
+  const end = anchor.index + anchor[0].length;
+  const block = [
+    `<!-- ${THEME_MARKER}: output of zenitThemeInitScript() from zenit-ui. It applies the stored`,
+    '     theme before the first paint. Regenerate it when you pass a config to',
+    '     provideZenitTheme(); with a CSP, hash or nonce it (docs/theming.md). -->',
+    '<!-- prettier-ignore -->',
+    `<script>${zenitThemeInitScript()}</script>`,
+  ];
+
+  return html.slice(0, end) + block.map((line) => `\n${indent}${line}`).join('') + html.slice(end);
+}
+
+/** Switches critical CSS inlining off for the production build, keeping every other setting. */
+function inlineCriticalRule(projectName: string): Rule {
+  return updateWorkspace((workspace) => {
+    const build = workspace.projects.get(projectName)?.targets.get('build');
+    if (!build) {
+      return;
+    }
+
+    const configurations = (build.configurations ??= {});
+    const production = (configurations['production'] ??= {});
+    const current = production['optimization'];
+    const styles = isJsonObject(current) ? current['styles'] : undefined;
+    // `false` means nothing is optimised and nothing is inlined either.
+    if (current === false || styles === false) {
+      return;
+    }
+
+    production['optimization'] = {
+      ...(isJsonObject(current) ? current : { scripts: true, fonts: true }),
+      styles: {
+        minify: true,
+        removeSpecialComments: true,
+        ...(isJsonObject(styles) ? styles : {}),
+        inlineCritical: false,
+      },
+    };
+  });
+}
+
+function isJsonObject(value: unknown): value is JsonObject {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Adds `provideZenitTheme()` to the application config. Only where that is
+ * safe: a `bootstrapApplication()` call whose config can be resolved. Anything
+ * else gets the instruction instead of a guess.
+ */
+function themeProviderRule(projectName: string): Rule {
+  return async (tree, context) => {
+    const manual = (reason: string) =>
+      context.logger.warn(
+        `zenit-ui: ${reason} Add ${THEME_PROVIDER}() from "zenit-ui" to the providers of ` +
+          'your application config yourself.',
+      );
+
+    let configPath: string;
+    try {
+      const mainPath = await getMainFilePath(tree, projectName);
+      const bootstrap = findBootstrapApplicationCall(tree, mainPath);
+      const appConfig = findAppConfig(bootstrap, tree, mainPath);
+      if (!appConfig && bootstrap.arguments.length !== 1) {
+        manual(`the config passed to bootstrapApplication() in ${mainPath} could not be resolved.`);
+
+        return;
+      }
+      configPath = appConfig?.filePath ?? mainPath;
+    } catch {
+      manual('no bootstrapApplication() call could be located.');
+
+      return;
+    }
+
+    if (tree.readText(configPath).includes(`${THEME_PROVIDER}(`)) {
+      return;
+    }
+
+    return addRootProvider(
+      projectName,
+      ({ code, external }) => code`${external(THEME_PROVIDER, 'zenit-ui')}()`,
+    );
+  };
+}
+
+// --------------------------------------------------------------------------
+// 7. Next steps
 // --------------------------------------------------------------------------
 
 function nextSteps(options: Schema): Rule {
@@ -453,6 +613,16 @@ function nextSteps(options: Schema): Rule {
     }
     if (options.toastOutlet !== false) {
       lines.push('  - <z-toast-outlet /> mounted in the root component.');
+    }
+    if (options.themes === true) {
+      lines.push(
+        '  - Theme: init script at the top of <head>, provideZenitTheme() in the application',
+        '    config, and optimization.styles.inlineCritical set to false for production.',
+        '    Why the last one: the CLI inlines only the CSS that matches index.html and loads',
+        '    the rest late. [data-theme="light"] matches nothing there, so a stored light',
+        '    scheme would still paint dark first. With a config for provideZenitTheme(),',
+        '    regenerate the script with zenitThemeInitScript(config), see docs/theming.md.',
+      );
     }
     lines.push(
       '  - Next: import the building blocks you need from "zenit-ui", and copy the',

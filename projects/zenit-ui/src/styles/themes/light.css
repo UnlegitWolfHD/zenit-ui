@@ -25,9 +25,16 @@
       surface-raised, which keeps the status word above 4.5:1 on its own badge.
    6. danger stays visibly apart from accent-text (CLAUDE.md, "Farbe"): it is
       the more orange and the lighter of the two, measured as >= 1.25:1 between
-      the two colours.
+      the two colours. It is also read on surface-raised and surface-hover (the
+      danger item of a menu and its hover), so it clears 4.5:1 there as well;
+      surface-hover is the binding ground (4.59:1).
    7. focus is near black here, the counterpart of white in the dark scheme. It
-      keeps >= 3:1 against all four surfaces and against accent.
+      keeps >= 3:1 against all four surfaces and against accent. It does not
+      against accent-hover (2.41:1 with rot), and it cannot: a fill that keeps
+      white at 4.5:1 and near black at 3:1 has to sit in a band so narrow that
+      hover would look like rest. The ring does not need it, because it is
+      drawn with a 2px offset and lies on the surface around the button, never
+      on the fill.
    8. scrim and shadow-overlay stay black based but lose weight; a light page
       does not need a 50 % shadow to lift a dialog.
    9. Minecraft subtheme: mc-accent is deepened so the primary button carries on
@@ -56,7 +63,7 @@
   --success-subtle: #e4f3e7;
   --warning: #8a5300;
   --warning-subtle: #fdf0dc;
-  --danger: #b8340f;
+  --danger: #b5330f;
   --danger-subtle: #fdece7;
   --info: #17548f;
   --info-subtle: #e4eefa;

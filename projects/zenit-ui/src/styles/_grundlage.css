@@ -17,6 +17,24 @@
 .z-root :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .z-root a { color: var(--accent-text); text-decoration: none; }
 .z-root a:hover { text-decoration: underline; }
+/* Deviation from the reference: bundle.css underlines a link on hover only. A
+   link inside running text then differs from the words around it by colour
+   alone, and accent-text against text stays below 3:1 in 11 of the 12 scheme
+   and accent combinations (dark/rot reaches 3.27:1), which fails WCAG 1.4.1
+   (axe: link-in-text-block). No colour can fix that in every scheme, so links
+   in running text are underlined at rest.
+   Where: inside the text containers listed below. Not inside nav, .z-header
+   and .z-footer, whose links stand alone and are recognisable by position, and
+   not on a link that carries a library class (z-btn, z-tab, z-row, z-side__item,
+   z-header__link ...), because those style themselves.
+   0.15em: text-underline-offset has no token, and a length relative to the
+   font size is the only kind that fits 12px hints and 16px body alike; it
+   moves the line clear of the descenders of g, j and y. No px literal is added.
+   Weight (0,2,1), the same as .z-root a.z-btn below. */
+.z-root :where(p, li, dd, label, .z-alert__body, .z-faq__body, .z-empty__body, .z-field__hint):not(:where(nav, .z-header, .z-footer) *) a:not([class*="z-"]) {
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
 .z-mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
 .z-muted { color: var(--text-muted); }
 .z-subtle { color: var(--text-subtle); }

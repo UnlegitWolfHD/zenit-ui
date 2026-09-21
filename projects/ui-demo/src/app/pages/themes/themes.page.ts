@@ -162,10 +162,13 @@ const FLAECHEN = ['bg', 'surface', 'surface-raised'];
           <p class="demo-flach body-sm">
             Danach meldest du die Kennung an:
             <span class="z-mono">provideZenitTheme({{ anmeldung }})</span>. Ein Akzent geht genauso,
-            mit <span class="z-mono">[data-accent="tuerkis"]</span> und den fünf Akzent-Token. Prüfe
-            die Werte anschließend mit
-            <span class="z-mono">node tools/check-theme-contrast.mjs</span>; ohne dieses Ergebnis
-            ist ein Schema nicht abgenommen.
+            mit <span class="z-mono">[data-accent="tuerkis"]</span> und den fünf Akzent-Token.
+          </p>
+          <p class="demo-flach body-sm">
+            Die Kontraste eines eigenen Schemas prüfst du selbst, mit deinem eigenen Werkzeug. Das
+            Kontrast-Gate der Library liegt dem Paket nicht bei und misst nur die drei
+            mitgelieferten Schemata. Die Paare und Schwellen, die es prüft, stehen in
+            docs/theming.md; ohne diese Messung ist ein Schema nicht abgenommen.
           </p>
           <p class="demo-flach body-sm z-muted">
             Die vollständige Anleitung steht in docs/theming.md.
