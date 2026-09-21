@@ -104,3 +104,14 @@ z-sidebar > .z-select { display: none; }
     background: var(--surface-raised); border-bottom: 1px solid var(--border);
   }
 }
+
+/* Ergänzung zur Referenz: Klickziele mobil mindestens 40px (CLAUDE.md, Abstand und Layout).
+   Betroffen sind nur die Links im Fuss (Spalten und Basiszeile) und der
+   Sidebar-Eintrag mit seinen 36px. Tab, Sidebar-Select, Kopfzeilen-Links,
+   Menue-Knopf und die Aktionen im PageHeader sind schon control-md hoch, der
+   Stepper ist nicht bedienbar. Die Basiszeile bleibt flex mit Umbruch. */
+@media (max-width: 640px) {
+  .z-footer__list a, .z-footer__base a, .z-side__item {
+    display: inline-flex; align-items: center; min-height: var(--control-md);
+  }
+}
