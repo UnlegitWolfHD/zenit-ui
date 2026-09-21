@@ -1,6 +1,6 @@
 import { Dialog, DialogConfig, DialogRef } from '@angular/cdk/dialog';
 import { ComponentType } from '@angular/cdk/portal';
-import { ElementRef, inject, Service } from '@angular/core';
+import { DOCUMENT, ElementRef, inject, Service } from '@angular/core';
 import { map, Observable } from 'rxjs';
 import { ZConfirmConfig, ZConfirmDialog, ZRestoreFocusTarget } from './confirm-dialog';
 import { naechsteId, Z_DIALOG_TITLE_ID } from './dialog-layout';
@@ -13,7 +13,8 @@ export type ZDialogConfig<D, R> = DialogConfig<D, R> & {
    * Element focus returns to when the dialog closes, mapped onto the CDK's
    * `restoreFocus`. Without it focus goes back to whatever was focused before
    * the dialog opened, which is the CDK default. Set it when the trigger is
-   * gone by then; opened from a menu, pass the menu trigger.
+   * gone by then. A dialog opened from a menu item needs nothing: the service
+   * finds the menu trigger by itself.
    */
   restoreFocusTo?: ZRestoreFocusTarget;
 };
@@ -32,6 +33,23 @@ function fokusZiel(ziel: ZRestoreFocusTarget | undefined): HTMLElement | string 
 }
 
 /**
+ * The trigger of the menu the focus stands in, or `undefined` when it stands
+ * anywhere else.
+ *
+ * A dialog opened from a menu item would otherwise return focus to that item:
+ * the CDK closes the menu with the click, so the item is gone by the time the
+ * dialog closes and focus falls to the body. `CdkMenuTrigger` carries the id of
+ * its menu as `aria-controls`, which leads from the open menu back to the
+ * button that opened it.
+ */
+function menueAusloeser(dokument: Document): HTMLElement | undefined {
+  const menue = (dokument.activeElement as HTMLElement | null)?.closest('.cdk-menu[id]');
+  return menue
+    ? (dokument.querySelector<HTMLElement>(`[aria-controls="${menue.id}"]`) ?? undefined)
+    : undefined;
+}
+
+/**
  * Thin wrapper around `Dialog` from `@angular/cdk/dialog`, provided in root.
  *
  * The focus trap, Escape, the backdrop and returning focus to the trigger come
@@ -41,6 +59,11 @@ function fokusZiel(ziel: ZRestoreFocusTarget | undefined): HTMLElement | string 
  * where the trigger is gone by the time the dialog closes. Focus lands on the
  * first tabbable element when the dialog opens, which is the first field or
  * otherwise the cancel button.
+ *
+ * One case is taken care of without `restoreFocusTo`: a dialog opened from a
+ * menu item. The CDK closes the menu with the click, so the item no longer
+ * exists when the dialog closes and focus would fall to the body; the service
+ * therefore returns it to the menu trigger.
  *
  * Use a dialog for a decision that cannot be undone or for a short form, not
  * for "stop" or "restart".
@@ -70,6 +93,7 @@ function fokusZiel(ziel: ZRestoreFocusTarget | undefined): HTMLElement | string 
 @Service()
 export class ZDialog {
   private readonly cdk = inject(Dialog);
+  private readonly dokument = inject(DOCUMENT);
 
   /**
    * Opens a component of your own, as a rule one whose root element is
@@ -93,9 +117,9 @@ export class ZDialog {
    *
    * @example
    * ```ts
-   * // Opened from a menu: the menu item is gone when the dialog closes, so
-   * // pass the menu trigger and focus lands back there.
-   * this.dialog.open(NotizDialog, { restoreFocusTo: this.trigger() });
+   * // The row that carried the trigger is gone once the dialog confirms the
+   * // deletion, so focus goes to the toolbar above the list instead.
+   * this.dialog.open(NotizDialog, { restoreFocusTo: this.werkzeugleiste() });
    * ```
    */
   open<R = unknown, D = unknown, C = unknown>(
@@ -105,7 +129,9 @@ export class ZDialog {
     const titelId = naechsteId('z-dialog-title');
     const titelProvider = { provide: Z_DIALOG_TITLE_ID, useValue: titelId };
     const fremde = config?.providers;
-    const ziel = fokusZiel(config?.restoreFocusTo);
+    // Without a target of its own, a dialog opened from a menu item goes back
+    // to the menu trigger, because the item itself is gone by then.
+    const ziel = fokusZiel(config?.restoreFocusTo) ?? menueAusloeser(this.dokument);
     return this.cdk.open<R, D, C>(component, {
       // autoFocus 'first-tabbable' (first field, otherwise "Abbrechen"),
       // restoreFocus and Escape are the defaults of the CDK.

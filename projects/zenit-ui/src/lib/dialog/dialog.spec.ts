@@ -367,6 +367,27 @@ describe('ZDialog', () => {
       expect(ergebnisse).toEqual([true, false, false]);
     });
 
+    // The CDK closes the menu with the click on the item, so the item is gone
+    // by the time the dialog closes and focus would fall to <body>.
+    it('returns focus to the menu trigger when the dialog came from a menu item', async () => {
+      const menue = document.createElement('div');
+      menue.className = 'cdk-menu';
+      menue.id = 'z-test-menue';
+      ziel.setAttribute('aria-controls', menue.id);
+      menue.append(ausloeser);
+      document.body.append(menue);
+      ausloeser.focus();
+
+      bestaetige();
+      menue.remove();
+
+      klicke(fussButtons()[0]);
+      await geschlossen();
+
+      expect(document.activeElement).toBe(ziel);
+      ziel.removeAttribute('aria-controls');
+    });
+
     it('takes an ElementRef and a CSS selector as well', async () => {
       ausloeser.focus();
       dienst.open(UmbenennenDialog, { restoreFocusTo: new ElementRef(ziel) });

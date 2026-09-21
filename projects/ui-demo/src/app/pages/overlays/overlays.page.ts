@@ -2,6 +2,7 @@ import { DialogRef } from '@angular/cdk/dialog';
 import { CdkMenuTrigger } from '@angular/cdk/menu';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { form, FormField } from '@angular/forms/signals';
+import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import {
   Z_MENU,
@@ -13,6 +14,7 @@ import {
   ZIcon,
   ZInput,
   ZPanel,
+  ZTooltip,
 } from 'zenit-ui';
 
 /**
@@ -45,6 +47,92 @@ export class NotizDialog {
   protected readonly notiz = form(signal(''));
 }
 
+/** One field of the long dialog, kept as data so the template stays short. */
+interface LangesFeld {
+  readonly id: string;
+  readonly label: string;
+  readonly platzhalter: string;
+}
+
+/**
+ * A form longer than any screen, so the scrolling body of the dialog can be
+ * tried out: header and footer stay in place, only the body moves. Inside the
+ * body a tooltip and a row menu, both of which have to answer that scroll.
+ */
+@Component({
+  selector: 'demo-langer-dialog',
+  imports: [
+    CdkMenuTrigger,
+    Z_MENU,
+    ZButton,
+    ZDialogActions,
+    ZDialogLayout,
+    ZField,
+    ZIcon,
+    ZInput,
+    ZTooltip,
+  ],
+  template: `
+    <z-dialog title="Server anlegen">
+      <div class="z-cluster">
+        <span>Welt 1</span>
+        <button
+          zBtn="ghost"
+          iconOnly
+          aria-label="Hinweis zur Welt"
+          zTooltip="Die Welt wird beim Anlegen kopiert."
+        >
+          <z-icon name="info" />
+        </button>
+        <button
+          zBtn="ghost"
+          iconOnly
+          aria-label="Aktionen für Welt 1"
+          [cdkMenuTriggerFor]="weltAktionen"
+        >
+          <z-icon name="more_vert" />
+        </button>
+      </div>
+      @for (feld of felder; track feld.id) {
+        <z-field [label]="feld.label" [for]="feld.id">
+          <input zInput [id]="feld.id" [placeholder]="feld.platzhalter" />
+        </z-field>
+      }
+      <ng-container zDialogActions>
+        <button zBtn="ghost" (click)="ref.close()">Abbrechen</button>
+        <button zBtn="primary" (click)="ref.close(true)">Server anlegen</button>
+      </ng-container>
+    </z-dialog>
+
+    <ng-template #weltAktionen>
+      <z-menu>
+        <button zMenuItem icon="content_copy" (triggered)="ref.close()">Welt kopieren</button>
+        <z-menu-separator />
+        <button zMenuItem icon="delete" danger (triggered)="ref.close()">Welt löschen</button>
+      </z-menu>
+    </ng-template>
+  `,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class LangerDialog {
+  protected readonly ref = inject<DialogRef<boolean>>(DialogRef);
+
+  protected readonly felder: readonly LangesFeld[] = [
+    { id: 'demo-lang-name', label: 'Servername', platzhalter: 'Beispiel-Server 2' },
+    { id: 'demo-lang-welt', label: 'Weltname', platzhalter: 'Welt 1' },
+    { id: 'demo-lang-seed', label: 'Seed', platzhalter: '-4707107461894691873' },
+    { id: 'demo-lang-port', label: 'Port', platzhalter: '25565' },
+    { id: 'demo-lang-slots', label: 'Slots', platzhalter: '20' },
+    { id: 'demo-lang-ram', label: 'Arbeitsspeicher in GB', platzhalter: '4' },
+    { id: 'demo-lang-loader', label: 'Loader', platzhalter: 'Paper 1.21.4' },
+    { id: 'demo-lang-java', label: 'Java-Version', platzhalter: '21' },
+    { id: 'demo-lang-backup', label: 'Backup-Zeit', platzhalter: '04:00' },
+    { id: 'demo-lang-motd', label: 'Nachricht des Tages', platzhalter: 'Willkommen auf Welt 1' },
+    { id: 'demo-lang-ops', label: 'Operatoren', platzhalter: 'kian, lena' },
+    { id: 'demo-lang-start', label: 'Startbefehl', platzhalter: 'java -jar paper.jar nogui' },
+  ];
+}
+
 /**
  * The static dialog for the screenshot uses `z-dialog` itself, because the
  * layout also works standalone and then generates the id of its heading.
@@ -56,6 +144,7 @@ export class NotizDialog {
   selector: 'demo-overlays-page',
   imports: [
     CdkMenuTrigger,
+    RouterLink,
     Z_MENU,
     ZButton,
     ZDialogActions,
@@ -100,6 +189,19 @@ export class NotizDialog {
       }
       @if (notizErgebnis()) {
         <p class="demo-sub">{{ notizErgebnis() }}</p>
+      }
+
+      <p class="demo-cap caption">
+        Ein Dialog, der länger ist als der Bildschirm: Kopf und Fußzeile bleiben stehen, nur der
+        Rumpf scrollt. Tooltip und Menü im Rumpf schließen, sobald darunter gescrollt wird.
+      </p>
+      <div class="demo-row">
+        <button zBtn="secondary" (click)="langenDialogOeffnen()">
+          <z-icon name="edit_note" />Langen Dialog öffnen
+        </button>
+      </div>
+      @if (langErgebnis()) {
+        <p class="demo-sub">{{ langErgebnis() }}</p>
       }
 
       <p class="demo-cap caption">
@@ -195,6 +297,26 @@ export class NotizDialog {
           </button>
         </div>
       </div>
+
+      <p class="demo-cap caption">
+        Einträge, die irgendwohin führen, sind Links. Rolle, Pfeiltasten und Anfangsbuchstaben
+        bleiben gleich; Enter, Leertaste und Klick öffnen die Seite und schließen das Menü,
+        Strg-Klick öffnet einen neuen Tab und lässt das Menü offen.
+      </p>
+      <div class="demo-row">
+        <button zBtn="secondary" [cdkMenuTriggerFor]="seiten">Weitere Seiten</button>
+      </div>
+
+      <ng-template #seiten>
+        <z-menu>
+          <a zMenuItem icon="dns" routerLink="/daten">Daten</a>
+          <a zMenuItem icon="description" routerLink="/formulare">Formulare</a>
+          <z-menu-separator />
+          <button zMenuItem icon="content_copy" (triggered)="gewaehlt('Link kopieren')">
+            Link kopieren
+          </button>
+        </z-menu>
+      </ng-template>
     </section>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -206,6 +328,7 @@ export class OverlaysPage {
   protected readonly beendenErgebnis = signal('');
   protected readonly notizErgebnis = signal('');
   protected readonly menuErgebnis = signal('');
+  protected readonly langErgebnis = signal('');
 
   /*
    * The dialog APIs answer with an Observable that emits exactly once (the API
@@ -247,6 +370,13 @@ export class OverlaysPage {
       this.dialog.open<string, unknown, NotizDialog>(NotizDialog).closed,
     );
     this.notizErgebnis.set(notiz ? `Notiz gespeichert: ${notiz}` : 'Notiz bearbeiten: Abgebrochen');
+  }
+
+  protected async langenDialogOeffnen(): Promise<void> {
+    const ja = await firstValueFrom(
+      this.dialog.open<boolean, unknown, LangerDialog>(LangerDialog).closed,
+    );
+    this.langErgebnis.set(`Langer Dialog: ${ja ? 'Angelegt' : 'Abgebrochen'}`);
   }
 
   protected gewaehlt(eintrag: string): void {

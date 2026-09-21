@@ -45,8 +45,11 @@ the backdrop all give `false`. The dialog opens as soon as the method is called,
 closes. It takes an `HTMLElement`, an `ElementRef<HTMLElement>` or a CSS selector, and is mapped
 onto the CDK's `restoreFocus`. Left out, focus goes back to whatever was focused before the dialog
 opened, which is the CDK default and right in almost every case. Set it when the trigger is gone by
-then: a dialog opened from a menu item is the usual case, because the CDK menu closes with the
-click and takes the focused item with it. Pass the menu trigger instead.
+then, for example a row that the confirmed action deletes.
+
+One case needs nothing: a dialog opened from a menu item. The CDK menu closes with the click and
+takes the focused item with it, so `open()` looks for the menu around the focused element and
+returns focus to its trigger, found through the `aria-controls` that `CdkMenuTrigger` sets.
 
 `ZConfirmConfig`:
 
@@ -147,14 +150,15 @@ dialog
   .closed.subscribe((notiz) => (notiz ? speichere(notiz) : undefined));
 ```
 
-Opened from a menu, where the trigger outlives the item that was clicked:
+Opened from a row whose delete removes the row itself, so focus goes to the toolbar above it.
+Opened from a menu item nothing has to be passed at all:
 
 ```ts
 import { ElementRef, inject, viewChild } from '@angular/core';
 import { ZDialog } from 'zenit-ui';
 
 const dialog = inject(ZDialog);
-const trigger = viewChild.required<ElementRef<HTMLElement>>('trigger');
+const werkzeuge = viewChild.required<ElementRef<HTMLElement>>('werkzeuge');
 
 function loeschen(): void {
   dialog
@@ -164,16 +168,16 @@ function loeschen(): void {
       confirmLabel: 'Server löschen',
       cancelLabel: 'Abbrechen',
       danger: true,
-      restoreFocusTo: trigger(),
+      restoreFocusTo: werkzeuge(),
     })
     .subscribe((ja) => (ja ? entferne() : undefined));
 }
 ```
 
 ```html
-<button #trigger zBtn="ghost" iconOnly type="button" aria-label="Aktionen für Beispiel-Server 1">
-  <z-icon name="more_vert" />
-</button>
+<div #werkzeuge class="z-cluster">
+  <button zBtn="secondary" type="button">Hochladen</button>
+</div>
 ```
 
 ## States
@@ -198,6 +202,11 @@ submit button and `error` on its fields.
   is what gives the dialog its accessible name. `title` is required for exactly that reason.
 - Focus lands on the first tabbable element when the dialog opens: the first field, or otherwise the
   cancel button.
+- A body that scrolls stays operable by keyboard (SC 2.1.1): its controls are reached by Tab and
+  scrolled into view, and a body that scrolls without holding a single focusable element, a long
+  confirmation for example, becomes a tab stop of its own so it can be scrolled with the arrow keys.
+- The scrolling body carries `scroll-padding`, so the focus ring of a control at its edge is not cut
+  off when the browser scrolls that control into view.
 - With `requireText` the field is always labelled, through `requireLabel` or, failing that, through
   `requireText` as its `aria-label`.
 - The confirming button repeats the verb from the title, so the decision reads the same in both
@@ -205,9 +214,22 @@ submit button and `error` on its fields.
 
 ## Responsive
 
-The panel is `min(480px, 100vw - 2 × space-4)` wide and at most `100vh - 2 × space-5` tall, with the
-dialog scrolling inside it. Below 640px it takes the full viewport width and docks to the bottom
-edge, keeping its rounded corners on top only.
+The panel is `min(480px, 100vw - 2 × space-4)` wide and at most `100vh - 2 × space-5` tall, `100dvh`
+where the browser knows the unit, so the URL bar of a phone does not cut the footer off. Below 640px
+it takes the full viewport width and docks to the bottom edge, keeping its rounded corners on top
+only; there the footer also carries `env(safe-area-inset-bottom)` below its padding, so the actions
+clear the home bar.
+
+A dialog longer than the screen scrolls in its body: heading and actions stay in place and only
+`.z-dialog__body` moves. Nothing has to be set for that, and no dialog component needs styles of its
+own, because the chain from the overlay pane down to `z-dialog` carries the height limit.
+
+## Overlays inside the body
+
+A tooltip or a menu opened inside the scrolling body answers that scroll: the tooltip goes, the menu
+closes (see the Tooltip and Menu pages). Both listen on the document in the capture phase, so they
+also hear a scroll container of your own around the dialog, which `cdkScrollable` would be needed
+for otherwise.
 
 ## Rendered classes and tokens
 
@@ -235,14 +257,20 @@ The 480px width is a literal value from the reference stylesheet.
   field inside it is set back to `text`; the reference preview did that with an inline style.
 - Addition to the library: `.z-dialog` gets `display: block`, and the overlay pane caps the dialog
   at the viewport height so a long dialog scrolls inside itself instead of past the edge.
+- Addition to the reference: the limit of the reference never reached the dialog. The CDK loads the
+  styles of `.cdk-overlay-pane` at runtime, so its `max-height: 100%` stood after this stylesheet
+  and beat the rule of the same specificity; and `max-height: inherit` of `.z-dialog` inherited from
+  the host element of the opened component, which sits between the CDK container and the dialog. The
+  limit is therefore repeated as `.cdk-overlay-pane.z-dialog-panel`, container and host become flex
+  columns, and inside the dialog only `.z-dialog__body` scrolls.
 
 ## Do / Don't
 
 - Do phrase the title as a question or a task and repeat its verb on the confirming button.
 - Do name the concrete consequences in `body`: what is lost, what it costs.
 - Do use `requireText` for deleting servers, domains and backups.
-- Do pass `restoreFocusTo` when the dialog is opened from a menu item; the item is gone when the
-  dialog closes.
+- Do pass `restoreFocusTo` when the element that opened the dialog is gone by the time it closes, a
+  deleted row for example. A menu item needs nothing, that case is taken care of.
 - Don't ask for confirmation for "Stoppen" or "Neustart".
 - Don't put a blur behind the dialog; it is `scrim`.
 - Don't make the dialog wider than 480px.

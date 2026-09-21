@@ -29,7 +29,7 @@ Selector: `[zTooltip]`
 | `zTooltip` | `string` | `''`    | The tooltip text, given as the value of the attribute. A change while the panel is open reaches the panel. Empty means no tooltip: the panel is not opened, and an open one closes. |
 
 No outputs, no content projection. The panel is opened in a CDK overlay, centred above the trigger
-with an 8px gap and below it as the fallback position, and it is repositioned on scroll.
+with an 8px gap and below it as the fallback position.
 
 ## Examples
 
@@ -74,8 +74,25 @@ With a text that changes at runtime:
 | Shown  | `surface-raised` panel with a 1px `border` and `shadow-overlay`, above the trigger | pointer enters, or the trigger receives focus |
 | Below  | the same panel under the trigger                                                   | there is no room above                        |
 
-The panel closes on mouse leave, on focus loss and on Escape. An empty `zTooltip` opens no panel and
-closes an open one.
+The panel closes on mouse leave, on focus loss, on Escape and on a scroll under it. An empty
+`zTooltip` opens no panel and closes an open one.
+
+## Scrolling
+
+A scroll anywhere around the trigger takes the panel back, the way the native `title` tooltip goes:
+a panel that lags behind its trigger is worse than none. That holds for the page as well as for an
+inner container, the body of a scrolling dialog or a scroll container of your own.
+
+While the trigger holds the focus the panel stays instead and follows the scroll, because WCAG 2.1
+SC 1.4.13 asks the content to stand as long as hover or focus is on the trigger; it goes once the
+trigger has left the scroller.
+
+The directive listens for `scroll` on the document in the capture phase. `ScrollDispatcher` of the
+CDK, which the `reposition` strategy builds on, only hears the window and containers marked
+`cdkScrollable`, so a tooltip inside an unannotated container used to stand still while its trigger
+moved away under it. The capture listener runs only while the panel stands and needs no annotation
+on any container; a scroll inside the panel itself and a scroll that happened before the panel went
+up change nothing.
 
 ## Accessibility
 
@@ -86,11 +103,13 @@ closes an open one.
 - A disabled button fires no events, so put the tooltip on the surrounding element. Repeat the same
   reason as a visible sentence: a tooltip alone is not reachable on a touch device.
 - A tooltip never replaces the `aria-label` of an icon-only button. Set both.
+- A scroll takes the panel back, but not while the trigger holds the focus (SC 1.4.13 "Persistent"),
+  because the browser itself scrolls a focused control into view.
 
 ## Responsive
 
 The panel is capped at 240px wide and wraps its text. It flips below the trigger when there is no
-room above, and the CDK repositions it on scroll, so it stays attached at every width. There is no
+room above, so it stays attached at every width. There is no
 touch trigger: on a phone the reason has to be readable without it.
 
 ## Rendered classes and tokens
