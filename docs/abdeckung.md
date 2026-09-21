@@ -65,7 +65,7 @@ API-Tabelle leer und die Bausteine stehen mit ihrem Text-Fallback da:
 
 ## Beispielseiten
 
-Die drei Seiten unter `/muster` zeigen keine einzelnen Bausteine, sondern die
+Die fünf Seiten unter `/muster` zeigen keine einzelnen Bausteine, sondern die
 Seitentypen aus `spec/guidelines/10-seitenmuster.md`: jede Seite setzt die
 Bausteine so zusammen, wie sie im Produkt stehen. Eine Demo-Steuerung ganz oben
 schaltet die Zustände, die sonst vom Server kämen. Sie steht bewusst in einem
@@ -77,3 +77,5 @@ Produktoberfläche aussieht.
 | Dashboard (`/muster/dashboard`, Kundenbereich) | AppHeader mit Guthaben und Avatar, PageHeader mit einem Fakt und zwei Aktionen, Alert (info als Hinweis, danger als Fehler der Liste), Panel, ServerList mit Badge, Icon und Pagination, Skeleton für den Ladezustand, EmptyState für die leere Liste, Metric für die Auslastung, Segment in der Demo-Steuerung                                                                                                                             |
 | Server-Panel (`/muster/server-panel`)          | AppHeader, Panel-Kopf mit Button, Icon, Badge, Tooltip und Menu, Alert bei "Fehlgeschlagen", Sidebar mit vier Bereichen, Metric, ServerList für die Spieler, SpecList für die Einstellungen, Console mit Log und Eingabe, FileTable mit Checkbox in Panel und TableContainer, Tabs, Setting mit Toggle, Select und Input, EmptyState für fehlende Datapacks, Dialog für "Hart beenden", Toast als Rückmeldung, Select in der Demo-Steuerung |
 | Startseite (`/muster/startseite`, öffentlich)  | AppHeader öffentlich mit "Anmelden" als ghost, Hero mit Lead, Notiz, einer Aktion und Panel mit ServerList als Aside, GameTile im GameGrid, Slider für Arbeitsspeicher und Steckplätze, Segment für die Laufzeit, PriceSummary mit Posten und Button in voller Breite, SpecList für Hardware und Plattform, Faq, Button als zentrierter Abschluss-CTA, Footer mit drei Spalten und Basiszeile                                               |
+| Server erstellen (`/muster/server-erstellen`, Kundenbereich) | PageHeader ohne Banner, `z-config` mit Wizard und drei Schritten, OptionCard für Server-Typ, RAM (`compact`), Leistungsklasse, Laufzeit mit Rabatt-Badge und Bezahlmethode, Combobox für Version und Java-Version, Input mit "(optional)" im Label, InputAction für den Gutschein, Setting mit Toggle, Disclosure "Expertenmodus", PriceSummary mit Rabatt- und Gutscheinzeile, Summe, Steuerhinweis und den Zuständen lädt und Fehler, IncludedList, StickyBar `mobileOnly`, Toast bei der Bestellung, Setting mit Toggle in der Demo-Steuerung |
+| Preisrechner (`/muster/preisrechner`, öffentlich) | PageHeader, `z-config` als ein Formular ohne Schritte, GameTile im GameGrid, OptionCard für Leistungsklasse, Arbeitsspeicher, Laufzeit und Abrechnung, CostChart mit berechnetem Knickpunkt bei Flex, PriceSummary mit dem einen primären Button, der die Auswahl als Query-Parameter an die Bestellung übergibt, IncludedList, StickyBar `mobileOnly` |
