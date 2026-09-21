@@ -64,6 +64,12 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./pages/muster/preisrechner.page').then((m) => m.MusterPreisrechnerPage),
   },
+  // Not in the demo navigation either: a measuring page for the header at small
+  // widths, which e2e/kopfzeile.spec.ts reads.
+  {
+    path: 'muster/kopfzeile',
+    loadComponent: () => import('./pages/muster/kopfzeile.page').then((m) => m.KopfzeilePage),
+  },
   // Not in the demo navigation: the page carries an old stylesheet on purpose
   // and is exempt from the style rules the generic suites check on every route.
   {

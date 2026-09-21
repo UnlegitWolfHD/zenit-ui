@@ -351,3 +351,14 @@
 .demo-legacy-seite {
   padding: var(--space-5);
 }
+
+/* Page "Kopfzeile": a header spans the window, so the measuring page undoes
+   the inline padding of .z-container around it. */
+.demo-randlos {
+  margin-inline: calc(var(--space-4) * -1);
+}
+@media (min-width: 640px) {
+  .demo-randlos {
+    margin-inline: calc(var(--space-5) * -1);
+  }
+}
