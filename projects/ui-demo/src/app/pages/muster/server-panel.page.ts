@@ -1,6 +1,8 @@
 import { CdkMenuTrigger } from '@angular/cdk/menu';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { form, FormField, max, min } from '@angular/forms/signals';
 import { RouterLink } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
 import {
   Z_MENU,
   ZAlert,
@@ -74,6 +76,7 @@ const STATUS: Record<string, { wort: string; badge: ZBadgeStatus }> = {
   selector: 'demo-muster-server-panel-page',
   imports: [
     CdkMenuTrigger,
+    FormField,
     RouterLink,
     Z_MENU,
     ZAlert,
@@ -118,11 +121,9 @@ const STATUS: Record<string, { wort: string; badge: ZBadgeStatus }> = {
         <span class="title-sm">Demo-Steuerung</span>
         <span class="z-muted" id="muster-status-label">Serverstatus</span>
         <z-select size="sm">
-          <select aria-labelledby="muster-status-label" (change)="setzeStatus($event)">
+          <select aria-labelledby="muster-status-label" [formField]="statusFeld">
             @for (eintrag of statusListe; track eintrag.wert) {
-              <option [value]="eintrag.wert" [selected]="eintrag.wert === status()">
-                {{ eintrag.wort }}
-              </option>
+              <option [value]="eintrag.wert">{{ eintrag.wort }}</option>
             }
           </select>
         </z-select>
@@ -329,7 +330,10 @@ const STATUS: Record<string, { wort: string; badge: ZBadgeStatus }> = {
                       description="Greift sofort."
                       titleId="muster-firetick"
                     >
-                      <z-toggle [(checked)]="feuer" ariaLabelledby="muster-firetick" />
+                      <z-toggle
+                        [formField]="eigenschaften.feuer"
+                        ariaLabelledby="muster-firetick"
+                      />
                     </z-setting>
                     <z-setting
                       title="Inventar bleibt beim Tod"
@@ -337,7 +341,7 @@ const STATUS: Record<string, { wort: string; badge: ZBadgeStatus }> = {
                       description="Greift sofort."
                       titleId="muster-keep"
                     >
-                      <z-toggle [(checked)]="inventar" ariaLabelledby="muster-keep" />
+                      <z-toggle [formField]="eigenschaften.inventar" ariaLabelledby="muster-keep" />
                     </z-setting>
                   </z-panel>
                 }
@@ -359,7 +363,7 @@ const STATUS: Record<string, { wort: string; badge: ZBadgeStatus }> = {
                       description="Spieler können sich gegenseitig angreifen."
                       titleId="muster-pvp"
                     >
-                      <z-toggle [(checked)]="pvp" ariaLabelledby="muster-pvp" />
+                      <z-toggle [formField]="eigenschaften.pvp" ariaLabelledby="muster-pvp" />
                     </z-setting>
                     <z-setting
                       title="Schwierigkeit"
@@ -368,7 +372,10 @@ const STATUS: Record<string, { wort: string; badge: ZBadgeStatus }> = {
                       titleId="muster-difficulty"
                     >
                       <z-select size="sm">
-                        <select aria-labelledby="muster-difficulty">
+                        <select
+                          aria-labelledby="muster-difficulty"
+                          [formField]="eigenschaften.schwierigkeit"
+                        >
                           @for (stufe of schwierigkeiten; track stufe) {
                             <option>{{ stufe }}</option>
                           }
@@ -389,10 +396,8 @@ const STATUS: Record<string, { wort: string; badge: ZBadgeStatus }> = {
                         mono
                         class="demo-narrow"
                         type="number"
-                        min="1"
-                        max="20"
-                        value="20"
                         aria-labelledby="muster-maxplayers"
+                        [formField]="eigenschaften.maxSpieler"
                       />
                     </z-setting>
                     <z-setting
@@ -401,7 +406,10 @@ const STATUS: Record<string, { wort: string; badge: ZBadgeStatus }> = {
                       description="Nur eingetragene Namen dürfen verbinden."
                       titleId="muster-whitelist"
                     >
-                      <z-toggle [(checked)]="whitelist" ariaLabelledby="muster-whitelist" />
+                      <z-toggle
+                        [formField]="eigenschaften.whitelist"
+                        ariaLabelledby="muster-whitelist"
+                      />
                     </z-setting>
                   </z-panel>
                 }
@@ -506,19 +514,35 @@ export class MusterServerPanelPage {
   protected readonly aktiverTab = signal('Eigenschaften');
   protected readonly zeilen = signal<ZConsoleLine[]>([...LOGZEILEN]);
 
-  protected readonly pvp = signal(true);
-  protected readonly whitelist = signal(false);
-  protected readonly feuer = signal(true);
-  protected readonly inventar = signal(false);
+  /**
+   * The demo switch is a form of one field: the select writes `status`, and the
+   * buttons of the page write the same signal.
+   */
+  protected readonly statusFeld = form(this.status);
+
+  /**
+   * The settings of the tabs "Eigenschaften" and "Gamerules" as one Signal
+   * Form. The model survives a tab change, which the DOM of a tab does not.
+   * `min` and `max` of the number field come from the schema: `[formField]`
+   * writes them onto the input and marks `zInput` as invalid outside of them.
+   */
+  protected readonly eigenschaftenWerte = signal({
+    pvp: true,
+    schwierigkeit: 'Friedlich',
+    maxSpieler: 20,
+    whitelist: false,
+    feuer: true,
+    inventar: false,
+  });
+  protected readonly eigenschaften = form(this.eigenschaftenWerte, (pfad) => {
+    min(pfad.maxSpieler, 1);
+    max(pfad.maxSpieler, 20);
+  });
 
   protected readonly aktuell = computed(() => STATUS[this.status()] ?? STATUS['online']);
 
   /** Seconds since midnight, continuing from the last line of the preview. */
   private uhr = 12 * 3600 + 7 * 60 + 15;
-
-  protected setzeStatus(ereignis: Event): void {
-    this.status.set((ereignis.target as HTMLSelectElement).value);
-  }
 
   protected waehleTab(tab: string, ereignis: Event): void {
     ereignis.preventDefault();
@@ -550,22 +574,20 @@ export class MusterServerPanelPage {
     this.toast.success('Guthaben aufgeladen, Beispiel-Server 1 ist wieder freigegeben');
   }
 
-  protected hartBeenden(): void {
-    this.dialog
-      .confirm({
+  protected async hartBeenden(): Promise<void> {
+    const ja = await firstValueFrom(
+      this.dialog.confirm({
         title: 'Beispiel-Server 1 hart beenden?',
         body: 'Der Prozess wird sofort gestoppt. Nicht gespeicherte Daten der Welt gehen verloren.',
         confirmLabel: 'Hart beenden',
         cancelLabel: 'Abbrechen',
         danger: true,
-      })
-      .subscribe((ja) => {
-        if (!ja) {
-          return;
-        }
-        this.status.set('gestoppt');
-        this.toast.success('Beispiel-Server 1 wurde hart beendet');
-      });
+      }),
+    );
+    if (ja) {
+      this.status.set('gestoppt');
+      this.toast.success('Beispiel-Server 1 wurde hart beendet');
+    }
   }
 
   /** Only the browser clipboard, no service and no network. */

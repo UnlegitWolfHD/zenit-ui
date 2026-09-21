@@ -1,6 +1,8 @@
 import { DialogRef } from '@angular/cdk/dialog';
 import { CdkMenuTrigger } from '@angular/cdk/menu';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { form, FormField } from '@angular/forms/signals';
+import { firstValueFrom } from 'rxjs';
 import {
   Z_MENU,
   ZButton,
@@ -13,18 +15,26 @@ import {
   ZPanel,
 } from 'zenit-ui';
 
-/** Custom dialog through ZDialog.open(): a short form with one field. */
+/**
+ * Custom dialog through ZDialog.open(): a short form with one field, held by a
+ * Signal Form instead of a template reference.
+ */
 @Component({
   selector: 'demo-notiz-dialog',
-  imports: [ZButton, ZDialogActions, ZDialogLayout, ZField, ZInput],
+  imports: [FormField, ZButton, ZDialogActions, ZDialogLayout, ZField, ZInput],
   template: `
     <z-dialog title="Notiz zu Beispiel-Server 1">
       <z-field label="Notiz" for="demo-notiz" hint="Nur für dich sichtbar.">
-        <input zInput id="demo-notiz" #notiz placeholder="Was hast du zuletzt geändert?" />
+        <input
+          zInput
+          id="demo-notiz"
+          placeholder="Was hast du zuletzt geändert?"
+          [formField]="notiz"
+        />
       </z-field>
       <ng-container zDialogActions>
         <button zBtn="ghost" (click)="ref.close()">Abbrechen</button>
-        <button zBtn="primary" (click)="ref.close(notiz.value)">Notiz speichern</button>
+        <button zBtn="primary" (click)="ref.close(notiz().value())">Notiz speichern</button>
       </ng-container>
     </z-dialog>
   `,
@@ -32,6 +42,7 @@ import {
 })
 export class NotizDialog {
   protected readonly ref = inject<DialogRef<string>>(DialogRef);
+  protected readonly notiz = form(signal(''));
 }
 
 /**
@@ -191,9 +202,14 @@ export class OverlaysPage {
   protected readonly notizErgebnis = signal('');
   protected readonly menuErgebnis = signal('');
 
-  protected serverLoeschen(): void {
-    this.dialog
-      .confirm({
+  /*
+   * The dialog APIs answer with an Observable that emits exactly once (the API
+   * table prescribes `Observable<boolean>`, `closed` comes from the CDK). One
+   * value is a promise, so the page awaits it and holds no subscription.
+   */
+  protected async serverLoeschen(): Promise<void> {
+    const ja = await firstValueFrom(
+      this.dialog.confirm({
         title: 'Server "Test" löschen?',
         body:
           'Welt, Konfiguration und alle 3 Backups werden sofort gelöscht. Das lässt sich nicht ' +
@@ -203,34 +219,29 @@ export class OverlaysPage {
         danger: true,
         requireText: 'Test',
         requireLabel: 'Gib zur Bestätigung den Servernamen ein',
-      })
-      .subscribe((ja) =>
-        this.loeschErgebnis.set(`Server löschen: ${ja ? 'Bestätigt' : 'Abgebrochen'}`),
-      );
+      }),
+    );
+    this.loeschErgebnis.set(`Server löschen: ${ja ? 'Bestätigt' : 'Abgebrochen'}`);
   }
 
-  protected hartBeenden(): void {
-    this.dialog
-      .confirm({
+  protected async hartBeenden(): Promise<void> {
+    const ja = await firstValueFrom(
+      this.dialog.confirm({
         title: 'Beispiel-Server 1 hart beenden?',
         body: 'Der Prozess wird sofort gestoppt. Nicht gespeicherte Daten der Welt gehen verloren.',
         confirmLabel: 'Hart beenden',
         cancelLabel: 'Abbrechen',
         danger: true,
-      })
-      .subscribe((ja) =>
-        this.beendenErgebnis.set(`Hart beenden: ${ja ? 'Bestätigt' : 'Abgebrochen'}`),
-      );
+      }),
+    );
+    this.beendenErgebnis.set(`Hart beenden: ${ja ? 'Bestätigt' : 'Abgebrochen'}`);
   }
 
-  protected notizBearbeiten(): void {
-    this.dialog
-      .open<string, unknown, NotizDialog>(NotizDialog)
-      .closed.subscribe((notiz) =>
-        this.notizErgebnis.set(
-          notiz ? `Notiz gespeichert: ${notiz}` : 'Notiz bearbeiten: Abgebrochen',
-        ),
-      );
+  protected async notizBearbeiten(): Promise<void> {
+    const notiz = await firstValueFrom(
+      this.dialog.open<string, unknown, NotizDialog>(NotizDialog).closed,
+    );
+    this.notizErgebnis.set(notiz ? `Notiz gespeichert: ${notiz}` : 'Notiz bearbeiten: Abgebrochen');
   }
 
   protected gewaehlt(eintrag: string): void {
