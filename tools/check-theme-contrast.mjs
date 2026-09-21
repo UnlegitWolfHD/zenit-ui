@@ -227,6 +227,11 @@ const PAARE = [
   // object, so 3:1 (WCAG 1.4.11), not text.
   ['--on-mc', '--success', 3],
   ['--on-mc', '--mc-accent', 4.5],
+  // .z-theme-mc .z-option:has(input:checked): the chosen option card takes its
+  // border and its 1px inner outline from mc-accent, on the raised fill of a
+  // chosen card. A border is a graphical object, so 3:1 (WCAG 1.4.11).
+  ['--mc-accent', '--surface-raised', 3],
+  ['--mc-accent', '--surface', 3],
   ['--on-mc', '--mc-accent-hover', 4.5],
   ['--focus', '--bg', 3],
   ['--focus', '--surface', 3],
