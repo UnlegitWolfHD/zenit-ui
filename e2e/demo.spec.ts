@@ -321,8 +321,29 @@ for (const route of ROUTEN) {
           if (rect.height >= 39.5) continue;
           // Inline-Link im Fließtext: Höhe ist die Zeilenhöhe, kein Klickziel.
           if (el.nodeName === 'A' && st.display === 'inline') continue;
+          // Die Box ist nicht immer die Trefferflaeche: ein absolut gesetztes
+          // ::before vergroessert sie, ohne die Box zu aendern (z-toggle).
+          // Gemessen wird deshalb, wie hoch der Streifen ist, der den Klick
+          // wirklich auf das Ziel leitet.
+          ziel.scrollIntoView({ block: 'center' });
+          const sicht = ziel.getBoundingClientRect();
+          const x = Math.round(sicht.left + sicht.width / 2);
+          const mitte = Math.round(sicht.top + sicht.height / 2);
+          const trifft = (y: number) => {
+            const getroffen = document.elementFromPoint(x, y);
+            return !!getroffen && (getroffen === ziel || ziel.contains(getroffen));
+          };
+          let hoehe = sicht.height;
+          if (trifft(mitte)) {
+            let oben = mitte;
+            let unten = mitte;
+            while (mitte - oben < 40 && trifft(oben - 1)) oben--;
+            while (unten - mitte < 40 && trifft(unten + 1)) unten++;
+            hoehe = Math.max(hoehe, unten - oben + 1);
+          }
+          if (hoehe >= 39.5) continue;
           funde.push(
-            `${beschreibung(el)}: ${Math.round(rect.height * 10) / 10}px hoch` +
+            `${beschreibung(el)}: ${Math.round(hoehe * 10) / 10}px hoch` +
               (ziel === el ? '' : ` (gemessen am ${beschreibung(ziel)})`),
           );
         }
