@@ -3,6 +3,7 @@ import {
   Component,
   computed,
   effect,
+  inject,
   input,
   model,
   numberAttribute,
@@ -10,6 +11,7 @@ import {
 } from '@angular/core';
 import { ZButton } from '../button';
 import { ZIcon } from '../icon';
+import { Z_LABELS } from '../labels';
 
 /**
  * Pages through lists with more than {@link pageSize} entries and sits as the
@@ -39,14 +41,14 @@ import { ZIcon } from '../icon';
   template: `
     @if (sichtbar()) {
       <div class="z-pager">
-        <span>{{ rangeLabel()(von(), bis(), total(), itemLabel()) }}</span>
+        <span>{{ bereich()(von(), bis(), total(), itemLabel()) }}</span>
         <div class="z-pager__nav">
           <button
             type="button"
             zBtn="ghost"
             iconOnly
             size="sm"
-            [attr.aria-label]="ariaLabelPrev()"
+            [attr.aria-label]="zurueckText()"
             [disabled]="seite() <= 1"
             (click)="zuSeite(seite() - 1)"
           >
@@ -58,7 +60,7 @@ import { ZIcon } from '../icon';
             zBtn="ghost"
             iconOnly
             size="sm"
-            [attr.aria-label]="ariaLabelNext()"
+            [attr.aria-label]="weiterText()"
             [disabled]="seite() >= seiten()"
             (click)="zuSeite(seite() + 1)"
           >
@@ -105,29 +107,40 @@ export class ZPagination {
 
   /**
    * Builds the sentence in front of the buttons from the first and last entry
-   * number of the current page, the total and {@link itemLabel}. German default
-   * ("1 bis 25 von 112 Rechnungen"), overridable so the wording comes from the
-   * caller.
+   * number of the current page, the total and {@link itemLabel}. Unset, the
+   * component uses {@link ZLabels.paginationRange} from the label registry
+   * ("1 bis 25 von 112 Rechnungen" in German).
    *
-   * @default (von, bis, total, label) => `${von} bis ${bis} von ${total} ${label}`
+   * @default undefined
    */
-  readonly rangeLabel = input<
-    (von: number, bis: number, total: number, itemLabel: string) => string
-  >((von, bis, total, label) => `${von} bis ${bis} von ${total} ${label}`);
+  readonly rangeLabel =
+    input<(von: number, bis: number, total: number, itemLabel: string) => string>();
 
   /**
-   * `aria-label` of the back button. German default, overridable.
+   * `aria-label` of the back button. Unset, the component uses
+   * {@link ZLabels.paginationPrev} from the label registry.
    *
-   * @default 'Vorherige Seite'
+   * @default undefined
    */
-  readonly ariaLabelPrev = input('Vorherige Seite');
+  readonly ariaLabelPrev = input<string>();
 
   /**
-   * `aria-label` of the forward button. German default, overridable.
+   * `aria-label` of the forward button. Unset, the component uses
+   * {@link ZLabels.paginationNext} from the label registry.
    *
-   * @default 'Nächste Seite'
+   * @default undefined
    */
-  readonly ariaLabelNext = input('Nächste Seite');
+  readonly ariaLabelNext = input<string>();
+
+  private readonly labels = inject(Z_LABELS);
+
+  protected readonly bereich = computed(() => this.rangeLabel() ?? this.labels.paginationRange);
+  protected readonly zurueckText = computed(
+    () => this.ariaLabelPrev() ?? this.labels.paginationPrev,
+  );
+  protected readonly weiterText = computed(
+    () => this.ariaLabelNext() ?? this.labels.paginationNext,
+  );
 
   protected readonly seiten = computed(() =>
     Math.max(1, Math.ceil(this.total() / Math.max(1, this.pageSize()))),

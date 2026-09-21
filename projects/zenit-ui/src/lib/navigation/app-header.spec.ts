@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { Z_LABELS, Z_LABELS_EN } from '../labels';
 import { ZAppHeader, ZBrand, ZHeaderEnd, ZHeaderLink } from './app-header';
 
 @Component({
@@ -23,6 +24,14 @@ class HeaderHost {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 class EigenesMenuHost {}
+
+@Component({
+  imports: [ZAppHeader],
+  template: `<z-app-header /><z-app-header menuLabel="Bereiche zeigen" />`,
+  providers: [{ provide: Z_LABELS, useValue: Z_LABELS_EN }],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class RegistryHost {}
 
 @Component({
   imports: [ZAppHeader],
@@ -109,6 +118,17 @@ describe('ZAppHeader', () => {
     fixture.detectChanges();
 
     expect(menueKnopf(fixture).getAttribute('aria-label')).toBe('Menü');
+  });
+
+  it('takes the menu label from the registry, and an own menuLabel still wins', () => {
+    const fixture = TestBed.createComponent(RegistryHost);
+    fixture.detectChanges();
+    const [ausRegistry, mitEingabe] = Array.from<HTMLElement>(
+      fixture.nativeElement.querySelectorAll('button.z-header__menu'),
+    );
+
+    expect(ausRegistry.getAttribute('aria-label')).toBe('Menu');
+    expect(mitEingabe.getAttribute('aria-label')).toBe('Bereiche zeigen');
   });
 
   it('takes an own menuLabel', () => {

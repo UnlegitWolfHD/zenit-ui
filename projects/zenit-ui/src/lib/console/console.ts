@@ -3,13 +3,16 @@ import {
   booleanAttribute,
   ChangeDetectionStrategy,
   Component,
+  computed,
   ElementRef,
+  inject,
   input,
   output,
   signal,
   viewChild,
 } from '@angular/core';
 import { ZButton } from '../button';
+import { Z_LABELS } from '../labels';
 
 /**
  * Severity of a log line. `warn` is coloured `warning`, `error` is `danger`,
@@ -66,7 +69,7 @@ export interface ZConsoleLine {
       #log
       class="z-console__log"
       tabindex="0"
-      [attr.aria-label]="logLabel()"
+      [attr.aria-label]="logText()"
       (scroll)="aufScroll()"
     >@for (zeile of lines(); track $index; let letzte = $last) {<span
         [class.z-log--warn]="zeile.level === 'warn'"
@@ -77,7 +80,7 @@ export interface ZConsoleLine {
     @if (!amEnde()) {
       <div class="z-console__end">
         <button type="button" zBtn="secondary" size="sm" (click)="zumEnde()">
-          {{ endLabel() }}
+          {{ endeText() }}
         </button>
       </div>
     }
@@ -85,7 +88,7 @@ export interface ZConsoleLine {
       ><span aria-hidden="true">&gt;</span
       ><input
         #feld
-        [attr.aria-label]="inputLabel()"
+        [attr.aria-label]="feldText()"
         [placeholder]="placeholder()"
         [disabled]="disabled()"
         (keydown.enter)="senden()"
@@ -121,26 +124,34 @@ export class ZConsole {
   readonly placeholder = input('');
 
   /**
-   * `aria-label` of the log region. German default, overridable.
+   * `aria-label` of the log region. Unset, the component uses
+   * {@link ZLabels.consoleLog} from the label registry.
    *
-   * @default 'Serverlog'
+   * @default undefined
    */
-  readonly logLabel = input('Serverlog');
+  readonly logLabel = input<string>();
 
   /**
-   * `aria-label` of the input. German default, overridable.
+   * `aria-label` of the input. Unset, the component uses
+   * {@link ZLabels.consoleInput} from the label registry.
    *
-   * @default 'Befehl'
+   * @default undefined
    */
-  readonly inputLabel = input('Befehl');
+  readonly inputLabel = input<string>();
 
   /**
-   * Caption of the button that jumps back to the end of the log. German
-   * default, overridable.
+   * Caption of the button that jumps back to the end of the log. Unset, the
+   * component uses {@link ZLabels.consoleJumpToEnd} from the label registry.
    *
-   * @default 'Zum Ende'
+   * @default undefined
    */
-  readonly endLabel = input('Zum Ende');
+  readonly endLabel = input<string>();
+
+  private readonly labels = inject(Z_LABELS);
+
+  protected readonly logText = computed(() => this.logLabel() ?? this.labels.consoleLog);
+  protected readonly feldText = computed(() => this.inputLabel() ?? this.labels.consoleInput);
+  protected readonly endeText = computed(() => this.endLabel() ?? this.labels.consoleJumpToEnd);
 
   /**
    * Emits the entered command on Enter, trimmed and never empty. The input is

@@ -2,12 +2,15 @@ import {
   booleanAttribute,
   ChangeDetectionStrategy,
   Component,
+  computed,
   Directive,
+  inject,
   input,
   signal,
 } from '@angular/core';
 import { ZButton } from '../button';
 import { ZIcon } from '../icon';
+import { Z_LABELS } from '../labels';
 
 /** Counts up once per header so that `aria-controls` stays unique. */
 let laufendeNummer = 0;
@@ -107,7 +110,7 @@ export class ZHeaderEnd {}
       iconOnly
       type="button"
       class="z-header__menu"
-      [attr.aria-label]="menuLabel()"
+      [attr.aria-label]="menuText()"
       [attr.aria-expanded]="offen()"
       [attr.aria-controls]="navId"
       (click)="offen.set(!offen())"
@@ -135,13 +138,16 @@ export class ZAppHeader {
   readonly navLabel = input('');
 
   /**
-   * `aria-label` of the menu button shown below 900px. German default, meant to
-   * be overridden by the caller.
+   * `aria-label` of the menu button shown below 900px. Unset, the component
+   * uses {@link ZLabels.headerMenu} from the label registry.
    *
-   * @default 'Menü'
+   * @default undefined
    */
-  readonly menuLabel = input('Menü');
+  readonly menuLabel = input<string>();
 
+  private readonly labels = inject(Z_LABELS);
+
+  protected readonly menuText = computed(() => this.menuLabel() ?? this.labels.headerMenu);
   protected readonly offen = signal(false);
   protected readonly navId = `z-header-nav-${++laufendeNummer}`;
 }

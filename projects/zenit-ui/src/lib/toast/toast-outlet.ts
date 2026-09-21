@@ -1,6 +1,7 @@
-import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { ZButton } from '../button';
 import { ZIcon } from '../icon';
+import { Z_LABELS } from '../labels';
 import { ZToast, ZToastItem } from './toast';
 
 /**
@@ -49,7 +50,7 @@ import { ZToast, ZToastItem } from './toast';
           iconOnly
           type="button"
           class="z-toast__close"
-          [attr.aria-label]="closeLabel()"
+          [attr.aria-label]="schliessenText()"
           (click)="dienst.dismiss(toast.id)"
         >
           <z-icon name="close" size="sm" />
@@ -62,12 +63,16 @@ import { ZToast, ZToastItem } from './toast';
 })
 export class ZToastOutlet {
   /**
-   * `aria-label` of the close button on every toast. Overridable default.
+   * `aria-label` of the close button on every toast. Unset, the component uses
+   * {@link ZLabels.toastClose} from the label registry.
    *
-   * @default 'Schließen'
+   * @default undefined
    */
-  readonly closeLabel = input('Schließen');
+  readonly closeLabel = input<string>();
 
+  private readonly labels = inject(Z_LABELS);
+
+  protected readonly schliessenText = computed(() => this.closeLabel() ?? this.labels.toastClose);
   protected readonly dienst = inject(ZToast);
   protected readonly toasts = this.dienst.toasts;
 
