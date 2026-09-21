@@ -15,6 +15,8 @@ import {
   Injector,
   input,
   model,
+  numberAttribute,
+  output,
   signal,
   TemplateRef,
   untracked,
@@ -26,6 +28,7 @@ import type { FormValueControl } from '@angular/forms/signals';
 import { ZField } from '../field';
 import { ZIcon } from '../icon';
 import { injectZLabels } from '../labels';
+import { ZSpinner } from '../spinner';
 
 /** One entry of a `z-combobox`. */
 export interface ZComboOption {
@@ -47,6 +50,15 @@ export interface ZComboOption {
 interface Eintrag extends Highlightable {
   readonly option: ZComboOption;
   readonly index: number;
+  /** True for the row that commits the typed text; see `allowCustom`. */
+  readonly eigen: boolean;
+  /**
+   * Tracking key of the row. An option's `value` is unique among options, but
+   * the own row carries the typed text as its value, and with ids as values
+   * typing an id would collide with the entry that has it. The own row
+   * therefore takes a prefix no value can have.
+   */
+  readonly schluessel: string;
 }
 
 /** A heading with the entries under it; an empty name means no heading. */
@@ -92,6 +104,19 @@ let zaehler = 0;
  * Signal Forms `FormValueControl<string>`, so `[formField]` works and feeds
  * {@link disabled} from the field state.
  *
+ * Three modes, all of them the same element:
+ *
+ * - **Local**, the default: the component filters {@link options} itself.
+ * - **On the server**: {@link filterLocally} `false` shows exactly the options
+ *   it is given, {@link queryChange} reports every keystroke, {@link loading}
+ *   draws the waiting row and {@link selectedLabel} names a chosen value whose
+ *   option is no longer in the list. {@link minQueryLength} holds the list back
+ *   until the query is long enough to be worth a request. A query shorter than
+ *   that is still reported, so the caller decides what to do with it.
+ * - **Free text**: {@link allowCustom} lets Enter, Tab, Shift+Tab and leaving
+ *   the field commit what was typed, so the value may be a string that is in
+ *   no option.
+ *
  * @example
  * ```html
  * <z-field label="Minecraft-Version" for="cb-version" hint="Tippen filtert die Liste.">
@@ -106,7 +131,7 @@ let zaehler = 0;
  */
 @Component({
   selector: 'z-combobox',
-  imports: [ZIcon],
+  imports: [ZIcon, ZSpinner],
   template: `
     <span class="z-combo">
       <input
@@ -147,54 +172,83 @@ let zaehler = 0;
         role="listbox"
         [attr.aria-label]="listenname()"
         [attr.aria-labelledby]="ariaLabelledby() || null"
+        [attr.aria-busy]="loading() ? 'true' : null"
         (mousedown)="$event.preventDefault()"
       >
-        @for (gruppe of gruppen(); track gruppe.name) {
-          <!-- A heading is a role="group" with its name. Without one the wrapper
-               is presentational, so the entries stay direct children of the listbox. -->
-          <div
-            [attr.role]="gruppe.name ? 'group' : 'presentation'"
-            [attr.aria-label]="gruppe.name || null"
-          >
-            @if (gruppe.name) {
-              <div class="z-listbox__group" role="presentation">{{ gruppe.name }}</div>
-            }
-            @for (eintrag of gruppe.eintraege; track eintrag.option.value) {
-              <!-- In the activedescendant pattern the option is deliberately not
-                   a tab stop and carries no key handler: the focus stays in the
-                   input, which owns the whole keyboard (ARIA APG, combobox). -->
-              <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
-              <div
-                class="z-listbox__option"
-                role="option"
-                [id]="listenId + '-' + eintrag.index"
-                [class.z-listbox__option--active]="eintrag.index === aktiverIndex()"
-                [attr.aria-selected]="eintrag.option.value === value()"
-                (click)="waehle(eintrag.option.value)"
-              >
-                <span class="z-mono">{{ eintrag.option.label }}</span>
-                @if (eintrag.option.value === value()) {
-                  <z-icon name="check" size="sm" />
-                } @else if (eintrag.option.note) {
-                  <small>{{ eintrag.option.note }}</small>
-                }
-              </div>
-            }
+        @if (zuKurz()) {
+          <!-- Below minQueryLength the list is held back and this row says why.
+               A locked option, like the empty row, so the listbox keeps a valid
+               child and there is nothing to take. -->
+          <div class="z-listbox__empty" role="option" aria-selected="false" aria-disabled="true">
+            {{ etiketten.comboboxMinQuery(minQueryLength()) }}
           </div>
-        }
-        @if (!treffer().length) {
-          <!-- One row instead of an empty panel. It is an option so the listbox
-               keeps a valid child, and a locked one because there is nothing to
-               take. -->
-          <div
-            class="z-listbox__empty"
-            role="option"
-            aria-selected="false"
-            aria-disabled="true"
-            [id]="listenId + '-0'"
-          >
-            {{ emptyText() || etiketten.comboboxEmpty }}
-          </div>
+        } @else {
+          @for (gruppe of gruppen(); track gruppe.name) {
+            <!-- A heading is a role="group" with its name. Without one the wrapper
+                 is presentational, so the entries stay direct children of the listbox. -->
+            <div
+              [attr.role]="gruppe.name ? 'group' : 'presentation'"
+              [attr.aria-label]="gruppe.name || null"
+            >
+              @if (gruppe.name) {
+                <div class="z-listbox__group" role="presentation">{{ gruppe.name }}</div>
+              }
+              @for (eintrag of gruppe.eintraege; track eintrag.schluessel) {
+                <!-- In the activedescendant pattern the option is deliberately not
+                     a tab stop and carries no key handler: the focus stays in the
+                     input, which owns the whole keyboard (ARIA APG, combobox). -->
+                <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
+                <div
+                  class="z-listbox__option"
+                  role="option"
+                  [id]="listenId + '-' + eintrag.index"
+                  [class.z-listbox__option--active]="eintrag.index === aktiverIndex()"
+                  [attr.aria-selected]="eintrag.option.value === value()"
+                  (click)="waehle(eintrag.option.value)"
+                >
+                  @if (eintrag.eigen) {
+                    <!-- Prose, not a value, so it carries no mono face. -->
+                    <span>{{ etiketten.comboboxUseCustom(eintrag.option.label) }}</span>
+                  } @else {
+                    <span class="z-mono">{{ eintrag.option.label }}</span>
+                    @if (eintrag.option.value === value()) {
+                      <z-icon name="check" size="sm" />
+                    } @else if (eintrag.option.note) {
+                      <small>{{ eintrag.option.note }}</small>
+                    }
+                  }
+                </div>
+              }
+            </div>
+          }
+          @if (loading()) {
+            <!-- While the caller is searching, the stale options stay above this
+                 row: replacing them with a single line and putting them back a
+                 moment later is a flicker under the hand that is typing. There
+                 is no empty row here, because nothing is known yet. -->
+            <div
+              class="z-listbox__empty z-listbox__loading"
+              role="option"
+              aria-selected="false"
+              aria-disabled="true"
+            >
+              <z-spinner />
+              <span>{{ etiketten.comboboxLoading }}</span>
+            </div>
+          } @else if (!eintraege().length) {
+            <!-- One row instead of an empty panel. It is an option so the listbox
+                 keeps a valid child, and a locked one because there is nothing to
+                 take. -->
+            <div
+              class="z-listbox__empty"
+              role="option"
+              aria-selected="false"
+              aria-disabled="true"
+              [id]="listenId + '-0'"
+            >
+              {{ emptyText() || etiketten.comboboxEmpty }}
+            </div>
+          }
         }
       </div>
     </ng-template>
@@ -270,6 +324,76 @@ export class ZCombobox implements ControlValueAccessor, FormValueControl<string>
    */
   readonly disabled = input(false, { transform: booleanAttribute });
 
+  /**
+   * Whether the component filters {@link options} itself. `false` hands the
+   * filtering to the caller: the panel shows exactly the options it is given,
+   * which is what a search on the server needs. {@link queryChange} is what
+   * feeds that search. Boolean attribute.
+   *
+   * @default true
+   */
+  readonly filterLocally = input(true, { transform: booleanAttribute });
+
+  /**
+   * Whether the caller is fetching options right now. While the panel is open
+   * it draws one waiting row and sets `aria-busy` on the listbox; options that
+   * are already there stay above that row, so a running search does not blank
+   * the list under the hand that is typing. No empty row while this is set.
+   * Boolean attribute.
+   *
+   * @default false
+   */
+  readonly loading = input(false, { transform: booleanAttribute });
+
+  /**
+   * Whether text that matches no entry may become the value. Enter without an
+   * active row, Tab, Shift+Tab and leaving the field with the pointer all
+   * commit the typed text, trimmed, and a row at the top of the panel offers
+   * the same thing with the pointer and the arrow keys. Text that is only
+   * space commits nothing: it trims to the empty string, so the panel holds
+   * the whole list and Enter takes the active row, exactly as it does without
+   * this input. Escape is the one key that gives the text up.
+   *
+   * A value committed this way is its own label until the caller changes
+   * {@link selectedLabel} or the value, so a `selectedLabel` still naming the
+   * entry chosen before it does not resurface.
+   *
+   * @default false
+   */
+  readonly allowCustom = input(false, { transform: booleanAttribute });
+
+  /**
+   * Least number of characters before the panel shows entries at all. Below
+   * it a single row says so instead, and {@link queryChange} still fires, so
+   * the caller decides whether a shorter query is worth a request.
+   *
+   * @default 0
+   */
+  readonly minQueryLength = input(0, { transform: numberAttribute });
+
+  /**
+   * What the field shows for the current {@link value} while no entry of
+   * {@link options} carries it. A search on the server holds the matches of
+   * the last query, not the entry that was chosen three queries ago, and the
+   * caller knows the label that belongs to the id it stores. An entry that is
+   * in the list still wins over this.
+   *
+   * @default ''
+   */
+  readonly selectedLabel = input('');
+
+  /**
+   * The text the visitor typed, on every change of it, and the empty string
+   * once the field is cleared. It does not fire when the component writes the
+   * label of the value back into the field, and not on a write to
+   * {@link value}, so it never answers itself.
+   *
+   * There is no debounce in here: the timing belongs to whoever runs the
+   * search. `docs/components/combobox.md` has a `resource()` recipe and an
+   * RxJS one.
+   */
+  readonly queryChange = output<string>();
+
   protected readonly etiketten = injectZLabels();
   protected readonly listenId = `z-listbox-${++zaehler}`;
   protected readonly offen = signal(false);
@@ -281,6 +405,12 @@ export class ZCombobox implements ControlValueAccessor, FormValueControl<string>
   private readonly suche = signal<string | null>(null);
 
   protected readonly aktiverIndex = signal(-1);
+
+  /**
+   * `value` of the active row, so it can be found again after the list was
+   * replaced under the open panel. The index alone would move with the list.
+   */
+  private readonly aktiverWert = signal('');
 
   private readonly formsGesperrt = signal(false);
   protected readonly gesperrt = computed(() => this.disabled() || this.formsGesperrt());
@@ -300,18 +430,107 @@ export class ZCombobox implements ControlValueAccessor, FormValueControl<string>
   private melde?: (wert: string) => void;
   private aufBeruehrt?: () => void;
 
-  /** The label of the chosen value, or the empty string for an unknown value. */
-  private readonly gewaehltesLabel = computed(
-    () => this.options().find((o) => o.value === this.value())?.label ?? '',
-  );
+  /**
+   * A value the component itself took from the typed text, together with the
+   * {@link selectedLabel} that stood at that moment. Both have to still hold
+   * for the value to be its own label; see {@link gewaehltesLabel}.
+   */
+  private readonly eigenerBestand = signal<{ wert: string; etikett: string } | null>(null);
 
-  /** Case-insensitive over label and note; no filter shows every entry. */
+  /**
+   * The label of the chosen value, in this order: the entry that carries it,
+   * the free text the component itself just committed, the
+   * {@link selectedLabel} the caller supplied, and the value itself where
+   * {@link allowCustom} makes a value that is in no entry a legal one. The
+   * empty string for an unknown value in the plain case, which is what leaves
+   * the field empty.
+   *
+   * The free text comes before `selectedLabel` because that input still names
+   * the entry chosen before it, and showing the old name for a value the
+   * visitor just typed is the worse of the two. It gives way again as soon as
+   * the caller changes `selectedLabel` or the value.
+   */
+  private readonly gewaehltesLabel = computed(() => {
+    const wert = this.value();
+    const eintrag = this.options().find((o) => o.value === wert);
+    if (eintrag) {
+      return eintrag.label;
+    }
+    if (!wert) {
+      return '';
+    }
+    const eigen = this.eigenerBestand();
+    if (eigen && eigen.wert === wert && eigen.etikett === this.selectedLabel()) {
+      return wert;
+    }
+    return this.selectedLabel() || (this.allowCustom() ? wert : '');
+  });
+
+  /** The typed text, trimmed; the empty string while nothing has been typed. */
+  private readonly anfrage = computed(() => this.suche()?.trim() ?? '');
+
+  /** True while the typed text is shorter than {@link minQueryLength}. */
+  protected readonly zuKurz = computed(() => this.anfrage().length < this.minQueryLength());
+
+  /**
+   * Case-insensitive over label and note; no filter shows every entry. With
+   * {@link filterLocally} `false` the caller has filtered already, so the
+   * options are passed through as they are. Below {@link minQueryLength} there
+   * is nothing to show at all.
+   */
   protected readonly treffer = computed<readonly ZComboOption[]>(() => {
-    const suche = this.suche()?.trim().toLowerCase();
+    if (this.zuKurz()) {
+      return [];
+    }
+    const suche = this.filterLocally() ? this.anfrage().toLowerCase() : '';
     if (!suche) {
       return this.options();
     }
     return this.options().filter((o) => `${o.label} ${o.note ?? ''}`.toLowerCase().includes(suche));
+  });
+
+  /**
+   * The entry whose label **or** value is exactly the typed text, ignoring
+   * case and surrounding space. The value counts too because a list keyed by
+   * ids is searched by id as often as by name, and two ways to one row must
+   * not put two rows in the panel.
+   */
+  private readonly genauePassung = computed(() => {
+    const text = this.anfrage().toLowerCase();
+    if (!text) {
+      return null;
+    }
+    return (
+      this.treffer().find(
+        (o) => o.label.toLowerCase() === text || o.value.toLowerCase() === text,
+      ) ?? null
+    );
+  });
+
+  /**
+   * The value that committing the typed text would write, or the empty string
+   * where there is nothing to commit. Typing the exact label of an entry
+   * commits that entry's value, not the label, so the two ways to the same row
+   * do not end in two different values.
+   */
+  private readonly eigenerWert = computed(() => {
+    if (!this.allowCustom() || this.zuKurz() || !this.anfrage()) {
+      return '';
+    }
+    return this.genauePassung()?.value ?? this.anfrage();
+  });
+
+  /**
+   * The row that commits the typed text, or `null`. It stands only where the
+   * text is not already the label of an entry: a second way to a row that is
+   * right there would be a second value for the same thing.
+   */
+  private readonly eigeneOption = computed<ZComboOption | null>(() => {
+    const text = this.anfrage();
+    if (!this.allowCustom() || this.zuKurz() || !text || this.genauePassung()) {
+      return null;
+    }
+    return { value: text, label: text };
   });
 
   /**
@@ -320,7 +539,13 @@ export class ZCombobox implements ControlValueAccessor, FormValueControl<string>
    * shows up twice and the tracking key of the list stays unique.
    */
   protected readonly gruppen = computed<Gruppe[]>(() => {
+    const eigene = this.eigeneOption();
     const nach = new Map<string, ZComboOption[]>();
+    // The own row goes first, and therefore into the group without a heading:
+    // it belongs to the text in the field, not to any of the headings.
+    if (eigene) {
+      nach.set('', [eigene]);
+    }
     for (const option of this.treffer()) {
       const name = option.group ?? '';
       const vorhanden = nach.get(name);
@@ -335,45 +560,74 @@ export class ZCombobox implements ControlValueAccessor, FormValueControl<string>
     let index = 0;
     return [...nach].map(([name, optionen]) => ({
       name,
-      eintraege: optionen.map((option) => this.zuEintrag(option, index++)),
+      eintraege: optionen.map((option) => this.zuEintrag(option, index++, option === eigene)),
     }));
   });
 
   /** Every row of every group, in the order they are drawn. */
-  private readonly eintraege = computed<Eintrag[]>(() =>
+  protected readonly eintraege = computed<Eintrag[]>(() =>
     this.gruppen().flatMap((gruppe) => gruppe.eintraege as Eintrag[]),
   );
 
-  private zuEintrag(option: ZComboOption, index: number): Eintrag {
+  private zuEintrag(option: ZComboOption, index: number, eigen: boolean): Eintrag {
     return {
       option,
       index,
+      eigen,
+      schluessel: eigen ? `\u0000eigen` : option.value,
       getLabel: () => option.label,
       // The active row is derived from aktiverIndex, so one signal carries the
-      // whole state and the counterpart has nothing left to undo.
-      setActiveStyles: () => this.aktiverIndex.set(index),
+      // whole state and the counterpart has nothing left to undo. The value
+      // travels along so the row can be found again in a replaced list.
+      setActiveStyles: () => {
+        this.aktiverIndex.set(index);
+        this.aktiverWert.set(option.value);
+      },
       setInactiveStyles: () => undefined,
     };
   }
 
   /**
    * What the live region says while the panel is open: how many entries the
-   * filter left, or the sentence of the empty row. Closed it says nothing, so
-   * nothing is announced twice.
+   * filter left, or the sentence of the row that stands instead of them.
+   * Closed it says nothing, so nothing is announced twice.
+   *
+   * The count is the matches and nothing else. The row of {@link allowCustom}
+   * is an action, not a hit, so it would turn one match into "2 Treffer"; it
+   * gets its own sentence where it stands alone, which is also what the panel
+   * shows then.
    */
   protected readonly ansage = computed(() => {
     if (!this.offen()) {
       return '';
     }
+    if (this.zuKurz()) {
+      return this.etiketten.comboboxMinQuery(this.minQueryLength());
+    }
+    if (this.loading()) {
+      return this.etiketten.comboboxLoading;
+    }
     const anzahl = this.treffer().length;
-    return anzahl
-      ? this.etiketten.comboboxResults(anzahl)
+    if (anzahl) {
+      return this.etiketten.comboboxResults(anzahl);
+    }
+    const eigene = this.eigeneOption();
+    return eigene
+      ? this.etiketten.comboboxUseCustom(eigene.label)
       : this.emptyText() || this.etiketten.comboboxEmpty;
   });
 
-  protected readonly aktiveId = computed(() =>
-    this.offen() && this.aktiverIndex() >= 0 ? `${this.listenId}-${this.aktiverIndex()}` : null,
-  );
+  /**
+   * The id of the active row. Bounded by the list itself, not only by the
+   * index: options can be replaced under an open panel, and a reference to a
+   * row that is gone is worse than none.
+   */
+  protected readonly aktiveId = computed(() => {
+    const index = this.aktiverIndex();
+    return this.offen() && index >= 0 && index < this.eintraege().length
+      ? `${this.listenId}-${index}`
+      : null;
+  });
 
   /** Names the panel after the field, so the listbox is not an unnamed region. */
   protected readonly listenname = computed(
@@ -393,6 +647,19 @@ export class ZCombobox implements ControlValueAccessor, FormValueControl<string>
       if (untracked(this.suche) === null) {
         this.text.set(label);
       }
+    });
+
+    // A search on the server replaces `options` while the panel stands open.
+    // The row the keyboard is on keeps its place when it is still in the list,
+    // otherwise the first one takes over; without this the active index would
+    // point into a list that has moved under it.
+    effect(() => {
+      const alle = this.eintraege();
+      if (!untracked(this.offen)) {
+        return;
+      }
+      const index = alle.findIndex((e) => e.option.value === untracked(this.aktiverWert));
+      this.aktiviere(index >= 0 ? index : 0);
     });
 
     const abbruch = new AbortController();
@@ -429,6 +696,7 @@ export class ZCombobox implements ControlValueAccessor, FormValueControl<string>
     this.overlayRef?.detach();
     this.offen.set(false);
     this.aktiverIndex.set(-1);
+    this.aktiverWert.set('');
     this.suche.set(null);
     this.text.set(this.gewaehltesLabel());
   }
@@ -508,6 +776,9 @@ export class ZCombobox implements ControlValueAccessor, FormValueControl<string>
     this.suche.set(text);
     this.oeffne();
     this.setzeAktiv();
+    // Only here, so the output carries what the visitor typed and never what
+    // the component wrote back into the field.
+    this.queryChange.emit(text);
   }
 
   protected aufTaste(ereignis: KeyboardEvent): void {
@@ -528,10 +799,20 @@ export class ZCombobox implements ControlValueAccessor, FormValueControl<string>
       if (this.offen() && gewaehlt) {
         ereignis.preventDefault();
         this.waehle(gewaehlt.option.value);
+      } else if (this.eigenerWert()) {
+        // No row under the keyboard, but text in the field and allowCustom:
+        // Enter takes that text instead of doing nothing.
+        ereignis.preventDefault();
+        this.waehle(this.eigenerWert());
       }
       return;
     }
     if (ereignis.key === 'Tab') {
+      // Tab and Shift+Tab are both ways of leaving the field (the key is `Tab`
+      // either way), so they commit what leaving commits. It has to happen
+      // here: the panel closes before the focus moves, and by the time the
+      // blur arrives the typed text is gone.
+      this.uebernimmEigenes();
       this.schliesse();
       return;
     }
@@ -546,28 +827,63 @@ export class ZCombobox implements ControlValueAccessor, FormValueControl<string>
   }
 
   protected waehle(wert: string): void {
+    this.uebernimm(wert);
+    this.feld().nativeElement.focus();
+  }
+
+  /**
+   * Writes a value, reports it to the form and closes the panel. Separate from
+   * {@link waehle} because leaving the field also commits, and pulling the
+   * focus back there would be the one thing a blur must not do.
+   */
+  private uebernimm(wert: string): void {
     this.suche.set(null);
     if (wert !== this.value()) {
       this.value.set(wert);
       this.melde?.(wert);
     }
+    // Free text is its own label from here on, which is what keeps a stale
+    // selectedLabel from naming the entry that was chosen before it.
+    this.eigenerBestand.set(
+      this.allowCustom() && wert && !this.options().some((o) => o.value === wert)
+        ? { wert, etikett: this.selectedLabel() }
+        : null,
+    );
     this.text.set(this.gewaehltesLabel());
     this.schliesse();
-    this.feld().nativeElement.focus();
   }
 
-  /** Leaving the field is the moment a text that matches nothing is undone. */
+  /**
+   * Leaving the field is the moment a text that matches nothing is undone —
+   * or, with {@link allowCustom}, the moment it becomes the value.
+   */
   protected aufVerlassen(): void {
+    this.uebernimmEigenes();
     this.schliesse();
     this.aufBeruehrt?.();
   }
 
+  /** Takes the typed text where {@link allowCustom} lets it become the value. */
+  private uebernimmEigenes(): void {
+    const wert = this.eigenerWert();
+    if (wert) {
+      this.uebernimm(wert);
+    }
+  }
+
   /** The chosen entry starts out active, otherwise the first one. */
   private setzeAktiv(): void {
+    const index = this.eintraege().findIndex((e) => e.option.value === this.value());
+    this.aktiviere(index >= 0 ? index : 0);
+  }
+
+  /** Makes one row active, or none at all where the list is empty. */
+  private aktiviere(index: number): void {
     const alle = this.eintraege();
-    const index = alle.findIndex((e) => e.option.value === this.value());
-    this.tasten.setActiveItem(index >= 0 ? index : 0);
-    this.aktiverIndex.set(alle.length ? Math.max(index, 0) : -1);
+    const ziel = alle.length ? Math.min(Math.max(index, 0), alle.length - 1) : -1;
+    this.tasten.setActiveItem(ziel);
+    this.aktiverIndex.set(ziel);
+    this.aktiverWert.set(ziel >= 0 ? alle[ziel].option.value : '');
   }
 
   private rolleZumAktiven(): void {
@@ -613,6 +929,7 @@ export class ZCombobox implements ControlValueAccessor, FormValueControl<string>
       if (this.offen()) {
         this.offen.set(false);
         this.aktiverIndex.set(-1);
+        this.aktiverWert.set('');
         this.suche.set(null);
         this.text.set(this.gewaehltesLabel());
       }

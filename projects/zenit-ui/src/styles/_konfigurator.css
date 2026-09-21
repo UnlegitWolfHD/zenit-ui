@@ -33,6 +33,18 @@
 .z-listbox__option[aria-selected="true"] { font-weight: 600; }
 .z-listbox__option small { font-size: 12px; font-weight: 400; color: var(--text-muted); }
 .z-listbox__empty { padding: var(--space-3); color: var(--text-muted); }
+/* Addition to the reference: the waiting row carries a spinner next to its
+   word. A modifier and not the base rule, so the empty row keeps wrapping the
+   way it always did.
+
+   Documented deviation from CLAUDE.md, "Bewegung": that rule puts a spinner in
+   a button and skeleton rows in a list. A listbox is not that kind of list.
+   Its children have to be options, and a skeleton row is a decorative
+   placeholder with no accessible name, so it would either be an option that
+   says nothing or a node that breaks role="listbox". One locked option with a
+   spinner and the word "Lädt" is the only shape that stays announceable, and
+   the row count is one, not the row count of an answer nobody knows yet. */
+.z-listbox__loading { display: flex; align-items: center; gap: var(--space-2); }
 
 /* Wizard */
 .z-wizard { display: grid; gap: var(--space-3); margin: 0; padding: 0; list-style: none; }
