@@ -1,5 +1,5 @@
 import {
-  afterRenderEffect,
+  AfterContentChecked,
   ChangeDetectionStrategy,
   Component,
   ElementRef,
@@ -18,26 +18,29 @@ import { ZField } from './field';
   },
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ZSelect {
+export class ZSelect implements AfterContentChecked {
   readonly size = input<'sm' | 'md'>('md');
 
   private readonly el = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly feld = inject(ZField, { optional: true });
 
-  constructor() {
-    // Das <select> ist projizierter Inhalt, ein Host-Binding kommt nicht an
-    // es heran. Deshalb wird aria-describedby nach dem Rendern gesetzt.
-    afterRenderEffect(() => {
-      const ziel = this.el.nativeElement.querySelector('select');
-      if (!ziel) {
-        return;
-      }
-      const id = this.feld?.beschreibung() ?? null;
-      if (id) {
-        ziel.setAttribute('aria-describedby', id);
-      } else {
-        ziel.removeAttribute('aria-describedby');
-      }
-    });
+  /**
+   * Das <select> ist projizierter Inhalt, ein Host-Binding kommt nicht an es
+   * heran. Content-Haken laufen in der Ansicht, die den Inhalt deklariert.
+   * Dieser Haken greift deshalb in beiden Faellen: wenn sich error oder hint
+   * aendern, und wenn das <select> erst spaeter hinter einem @if entsteht.
+   * Kein Signal-Tracking noetig, darum auch kein Wettlauf mit dem Waechter.
+   */
+  ngAfterContentChecked(): void {
+    const id = this.feld?.beschreibung() ?? null;
+    const ziel = this.el.nativeElement.querySelector('select');
+    if (!ziel) {
+      return;
+    }
+    if (id) {
+      ziel.setAttribute('aria-describedby', id);
+    } else {
+      ziel.removeAttribute('aria-describedby');
+    }
   }
 }
