@@ -88,6 +88,17 @@ Both files can be pulled in via `@import` just as well, if you use your own entr
 
 `zenit-ui.css` imports the partials `styles/_*.css`. They sit next to it in the package and need no entry of their own.
 
+Your own stylesheet is last on purpose: that is where the **page width** is set. `--container` defaults to 1120px and is the width of the application, not a fixed value of the design system. `.z-container` is the only rule that reads it, so one declaration moves header, content and footer of every page:
+
+```css
+/* src/styles.css */
+:root {
+  --container: 1440px;
+}
+```
+
+`:root`, not `html`: both blocks weigh (0,1,0) and the later one wins, while a bare `html` selector weighs (0,0,1) and would lose. Running text stays at `--measure` (65ch) whatever the page width is. Which blocks grow with `--container` and which keep a width of their own is in [`docs/layout.md`](../../docs/layout.md), and why it is a stylesheet declaration and not an option of `provideZenitTheme` is in [`docs/theming.md`](../../docs/theming.md).
+
 ### 2. Set `z-root`
 
 The class `z-root` belongs on `<html>` and on `<body>`. It sets background, text color, font, `font: inherit` for controls and the focus ring. Overlays attach to `body` and inherit the same variables. On `<html>` it sets no `font-size` and no `line-height` at all, so the rem base stays yours — your own `html { font-size: … }` wins at any specificity and in any include order — and its link rules no longer beat your own classes, so legacy styles keep working while you migrate page by page. **Both elements are required**: the page size comes from `body.z-root` alone, and a setup that sets the class on `<html>` only renders at 16px/normal instead of 14px/20px.

@@ -91,6 +91,24 @@ function warnen(text: string): void {
  * `zenit-ui/styles/zenit-ui.css`. Without it only the `dark` scheme exists and
  * `setScheme('light')` changes nothing visible.
  *
+ * **The page width is not an option here, and deliberately so.** It is the
+ * custom property `--container`, the only value `.z-container` reads, and an
+ * application sets it once in its own stylesheet, after `zenit-ui.css`:
+ * `:root { --container: 1440px; }`. Use `:root`, not `html`: `:root` is a
+ * pseudo-class and weighs as much as the block in
+ * `zenit-ui/styles/tokens.css`, so the later declaration wins, while a bare
+ * `html` selector weighs less and would lose wherever it stood. An option here
+ * would have to write an inline style, which can never arrive earlier than
+ * that stylesheet: unlike a colour scheme the width does not depend on a
+ * stored user choice, so there is no flash to prevent, on the server or in the
+ * browser, and `zenitThemeInitScript` takes no width either. Running text
+ * keeps `--measure` (65ch) however wide the page gets; a sidebar
+ * (`--sidebar`), the aside of a configurator and every overlay keep their own
+ * width as well. An application that changes the width while the page is open
+ * writes the inline style itself.
+ *
+ * @default --container 1120px, from `zenit-ui/styles/tokens.css`
+ *
  * @param config Deviations from the defaults; see {@link ZThemeConfig}.
  * @returns Providers for the application root (`bootstrapApplication`).
  *

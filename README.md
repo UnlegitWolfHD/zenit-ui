@@ -12,7 +12,8 @@ Angular workspace for the Zenit design system. It holds the library `zenit-ui` w
 | `e2e/` | Playwright: screenshots at 1440px and 375px, axe checks per demo page |
 | `spec/` | the design system as the specification: tokens, component READMEs, previews, guidelines |
 | `docs/pakete.md` | cut of the work packages, decisions and acceptance points |
-| `docs/theming.md` | colour schemes, accents, `provideZenitTheme`, the contrast gate |
+| `docs/theming.md` | colour schemes, accents, `provideZenitTheme`, the page width, the contrast gate |
+| `docs/layout.md` | the classes a page sets by hand, the page shell, what scales with `--container` |
 | `docs/labels.md` | the label registry and how to switch the library's own texts |
 | `docs/ng-add.md` | what `ng add zenit-ui` does, its options and its tests |
 | `docs/signals.md` | the signal conventions of this workspace, the audit table and its exceptions |
@@ -57,7 +58,8 @@ How to pull the library into an application is described in `projects/zenit-ui/R
 
 - `projects/zenit-ui/README.md` — using the library
 - `projects/beispiel-app/README.md` — the example page and how it consumes the package
-- `docs/theming.md` — colour schemes, accents, `provideZenitTheme`, the contrast gate
+- `docs/theming.md` — colour schemes, accents, `provideZenitTheme`, the page width, the contrast gate
+- `docs/layout.md` — layout classes, the page shell, `--container` as an application setting
 - `docs/labels.md` — the label registry, `provideZenitLabels`, `Z_LABELS_EN`
 - `docs/ng-add.md` — `ng add zenit-ui`: what it changes, options, tests
 - `docs/signals.md` — signals, `resource()`, `linkedSignal()`, and what is deliberately not a signal

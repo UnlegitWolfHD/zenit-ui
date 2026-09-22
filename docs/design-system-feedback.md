@@ -487,6 +487,21 @@ The result is almost certainly right, but "almost certainly" is the wrong standa
 
 ---
 
+## 23. The page width is written as a fixed value, but it is a per-application setting
+
+**Where:** `spec/tokens.json` / `spec/tokens.css` (`--container: 1120px`) and `CLAUDE.md`, "Abstand und Layout": "Inhalt ist höchstens `container` breit und linksbündig."
+
+**What is wrong:** both read as though 1120px were a property of the design system, on a par with `--space-5` or `--radius-md`. It is not. The first application to consume the artifact wants 1440px, and nothing in the specification says whether that is allowed, what it costs or what it breaks. A spacing step is a rhythm every screen shares; a page width is a decision about the product's screens, and two products on the same design system can legitimately disagree about it while sharing every other token.
+
+**Evidence:** the value is used exactly once, by `.z-container` in `bundle.css`, and it is inherited, so overriding it on `:root` changes every page and nothing else. The library measured all demo pages at 1120, 1280, 1440 and 1600px: nothing breaks, nothing hits a second `max-width`, and there is no horizontal scrolling. So the artifact already supports the setting — it just does not say so, and it does not say which components were designed to grow with the page and which were not. That second half is the part an implementer cannot guess: `--sidebar` (240px), the configurator aside (340px), the dialog (480px), the menu (200px), the toast (420px) and the tooltip (240px) all keep their width on purpose, and so does every block of running text, which follows `--measure` and not `--container`.
+
+**What the library did:** nothing in the styles; the token is unchanged. `docs/theming.md` gained the section "Page width" with the override and the reasoning, `docs/layout.md` the table of what scales and what does not, and `e2e/breite.spec.ts` measures both.
+
+**Proposed change:** two sentences in `CLAUDE.md` and a note in `tokens.json`:
+
+1. "`container` ist die Seitenbreite der **Anwendung**, nicht ein fester Wert des Systems. 1120px ist die Voreinstellung; ein Produkt setzt `--container` einmal auf `:root` neu. `measure` skaliert nicht mit: Fließtext bleibt bei 65ch, egal wie breit die Seite ist."
+2. A column in the component tables, or one list in `10-seitenmuster.md`, that names per building block whether it grows with the page width. Everything else is guesswork at the first integration.
+
 ## Summary
 
 | #   | Item                                                       | Kind                                | Fix size                       |
@@ -513,6 +528,7 @@ The result is almost certainly right, but "almost certainly" is the wrong standa
 | 20  | Loading shape for a list in an overlay                     | missing rule                        | 1 sentence                     |
 | 21  | AppHeader mobile menu after navigation                     | missing rule                        | 3 sentences, 1 row             |
 | 22  | `z-root` on html and body versus pages not migrated yet    | rule versus migration plan          | 1 paragraph                    |
+| 23  | Page width written as a fixed value, not as a setting      | missing rule, missing per-block list | 2 sentences + 1 list          |
 
 Items 1 to 7 change what the UI does. Items 8 and 9 are defects in the reference markup that propagate into every implementation that copies it. Items 10 to 18 are specification hygiene; items 19 to 22 came out of the first real integration and the blind test: they cost an implementer time and force deviations from a document that is declared binding.
 
