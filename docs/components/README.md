@@ -114,6 +114,7 @@ It prints a table per file and exits non-zero on any mismatch.
 
 | Row in the API table | File                                   | Summary                                                             |
 | -------------------- | -------------------------------------- | ------------------------------------------------------------------- |
+| Config (row Wizard)  | [config.md](config.md)                 | The two-column frame of a configurator: form left, summary right.   |
 | OptionCard           | [option-group.md](option-group.md)     | Picks one of a few options that are meant to be compared.           |
 | Combobox             | [combobox.md](combobox.md)             | Picks one value out of a long list by typing and filtering.         |
 | Wizard               | [wizard.md](wizard.md)                 | Leads through an order in two to four steps, summary beside it.     |
@@ -126,4 +127,6 @@ It prints a table per file and exits non-zero on any mismatch.
 All 44 rows of the API table in `spec/guidelines/40-bibliothek.md` are covered, Icon, Spinner and
 Tooltip among them. SkipLink is not one of those rows: `15-zustaende.md` makes the link mandatory
 while the API table has no entry for it, and an application cannot supply it itself, so the library
-closes the gap.
+closes the gap. `z-config` and `[zConfigAside]` are the second half of the Wizard row, which names
+them as its layout; they have a page of their own because a price calculator uses the same frame
+without a wizard in it.

@@ -10,7 +10,7 @@ Leads through an order in a few steps, with the summary next to it.
 ## When not to use
 
 - On a public page. There the same controls stand under one another in one form, with the summary
-  next to them; see `z-config`.
+  next to them, in the same two-column frame: [Config](config.md).
 - For more than four steps. Fold them together instead.
 - To show where you are in a flow the page does not own. That is `z-stepper`.
 
@@ -135,8 +135,9 @@ state belongs on `z-price-summary`.
 ## Responsive
 
 `z-config` is one column and becomes `1fr 340px` from 900px on, where `[zConfigAside]` sticks at
-`header + space-5`. Below that the summary stands under the wizard, and a `z-sticky-bar` keeps
-price and next step in view. Below 640px the "Ändern" button is raised to 40px.
+`header + space-5`; its own page is [Config](config.md). Below that the summary stands under the
+wizard, and a `z-sticky-bar` keeps price and next step in view. Below 640px the "Ändern" button is
+raised to 40px.
 
 ## Rendered classes and tokens
 
