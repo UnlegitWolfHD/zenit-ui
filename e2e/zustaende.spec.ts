@@ -980,7 +980,10 @@ test.describe('Lädt und Fehler', () => {
     const laedt = page.getByRole('button', { name: 'Wird gestartet' }).first();
 
     await expect(laedt).toHaveAttribute('aria-busy', 'true');
-    await expect(laedt).toBeDisabled();
+    // Locked through aria-disabled, not through the native disabled: the
+    // button that triggered the action keeps the focus.
+    await expect(laedt).toHaveAttribute('aria-disabled', 'true');
+    await expect(laedt).not.toHaveAttribute('disabled');
     expect(
       await laedt.evaluate((el) => el.firstElementChild?.classList.contains('z-spinner') ?? false),
       'Spinner steht nicht vor dem Text',

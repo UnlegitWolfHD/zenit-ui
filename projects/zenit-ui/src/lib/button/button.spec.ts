@@ -48,6 +48,30 @@ class LinkHost {
 })
 class AriaHost {}
 
+/** A caller that listens itself, inside a form, next to a text field. */
+@Component({
+  imports: [ZButton],
+  template: `<form (submit)="$event.preventDefault(); gesendet = gesendet + 1">
+    <input aria-label="Servername" />
+    <button
+      zBtn
+      type="submit"
+      [loading]="laedt()"
+      [disabled]="gesperrt()"
+      (click)="geklickt = geklickt + 1"
+    >
+      Speichern
+    </button>
+  </form>`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class FormularHost {
+  readonly laedt = signal(false);
+  readonly gesperrt = signal(false);
+  geklickt = 0;
+  gesendet = 0;
+}
+
 /** A tabindex the caller wrote: static on the button, bound on the link. */
 @Component({
   imports: [ZButton],
@@ -148,7 +172,8 @@ describe('ZButton', () => {
     fixture.detectChanges();
 
     expect(button.querySelector('z-spinner')).not.toBeNull();
-    expect(button.hasAttribute('disabled')).toBe(true);
+    expect(button.hasAttribute('disabled')).toBe(false);
+    expect(button.getAttribute('aria-disabled')).toBe('true');
     expect(button.getAttribute('aria-busy')).toBe('true');
 
     const knoten = Array.from(button.childNodes) as Node[];
@@ -170,6 +195,100 @@ describe('ZButton', () => {
 
     expect(button.hasAttribute('disabled')).toBe(true);
     expect(button.getAttribute('aria-busy')).toBeNull();
+  });
+
+  // spec/guidelines/15-zustaende.md, "Lädt": the button that triggered the
+  // action shows the spinner, so it has to keep the focus. A native disabled
+  // would drop it to body.
+  describe('loading without the native disabled', () => {
+    function geladen(): {
+      fixture: ReturnType<typeof TestBed.createComponent<FormularHost>>;
+      button: HTMLButtonElement;
+    } {
+      const fixture = TestBed.createComponent(FormularHost);
+      document.body.appendChild(fixture.nativeElement);
+      fixture.detectChanges();
+      return { fixture, button: fixture.nativeElement.querySelector('button') };
+    }
+
+    it('keeps the focus on the button when loading turns on', () => {
+      const { fixture, button } = geladen();
+      button.focus();
+      expect(document.activeElement).toBe(button);
+
+      fixture.componentInstance.laedt.set(true);
+      fixture.detectChanges();
+
+      expect(document.activeElement).toBe(button);
+      expect(button.hasAttribute('disabled')).toBe(false);
+      expect(button.hasAttribute('tabindex')).toBe(false);
+      expect(button.getAttribute('aria-disabled')).toBe('true');
+      expect(button.getAttribute('aria-busy')).toBe('true');
+      fixture.nativeElement.remove();
+    });
+
+    it('swallows the click before the (click) of the caller and the form see it', () => {
+      const { fixture, button } = geladen();
+      fixture.componentInstance.laedt.set(true);
+      fixture.detectChanges();
+
+      const klick = new MouseEvent('click', { bubbles: true, cancelable: true });
+      button.dispatchEvent(klick);
+
+      expect(klick.defaultPrevented).toBe(true);
+      expect(fixture.componentInstance.geklickt).toBe(0);
+      expect(fixture.componentInstance.gesendet).toBe(0);
+      fixture.nativeElement.remove();
+    });
+
+    it('swallows Enter and Space, and lets other keys through', () => {
+      const { fixture, button } = geladen();
+      fixture.componentInstance.laedt.set(true);
+      fixture.detectChanges();
+
+      for (const key of ['Enter', ' ']) {
+        const taste = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
+        button.dispatchEvent(taste);
+        expect(taste.defaultPrevented, key).toBe(true);
+      }
+      const tab = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true });
+      button.dispatchEvent(tab);
+      expect(tab.defaultPrevented).toBe(false);
+      fixture.nativeElement.remove();
+    });
+
+    it('lets the click through again once loading is off', () => {
+      const { fixture, button } = geladen();
+      fixture.componentInstance.laedt.set(true);
+      fixture.detectChanges();
+      fixture.componentInstance.laedt.set(false);
+      fixture.detectChanges();
+
+      button.click();
+
+      expect(button.hasAttribute('aria-disabled')).toBe(false);
+      expect(button.hasAttribute('aria-busy')).toBe(false);
+      expect(fixture.componentInstance.geklickt).toBe(1);
+      expect(fixture.componentInstance.gesendet).toBe(1);
+      fixture.nativeElement.remove();
+    });
+
+    it('keeps the native disabled for disabled alone and when both are set', () => {
+      const { fixture, button } = geladen();
+      fixture.componentInstance.gesperrt.set(true);
+      fixture.detectChanges();
+
+      expect(button.hasAttribute('disabled')).toBe(true);
+      expect(button.hasAttribute('aria-disabled')).toBe(false);
+
+      fixture.componentInstance.laedt.set(true);
+      fixture.detectChanges();
+
+      expect(button.hasAttribute('disabled')).toBe(true);
+      expect(button.hasAttribute('aria-disabled')).toBe(false);
+      expect(button.getAttribute('aria-busy')).toBe('true');
+      fixture.nativeElement.remove();
+    });
   });
 
   it('locks an a[zBtn] through aria-disabled and tabindex and swallows the click', () => {

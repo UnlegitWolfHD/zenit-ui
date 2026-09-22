@@ -48,6 +48,104 @@ test.describe('Skip link and demo navigation', () => {
   });
 });
 
+test.describe('Loading button on /grundlage', () => {
+  /** The demo form in the button section: a text field, "Speichern" and "Abbrechen". */
+  const formular = (page: Page) => page.locator('form.demo-row');
+
+  /**
+   * Counts, in the page, every click that reaches the submit button (seen in
+   * the capture phase of the document, before the button swallows it) and
+   * every submit event of the form.
+   */
+  async function zaehlen(
+    page: Page,
+  ): Promise<() => Promise<{ klicks: number; sendungen: number }>> {
+    await formular(page).evaluate((form) => {
+      const stand = { klicks: 0, sendungen: 0 };
+      (window as unknown as { stand: typeof stand }).stand = stand;
+      const knopf = form.querySelector('button[type="submit"]');
+      document.addEventListener(
+        'click',
+        (e) => {
+          if (e.target === knopf) {
+            stand.klicks++;
+          }
+        },
+        true,
+      );
+      form.addEventListener('submit', () => stand.sendungen++, true);
+    });
+    return () =>
+      page.evaluate(() => ({
+        ...(window as unknown as { stand: { klicks: number; sendungen: number } }).stand,
+      }));
+  }
+
+  test('the triggering button keeps the keyboard focus while it loads', async ({ page }) => {
+    await seite(page, 'grundlage');
+    const feld = formular(page).getByRole('textbox', { name: 'Anzeigename' });
+    await feld.focus();
+    await page.keyboard.press('Tab');
+    const knopf = formular(page).getByRole('button', { name: 'Speichern' });
+    await expect(knopf).toBeFocused();
+
+    await page.keyboard.press('Enter');
+
+    const laedt = formular(page).getByRole('button', { name: 'Wird gespeichert' });
+    await expect(laedt).toHaveAttribute('aria-busy', 'true');
+    await expect(laedt).toHaveAttribute('aria-disabled', 'true');
+    await expect(laedt).not.toHaveAttribute('disabled');
+    await expect(laedt).toBeFocused();
+    expect(await laedt.evaluate((el) => el.matches(':focus-visible'))).toBe(true);
+  });
+
+  test('Enter and Space on the loading button and Enter in the field do not submit again', async ({
+    page,
+  }) => {
+    await seite(page, 'grundlage');
+    const stand = await zaehlen(page);
+    const feld = formular(page).getByRole('textbox', { name: 'Anzeigename' });
+
+    // Implicit submission: Enter in the field is a click on the default button.
+    await feld.focus();
+    await page.keyboard.press('Enter');
+    await expect(formular(page).getByRole('button', { name: 'Wird gespeichert' })).toBeVisible();
+    expect(await stand()).toEqual({ klicks: 1, sendungen: 1 });
+
+    // Loading: the same click reaches the button and is swallowed there.
+    await page.keyboard.press('Enter');
+    expect(await stand()).toEqual({ klicks: 2, sendungen: 1 });
+
+    await page.keyboard.press('Tab');
+    const laedt = formular(page).getByRole('button', { name: 'Wird gespeichert' });
+    await expect(laedt).toBeFocused();
+    await page.keyboard.press('Enter');
+    await page.keyboard.press('Space');
+    await laedt.click({ force: true });
+    expect((await stand()).sendungen).toBe(1);
+    await expect(laedt).toBeFocused();
+
+    // Unlocked again, the button submits as before.
+    await formular(page).getByRole('button', { name: 'Abbrechen' }).click();
+    await formular(page).getByRole('button', { name: 'Speichern' }).click();
+    expect((await stand()).sendungen).toBe(2);
+  });
+
+  for (const schema of ['dark', 'light', 'contrast'] as const) {
+    test(`axe with the button loading and focused, scheme ${schema}`, async ({ page }) => {
+      await page.addInitScript(([wert]) => window.localStorage.setItem('zenit-theme', wert), [
+        JSON.stringify({ scheme: schema, accent: 'rot' }),
+      ] as const);
+      await seite(page, 'grundlage');
+      await formular(page).getByRole('button', { name: 'Speichern' }).focus();
+      await page.keyboard.press('Enter');
+      await expect(formular(page).getByRole('button', { name: 'Wird gespeichert' })).toBeFocused();
+
+      await pruefeAxe(page, `/grundlage, loading button, ${schema}`);
+    });
+  }
+});
+
 test.describe('Dialog on /overlays', () => {
   /**
    * The page also shows a static copy of the dialog and of the menu, so the

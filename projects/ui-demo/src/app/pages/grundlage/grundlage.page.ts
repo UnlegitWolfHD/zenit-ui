@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import {
   ZAlert,
   ZBadge,
@@ -81,6 +81,19 @@ import {
         <button zBtn="primary" loading>Wird gestartet</button>
         <button zBtn="secondary" loading>Wird gespeichert</button>
       </div>
+
+      <form class="demo-row" (submit)="speichern($event)">
+        <p class="demo-cap caption">
+          Im Formular: der Fokus bleibt, Enter im Feld sendet nicht erneut
+        </p>
+        <div class="demo-narrow">
+          <input zInput aria-label="Anzeigename" value="Beispiel-Server 1" />
+        </div>
+        <button zBtn="secondary" type="submit" [loading]="speichert()">
+          {{ speichert() ? 'Wird gespeichert' : 'Speichern' }}
+        </button>
+        <button zBtn="ghost" type="button" (click)="speichert.set(false)">Abbrechen</button>
+      </form>
 
       <div class="demo-row">
         <p class="demo-cap caption">Deaktiviert</p>
@@ -393,6 +406,14 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class GrundlagePage {
+  /** The demo form never sends anything; submitting only starts the loading state. */
+  protected readonly speichert = signal(false);
+
+  protected speichern(ereignis: Event): void {
+    ereignis.preventDefault();
+    this.speichert.set(true);
+  }
+
   protected readonly aktivitaeten = [
     { titel: 'Server neu gestartet', meta: 'Beispiel-Server 1', zeit: '18.09.2026, 15:55' },
     { titel: 'Server gestoppt', meta: 'Beispiel-Server 1', zeit: '18.09.2026, 14:47' },
