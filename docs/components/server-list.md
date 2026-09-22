@@ -80,7 +80,9 @@ renders two lines, so pick one.
 Pure slot marker for an own medium in the thumbnail, an icon or an image the caller renders itself.
 It adds no class and no markup and replaces both `image` and the initial. The thumbnail keeps its
 32px box, its `radius-sm` and its `surface-hover` fill; an `<img>` in the slot fills it the same way
-the `image` does. With `thumb` set to `false` the slot is not rendered either.
+the `image` does. With `thumb` set to `false` the slot is not rendered either. The thumbnail is
+`aria-hidden`, so whatever the slot holds is decoration and its information has to stand as text in
+`[zRowMeta]` as well.
 
 ### `a[zRowLink]`
 
@@ -261,14 +263,15 @@ the customer cannot open is left out.
 
 ## Accessibility
 
-- A row as an `<a>` is one link, so the title and the meta line are read as its accessible text. The
-  thumbnail image carries an empty `alt`.
+- A row as an `<a>` is one link, so the title and the meta line are read as its accessible text,
+  and nothing else: `.z-row__thumb` carries `aria-hidden="true"` and its image an empty `alt`.
 - Actions inside a row are separate tab stops with their own `aria-label`. That is why a row with
   actions is a `<div>` with `a[zRowLink]` and never an `<a>` around a `<button>`, which is invalid
   markup and gives the two controls one tab stop.
-- The thumbnail is decoration: the image has an empty `alt`, an icon in `[zRowThumb]` is
-  `aria-hidden`, and the initial is a single letter. Whatever it shows, the game of a server for
-  example, has to stand as text in the row as well, usually in `meta` or `[zRowMeta]`.
+- The thumbnail is decoration, whatever it shows: image, initial or the content of `[zRowThumb]`.
+  The whole `.z-row__thumb` is `aria-hidden`, so a screen reader hears neither the initial nor an
+  icon or image put into the slot. Whatever it shows, the game of a server for example, has to
+  stand as text in the row as well, usually in `meta` or `[zRowMeta]`.
 - The hit area of `a[zRowLink]` is the whole row, so that is where its focus ring is drawn: on the
   stretched `::after`, not around the title text. There is exactly one ring, 2px in `focus` with a
   2px offset.
@@ -296,7 +299,7 @@ row menu and everything in it stay reachable on a phone. Put the actions of a ro
 | `z-rows__head` | on the column head  |
 | `z-row`        | on each row         |
 | `z-row__main`  | on `z-row-main`     |
-| `z-row__thumb` | inside `z-row-main`, unless `thumb` is `false` |
+| `z-row__thumb` | inside `z-row-main`, unless `thumb` is `false`; `aria-hidden` |
 | `z-row__text`  | inside `z-row-main` |
 | `z-row__title` | inside `z-row-main` |
 | `z-row__meta`  | `meta` is not empty, or on `[zRowMeta]` |

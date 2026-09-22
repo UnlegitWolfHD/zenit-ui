@@ -187,7 +187,9 @@ export class ZRowAction {}
  * Pure slot marker for an own medium in the thumbnail of a row, an icon or an
  * image the caller renders itself. It lands in `.z-row__thumb` and replaces
  * both the {@link ZRowMain.image} and the initial. It adds no class and no
- * markup. Without it the row falls back to the `image` input.
+ * markup. Without it the row falls back to the `image` input. The thumbnail is
+ * `aria-hidden`, so the content is decoration: what it shows has to stand as
+ * text in the row as well, usually in {@link ZRowMeta}.
  *
  * @example
  * ```html
@@ -209,9 +211,10 @@ export class ZRowThumb {}
  * {@link ZRowThumb} element replaces image and initial, and {@link thumb} set
  * to `false` leaves the thumbnail out. The host carries `z-row__main` and its native
  * `title` attribute is cleared, so the {@link title} input never becomes a
- * browser tooltip. The image is decorative and gets an empty `alt`, the
- * accessible text of the row comes from title and meta. Whatever the image
- * shows, a game for example, therefore also belongs into the meta line as text.
+ * browser tooltip. The thumbnail is decoration: `.z-row__thumb` carries
+ * `aria-hidden="true"` and the image an empty `alt`, so a link row is read as
+ * title and meta only. Whatever the thumbnail shows, a game for example,
+ * therefore also belongs into the meta line as text.
  *
  * A `[zRowTitle]` element takes the place of the title text, which is how a
  * link gets into the title of a row, and a {@link ZRowMeta} element takes the
@@ -228,7 +231,7 @@ export class ZRowThumb {}
   selector: 'z-row-main',
   template: `
     @if (thumb()) {
-      <span class="z-row__thumb">
+      <span class="z-row__thumb" aria-hidden="true">
         <ng-content select="[zRowThumb]">
           @if (image() && !imageFailed()) {
             <img [src]="image()" alt="" (error)="imageFailed.set(true)" />

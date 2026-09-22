@@ -264,6 +264,23 @@ describe('ZRows', () => {
       expect(thumb.textContent?.trim()).toBe('D');
     });
 
+    it('hides every thumbnail from the accessible name, whatever it shows', () => {
+      const fixture = TestBed.createComponent(ThumbHost);
+      fixture.detectChanges();
+      const [initiale, slot] = fixture.nativeElement.querySelectorAll('.z-row__thumb');
+
+      // The initial and the projected medium are decoration: the link row reads title and meta.
+      expect(initiale.getAttribute('aria-hidden')).toBe('true');
+      expect(slot.getAttribute('aria-hidden')).toBe('true');
+      expect(slot.querySelector('.eigenes-medium')).not.toBeNull();
+
+      fixture.componentInstance.bild.set('/assets/valheim.png');
+      fixture.detectChanges();
+
+      expect(thumbVon(fixture).getAttribute('aria-hidden')).toBe('true');
+      expect(thumbVon(fixture).querySelector('img')?.getAttribute('alt')).toBe('');
+    });
+
     it('leaves the thumbnail out with thumb false', () => {
       const fixture = TestBed.createComponent(ThumbHost);
       fixture.componentInstance.thumb.set(false);
