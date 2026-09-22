@@ -74,12 +74,15 @@ z-slider { display: block; }
 .z-segment button:disabled:not([aria-pressed="true"]):hover { color: var(--text-muted); }
 .z-range input[type="range"]:disabled { opacity: 0.45; cursor: not-allowed; }
 /* Addition to the reference: Slider/README.md asks for plus and minus buttons
-   beyond twelve steps, bundle.css has no markup for them. One class for the
-   row; the two buttons are icon-only ghost buttons and keep their look from
-   .z-btn, the track takes whatever width is left. Only a slider with steppers
-   carries the class, so every other slider renders as before. */
-.z-range__row { display: flex; align-items: center; gap: var(--space-3); }
-.z-range__row input[type="range"] { flex: 1 1 0; min-width: 0; }
+   beyond twelve steps, bundle.css has no markup for them. One modifier on the
+   host; the two buttons are icon-only ghost buttons and keep their look from
+   .z-btn, siblings of the range input, and the track takes whatever width is
+   left. Without steppers there is neither the class nor the buttons, and the
+   slider renders exactly as before. */
+.z-range--steppers { grid-template-columns: auto minmax(0, 1fr) auto; column-gap: var(--space-3); align-items: center; }
+.z-range--steppers > .z-range__head,
+.z-range--steppers > .z-range__ticks,
+.z-range--steppers > .z-field__hint { grid-column: 1 / -1; }
 
 /* Click targets at least 40px on mobile (acceptance A9). The measurements
    from the previews stay visible, only the hit area grows. */

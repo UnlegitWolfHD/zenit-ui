@@ -27,21 +27,21 @@ import { ZSlider } from 'zenit-ui';
 
 Selector: `z-slider`
 
-| Input       | Type                            | Default | Description                                                                                                                            |
-| ----------- | ------------------------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `label`     | `string`                        | `''`    | Visible label above the track, tied to the input through a generated `id`.                                                             |
-| `ariaLabel` | `string`                        | `''`    | `aria-label` of the input, used only while `label` stays empty.                                                                        |
-| `min`       | `number`                        | `0`     | Lower end of the scale. With `[formField]` it comes from the `min()` rule of the schema.                                               |
-| `max`       | `number`                        | `100`   | Upper end of the scale. With `[formField]` it comes from the `max()` rule of the schema.                                               |
-| `step`      | `number`                        | `1`     | Distance between two bookable steps.                                                                                                   |
-| `steppers`  | `boolean`                       | `false` | Adds a minus and a plus button left and right of the track, each moving the value by one `step`. Boolean attribute.                    |
-| `unit`      | `string`                        | `''`    | Unit behind the value, for example `GB`. Joined with a non-breaking space.                                                             |
-| `ticks`     | `readonly (string \| number)[]` | `[]`    | Scale values printed below the track. Purely visual and `aria-hidden`.                                                                 |
-| `hint`      | `string`                        | `''`    | One sentence below the track, referenced through `aria-describedby`.                                                                   |
-| `value`     | `number`                        | `0`     | Current value, two-way bindable through `[(value)]`. Also the value seen by forms.                                                     |
-| `disabled`  | `boolean`                       | `false` | Locks the slider. Independent of the disabled state from forms. Boolean attribute.                                                     |
-| `invalid`   | `boolean`                       | `false` | Writes `aria-invalid="true"` while `touched` holds too; no error colour. Set by `[formField]` from the field state. Boolean attribute. |
-| `touched`   | `boolean`                       | `true`  | Gates `invalid`. Set by `[formField]`; outside Signal Forms it stays `true`. Boolean attribute.                                        |
+| Input       | Type                            | Default | Description                                                                                                                             |
+| ----------- | ------------------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `label`     | `string`                        | `''`    | Visible label above the track, tied to the input through a generated `id`.                                                              |
+| `ariaLabel` | `string`                        | `''`    | `aria-label` of the input, used only while `label` stays empty.                                                                         |
+| `min`       | `number`                        | `0`     | Lower end of the scale. With `[formField]` it comes from the `min()` rule of the schema.                                                |
+| `max`       | `number`                        | `100`   | Upper end of the scale. With `[formField]` it comes from the `max()` rule of the schema.                                                |
+| `step`      | `number`                        | `1`     | Distance between two bookable steps. The grid starts at `min`; a `max` off the grid is never reached (0 to 10 in steps of 3 ends at 9). |
+| `steppers`  | `boolean`                       | `false` | Adds a minus and a plus button left and right of the track, each moving the value by one `step`. Boolean attribute.                     |
+| `unit`      | `string`                        | `''`    | Unit behind the value, for example `GB`. Joined with a non-breaking space.                                                              |
+| `ticks`     | `readonly (string \| number)[]` | `[]`    | Scale values printed below the track. Purely visual and `aria-hidden`.                                                                  |
+| `hint`      | `string`                        | `''`    | One sentence below the track, referenced through `aria-describedby`.                                                                    |
+| `value`     | `number`                        | `0`     | Current value, two-way bindable through `[(value)]`. Also the value seen by forms.                                                      |
+| `disabled`  | `boolean`                       | `false` | Locks the slider. Independent of the disabled state from forms. Boolean attribute.                                                      |
+| `invalid`   | `boolean`                       | `false` | Writes `aria-invalid="true"` while `touched` holds too; no error colour. Set by `[formField]` from the field state. Boolean attribute.  |
+| `touched`   | `boolean`                       | `true`  | Gates `invalid`. Set by `[formField]`; outside Signal Forms it stays `true`. Boolean attribute.                                         |
 
 | Output        | Payload  | Fires when                                                 |
 | ------------- | -------- | ---------------------------------------------------------- |
@@ -59,9 +59,10 @@ because the browser would otherwise clamp the value to the default scale 0 to 10
 
 **`steppers`.** Two icon-only ghost buttons in size `sm` sit left and right of the track, with the
 icons `remove` and `add` and their `aria-label` from the label registry (`sliderDecrease` and
-`sliderIncrease`, "Verringern" and "Erhöhen" in German). Each click moves the value by one `step`,
-clamped to `min` and `max`, and writes through the same path as the track: model, `ControlValueAccessor`,
-Signal Forms and `valueChange` see exactly one change per click. It is explicit on purpose and never
+`sliderIncrease`, "Verringern" and "Erhöhen" in German). Each click moves the value to the next
+value on the step grid from `min`, clamped to `min` and to the last grid value that fits below
+`max`, so the element never has to correct what a button wrote. It writes through the same path as
+the track: model, `ControlValueAccessor`, Signal Forms and `valueChange` see exactly one change per click. It is explicit on purpose and never
 switches itself on above twelve steps: a slider that grows a pair of buttons the moment a `max`
 changes is a layout moving without anyone asking for it. What the component does instead is warn:
 a development build prints one `console.warn` per slider quoting the rule of
@@ -150,7 +151,7 @@ Locked, with the reason in the hint:
 | Focus            | 2px ring in `focus` with 2px offset                                                                 | Tab, `:focus-visible`                        |
 | Active           | the value follows the pointer, the number next to it updates live                                   | drag, or arrow keys                          |
 | Disabled         | 45 percent opacity, `cursor: not-allowed`; with `steppers` both buttons carry the native `disabled` | `disabled`, or the form disables the control |
-| End of the scale | with `steppers`, the button on that side carries `aria-disabled="true"` and its click does nothing  | the value reaches `min` or `max`             |
+| End of the scale | with `steppers`, the button on that side carries `aria-disabled="true"` and its click does nothing  | the value reaches `min` or the last step     |
 
 There is no error, loading or empty state. The value is always visible as a number next to the
 track, so the slider is never the only place the amount appears.
@@ -179,15 +180,15 @@ head with label and value, the ticks and the hint keep their sizes.
 
 ## Rendered classes and tokens
 
-| Class            | Applies when         |
-| ---------------- | -------------------- |
-| `z-range`        | always (host)        |
-| `z-range__head`  | always               |
-| `z-range__row`   | `steppers` is set    |
-| `z-field__label` | `label` is not empty |
-| `z-range__value` | always               |
-| `z-range__ticks` | `ticks` is not empty |
-| `z-field__hint`  | `hint` is not empty  |
+| Class               | Applies when             |
+| ------------------- | ------------------------ |
+| `z-range`           | always (host)            |
+| `z-range__head`     | always                   |
+| `z-range--steppers` | `steppers` is set (host) |
+| `z-field__label`    | `label` is not empty     |
+| `z-range__value`    | always                   |
+| `z-range__ticks`    | `ticks` is not empty     |
+| `z-field__hint`     | `hint` is not empty      |
 
 Tokens: `--space-2` and `--space-3` for the gaps, `--font-mono` for the value and the ticks,
 `--border-control` for the track, `--text` for the knob, `--text-subtle` for the ticks, `--focus`
@@ -200,11 +201,13 @@ track, the 18px knob and the 20px/28px value type are literal values from the re
   opacity and `cursor: not-allowed`.
 - Addition to the reference: below 640px the range input is raised to 40px, because click targets
   are at least 40px tall on mobile.
-- Addition to the reference: `.z-range__row`, one flex row that holds minus button, track and plus
-  button. `bundle.css` has no markup for the buttons the Slider README asks for beyond twelve
-  steps, so the row is the only new class; the buttons themselves are the reference's own
-  `.z-btn--ghost.z-btn--icon.z-btn--sm`. A slider without `steppers` does not carry the class and
-  renders exactly as before.
+- Addition to the reference: `.z-range--steppers`, a modifier on the host that lays minus button,
+  track and plus button out in one grid row, with head, ticks and hint spanning it. `bundle.css`
+  has no markup for the buttons the Slider README asks for beyond twelve steps, so the modifier is
+  the only new class; the buttons themselves are the reference's own
+  `.z-btn--ghost.z-btn--icon.z-btn--sm`, siblings of the range input. A slider without `steppers`
+  carries neither the class nor the buttons: the range input stays a direct grid item of
+  `.z-range`, so it renders exactly as before.
 
 ## Do / Don't
 
