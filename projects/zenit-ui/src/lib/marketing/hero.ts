@@ -22,7 +22,8 @@ export class ZHeroActions {}
 /**
  * Marks the right-hand column of the hero: a price list, the configurator or a
  * screenshot of the panel, never an illustration. Pure slot marker, it adds no
- * class and no markup. Sub-pages often leave it out.
+ * class and no markup. Sub-pages often leave it out, and a hero without this
+ * slot is one column at every width instead of keeping an empty right column.
  *
  * @example
  * ```html
@@ -42,7 +43,9 @@ export class ZHeroAside {}
  * column. The host carries `z-hero` and its native `title` attribute is
  * cleared, so the {@link title} input never becomes a browser tooltip.
  *
- * Two columns in a 7 to 5 ratio, single column below 900px. The size of the
+ * Two columns in a 7 to 5 ratio, single column below 900px and single column at
+ * every width while no `[zHeroAside]` is projected, which is the usual shape of
+ * a sub-page. The lead keeps its own 52ch measure either way. The size of the
  * heading lives in `z-hero__title` and drops from `display-xl` to `display-lg`
  * below 640px, whatever {@link headingLevel} says. {@link size} picks that
  * smaller step for the whole width. On a public page the heading is the `<h1>`,

@@ -817,6 +817,46 @@ test.describe('hero-lg', () => {
 
     await expect(hero(page, LG)).toHaveScreenshot('zustaende-hero-lg.png');
   });
+
+  // Hero/README.md: sub-pages "kommen oft ohne rechte Spalte aus". bundle.css
+  // fixes .z-hero at 7fr/5fr above 900px, so such a hero would keep an empty
+  // right column at 1440px. Measured on the computed grid, not on a picture.
+  test('ohne [zHeroAside] eine Spalte bei 1440px, mit Aside 7 zu 5', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await seiteOeffnen(page, 'werkzeuge');
+
+    const spuren = async (text: string) =>
+      (await hero(page, text).evaluate((el) => getComputedStyle(el).gridTemplateColumns))
+        .split(' ')
+        .map((wert) => Number.parseFloat(wert));
+
+    // Der Hero der Unterseite hat keine rechte Spalte.
+    await expect(hero(page, LG).locator('[zHeroAside]')).toHaveCount(0);
+    const ohne = await spuren(LG);
+    const mit = await spuren(XL);
+
+    expect(ohne.length, `eine Spur erwartet, gemessen ${ohne.join(' ')}`).toBe(1);
+    expect(mit.length, `zwei Spuren erwartet, gemessen ${mit.join(' ')}`).toBe(2);
+    expect(mit[0] / mit[1], '7 zu 5').toBeCloseTo(7 / 5, 2);
+
+    // Der Titel füllt die volle Containerbreite, der Lead bleibt bei 52ch.
+    const heroKasten = (await hero(page, LG).boundingBox())!;
+    const titelKasten = (await titel(page, LG).boundingBox())!;
+    const leadKasten = (await hero(page, LG).locator('.z-hero__lead').boundingBox())!;
+
+    expect(titelKasten.width).toBeCloseTo(heroKasten.width, 0);
+    expect(titelKasten.width).toBeCloseTo(ohne[0], 0);
+    expect(leadKasten.width, 'der Lead behält sein eigenes Maß von 52ch').toBeLessThan(
+      titelKasten.width,
+    );
+
+    test.info().annotations.push({
+      type: 'hero-ohne-aside',
+      description:
+        `ohne Aside ${ohne.join(' ')}, mit Aside ${mit.join(' ')}, ` +
+        `Titel ${Math.round(titelKasten.width)}px, Lead ${Math.round(leadKasten.width)}px`,
+    });
+  });
 });
 
 test.describe('Lädt und Fehler', () => {

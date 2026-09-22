@@ -39,7 +39,12 @@ attribute works, the string is coerced to a number.
 
 **Subpages.** `size="xl"` belongs to the start page and to `/minecraft`; every other public page
 takes `size="lg"` and usually leaves the right column out, which is what
-`spec/components/Hero/README.md` asks for. The two sizes are the two steps the heading already has:
+`spec/components/Hero/README.md` asks for. A hero without `[zHeroAside]` is one column at every
+width instead of holding an empty 5fr track open above 900px: the rule
+`.z-hero:not(:has(> [zHeroAside]))` sets `grid-template-columns: minmax(0, 1fr)`. Nothing else
+changes with it, and the lead keeps its own 52 character measure, so the heading runs the full
+container width while the sentence below it stays readable. The two sizes are the two steps the
+heading already has:
 `lg` renders at every width what `xl` renders below 640px (40px/44px, `letter-spacing: -0.02em`),
 and below 640px both are the same size, so `lg` never grows on a phone. The size is a class on the
 host, `z-hero--lg`, and is independent of `headingLevel`: the tag says where the heading sits in the
@@ -60,7 +65,7 @@ Marker directive for the at most two buttons, one `primary` in size `lg` and opt
 ### `[zHeroAside]`
 
 Pure slot marker for the right column. It adds no class and no markup. Sub-pages often leave it
-out.
+out, and leaving it out is what switches the hero to a single column.
 
 ## Examples
 
@@ -152,7 +157,8 @@ buttons inside it and the panel in the right column bring their own.
 
 ## Responsive
 
-Two columns in a 7 to 5 ratio, single column below 900px, where the vertical padding drops from
+Two columns in a 7 to 5 ratio while `[zHeroAside]` is there, single column at every width without
+it, and single column below 900px in both cases, where the vertical padding drops from
 `space-9` to `space-8`. Below 640px the heading drops from `display-xl` (56px) to `display-lg`
 (40px) and the lead from 20px to 16px. The size sits in `z-hero__title` and does not follow
 `headingLevel`. With `size="lg"` the heading is at `display-lg` from the start and stays there
