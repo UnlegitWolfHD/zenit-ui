@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, signal, Type } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { form, FormField, max, min } from '@angular/forms/signals';
 import { ZButton } from './button';
 import { ZCostChart } from './cost-chart';
 import { ZStickyBar } from './configurator';
@@ -9,6 +10,7 @@ import { ZInput } from './field/input';
 import { Z_MENU } from './menu';
 import { ZAppHeader, ZBrand, ZHeaderLink } from './navigation/app-header';
 import { ZSidebar, ZSidebarGroup, ZSidebarItem } from './navigation/sidebar';
+import { ZSlider } from './slider';
 import { ZSpinner } from './spinner';
 import { ZNum, ZTable, ZTableContainer } from './table';
 import { ZTooltip } from './tooltip';
@@ -28,11 +30,18 @@ import { ZTooltip } from './tooltip';
  * survive its first change detection, and the attributes it owns have to
  * stand in the resulting HTML without any observer ever running.
  *
- * The real gate — a prerender of the demo against `@angular/platform-server`
- * — is a separate package; `@angular/platform-server` is not a dependency of
- * this workspace, so it cannot live in this spec.
+ * The real gate is `npm run check:ssr`, which prerenders both applications in
+ * plain Node; this file is the cheap companion that names the failing line.
  *
- * **Every new observer in the library gets a case here.**
+ * A missing global is not the only thing a server withholds. Its elements have
+ * no layout and parse no values: `getBoundingClientRect` and `valueAsNumber`
+ * are `undefined` there, and its window has no `requestAnimationFrame`. jsdom
+ * answers all three, so a case about them stubs away exactly the one it is
+ * about, and says so.
+ *
+ * **Every new observer in the library gets a case here, and so does every DOM
+ * read on a path the server reaches: a constructor, an `effect`, a destroy.**
+ * `afterNextRender` and `afterRenderEffect` never run there and need none.
  */
 
 /** Renders `host` with the three observer globals gone, and hands back the fixture. */
@@ -120,6 +129,34 @@ class SidebarHost {}
 class StickyBarHost {}
 
 @Component({
+  imports: [ZStickyBar],
+  template: `<z-sticky-bar price="7,74 €"><button type="button">Weiter</button></z-sticky-bar>
+    <z-sticky-bar price="9,99 €" mobileOnly>
+      <button type="button">Kostenpflichtig bestellen</button>
+    </z-sticky-bar>`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class ZweiStickyBarsHost {}
+
+@Component({
+  imports: [FormField, ZSlider],
+  template: `<z-slider
+    label="Steckplätze"
+    unit="Spieler"
+    [step]="2"
+    [formField]="bestellung.steckplaetze"
+  />`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class SliderFormFieldHost {
+  readonly modell = signal({ steckplaetze: 10 });
+  readonly bestellung = form(this.modell, (pfad) => {
+    min(pfad.steckplaetze, 2);
+    max(pfad.steckplaetze, 20);
+  });
+}
+
+@Component({
   imports: [ZCostChart],
   template: `<z-cost-chart
     [base]="1.5"
@@ -173,7 +210,10 @@ class TooltipHost {}
 class AppHeaderHost {}
 
 describe('rendering without the observer globals', () => {
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
 
   it('locks a link and writes tabindex="-1" into the HTML', () => {
     // The regression: `new MutationObserver` stood unguarded in the constructor
@@ -234,6 +274,49 @@ describe('rendering without the observer globals', () => {
     expect(fixture.nativeElement.querySelector('.z-stickybar__price')?.textContent).toContain(
       '7,74 €',
     );
+  });
+
+  it('destroys two sticky bars without measuring one of them', () => {
+    // The regression: `onDestroy` measured every bar that was still alive, so
+    // the first of two read the box of the second. On the server that box does
+    // not exist — `getBoundingClientRect` is `undefined` on its elements — and
+    // the application is destroyed right after rendering, so every page with
+    // two bars died with `bar.getBoundingClientRect is not a function`. One bar
+    // alone never hit it, because it had removed itself from the set first,
+    // which is why the case above passed while `/konfigurator` failed.
+    const fixture = ohneBeobachter(ZweiStickyBarsHost);
+    const bars: HTMLElement[] = [...fixture.nativeElement.querySelectorAll('z-sticky-bar')];
+    expect(bars).toHaveLength(2);
+
+    // From here on the environment is the server's: no box, and no frame to
+    // postpone the measurement to either.
+    vi.stubGlobal('requestAnimationFrame', undefined);
+    for (const bar of bars) {
+      Object.defineProperty(bar, 'getBoundingClientRect', { value: undefined, configurable: true });
+    }
+
+    expect(() => fixture.destroy()).not.toThrow();
+    // The last bar takes the room it kept clear with it, without measuring.
+    expect(document.documentElement.style.getPropertyValue('--z-stickybar')).toBe('');
+  });
+
+  it('keeps the form value of a slider whose element parses nothing', () => {
+    // The regression: the slider reads its value back off the element, because
+    // the element clamps to the scale and snaps to the step. The server parses
+    // no value, so `valueAsNumber` is `undefined` there — and
+    // `Number.isNaN(undefined)` is `false`, so the guard let it through and the
+    // slider reported `undefined` to the form. That dropped the key out of the
+    // model, and the next binding of `[formField]` found no field any more:
+    // `ERROR TypeError: this.field(...) is not a function` on every server page
+    // with a slider in a Signal Form.
+    vi.spyOn(HTMLInputElement.prototype, 'valueAsNumber', 'get').mockReturnValue(
+      undefined as unknown as number,
+    );
+    const fixture = ohneBeobachter(SliderFormFieldHost);
+
+    expect(fixture.componentInstance.modell()).toEqual({ steckplaetze: 10 });
+    expect(fixture.componentInstance.bestellung.steckplaetze().value()).toBe(10);
+    expect(fixture.nativeElement.querySelector('.z-range__value')?.textContent).toContain('10');
   });
 
   it('renders the cost chart at the width of its reference', () => {

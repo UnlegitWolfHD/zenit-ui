@@ -254,8 +254,15 @@ export class ZSlider implements ControlValueAccessor {
       // and model would name three different numbers. The correction runs at
       // most once, because the next pass reads back exactly the value it has
       // just written.
+      //
+      // `Number.isFinite`, not `!Number.isNaN`: only an engine that really
+      // parses the value answers with a number at all. The server has no
+      // layout and no value parsing, so `valueAsNumber` is `undefined` there —
+      // and `Number.isNaN(undefined)` is `false`, so the old guard let it
+      // through and the slider reported `undefined` to the form, which dropped
+      // the field out of the model and took `[formField]` down with it.
       const echt = schiene.valueAsNumber;
-      if (!Number.isNaN(echt) && echt !== untracked(this.value)) {
+      if (Number.isFinite(echt) && echt !== untracked(this.value)) {
         this.value.set(echt);
         this.melde?.(echt);
       }
