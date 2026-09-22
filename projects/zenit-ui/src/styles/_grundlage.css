@@ -188,6 +188,16 @@
   text-decoration: underline;
   text-underline-offset: 0.15em;
 }
+/* Deviation from the reference: a link in the text of an alert takes text, not
+   accent-text. On the tints of the four statuses accent-text misses 4.5:1 in
+   the normative dark scheme (measured with tools/check-theme-contrast.mjs:
+   info and warning over surface 4.38 and 4.37, all four over surface-raised
+   4.04 to 4.23); text reaches 12.36 or more in every scheme and accent. The
+   running-text underline above stays, so the link is told apart from the
+   text-muted body by colour and line, and the alert's one button is not red
+   either. The same weight and the same .z-legacy exemption as the link rule
+   it overrides, so an application class on the link still wins. */
+.z-root :where(.z-alert__body a):not(:where(.z-legacy, .z-legacy *)), :where(.z-legacy) .z-root :where(.z-alert__body a) { color: var(--text); }
 .z-mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
 .z-muted { color: var(--text-muted); }
 .z-subtle { color: var(--text-subtle); }

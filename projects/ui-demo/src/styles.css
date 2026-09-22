@@ -183,6 +183,12 @@
 .demo-grid--wide {
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
 }
+/* The ground of a dialog, for the alert matrix on /rueckmeldung. */
+.demo-flaeche-raised {
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+}
 /* Panels of equal rank keep their own height instead of stretching. */
 .demo-grid--start {
   align-items: start;

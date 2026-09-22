@@ -1,3 +1,4 @@
+import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { pruefeAxe } from './pruefungen';
 
@@ -382,3 +383,76 @@ for (const scheme of SCHEMATA) {
     await expect(page).toHaveScreenshot(`themes-${scheme}-1440.png`, { fullPage: true });
   });
 }
+
+/**
+ * A link in the text of an alert, for every status on every ground an alert
+ * stands on: free on bg, in a panel on surface, in a dialog on surface-raised.
+ * accent-text missed 4.5:1 on the tints in dark, so the link takes text
+ * (_grundlage.css). axe measures each of the 15 links in every scheme and
+ * accent; a link axe cannot decide (incomplete) fails as well, because a
+ * translucent tint is exactly where it gives up. Links outside alerts keep
+ * accent-text.
+ */
+test.describe('Links im Alert', () => {
+  for (const scheme of SCHEMATA) {
+    for (const accent of AKZENTE) {
+      test(`reach 4.5:1 on every status and ground in ${scheme}/${accent}`, async ({ page }) => {
+        await wahlSetzen(page, scheme, accent);
+        await seiteOeffnen(page, 'rueckmeldung');
+        const matrix = page.locator('[data-alert-matrix]');
+        const links = matrix.locator('.z-alert__body a');
+
+        await expect(links).toHaveCount(15);
+        for (const grund of ['bg', 'surface', 'surface-raised']) {
+          await expect(matrix.locator(`[data-grund="${grund}"] .z-alert__body a`)).toHaveCount(5);
+        }
+
+        const ergebnis = await new AxeBuilder({ page })
+          .include('[data-alert-matrix]')
+          .withRules(['color-contrast'])
+          .analyze();
+        const knoten = (liste: typeof ergebnis.violations) =>
+          liste.flatMap((regel) => regel.nodes.map((n) => `${n.target.join(' ')} ${n.html}`));
+        expect(knoten(ergebnis.violations), `Kontrast in ${scheme}/${accent}`).toEqual([]);
+        expect(
+          knoten(ergebnis.incomplete).filter((k) => k.includes('<a ')),
+          `unentschiedene Links in ${scheme}/${accent}`,
+        ).toEqual([]);
+
+        const farben = await links.evaluateAll((liste) => {
+          const text = getComputedStyle(document.documentElement).getPropertyValue('--text');
+          const probe = document.createElement('span');
+          probe.style.color = text;
+          document.body.append(probe);
+          const soll = getComputedStyle(probe).color;
+          probe.remove();
+          return liste.map((a) => ({
+            gleich: getComputedStyle(a).color === soll,
+            linie: getComputedStyle(a).textDecorationLine,
+          }));
+        });
+        expect(
+          farben.every((f) => f.gleich),
+          'jeder Link im Alert nimmt --text',
+        ).toBe(true);
+        expect(farben.every((f) => f.linie.includes('underline'))).toBe(true);
+      });
+    }
+  }
+
+  test('leave links outside an alert in accent-text', async ({ page }) => {
+    await seiteOeffnen(page, 'formulare');
+    const farben = await page.locator('main label a').evaluateAll((liste) => {
+      const akzent = getComputedStyle(document.documentElement).getPropertyValue('--accent-text');
+      const probe = document.createElement('span');
+      probe.style.color = akzent;
+      document.body.append(probe);
+      const soll = getComputedStyle(probe).color;
+      probe.remove();
+      return liste.map((a) => getComputedStyle(a).color === soll);
+    });
+
+    expect(farben.length).toBeGreaterThan(0);
+    expect(farben).not.toContain(false);
+  });
+});

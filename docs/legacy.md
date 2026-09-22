@@ -98,6 +98,7 @@ and stays 648px.
 | `.z-root :where(button, input, select, textarea)`                | `font`, `color` inherit    | exempt             |
 | `.z-root :where(a)`, `.z-root :where(a):hover`                   | link colour, underline     | exempt             |
 | `.z-root :where(p, li, dd, label, …) a:not([class*="z-"])`       | underline in running text  | exempt             |
+| `.z-root :where(.z-alert__body a)`                               | link colour `text` in an alert | exempt         |
 | `.z-root :focus-visible`                                         | 2px ring in `focus`        | exempt, see below  |
 | `.z-root`, `.z-root:where(:not(html))`, `html.z-root`, `body.z-root` | match the class, not a tag | unchanged      |
 | `:where(:root) { color-scheme: dark }`, `.z-root:has(.z-stickybar[data-stuck])` | document level | unchanged |

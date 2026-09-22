@@ -493,12 +493,12 @@ The parser knows flat rules only. A block at-rule (`@media`, `@supports`,
 instead of being flattened into rules that seem to apply unconditionally.
 
 `dark` with the default accent is `tokens.css` and normative, so the gate may
-not demand other values there. Two pairs of it miss a rule that was added
-later: `accent-text` on `warning-subtle` and on `info-subtle` over `surface`
-(4.37:1 and 4.38:1, rule 4.5:1), a link inside a tinted alert inside a panel.
-They are printed as `Referenz`, listed at the end of every run and do not fail
-it; a listed pair that passes again is an error, so the list cannot go stale.
-See "Open design questions".
+not demand other values there. A pair of it that misses a rule would be printed
+as `Referenz`, listed at the end of every run and would not fail it; a listed
+pair that passes again is an error, so the list cannot go stale. The list is
+empty: its two entries were `accent-text` on `warning-subtle` and on
+`info-subtle` over `surface` (4.37:1 and 4.38:1), a link inside a tinted alert,
+and such a link now takes `text` (see `docs/components/alert.md`).
 
 It runs as `npm run check:themes` and is part of `npm run check`. It guards the
 schemes this package ships and reads only the library's own files; it is not
@@ -614,12 +614,10 @@ the design owner.
   1.56:1, 1.61:1 and 2.54:1. WCAG exempts disabled controls, but a token
   (`--opacity-disabled`) would let `light` and `contrast` choose their own
   value. It belongs in `tokens.json`, which this package does not own.
-- **Links inside a tinted alert in `dark`.** `accent-text` on `warning-subtle`
-  and `info-subtle` over `surface` measures 4.37:1 and 4.38:1, below 4.5:1, in
-  the normative scheme (on `bg` it passes with 4.72:1 and 4.74:1). Options: a
-  link in an alert takes `text` and keeps the underline it now always has, or
-  lighter tints in `dark`, which is a change to `tokens.json`. Until then the gate lists both pairs as
-  `Referenz`.
+- **Links inside a tinted alert in `dark`.** Decided: a link in an alert takes
+  `text` and keeps the underline (`docs/components/alert.md`, "Links in an
+  alert"). Lighter tints in `dark`, the other option, would still be a change to
+  `tokens.json` and is open if the design owner wants the red back.
 - **Fills of `blau`, `gruen` and `violett` on the black ground of `contrast`.**
   `rot` was lightened to the fill of the dark scheme. The other three share one
   block with `dark`; against `#000000` their fills measure 3.13 / 4.19 / 3.01

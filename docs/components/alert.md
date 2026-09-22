@@ -45,8 +45,8 @@ no classes of its own.
 An alert has at most one button (`spec/components/Alert/README.md`). When a situation offers two
 ways out, the second one is a link in the text: "Der Server wurde erstattet. Du kannst ihn neu
 bestellen oder den <a href="/support">Support</a> kontaktieren." with the button "Neu bestellen".
-The link takes the running-text underline of the library, so it is visible as a link without a
-second button.
+The link takes the running-text underline of the library and the colour `text`, so it is visible as
+a link without a second button (see "Links in an alert" under Accessibility).
 
 The exported type `ZAlertStatus` is available for typing your own status field.
 
@@ -110,6 +110,35 @@ The alert itself has no hover, focus or disabled state; the button inside it doe
 - The native `title` attribute is suppressed on the host, so the browser shows no tooltip of its own
   because of the `title` input.
 - Error texts say what happened and what the customer can do. No apologies, no "Ups".
+
+### Links in an alert
+
+A link in the text of an alert is `text` with the running-text underline, in every status, not
+`accent-text`. On the tints `accent-text` misses 4.5:1 in the normative `dark` scheme, and a
+translucent tint gets darker the lighter the ground below it is. Measured link against its alert
+(`tools/check-theme-contrast.mjs`, every scheme and accent; the table shows `dark` with `rot`, the
+lowest of the four accents there):
+
+| Status  | on `bg` before / after | on `surface` before / after | on `surface-raised` before / after |
+| ------- | ---------------------- | --------------------------- | ---------------------------------- |
+| neutral | 4.97 / 16.26           | 4.97 / 16.26                | 4.97 / 16.26                       |
+| info    | 4.74 / 15.49           | **4.38** / 14.31            | **4.04** / 13.22                   |
+| success | 4.88 / 15.94           | 4.53 / 14.81                | **4.20** / 13.74                   |
+| warning | 4.72 / 15.45           | **4.37** / 14.28            | **4.04** / 13.20                   |
+| danger  | 4.90 / 16.02           | 4.56 / 14.90                | **4.23** / 13.85                   |
+
+`light` and `contrast` passed before as well (lowest 6.61 and 4.53) and reach 14.77 and 12.36 now.
+A neutral alert paints `surface-raised` itself, so its ground does not matter. Hover and visited
+keep the same colour; hover changes nothing but the underline, which is already there at rest.
+
+Why `text` and not a lighter red: `tokens.css` is normative and has no second red, and a red that
+passes on every tint in `dark` would be a new token in `tokens.json`. Why not only on the failing
+tints: a link that is red in one alert and white in the next is the harder rule to read, and the one
+button of an alert is secondary, not red, as well. The link is still told apart from the
+`text-muted` body by colour and by the underline, so WCAG 1.4.1 holds without the hue.
+
+`/rueckmeldung` shows the 15 cases side by side, and `e2e/themes.spec.ts` ("Links im Alert") runs
+axe over each of them in every scheme and accent. Links outside an alert are unchanged.
 
 ## Responsive
 
