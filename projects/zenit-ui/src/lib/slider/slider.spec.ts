@@ -97,6 +97,66 @@ class GrenzenHost {
   readonly marke = signal('');
 }
 
+/** Plus and minus next to the track, the bare attribute the way a page writes it. */
+@Component({
+  imports: [ZSlider],
+  template: `<z-slider
+    [(value)]="menge"
+    label="Aufbewahrung"
+    unit="Tage"
+    [min]="1"
+    [max]="5"
+    [step]="1"
+    steppers
+    [disabled]="gesperrt()"
+  />`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class StepperHost {
+  readonly menge = signal(3);
+  readonly gesperrt = signal(false);
+}
+
+@Component({
+  imports: [ZSlider, ReactiveFormsModule],
+  template: `<z-slider
+    [formControl]="steuerung"
+    label="Aufbewahrung"
+    [min]="1"
+    [max]="5"
+    [step]="1"
+    steppers
+  />`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class StepperFormHost {
+  readonly steuerung = new FormControl(3);
+}
+
+/** 27 steps: above the twelve of spec/components/Slider/README.md. */
+@Component({
+  imports: [ZSlider],
+  template: `<z-slider
+    [(value)]="menge"
+    label="Tickrate"
+    unit="Hz"
+    [min]="20"
+    [max]="128"
+    [step]="4"
+    [steppers]="mitSteppern()"
+  />`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class StufenHost {
+  readonly menge = signal(64);
+  readonly mitSteppern = signal(false);
+}
+
+/** The minus and the plus button of a slider with steppers, in that order. */
+function knoepfe(fixture: { nativeElement: HTMLElement }): HTMLButtonElement[] {
+  return Array.from(fixture.nativeElement.querySelectorAll('button'));
+}
+
 describe('ZSlider', () => {
   // The component sets min, max and step straight onto the element together
   // with the value. If they came as bindings, the browser would clamp the value
@@ -423,6 +483,141 @@ describe('ZSlider', () => {
     nurAria.componentInstance.marke.set('Arbeitsspeicher');
     nurAria.detectChanges();
     await nurAria.whenStable();
+
+    expect(warnung).not.toHaveBeenCalled();
+
+    warnung.mockRestore();
+  });
+
+  it('renders no steppers and no row class by default', () => {
+    const fixture = TestBed.createComponent(ModellHost);
+    fixture.detectChanges();
+
+    expect(knoepfe(fixture)).toHaveLength(0);
+    expect(fixture.nativeElement.querySelector('.z-range__row')).toBeNull();
+  });
+
+  it('renders minus and plus with steppers, named from the label registry', () => {
+    const fixture = TestBed.createComponent(StepperHost);
+    fixture.detectChanges();
+    const [weniger, mehr] = knoepfe(fixture);
+
+    expect(fixture.nativeElement.querySelector('.z-range__row')).not.toBeNull();
+    expect(weniger.getAttribute('aria-label')).toBe('Verringern');
+    expect(mehr.getAttribute('aria-label')).toBe('Erhöhen');
+    expect(weniger.type).toBe('button');
+    expect(weniger.className).toBe('z-btn z-btn--ghost z-btn--icon z-btn--sm');
+    expect(weniger.querySelector('z-icon')?.textContent?.trim()).toBe('remove');
+    expect(mehr.querySelector('z-icon')?.textContent?.trim()).toBe('add');
+    // The track stays between the two buttons, so the reading order is
+    // minus, track, plus.
+    expect(fixture.nativeElement.querySelector('.z-range__row')?.children).toHaveLength(3);
+  });
+
+  it('moves the value by one step in both directions', async () => {
+    const fixture = TestBed.createComponent(StepperHost);
+    fixture.detectChanges();
+    const [weniger, mehr] = knoepfe(fixture);
+    const schiene: HTMLInputElement = fixture.nativeElement.querySelector('input');
+
+    mehr.click();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.menge()).toBe(4);
+    expect(schiene.value).toBe('4');
+
+    weniger.click();
+    weniger.click();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.menge()).toBe(2);
+    expect(fixture.nativeElement.querySelector('.z-range__value').textContent).toBe(`2${NBSP}Tage`);
+  });
+
+  it('clamps at both ends and marks the button there aria-disabled', async () => {
+    const fixture = TestBed.createComponent(StepperHost);
+    fixture.componentInstance.menge.set(5);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const [weniger, mehr] = knoepfe(fixture);
+
+    expect(mehr.getAttribute('aria-disabled')).toBe('true');
+    expect(weniger.hasAttribute('aria-disabled')).toBe(false);
+    // aria-disabled instead of the native one, so the button keeps the focus
+    // it has just been given; the click is swallowed.
+    expect(mehr.disabled).toBe(false);
+
+    mehr.click();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.menge()).toBe(5);
+
+    fixture.componentInstance.menge.set(1);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(weniger.getAttribute('aria-disabled')).toBe('true');
+    expect(mehr.hasAttribute('aria-disabled')).toBe(false);
+
+    weniger.click();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.menge()).toBe(1);
+  });
+
+  it('locks both buttons natively while the slider is locked', async () => {
+    const fixture = TestBed.createComponent(StepperHost);
+    fixture.componentInstance.gesperrt.set(true);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const [weniger, mehr] = knoepfe(fixture);
+
+    expect(weniger.disabled).toBe(true);
+    expect(mehr.disabled).toBe(true);
+
+    mehr.click();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.menge()).toBe(3);
+  });
+
+  it('writes a step through to the form exactly once', async () => {
+    const fixture = TestBed.createComponent(StepperFormHost);
+    fixture.detectChanges();
+    const steuerung = fixture.componentInstance.steuerung;
+    const gemeldet: (number | null)[] = [];
+    steuerung.valueChanges.subscribe((wert) => gemeldet.push(wert));
+
+    knoepfe(fixture)[1].click();
+    await fixture.whenStable();
+
+    expect(steuerung.value).toBe(4);
+    expect(steuerung.dirty).toBe(true);
+    expect(gemeldet).toEqual([4]);
+    expect(fixture.nativeElement.querySelector('input').value).toBe('4');
+  });
+
+  it('warns once about more than twelve steps without steppers', async () => {
+    const warnung = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const fixture = TestBed.createComponent(StufenHost);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(warnung).toHaveBeenCalledTimes(1);
+    expect(warnung.mock.calls[0][0]).toContain('27 Stufen');
+    expect(warnung.mock.calls[0][0]).toContain('Bei mehr als 12 Stufen');
+
+    warnung.mockRestore();
+  });
+
+  it('stays quiet about the steps as soon as steppers is set', async () => {
+    const warnung = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const fixture = TestBed.createComponent(StufenHost);
+    fixture.componentInstance.mitSteppern.set(true);
+    fixture.detectChanges();
+    await fixture.whenStable();
 
     expect(warnung).not.toHaveBeenCalled();
 

@@ -31,6 +31,8 @@ parameters.
 | `paginationNav`      | `z-pagination`, accessible name of the `<nav>` around the pager            | `Seitennavigation`                                       | `Pagination`                                            |
 | `paginationRange`    | `z-pagination`, the sentence in front of the buttons                       | `` `${from} bis ${to} von ${total} ${itemLabel}` ``      | `` `${from} to ${to} of ${total} ${itemLabel}` ``       |
 | `paginationPageSize` | `z-pagination`, visible label of the page size select                      | `Einträge pro Seite`                                     | `Items per page`                                        |
+| `sliderDecrease`     | `z-slider`, `aria-label` of the minus button, with `steppers`              | `Verringern`                                             | `Decrease`                                              |
+| `sliderIncrease`     | `z-slider`, `aria-label` of the plus button, with `steppers`               | `Erhöhen`                                                | `Increase`                                              |
 | `consoleLog`         | `z-console`, `aria-label` of the log region                                | `Serverlog`                                              | `Server log`                                            |
 | `consoleInput`       | `z-console`, `aria-label` of the command input                             | `Befehl`                                                 | `Command`                                               |
 | `consoleJumpToEnd`   | `z-console`, caption of the jump-to-end button                             | `Zum Ende`                                               | `Jump to end`                                           |
@@ -135,7 +137,9 @@ The inputs per component: `ariaLabel`, `ariaLabelPrev`, `ariaLabelNext`,
 on `z-table-container`, `editLabel` on `z-wizard-step`, `emptyText` on `z-combobox` and
 `retryLabel` on `z-price-summary`. `z-cost-chart` has no such input: everything it says visibly
 is a registry key, because a chart carries a dozen little texts and a dozen inputs for them would
-be worse than one provider.
+be worse than one provider. The two stepper buttons of `z-slider` follow the same line:
+`sliderDecrease` and `sliderIncrease` say "verringern" and "erhöhen" about whatever the slider's
+own `label` already names, so there is nothing a single usage would have to reword.
 
 ## One subtree
 

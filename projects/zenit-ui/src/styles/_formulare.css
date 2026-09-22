@@ -73,6 +73,13 @@ z-slider { display: block; }
 .z-segment button:disabled { opacity: 0.45; cursor: not-allowed; }
 .z-segment button:disabled:not([aria-pressed="true"]):hover { color: var(--text-muted); }
 .z-range input[type="range"]:disabled { opacity: 0.45; cursor: not-allowed; }
+/* Addition to the reference: Slider/README.md asks for plus and minus buttons
+   beyond twelve steps, bundle.css has no markup for them. One class for the
+   row; the two buttons are icon-only ghost buttons and keep their look from
+   .z-btn, the track takes whatever width is left. Only a slider with steppers
+   carries the class, so every other slider renders as before. */
+.z-range__row { display: flex; align-items: center; gap: var(--space-3); }
+.z-range__row input[type="range"] { flex: 1 1 0; min-width: 0; }
 
 /* Click targets at least 40px on mobile (acceptance A9). The measurements
    from the previews stay visible, only the hit area grows. */

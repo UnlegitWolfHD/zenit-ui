@@ -859,6 +859,88 @@ test.describe('hero-lg', () => {
   });
 });
 
+/**
+ * Plus and minus next to the track, which spec/components/Slider/README.md:12
+ * requires beyond twelve steps. Both are ordinary tab stops, so the whole
+ * slider can be operated without a pointer; at the end of the scale the button
+ * on that side keeps the focus and only says aria-disabled.
+ */
+test.describe('slider-steppers', () => {
+  const regler = (page: Page) =>
+    page.locator('z-slider').filter({ has: page.getByRole('slider', { name: 'Tickrate' }) });
+  const spur = (page: Page) => page.getByRole('slider', { name: 'Tickrate' });
+  const weniger = (page: Page) => regler(page).getByRole('button', { name: 'Verringern' });
+  const mehr = (page: Page) => regler(page).getByRole('button', { name: 'Erhöhen' });
+
+  test('nur Tastatur: Tab auf Minus, Enter bewegt um einen step', async ({ page }) => {
+    await seiteOeffnen(page, 'formulare');
+
+    await expect(spur(page)).toHaveValue('64');
+
+    await spur(page).focus();
+    await page.keyboard.press('Shift+Tab');
+    await expect(weniger(page)).toBeFocused();
+
+    await page.keyboard.press('Enter');
+
+    await expect(spur(page)).toHaveValue('60');
+    await expect(regler(page).locator('.z-range__value')).toHaveText('60 Hz');
+    // Der Fokus bleibt auf dem Button, der gerade gedrückt wurde.
+    await expect(weniger(page)).toBeFocused();
+
+    await page.keyboard.press('Tab');
+    await expect(spur(page)).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(mehr(page)).toBeFocused();
+
+    await page.keyboard.press('Enter');
+
+    await expect(spur(page)).toHaveValue('64');
+  });
+
+  test('am Ende der Skala aria-disabled, fokussierbar und ohne Wirkung', async ({ page }) => {
+    await seiteOeffnen(page, 'formulare');
+
+    await spur(page).focus();
+    await page.keyboard.press('End');
+
+    await expect(spur(page)).toHaveValue('128');
+    await expect(mehr(page)).toHaveAttribute('aria-disabled', 'true');
+    // Nicht nativ gesperrt: der Button bleibt fokussierbar, nur die Wirkung ist weg.
+    await expect(mehr(page)).toHaveJSProperty('disabled', false);
+    await expect(weniger(page)).not.toHaveAttribute('aria-disabled', 'true');
+
+    await mehr(page).focus();
+    await page.keyboard.press('Enter');
+
+    await expect(spur(page)).toHaveValue('128');
+    await expect(mehr(page)).toBeFocused();
+
+    await spur(page).focus();
+    await page.keyboard.press('Home');
+
+    await expect(spur(page)).toHaveValue('20');
+    await expect(weniger(page)).toHaveAttribute('aria-disabled', 'true');
+    await expect(mehr(page)).not.toHaveAttribute('aria-disabled', 'true');
+  });
+
+  test('ein gesperrter Regler sperrt auch die Buttons', async ({ page }) => {
+    await seiteOeffnen(page, 'formulare');
+    const gesperrt = page
+      .locator('z-slider')
+      .filter({ has: page.getByRole('slider', { name: 'Aufbewahrung' }) });
+
+    await expect(gesperrt.getByRole('button', { name: 'Verringern' })).toBeDisabled();
+    await expect(gesperrt.getByRole('button', { name: 'Erhöhen' })).toBeDisabled();
+  });
+
+  test('Screenshot des Reglers mit steppers', async ({ page }) => {
+    await seiteOeffnen(page, 'formulare');
+
+    await expect(regler(page)).toHaveScreenshot('zustaende-slider-steppers.png');
+  });
+});
+
 test.describe('Lädt und Fehler', () => {
   test('Button lädt: Spinner vor dem Text, aria-busy und gesperrt', async ({ page }) => {
     await seiteOeffnen(page, 'grundlage');
