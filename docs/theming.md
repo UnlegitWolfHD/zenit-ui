@@ -85,6 +85,76 @@ scheme files win in either include order. `base.css` keeps the declaration for
 `[data-theme="dark"]`, which puts a dark subtree back into the dark palette
 inside a light page.
 
+## Page width
+
+**The page width is a setting of the application, not a fixed value of the
+design system.** `tokens.css` ships `--container: 1120px` as the default;
+`.z-container` is the only rule that reads it, and every header, `<main>` and
+footer of every page goes through that one class. A product that wants a wider
+page sets the property once:
+
+```css
+/* the application's own stylesheet, loaded after zenit-ui.css */
+:root {
+  --container: 1440px;
+}
+```
+
+**Use `:root`, not `html`.** `:root` is a pseudo-class and weighs (0,1,0),
+exactly as much as the `:root` block of `tokens.css`, so the later declaration
+wins — the same cascade the scheme files already rely on. A bare `html`
+selector is a type selector at (0,0,1) and would **lose** to `tokens.css` no
+matter where it stands.
+
+Source order is what decides, and in an Angular application the `styles` array
+of `angular.json` is that order: the CLI concatenates the entries in the order
+they are listed, so the application's own stylesheet, listed last, wins over
+`tokens.css`, listed first. That is the same fact `themes.css` depends on
+(see "Order matters, specificity does not settle it" above), and it is checked
+the same way: `e2e/breite.spec.ts` measures the content box of `.z-container`
+in the browser rather than trusting the bundle.
+
+The property is inherited, so one section can carry a width of its own without
+touching the page:
+
+```html
+<section style="--container: 1440px">
+  <div class="z-container">…</div>
+</section>
+```
+
+`--measure` (65ch) is **not** scaled with it. Running text stays at `--measure`
+however wide the page becomes; which blocks grow with `--container` and which
+keep a width of their own is the table in
+[`docs/layout.md`](layout.md#page-width).
+
+### Why this is not an option of `provideZenitTheme`
+
+It was measured, not assumed. A `container` option would have to write an
+inline style onto `<html>`, and an inline style can only ever arrive **later**
+than the stylesheet that already carries the value:
+
+| Rendering mode | When the stylesheet value applies | When an inline style from `ZTheme` would apply |
+| --- | --- | --- |
+| Client-side render (the documented setup) | first paint; the `<link>` in `<head>` blocks rendering | at bootstrap, before the first component renders — but the page has no layout before that, so there is nothing to shift |
+| Prerender / SSR | first paint, with the full markup already laid out | during the server render, i.e. the same HTML — no earlier, and on the client not before Angular starts |
+| Static `index.html` | first paint | never, Angular does not run |
+
+So there is no flash to prevent and no layout shift to remove: unlike the
+colour scheme, the width does not depend on a stored user choice that only
+JavaScript can read, which is the whole reason `zenitThemeInitScript` exists.
+An option would add a second, weaker writer for a value the stylesheet already
+owns, plus a copy in the init script and in the `ng add` schematic, and would
+buy nothing. `zenitThemeInitScript` is therefore unchanged and takes no width.
+
+An application that has to change the width **at runtime** (the demo does, to
+show the pages at 1120, 1280 and 1440px) writes the inline style itself, which
+beats any stylesheet:
+
+```ts
+document.documentElement.style.setProperty('--container', '1440px');
+```
+
 ## `provideZenitTheme`
 
 ```ts
