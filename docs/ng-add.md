@@ -61,10 +61,11 @@ the schematic's. The init script carries a `<!-- prettier-ignore -->`.
    from `options`; such configurations are left alone and named in the log.
 
 2. **`src/index.html`** – the class `z-root` is merged into the class lists of
-   `<html>` and `<body>`. Both are required: `html.z-root` resets `font-size`
-   and `line-height` so that the class does not move the rem base of the
-   document, which leaves `body.z-root` as the only place the page size comes
-   from. On `<html>` alone the page renders at 16px/normal instead of 14px/20px.
+   `<html>` and `<body>`. Both are required: the library sets no `font-size` and
+   no `line-height` on `<html>`, so the class does not move the rem base of the
+   document and your own `html { font-size: … }` keeps winning there, which
+   leaves `body.z-root` as the only place the page size comes from. On `<html>`
+   alone the page renders at 16px/normal instead of 14px/20px.
    `lang="de"` is only added when `<html>` has no `lang`.
    A fresh `ng new` application has `lang="en"`, which is left as it is; the log
    then says `lang left as "en": set it to your UI language` (the built-in
@@ -222,6 +223,10 @@ in a real application, and it is the one setup that needs a second option. The b
 Without it the bundler resolves the linked package to its real path and pulls `@angular/core` out of
 the **library workspace** instead of the application, which gives two Angular instances and
 `NG0203: inject() must be called from an injection context` at runtime.
+
+**Clear `.angular/cache` after every link update.** The builder keeps the old bundle parts of the
+linked package and serves a mix of two builds, which usually shows up as a misleading
+`NG0919` rather than as anything pointing at the cache.
 
 **The unit tests need one more line.** `preserveSymlinks` does reach Vitest — the
 `@angular/build:unit-test` builder reads it from the build target and passes it on as
