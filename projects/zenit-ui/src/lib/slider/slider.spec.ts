@@ -152,6 +152,27 @@ class StufenHost {
   readonly mitSteppern = signal(false);
 }
 
+/** Steppers on a scale whose max may lie off the step grid; counts every valueChange. */
+@Component({
+  imports: [ZSlider],
+  template: `<z-slider
+    [(value)]="menge"
+    (valueChange)="gemeldet.push($event)"
+    label="Raster"
+    [min]="0"
+    [max]="obere()"
+    [step]="schritt()"
+    steppers
+  />`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class RasterHost {
+  readonly menge = signal(9);
+  readonly obere = signal(10);
+  readonly schritt = signal(3);
+  readonly gemeldet: number[] = [];
+}
+
 /** The minus and the plus button of a slider with steppers, in that order. */
 function knoepfe(fixture: { nativeElement: HTMLElement }): HTMLButtonElement[] {
   return Array.from(fixture.nativeElement.querySelectorAll('button'));
@@ -489,12 +510,23 @@ describe('ZSlider', () => {
     warnung.mockRestore();
   });
 
-  it('renders no steppers and no row class by default', () => {
+  it('renders no steppers and no row by default, the input a direct child of .z-range', () => {
     const fixture = TestBed.createComponent(ModellHost);
     fixture.detectChanges();
+    const host: HTMLElement = fixture.nativeElement.querySelector('z-slider');
 
     expect(knoepfe(fixture)).toHaveLength(0);
     expect(fixture.nativeElement.querySelector('.z-range__row')).toBeNull();
+    // A wrapper div, even without a class, would take the input out of the
+    // grid of .z-range and make every slider taller than before steppers.
+    expect(host.className).toBe('z-range');
+    expect(host.querySelector(':scope > input[type="range"]')).not.toBeNull();
+    expect(Array.from(host.children, (kind) => kind.tagName)).toEqual([
+      'DIV',
+      'INPUT',
+      'DIV',
+      'SPAN',
+    ]);
   });
 
   it('renders minus and plus with steppers, named from the label registry', () => {
@@ -502,7 +534,9 @@ describe('ZSlider', () => {
     fixture.detectChanges();
     const [weniger, mehr] = knoepfe(fixture);
 
-    expect(fixture.nativeElement.querySelector('.z-range__row')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('z-slider').classList).toContain(
+      'z-range--steppers',
+    );
     expect(weniger.getAttribute('aria-label')).toBe('Verringern');
     expect(mehr.getAttribute('aria-label')).toBe('Erhöhen');
     expect(weniger.type).toBe('button');
@@ -511,7 +545,12 @@ describe('ZSlider', () => {
     expect(mehr.querySelector('z-icon')?.textContent?.trim()).toBe('add');
     // The track stays between the two buttons, so the reading order is
     // minus, track, plus.
-    expect(fixture.nativeElement.querySelector('.z-range__row')?.children).toHaveLength(3);
+    expect(
+      Array.from(
+        fixture.nativeElement.querySelector('z-slider').children,
+        (kind: Element) => kind.tagName,
+      ),
+    ).toEqual(['DIV', 'BUTTON', 'INPUT', 'BUTTON']);
   });
 
   it('moves the value by one step in both directions', async () => {
@@ -579,6 +618,50 @@ describe('ZSlider', () => {
     await fixture.whenStable();
 
     expect(fixture.componentInstance.menge()).toBe(3);
+  });
+
+  it('stops plus at the last grid value when max lies off the grid', async () => {
+    const fixture = TestBed.createComponent(RasterHost);
+    fixture.componentInstance.menge.set(6);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const mehr = knoepfe(fixture)[1];
+
+    mehr.click();
+    await fixture.whenStable();
+
+    // 0 to 10 in steps of 3 ends at 9: one write, no 10 corrected back to 9.
+    expect(fixture.componentInstance.menge()).toBe(9);
+    expect(fixture.componentInstance.gemeldet).toEqual([9]);
+    expect(mehr.getAttribute('aria-disabled')).toBe('true');
+
+    mehr.click();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.menge()).toBe(9);
+    expect(fixture.componentInstance.gemeldet).toEqual([9]);
+    expect(fixture.nativeElement.querySelector('input').value).toBe('9');
+  });
+
+  it('walks a fractional step without float error, ten presses to 1 exactly', async () => {
+    const fixture = TestBed.createComponent(RasterHost);
+    fixture.componentInstance.menge.set(0);
+    fixture.componentInstance.obere.set(1);
+    fixture.componentInstance.schritt.set(0.1);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const mehr = knoepfe(fixture)[1];
+
+    for (let i = 0; i < 10; i++) {
+      mehr.click();
+      await fixture.whenStable();
+    }
+
+    expect(fixture.componentInstance.gemeldet).toEqual([
+      0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1,
+    ]);
+    expect(fixture.componentInstance.menge()).toBe(1);
+    expect(mehr.getAttribute('aria-disabled')).toBe('true');
   });
 
   it('writes a step through to the form exactly once', async () => {

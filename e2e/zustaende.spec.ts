@@ -939,6 +939,39 @@ test.describe('slider-steppers', () => {
 
     await expect(regler(page)).toHaveScreenshot('zustaende-slider-steppers.png');
   });
+
+  // Without steppers the range input is a grid item of .z-range, as it was
+  // before steppers existed: 20px tall, 40px below 640px, and exactly one
+  // --space-2 gap to head and ticks. A wrapper div would put it into a line box
+  // and add 5 to 9px under it.
+  for (const [breite, hoehe] of [
+    [1440, 20],
+    [375, 40],
+  ] as const) {
+    test(`without steppers the track is ${hoehe}px and a direct grid item at ${breite}px`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: breite, height: 900 });
+      await seiteOeffnen(page, 'formulare');
+
+      const masse = await page
+        .getByRole('slider', { name: 'Arbeitsspeicher' })
+        .evaluate((spurOhne) => {
+          const host = spurOhne.parentElement!;
+          const box = spurOhne.getBoundingClientRect();
+          const kopf = host.querySelector('.z-range__head')!.getBoundingClientRect();
+          const marken = host.querySelector('.z-range__ticks')!.getBoundingClientRect();
+          return {
+            eltern: host.tagName,
+            hoehe: box.height,
+            abstandOben: box.top - kopf.bottom,
+            abstandUnten: marken.top - box.bottom,
+          };
+        });
+
+      expect(masse).toEqual({ eltern: 'Z-SLIDER', hoehe, abstandOben: 8, abstandUnten: 8 });
+    });
+  }
 });
 
 test.describe('Lädt und Fehler', () => {

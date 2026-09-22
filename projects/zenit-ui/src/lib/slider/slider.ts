@@ -37,8 +37,12 @@ let laufendeNummer = 0;
  *
  * {@link steppers} adds a minus and a plus button left and right of the track,
  * which the design system requires beyond twelve steps and on devices without a
- * mouse. Each of them moves the value by one {@link step},
- * clamped to the scale, and writes through the same path as the track, so model,
+ * mouse. They are siblings of the range input, and the host class
+ * `z-range--steppers` lays the three out in one grid row; without
+ * {@link steppers} the markup is exactly the one from before the buttons
+ * existed, so the input stays a direct grid item of `.z-range`. Each of them moves the value by one {@link step} on the grid from
+ * {@link min}, clamped to the last value of that grid that fits below
+ * {@link max}, and writes through the same path as the track, so model,
  * form and `valueChange` see exactly one change. The scale stays what it is; the
  * buttons only add a second way to reach it, and the range input keeps its own
  * arrow keys, Home and End. A development build warns once per instance when a
@@ -95,44 +99,42 @@ let laufendeNummer = 0;
       }
       <span class="z-range__value">{{ anzeige() }}</span>
     </div>
-    <div [class.z-range__row]="steppers()">
-      @if (steppers()) {
-        <button
-          type="button"
-          class="z-btn z-btn--ghost z-btn--icon z-btn--sm"
-          [attr.aria-label]="wenigerText"
-          [disabled]="gesperrt()"
-          [attr.aria-disabled]="amMinimum() ? 'true' : null"
-          (click)="stufe(-1)"
-        >
-          <z-icon name="remove" />
-        </button>
-      }
-      <input
-        #feld
-        type="range"
-        [id]="id"
-        [attr.aria-label]="label() ? null : ariaLabel() || null"
+    @if (steppers()) {
+      <button
+        type="button"
+        class="z-btn z-btn--ghost z-btn--icon z-btn--sm"
+        [attr.aria-label]="wenigerText"
         [disabled]="gesperrt()"
-        [attr.aria-valuetext]="anzeige()"
-        [attr.aria-describedby]="hint() ? hinweisId : null"
-        [attr.aria-invalid]="invalid() && touched() ? 'true' : null"
-        (input)="aufEingabe($event)"
-        (blur)="beruehrt()"
-      />
-      @if (steppers()) {
-        <button
-          type="button"
-          class="z-btn z-btn--ghost z-btn--icon z-btn--sm"
-          [attr.aria-label]="mehrText"
-          [disabled]="gesperrt()"
-          [attr.aria-disabled]="amMaximum() ? 'true' : null"
-          (click)="stufe(1)"
-        >
-          <z-icon name="add" />
-        </button>
-      }
-    </div>
+        [attr.aria-disabled]="amMinimum() ? 'true' : null"
+        (click)="stufe(-1)"
+      >
+        <z-icon name="remove" />
+      </button>
+    }
+    <input
+      #feld
+      type="range"
+      [id]="id"
+      [attr.aria-label]="label() ? null : ariaLabel() || null"
+      [disabled]="gesperrt()"
+      [attr.aria-valuetext]="anzeige()"
+      [attr.aria-describedby]="hint() ? hinweisId : null"
+      [attr.aria-invalid]="invalid() && touched() ? 'true' : null"
+      (input)="aufEingabe($event)"
+      (blur)="beruehrt()"
+    />
+    @if (steppers()) {
+      <button
+        type="button"
+        class="z-btn z-btn--ghost z-btn--icon z-btn--sm"
+        [attr.aria-label]="mehrText"
+        [disabled]="gesperrt()"
+        [attr.aria-disabled]="amMaximum() ? 'true' : null"
+        (click)="stufe(1)"
+      >
+        <z-icon name="add" />
+      </button>
+    }
     @if (ticks().length) {
       <div class="z-range__ticks" aria-hidden="true">
         @for (marke of ticks(); track $index) {
@@ -144,7 +146,7 @@ let laufendeNummer = 0;
       <span class="z-field__hint" [id]="hinweisId">{{ hint() }}</span>
     }
   `,
-  host: { class: 'z-range' },
+  host: { class: 'z-range', '[class.z-range--steppers]': 'steppers()' },
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => ZSlider), multi: true }],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -288,10 +290,19 @@ export class ZSlider implements ControlValueAccessor {
    */
   protected readonly obergrenze = computed(() => Math.max(this.min(), this.max()));
   protected readonly amMinimum = computed(() => this.value() <= this.min());
-  protected readonly amMaximum = computed(() => this.value() >= this.obergrenze());
+  protected readonly amMaximum = computed(() => this.value() >= this.letzterWert());
 
   /** The step the buttons move by; `0` and `NaN` would otherwise freeze them. */
   private readonly schrittweite = computed(() => Math.abs(this.step()) || 1);
+
+  /**
+   * Highest value on the step grid from `min`: `max` itself only when it lies
+   * on the grid (0 to 10 in steps of 3 ends at 9, as the element snaps it). The
+   * `1e-9` keeps a fractional step from losing its last step to float error.
+   */
+  private readonly letzterWert = computed(() =>
+    this.aufRaster(Math.floor((this.obergrenze() - this.min()) / this.schrittweite() + 1e-9)),
+  );
 
   private melde?: (wert: number) => void;
   private aufBeruehrt?: () => void;
@@ -366,15 +377,22 @@ export class ZSlider implements ControlValueAccessor {
     if (this.gesperrt() || (richtung < 0 ? this.amMinimum() : this.amMaximum())) {
       return;
     }
-    const ziel = Math.min(
-      Math.max(untracked(this.value) + richtung * this.schrittweite(), this.min()),
-      this.obergrenze(),
-    );
+    const k = Math.round((untracked(this.value) - this.min()) / this.schrittweite()) + richtung;
+    const ziel = Math.min(Math.max(this.aufRaster(k), this.min()), this.letzterWert());
     if (ziel === untracked(this.value)) {
       return;
     }
     this.value.set(ziel);
     this.melde?.(ziel);
+  }
+
+  /**
+   * Grid value number `k`, `min + k * step`, without the float error of the
+   * product (`3 * 0.1` is `0.30000000000000004`), so the element never has to
+   * correct a value the buttons wrote.
+   */
+  private aufRaster(k: number): number {
+    return Number((this.min() + k * this.schrittweite()).toPrecision(12));
   }
 
   protected aufEingabe(ereignis: Event): void {
