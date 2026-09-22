@@ -42,6 +42,12 @@ No outputs. Content projection:
 Marker directive for the one action: one button, secondary and `size="sm"`. It adds no markup and
 no classes of its own.
 
+An alert has at most one button (`spec/components/Alert/README.md`). When a situation offers two
+ways out, the second one is a link in the text: "Der Server wurde erstattet. Du kannst ihn neu
+bestellen oder den <a href="/support">Support</a> kontaktieren." with the button "Neu bestellen".
+The link takes the running-text underline of the library, so it is visible as a link without a
+second button.
+
 The exported type `ZAlertStatus` is available for typing your own status field.
 
 ## Examples
