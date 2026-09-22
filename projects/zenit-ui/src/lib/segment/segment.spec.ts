@@ -46,6 +46,22 @@ class FormControlHost {
   readonly steuerung = new FormControl('liste');
 }
 
+/** The caller names the group with the plain attribute instead of the input. */
+@Component({
+  imports: [ZSegment],
+  template: `<z-segment
+    [options]="sichten"
+    aria-label="Ansicht"
+    aria-labelledby="ueberschrift"
+    [ariaLabel]="marke()"
+  />`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class EigenesLabelHost {
+  readonly sichten = SICHTEN;
+  readonly marke = signal('');
+}
+
 function knoepfe(fixture: { nativeElement: HTMLElement }): HTMLButtonElement[] {
   return Array.from(fixture.nativeElement.querySelectorAll('button'));
 }
@@ -78,6 +94,27 @@ describe('ZSegment', () => {
     fixture.detectChanges();
 
     expect(gruppe.hasAttribute('aria-label')).toBe(false);
+  });
+
+  // The host binding used to write null whenever ariaLabel was empty, which
+  // left <z-segment aria-label="Ansicht"> as a role="group" without any name.
+  it('keeps an aria-label of the caller, and the input wins while it is set', () => {
+    const fixture = TestBed.createComponent(EigenesLabelHost);
+    fixture.detectChanges();
+    const gruppe: HTMLElement = fixture.nativeElement.querySelector('z-segment');
+
+    expect(gruppe.getAttribute('aria-label')).toBe('Ansicht');
+    expect(gruppe.getAttribute('aria-labelledby')).toBe('ueberschrift');
+
+    fixture.componentInstance.marke.set('Zeitraum');
+    fixture.detectChanges();
+
+    expect(gruppe.getAttribute('aria-label')).toBe('Zeitraum');
+
+    fixture.componentInstance.marke.set('');
+    fixture.detectChanges();
+
+    expect(gruppe.getAttribute('aria-label')).toBe('Ansicht');
   });
 
   it('works with model() in both directions', async () => {

@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import type { FormValueControl } from '@angular/forms/signals';
+import { leiheAttribut } from '../a11y/host-attribute';
 
 /** One view in a segment. */
 export interface ZSegmentOption {
@@ -28,7 +29,11 @@ export interface ZSegmentOption {
  * `z-segment` on the host.
  *
  * Accessibility: the host is a `role="group"` named by {@link ariaLabel}; the
- * chosen option carries `aria-pressed="true"`, all others `"false"`. The
+ * chosen option carries `aria-pressed="true"`, all others `"false"`. Without
+ * {@link ariaLabel} an `aria-label` the caller wrote on `<z-segment>` itself
+ * names the group, static or bound: the input wins while it holds a value, and
+ * the caller's attribute stands while it does not. `aria-labelledby` is never
+ * written by the component, so it always belongs to the caller. The
  * buttons are ordinary tab stops, so the Tab key moves between them and Enter
  * or Space picks one. While disabled every button is `disabled` and therefore
  * out of the tab order.
@@ -66,7 +71,6 @@ export interface ZSegmentOption {
   host: {
     class: 'z-segment',
     role: 'group',
-    '[attr.aria-label]': `ariaLabel() || null`,
   },
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => ZSegment), multi: true }],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -89,8 +93,9 @@ export class ZSegment implements ControlValueAccessor, FormValueControl<string> 
   readonly value = model('');
 
   /**
-   * Accessible name of the group, for example "Zeitraum". Empty means no
-   * `aria-label` at all.
+   * Accessible name of the group, for example "Zeitraum". Empty leaves the
+   * naming to the caller: an `aria-label` or `aria-labelledby` written on
+   * `<z-segment>` stays where it is.
    *
    * @default ''
    */
@@ -110,6 +115,13 @@ export class ZSegment implements ControlValueAccessor, FormValueControl<string> 
 
   private melde?: (wert: string) => void;
   private aufBeruehrt?: () => void;
+
+  constructor() {
+    // `[attr.aria-label]` as a host binding would write `null` whenever the
+    // input is empty and thereby delete the `aria-label` the caller wrote on
+    // `<z-segment>`, which used to leave the group without any name at all.
+    leiheAttribut('aria-label', () => this.ariaLabel() || null);
+  }
 
   protected waehle(wert: string): void {
     if (wert === this.value()) {
