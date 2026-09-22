@@ -447,29 +447,73 @@ The result is almost certainly right, but "almost certainly" is the wrong standa
 
 ---
 
+## 19. The Combobox API line is written as a closed list, and three of its rules only hold for a static list
+
+**Where:** `spec/components/Combobox/README.md` (last bullet) and `spec/guidelines/40-bibliothek.md:75`
+
+**What is wrong:** both read as a complete enumeration: "API: `z-combobox` mit `options`, `[(value)]`, `placeholder`, `emptyText`; Forms." The accessible name and the form state the same README demands already need `inputId`, `ariaLabel`, `ariaLabelledby` and `disabled`; a server-side search (user search over thousands of entries, a real page of the product) needs `queryChange`, `filterLocally`, `loading`, `allowCustom`, `minQueryLength` and `selectedLabel`. The line now names 4 of 14 members. Three rules of the README assume a list that is complete at open time: "Die Liste zeigt zuerst die fünf neuesten Versionen" (with a minimum query length the first state is a hint row), "Kein Treffer: eine Zeile 'Keine Version gefunden' statt eines leeren Panels" (while loading the empty row is suppressed on purpose), "Vorbelegt ist 'Neueste' als echter Wert, nie ein leeres Feld" (a search for a user has nothing to preselect, and free text is a value no list contains). The defaults of the library keep the README's behaviour exactly; all six additions are opt-in.
+
+**Proposed change:** either mark the API line as "at least" or list the members; add one sentence per rule saying it applies to a static list.
+
+---
+
+## 20. `15-zustaende.md` asks for a spinner in buttons and skeletons in lists, the Combobox waiting row needs a third shape
+
+**Where:** `spec/guidelines/15-zustaende.md` ("Lädt") and `spec/components/Combobox/README.md`
+
+**What is wrong:** a listbox that is waiting for the server has no cell to skeletonise, and a skeleton row inside `role="listbox"` has no accessible meaning. The library renders one non-selectable row with a spinner and the text "Lädt", announced through the status region; that is a documented deviation today.
+
+**Proposed change:** name the waiting row as the third loading shape ("Liste im Overlay: eine Zeile mit Spinner und Wort").
+
+---
+
+## 21. The AppHeader README does not say what the mobile menu does after a navigation
+
+**Where:** `spec/components/AppHeader/README.md`
+
+**What is wrong:** the README describes the burger below 900px but not whether the opened panel closes when a link inside is used, what Escape does, and whether the application can open or close it (a tutorial in the product opens the navigation). A real integration reported the panel staying open across a route change. The library now closes on a link click and on Escape, exposes `[(open)]`, and does not lock page scroll; all of that is a decision the README should own.
+
+**Proposed change:** three sentences: closes on link click and Escape, focus returns to the button, no scroll lock; and one API row for `open`.
+
+---
+
+## 22. `z-root` on `<html>` and `<body>` cannot coexist with pages that are not migrated yet
+
+**Where:** `spec/guidelines/40-bibliothek.md` ("Einbau in die App") and `bundle.css` line 1
+
+**What is wrong:** the reference rule `.z-root { font-size: 14px; line-height: 20px; … }` on `<html>` moves `1rem` for every legacy stylesheet, and on `<body>` it inherits into every page that still uses the old components (headings with a line height below their font size overlap). The base rules for bare `a`, `button`, `input`, `select`, `textarea` reach into those pages as well. The order's phases 4 to 6 explicitly allow old and new pages side by side until the last route is migrated, so this setup contradicts the migration plan it belongs to. The library ships `html.z-root { font-size: 100% }`, `:where()` on the bare-element rules and a documented `.z-legacy` subtree class as deviations.
+
+**Proposed change:** either describe the migration state (`.z-legacy` or an equivalent) in "Einbau in die App", or restrict `z-root` to `<body>` plus a note on overlays.
+
+---
+
 ## Summary
 
-| #   | Item                                                      | Kind                               | Fix size                  |
-| --- | --------------------------------------------------------- | ---------------------------------- | ------------------------- |
-| 1   | `bundle.css:14` specificity, 4.19:1 primary button        | contrast failure                   | 5 lines                   |
-| 2   | 40px click targets missing in 8 selectors                 | acceptance failure                 | 1 media block             |
-| 3   | Tabs specified three ways                                 | contradiction                      | preview + 2 sentences     |
-| 4   | `.z-alert__text { flex: 1 }` blocks the mobile wrap       | unimplementable rule               | 1 declaration             |
-| 5   | CDK backdrop 400 ms fade, described as "pure positioning" | wrong statement                    | 1 sentence + 1 rule       |
-| 6   | FileTable scroll region has no name, no keyboard access   | WCAG 2.1.1                         | 1 attribute set           |
-| 7   | `cursor: pointer` on non-clickable rows                   | wrong affordance                   | 1 selector                |
-| 8   | Normal space before the unit in `Metric/preview.html`     | rule violated by its own reference | `&nbsp;`                  |
-| 9   | FileTable preview not alphabetical                        | reference contradicts README       | swap 2 rows               |
-| 10  | 11 inputs missing from the binding API table              | incomplete API                     | 11 rows or 1 rule         |
-| 11  | "30 Bausteine" versus 36 API rows                         | count mismatch                     | 3 sentences               |
-| 12  | Stepper "Links zurück" versus `steps: string[]`           | unimplementable rule               | API change or rule drop   |
-| 13  | PageHeader preview needs a rich `sub`                     | API too narrow                     | slot instead of string    |
-| 14  | GameTile cover text not expressible                       | API too narrow                     | input or preview fix      |
-| 15  | Hero title is a forbidden two-half-sentence slogan        | rule versus rule                   | 1 character               |
-| 16  | Skeleton 300 ms / 10 s are caller policy                  | misplaced rules                    | move to `15-zustaende.md` |
-| 17  | `tokens.css` not delivered by the artifact                | missing deliverable                | ship the file             |
-| 18  | `spec/components/Cover/` is the artifact's title card     | misfiled                           | move the folder           |
+| #   | Item                                                       | Kind                                | Fix size                       |
+| --- | ---------------------------------------------------------- | ----------------------------------- | ------------------------------ |
+| 1   | `bundle.css:14` specificity, 4.19:1 primary button         | contrast failure                    | 5 lines                        |
+| 2   | 40px click targets missing in 8 selectors                  | acceptance failure                  | 1 media block                  |
+| 3   | Tabs specified three ways                                  | contradiction                       | preview + 2 sentences          |
+| 4   | `.z-alert__text { flex: 1 }` blocks the mobile wrap        | unimplementable rule                | 1 declaration                  |
+| 5   | CDK backdrop 400 ms fade, described as "pure positioning"  | wrong statement                     | 1 sentence + 1 rule            |
+| 6   | FileTable scroll region has no name, no keyboard access    | WCAG 2.1.1                          | 1 attribute set                |
+| 7   | `cursor: pointer` on non-clickable rows                    | wrong affordance                    | 1 selector                     |
+| 8   | Normal space before the unit in `Metric/preview.html`      | rule violated by its own reference  | `&nbsp;`                       |
+| 9   | FileTable preview not alphabetical                         | reference contradicts README        | swap 2 rows                    |
+| 10  | 11 inputs missing from the binding API table               | incomplete API                      | 11 rows or 1 rule              |
+| 11  | "30 Bausteine" versus 36 API rows                          | count mismatch                      | 3 sentences                    |
+| 12  | Stepper "Links zurück" versus `steps: string[]`            | unimplementable rule                | API change or rule drop        |
+| 13  | PageHeader preview needs a rich `sub`                      | API too narrow                      | slot instead of string         |
+| 14  | GameTile cover text not expressible                        | API too narrow                      | input or preview fix           |
+| 15  | Hero title is a forbidden two-half-sentence slogan         | rule versus rule                    | 1 character                    |
+| 16  | Skeleton 300 ms / 10 s are caller policy                   | misplaced rules                     | move to `15-zustaende.md`      |
+| 17  | `tokens.css` not delivered by the artifact                 | missing deliverable                 | ship the file                  |
+| 18  | `spec/components/Cover/` is the artifact's title card      | misfiled                            | move the folder                |
+| 19  | Combobox API line closed, three rules assume a static list | incomplete API, rule versus product | 1 word or 10 rows, 3 sentences |
+| 20  | Loading shape for a list in an overlay                     | missing rule                        | 1 sentence                     |
+| 21  | AppHeader mobile menu after navigation                     | missing rule                        | 3 sentences, 1 row             |
+| 22  | `z-root` on html and body versus pages not migrated yet    | rule versus migration plan          | 1 paragraph                    |
 
-Items 1 to 7 change what the UI does. Items 8 and 9 are defects in the reference markup that propagate into every implementation that copies it. Items 10 to 18 are specification hygiene: they cost an implementer time and force deviations from a document that is declared binding.
+Items 1 to 7 change what the UI does. Items 8 and 9 are defects in the reference markup that propagate into every implementation that copies it. Items 10 to 18 are specification hygiene; items 19 to 22 came out of the first real integration and the blind test: they cost an implementer time and force deviations from a document that is declared binding.
 
 Most of these are one or two lines in `bundle.css` or one sentence in a guide. Items 12, 13 and 14 need a decision about the API shape, and item 15 needs a decision about which language rule wins.
