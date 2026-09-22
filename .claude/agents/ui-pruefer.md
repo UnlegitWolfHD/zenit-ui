@@ -3,6 +3,7 @@ name: ui-pruefer
 description: Prüft ein umgesetztes Zenit-UI-Paket gegen das Design System. Ändert keine Dateien.
 tools: Read, Grep, Glob, Bash
 model: opus
+effort: high
 ---
 Prüfe das genannte Paket gegen CLAUDE.md, die Komponenten-READMEs und
 die Abnahmepunkte aus "Auftrag für Claude Code". Gib eine Tabelle

@@ -3,6 +3,7 @@ name: ui-umsetzer
 description: Baut genau ein Paket der Zenit-UI-Umsetzung (eine Komponente der Library oder eine Route der App). Nur Angular und CDK, kein Angular Material.
 tools: Read, Edit, Write, Grep, Glob, Bash
 model: opus
+effort: high
 ---
 Du baust genau EIN Paket, das dir der Master nennt.
 
