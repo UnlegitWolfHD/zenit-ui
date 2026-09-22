@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { SPIELE } from '../muster/beispieldaten';
 import {
   ZButton,
   ZConsole,
@@ -217,13 +218,13 @@ const STARTZEILEN: ZConsoleLine[] = [
       </p>
 
       <z-game-grid>
-        @for (spiel of linkSpiele; track spiel.slug) {
+        @for (spiel of linkSpiele; track spiel.titel) {
           <a
             zGameTile
             [title]="spiel.titel"
             [price]="spiel.preis"
             routerLink="/muster/server-erstellen"
-            [queryParams]="{ spiel: spiel.slug }"
+            [queryParams]="{ spiel: spiel.titel }"
           ></a>
         }
       </z-game-grid>
@@ -299,12 +300,11 @@ export class WerkzeugePage {
   /** Four placeholders; a real page shows as many as it normally lists. */
   protected readonly kachelPlaetze = [1, 2, 3, 4];
 
-  /** Games of the link grid, each leading to its order. Prices are sample text. */
-  protected readonly linkSpiele = [
-    { slug: 'palworld', titel: 'Palworld', preis: 'ab 5,98\u00a0€ / Monat' },
-    { slug: 'enshrouded', titel: 'Enshrouded', preis: 'ab 4,98\u00a0€ / Monat' },
-    { slug: 'satisfactory', titel: 'Satisfactory', preis: 'ab 5,48\u00a0€ / Monat' },
-  ];
+  /**
+   * Games of the link grid, from the same list /muster/server-erstellen reads
+   * `?spiel=` against, so each tile really opens the order of its game.
+   */
+  protected readonly linkSpiele = SPIELE.slice(0, 3);
 
   protected readonly spiele = [
     { titel: 'Terraria', preis: 'ab 1,98\u00a0€ / Monat' },

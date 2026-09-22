@@ -195,8 +195,8 @@ reports `(coverError)`.
 - `a[zGameTile]` is a link, announced as "Link, Minecraft ab 1,98 € / Monat": the same name as the
   button, title plus price, with or without a cover and when the cover fails. It carries no
   `aria-pressed` and no `role`; Enter follows it, Space scrolls the page as on every link.
-- The button tile and always carries `aria-pressed`, `"true"` when selected and
-  `"false"` otherwise, so the state is announced either way.
+- The button tile is a toggle button and always carries `aria-pressed`, `"true"` when selected
+  and `"false"` otherwise, so the state is announced either way.
 - The cover area carries `aria-hidden="true"` and the image an empty `alt`, because the area shows
   either a picture of what the title below it says or, without a cover and when a cover fails to
   load, that title as text. Visible text inside a button goes into its accessible name, so without
