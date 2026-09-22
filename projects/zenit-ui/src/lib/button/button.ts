@@ -157,13 +157,14 @@ export class ZButton {
     // observer notes the new value and asserts the lock again; it runs only
     // while the link is locked, and writing `-1` over `-1` is skipped, so it
     // cannot answer its own record.
-    const beobachter = new MutationObserver(() => {
+    let beobachter: MutationObserver | undefined;
+    const halte = (): void => {
       geliehen = wirt.getAttribute('tabindex');
       if (geliehen === '-1') {
         return;
       }
       sperren();
-    });
+    };
     // A locked link is taken out of the tab order, and only then is `tabindex`
     // touched at all: a host binding would write on every change and thereby
     // delete a `tabindex` the caller wrote, static or bound. The lock borrows
@@ -171,10 +172,17 @@ export class ZButton {
     effect(() => {
       if (this.istLink && this.gesperrt()) {
         sperren();
-        beobachter.observe(wirt, { attributes: true, attributeFilter: ['tabindex'] });
+        // Not every environment has a MutationObserver: on the server the lock
+        // writes `tabindex="-1"` into the rendered HTML, only the re-assertion
+        // against a caller is missing. Constructing it eagerly threw a
+        // ReferenceError there and took every page with a locked link down.
+        if (!beobachter && typeof MutationObserver !== 'undefined') {
+          beobachter = new MutationObserver(halte);
+        }
+        beobachter?.observe(wirt, { attributes: true, attributeFilter: ['tabindex'] });
         return;
       }
-      beobachter.disconnect();
+      beobachter?.disconnect();
       if (!gesetzt) {
         return;
       }
@@ -185,7 +193,7 @@ export class ZButton {
         wirt.setAttribute('tabindex', geliehen);
       }
     });
-    inject(DestroyRef).onDestroy(() => beobachter.disconnect());
+    inject(DestroyRef).onDestroy(() => beobachter?.disconnect());
   }
 
   /**
