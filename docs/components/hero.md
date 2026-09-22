@@ -30,11 +30,20 @@ import { ZHero, ZHeroActions, ZHeroAside } from 'zenit-ui';
 | `lead`         | `string`      | `''`    | One sentence with the three strongest facts (process, hardware, price). Empty leaves the paragraph out. |
 | `note`         | `string`      | `''`    | One line with at most three promises, separated by middle dots. Empty leaves the line out.              |
 | `headingLevel` | `1 \| 2 \| 3` | `1`     | Tag of the heading. The visual size never changes with it.                                              |
+| `size`         | `'xl' \| 'lg'` | `'xl'` | Type size of the heading: `display-xl` (56px) or `display-lg` (40px). Independent of `headingLevel`.    |
 
 `headingLevel` stays at `1` on a public page, where the hero is the page heading. Lower it only
 where the page already owns its `<h1>`, for example on a component page that shows a hero as an
 example: two `<h1>` in one document is the thing it prevents. `headingLevel="2"` as a static
 attribute works, the string is coerced to a number.
+
+**Subpages.** `size="xl"` belongs to the start page and to `/minecraft`; every other public page
+takes `size="lg"` and usually leaves the right column out, which is what
+`spec/components/Hero/README.md` asks for. The two sizes are the two steps the heading already has:
+`lg` renders at every width what `xl` renders below 640px (40px/44px, `letter-spacing: -0.02em`),
+and below 640px both are the same size, so `lg` never grows on a phone. The size is a class on the
+host, `z-hero--lg`, and is independent of `headingLevel`: the tag says where the heading sits in the
+outline, the size says how big it is.
 
 No outputs. Content projection:
 
@@ -89,6 +98,7 @@ A sub-page, single column and with one action:
 
 ```html
 <z-hero
+  size="lg"
   title="Hardware und Plattform"
   lead="AMD Ryzen 9 7950X, NVMe-Speicher und 1 Gbit/s Anbindung in Nürnberg."
 >
@@ -145,13 +155,16 @@ buttons inside it and the panel in the right column bring their own.
 Two columns in a 7 to 5 ratio, single column below 900px, where the vertical padding drops from
 `space-9` to `space-8`. Below 640px the heading drops from `display-xl` (56px) to `display-lg`
 (40px) and the lead from 20px to 16px. The size sits in `z-hero__title` and does not follow
-`headingLevel`. The height comes from the content; there is no `100vh` and no background image.
+`headingLevel`. With `size="lg"` the heading is at `display-lg` from the start and stays there
+below 640px; the lead still drops to 16px. The height comes from the content; there is no `100vh`
+and no background image.
 
 ## Rendered classes and tokens
 
 | Class             | Applies when                    |
 | ----------------- | ------------------------------- |
 | `z-hero`          | on the host, always             |
+| `z-hero--lg`      | on the host, `size="lg"`        |
 | `z-hero__title`   | on the heading, always          |
 | `z-hero__lead`    | `lead` is not empty             |
 | `z-hero__actions` | on the `[zHeroActions]` element |
@@ -166,7 +179,7 @@ stylesheet.
 
 - Do put a real piece of the product in the right column: a price list, the configurator or a
   screenshot of the panel.
-- Do keep `display-xl` for the start page and `/minecraft`; sub-pages take `display-lg` and often no
+- Do keep `display-xl` for the start page and `/minecraft`; sub-pages take `size="lg"` and often no
   right column.
 - Do leave `headingLevel` at `1` on a real page and lower it only in a preview.
 - Do take prices from the price service; never hard-code them.

@@ -11,6 +11,7 @@ import { ZGameGrid, ZGameTile } from './game-tile';
       [price]="preis()"
       [cover]="cover()"
       [selected]="gewaehlt()"
+      (coverError)="fehler = fehler + 1"
     ></button>
   </z-game-grid>`,
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -20,6 +21,7 @@ class GameHost {
   readonly preis = signal('ab 2,70 € / Monat');
   readonly cover = signal('');
   readonly gewaehlt = signal(false);
+  fehler = 0;
 }
 
 @Component({
@@ -132,5 +134,37 @@ describe('ZGameTile', () => {
     expect(bild.getAttribute('src')).toBe('/cover/valheim.webp');
     expect(bild.getAttribute('alt')).toBe('');
     expect(kachel.querySelector('.z-game__cover')?.textContent?.trim()).toBe('');
+  });
+
+  it('falls back to the title text when the cover fails and reports it once', () => {
+    const { kachel, host, rendere } = baue();
+    host.cover.set('/cover/fehlt.webp');
+    rendere();
+    const bild = kachel.querySelector('.z-game__cover img') as HTMLImageElement;
+
+    bild.dispatchEvent(new Event('error'));
+    rendere();
+
+    // No broken image is left standing: the img is gone, the name is the text.
+    expect(kachel.querySelector('.z-game__cover img')).toBeNull();
+    expect(kachel.querySelector('.z-game__cover')?.textContent?.trim()).toBe('Valheim');
+    expect(host.fehler).toBe(1);
+  });
+
+  it('tries again when the cover changes', () => {
+    const { kachel, host, rendere } = baue();
+    host.cover.set('/cover/fehlt.webp');
+    rendere();
+    (kachel.querySelector('.z-game__cover img') as HTMLImageElement).dispatchEvent(
+      new Event('error'),
+    );
+    rendere();
+
+    host.cover.set('/cover/valheim.webp');
+    rendere();
+    const bild = kachel.querySelector('.z-game__cover img') as HTMLImageElement;
+
+    expect(bild.getAttribute('src')).toBe('/cover/valheim.webp');
+    expect(host.fehler).toBe(1);
   });
 });

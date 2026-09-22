@@ -44,8 +44,9 @@ export class ZHeroAside {}
  *
  * Two columns in a 7 to 5 ratio, single column below 900px. The size of the
  * heading lives in `z-hero__title` and drops from `display-xl` to `display-lg`
- * below 640px, whatever {@link headingLevel} says. On a public page the heading
- * is the `<h1>`, so there is exactly one hero per page.
+ * below 640px, whatever {@link headingLevel} says. {@link size} picks that
+ * smaller step for the whole width. On a public page the heading is the `<h1>`,
+ * so there is exactly one hero per page.
  *
  * @example
  * ```html
@@ -88,6 +89,7 @@ export class ZHeroAside {}
   `,
   host: {
     class: 'z-hero',
+    '[class.z-hero--lg]': `size() === 'lg'`,
     '[attr.title]': `null`,
   },
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -112,6 +114,18 @@ export class ZHero {
   readonly headingLevel = input<1 | 2 | 3, 1 | 2 | 3 | '1' | '2' | '3'>(1, {
     transform: (wert) => Number(wert) as 1 | 2 | 3,
   });
+
+  /**
+   * Type size of the heading, independent of {@link headingLevel}: `'xl'` is
+   * `display-xl` (56px), `'lg'` is `display-lg` (40px). The design system keeps
+   * `'xl'` for the start page and for `/minecraft` and gives every sub-page
+   * `'lg'`. `'lg'` adds `z-hero--lg` on the host, which is the only difference
+   * in the rendered markup; below 640px both sizes read as `display-lg`, so
+   * `'lg'` stays where it is.
+   *
+   * @default 'xl'
+   */
+  readonly size = input<'xl' | 'lg'>('xl');
 
   /**
    * One sentence with the three strongest facts (process, hardware, price).

@@ -5,6 +5,8 @@ import {
   HostAttributeToken,
   inject,
   input,
+  linkedSignal,
+  output,
 } from '@angular/core';
 
 /**
@@ -40,8 +42,9 @@ export class ZGameGrid {}
  * with the 3:4 cover image, then `span.z-game__title` and
  * `span.z-game__price`. Title and price stand below the cover, never on it.
  * Without a {@link cover} the title stands as text on the cover area instead
- * of an image. Selected means a 2px line in `accent-text`, no glow and no
- * scaling.
+ * of an image, and a cover whose URL fails to load drops into that same text
+ * fallback and reports {@link coverError}. Selected means a 2px line in
+ * `accent-text`, no glow and no scaling.
  *
  * Accessibility: the tile is a toggle button and always carries
  * `aria-pressed`, `"true"` when selected and `"false"` otherwise, so the state
@@ -68,8 +71,8 @@ export class ZGameGrid {}
   // selector, like Button.
   selector: 'button[zGameTile]',
   template: `<span class="z-game__cover">
-      @if (cover()) {
-        <img [src]="cover()" alt="" />
+      @if (cover() && !coverFailed()) {
+        <img [src]="cover()" alt="" (error)="coverFehlt()" />
       } @else {
         {{ title() }}
       }
@@ -103,11 +106,18 @@ export class ZGameTile {
 
   /**
    * `src` of the cover image in 3:4 format. Empty shows the title as text on
-   * the cover area instead.
+   * the cover area instead, and so does a URL that fails to load.
    *
    * @default ''
    */
   readonly cover = input('');
+
+  /**
+   * Fires once when the {@link cover} fails to load, so an application can log
+   * the dead URL. The tile handles the failure itself and needs no answer: it
+   * shows the text fallback of a missing cover from then on.
+   */
+  readonly coverError = output<void>();
 
   /**
    * Marks the tile as the chosen game: `aria-pressed="true"` plus the 2px line
@@ -124,4 +134,20 @@ export class ZGameTile {
    * here and written back, because the host binding would otherwise delete it.
    */
   protected readonly typ = inject(new HostAttributeToken('type'), { optional: true }) ?? 'button';
+
+  /**
+   * True once the browser reported `error` for the current cover. A new
+   * {@link cover} is a new URL, so the flag falls back to `false` with it
+   * instead of hiding an image that may well load.
+   */
+  protected readonly coverFailed = linkedSignal<string, boolean>({
+    source: this.cover,
+    computation: () => false,
+  });
+
+  /** `(error)` of the `<img>`: text fallback from now on, and one report. */
+  protected coverFehlt(): void {
+    this.coverFailed.set(true);
+    this.coverError.emit();
+  }
 }
