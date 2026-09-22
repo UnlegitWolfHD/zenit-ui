@@ -48,11 +48,15 @@ export class ZGameGrid {}
  *
  * Accessibility: the tile is a toggle button and always carries
  * `aria-pressed`, `"true"` when selected and `"false"` otherwise, so the state
- * is announced either way. The cover image has an empty `alt`, because the
- * title stands right below it as text. The native `title` attribute is
- * suppressed on the host, so the browser does not show its own tooltip because
- * of the {@link title} input. The host gets `type="button"`, so a tile inside a
- * form does not submit it; a static `type` written by the caller stays.
+ * is announced either way. The whole cover area is `aria-hidden`, because it
+ * shows either an image of what the title below it already says or that title
+ * as text; without it a tile with no cover, and one whose cover failed, would
+ * put the title into the accessible name twice. The image keeps its empty
+ * `alt` for the same reason. So the name of every tile is title plus price,
+ * whatever the cover does. The native `title` attribute is suppressed on the
+ * host, so the browser does not show its own tooltip because of the
+ * {@link title} input. The host gets `type="button"`, so a tile inside a form
+ * does not submit it; a static `type` written by the caller stays.
  *
  * @example
  * ```html
@@ -70,7 +74,7 @@ export class ZGameGrid {}
   // The API table prescribes button[zGameTile]: a component with an attribute
   // selector, like Button.
   selector: 'button[zGameTile]',
-  template: `<span class="z-game__cover">
+  template: `<span class="z-game__cover" aria-hidden="true">
       @if (cover() && !coverFailed()) {
         <img [src]="cover()" alt="" (error)="coverFehlt()" />
       } @else {

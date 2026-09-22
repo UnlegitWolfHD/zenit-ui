@@ -919,6 +919,66 @@ for (const route of ROUTEN) {
 }
 
 /* ------------------------------------------------------------------ *
+ * The game tiles of /werkzeuge
+ * ------------------------------------------------------------------ */
+
+/**
+ * The cover area of a `button[zGameTile]` shows either a picture of what the
+ * title below it says or, without a cover and when a cover fails to load, that
+ * title as text. Visible text inside a button goes into its accessible name, so
+ * the area is `aria-hidden` and the name of every tile is title plus price, no
+ * matter what the cover does. Read out of the tree, not out of the DOM, because
+ * the name is what the browser computes, not what the markup looks like.
+ */
+test.describe('game tiles', () => {
+  test('no game tile names its title twice, whatever its cover does', async ({ page }) => {
+    await seiteOeffnen(page, 'werkzeuge', 1440);
+    const erwartet = await page.evaluate(() =>
+      Array.from(document.querySelectorAll('button.z-game')).map((el) => ({
+        titel: el.querySelector('.z-game__title')?.textContent?.trim() ?? '',
+        preis: el.querySelector('.z-game__price')?.textContent?.trim() ?? '',
+        coverText: el.querySelector('.z-game__cover')?.textContent?.trim() ?? '',
+        bild: !!el.querySelector('.z-game__cover img'),
+      })),
+    );
+    const b = await berichtLesen(page);
+    const kacheln = b.knoten.filter(
+      (k) => !k.ignoriert && k.attr['class']?.split(/\s+/).includes('z-game'),
+    );
+    const glatt = (wert: string) => wert.replace(/\s+/g, ' ').trim();
+    // CDP schreibt Wahrheitswerte als 1 und 0, und ein "false" lässt der Baum
+    // als Standardzustand weg; vorgelesen wird es so oder so.
+    const zustand = (wert: string | undefined) =>
+      (({ '1': 'true', '0': 'false' })[wert ?? ''] ?? wert) ?? 'false';
+
+    melden(
+      'Spielkacheln /werkzeuge 1440px',
+      kacheln.map(
+        (k, i) =>
+          `${k.rolle} "${k.name}" pressed=${zustand(k.eig['pressed'])}` +
+          ` [Cover: ${erwartet[i]?.bild ? 'Bild' : `Text "${erwartet[i]?.coverText}"`}]`,
+      ),
+    );
+
+    expect(kacheln.length, 'jede Kachel steht im Baum').toBe(erwartet.length);
+    expect(kacheln.length, 'die Seite hat Spielkacheln').toBeGreaterThan(0);
+    // Ohne eine Kachel, die den Text-Fallback zeigt, prüft der Name nichts.
+    const mitFallback = erwartet.filter((e) => !e.bild && e.coverText);
+    expect(mitFallback.length, 'Kacheln mit Text-Fallback').toBeGreaterThan(0);
+
+    expect(
+      kacheln.map((k) => `${k.rolle} ${zustand(k.eig['pressed'])}`),
+      'jede Kachel ist eine Schaltfläche mit aria-pressed',
+    ).toEqual(erwartet.map((_, i) => `button ${i === 0 ? 'true' : 'false'}`));
+
+    expect(
+      kacheln.map((k) => glatt(k.name)),
+      'Name einer Kachel ist Titel plus Preis, der Text-Fallback steht nicht darin',
+    ).toEqual(erwartet.map((e) => glatt(`${e.titel} ${e.preis}`)));
+  });
+});
+
+/* ------------------------------------------------------------------ *
  * Opened overlays
  * ------------------------------------------------------------------ */
 

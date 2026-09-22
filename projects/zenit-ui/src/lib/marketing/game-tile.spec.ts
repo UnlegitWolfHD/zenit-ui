@@ -125,6 +125,22 @@ describe('ZGameTile', () => {
     expect(cover.textContent?.trim()).toBe('Valheim');
   });
 
+  it('hides the cover area from the accessible name, whatever it shows', () => {
+    const { kachel, host, rendere } = baue();
+    const cover = kachel.querySelector('.z-game__cover') as HTMLElement;
+
+    // Without a cover the area repeats the title, with one it shows a picture
+    // of what the title says: decorative either way, so the name of the button
+    // is the title once plus the price.
+    expect(cover.getAttribute('aria-hidden')).toBe('true');
+
+    host.cover.set('/cover/valheim.webp');
+    rendere();
+
+    expect(cover.getAttribute('aria-hidden')).toBe('true');
+    expect(cover.querySelector('img')?.getAttribute('alt')).toBe('');
+  });
+
   it('renders an img with an empty alt when a cover is given', () => {
     const { kachel, host, rendere } = baue();
     host.cover.set('/cover/valheim.webp');

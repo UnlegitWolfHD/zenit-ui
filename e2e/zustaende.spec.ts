@@ -880,17 +880,14 @@ test.describe('Lädt und Fehler', () => {
     expect((await stil(cover, ['fontFamily'])).fontFamily).toContain('Space Grotesk');
 
     // Am Bedienelement ändert sich nichts: Schaltfläche mit aria-pressed, und
-    // der Titel wird vorgelesen. Der Name ist Zeichen für Zeichen der einer
-    // Kachel ohne Cover -- der Text-Fallback steht als sichtbarer Text in der
-    // Schaltfläche und nennt den Titel deshalb zweimal, mit totem Cover
-    // genauso wie ohne Cover. Das leere alt des Bildes ändert daran nichts:
-    // ein alt="" steuert nie etwas zum Namen bei.
+    // der Name ist Titel plus Preis, genau wie bei einer Kachel mit heilem und
+    // bei einer ohne Cover. Die Coverfläche ist aria-hidden, deshalb steht der
+    // Text-Fallback nicht im Namen.
     await expect(kachel).toHaveAttribute('aria-pressed', 'false');
-    await expect(kachel).toHaveAccessibleName(
-      /^Ark: Survival Ascended Ark: Survival Ascended ab 6,98/,
-    );
+    await expect(cover).toHaveAttribute('aria-hidden', 'true');
+    await expect(kachel).toHaveAccessibleName(/^Ark: Survival Ascended ab 6,98/);
     await expect(page.getByRole('button', { name: /Terraria/ })).toHaveAccessibleName(
-      /^Terraria Terraria ab 1,98/,
+      /^Terraria ab 1,98/,
     );
     // (coverError) hat genau einmal gemeldet.
     await expect(page.getByText('1-mal gemeldet')).toBeVisible();

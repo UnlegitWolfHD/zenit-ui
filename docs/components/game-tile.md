@@ -145,16 +145,19 @@ reports `(coverError)`.
 
 - The tile is a toggle button and always carries `aria-pressed`, `"true"` when selected and
   `"false"` otherwise, so the state is announced either way.
-- The cover image has an empty `alt`, because the title stands right below it as text. A failed
-  cover leaves role and state alone — the tile stays a toggle button with `aria-pressed` — and its
-  accessible name becomes, character for character, the name of a tile without a cover: the text
-  fallback is visible text inside the button, so the title is part of the name twice ("Rust Rust ab
-  4,98 € / Monat"). An `alt=""` never contributed to the name in the first place, which is why the
-  name of a tile whose cover loads is the shorter "Rust ab 4,98 € / Monat".
+- The cover area carries `aria-hidden="true"` and the image an empty `alt`, because the area shows
+  either a picture of what the title below it says or, without a cover and when a cover fails to
+  load, that title as text. Visible text inside a button goes into its accessible name, so without
+  the attribute a tile with no cover would be announced as "Rust Rust ab 4,98 € / Monat". Nothing
+  is lost: the title is the next element and is announced from there.
+- A failed cover therefore changes nothing a screen reader hears. Role and state stay as they are —
+  the tile is a toggle button with `aria-pressed` — and the name stays title plus price, the same
+  name the tile had while its cover was still loading.
 - The native `title` attribute is suppressed on the host, so the browser shows no tooltip of its own
   because of the `title` input.
-- Title and price are visible text, so the accessible name of a tile with a cover is "Minecraft ab
-  1,98 € / Monat", which is what a screen reader should hear.
+- Title and price are visible text, so the accessible name of every tile is "Minecraft ab 1,98 € /
+  Monat", which is what a screen reader should hear, with a cover, without one and with one that
+  failed.
 
 ## Responsive
 
@@ -168,7 +171,7 @@ aspect ratio at every size.
 | --------------- | ---------------- |
 | `z-games`       | on the grid host |
 | `z-game`        | on each tile     |
-| `z-game__cover` | inside each tile |
+| `z-game__cover` | inside each tile, `aria-hidden` |
 | `z-game__title` | inside each tile |
 | `z-game__price` | inside each tile |
 
