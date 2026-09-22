@@ -21,8 +21,8 @@ import { ZFooter, ZFooterCol, ZFooterBase } from 'zenit-ui';
 
 ### `z-footer`
 
-| Input      | Type      | Default | Description                                                                                          |
-| ---------- | --------- | ------- | ---------------------------------------------------------------------------------------------------- |
+| Input      | Type      | Default | Description                                                                                              |
+| ---------- | --------- | ------- | -------------------------------------------------------------------------------------------------------- |
 | `landmark` | `boolean` | `true`  | Whether the host is the `contentinfo` landmark. Pass `[landmark]="false"` for a preview inside `<main>`. |
 
 No outputs. Content projection:
@@ -129,6 +129,19 @@ nothing changes there. Measured with a light `.z-legacy` island on `/muster/lega
 (`e2e/legacy.spec.ts`): `.z-footer__base` and its links already carry their own `color` from
 `bundle.css` (`text-subtle`, `text-muted`), so nothing inherits from the legacy surface and no
 `color` addition was needed.
+
+That ground ends at the footer's own box. Inside a `.z-container` the box is at most `--container`
+wide (1072px of content at 1440px), and a light legacy surface stays visible beside it. For a
+full-width ground while the page is still mixed, put the wrapper into an element that paints the
+ground itself and let the container sit inside; remove it once the last legacy surface is gone:
+
+```html
+<div style="background: var(--bg)">
+  <div class="z-container">
+    <z-footer>…</z-footer>
+  </div>
+</div>
+```
 
 ## States
 
