@@ -24,18 +24,18 @@ import { ZOption, ZOptionGroup } from 'zenit-ui';
 
 Selector: `z-option-group`
 
-| Input     | Type                  | Default | Description                                                                     |
-| --------- | --------------------- | ------- | ------------------------------------------------------------------------------- |
-| `legend`  | `string`              | `''`    | The question or term above the cards, rendered as the `<legend>`.               |
-| `hint`    | `string`              | `''`    | Addition after the legend, in a `<small>`. Empty renders nothing.               |
-| `options` | `readonly ZOption<T>[]` | `[]`  | The cards in display order, at most six. Tracked by `value`, which is unique.   |
-| `value`   | `T`                   | `undefined` | The chosen `value`, two-way bindable through `[(value)]`.                   |
-| `compact` | `boolean`             | `false` | Narrow cards with the title in mono, for "4 GB" or "90 Tage". Boolean attribute. |
-| `disabled` | `boolean`            | `false` | Locks every card. Independent of the form's disabled state. Boolean attribute. |
+| Input      | Type                    | Default     | Description                                                                      |
+| ---------- | ----------------------- | ----------- | -------------------------------------------------------------------------------- |
+| `legend`   | `string`                | `''`        | The question or term above the cards, rendered as the `<legend>`.                |
+| `hint`     | `string`                | `''`        | Addition after the legend, in a `<small>`. Empty renders nothing.                |
+| `options`  | `readonly ZOption<T>[]` | `[]`        | The cards in display order, at most six. Tracked by `value`, which is unique.    |
+| `value`    | `T`                     | `undefined` | The chosen `value`, two-way bindable through `[(value)]`.                        |
+| `compact`  | `boolean`               | `false`     | Narrow cards with the title in mono, for "4 GB" or "90 Tage". Boolean attribute. |
+| `disabled` | `boolean`               | `false`     | Locks every card. Independent of the form's disabled state. Boolean attribute.   |
 
-| Output        | Payload  | Fires when                                                 |
-| ------------- | -------- | ---------------------------------------------------------- |
-| `valueChange` | `string` | another card is checked (the `model()` companion)          |
+| Output        | Payload | Fires when                                        |
+| ------------- | ------- | ------------------------------------------------- |
+| `valueChange` | `T`     | another card is checked (the `model()` companion) |
 
 The component is generic in the type of its value: `ZOptionGroup<T extends string | number>`,
 inferred from `options`, so RAM steps stay numbers and nothing is converted on the way in or out.
@@ -108,13 +108,13 @@ In a reactive form, and locked through a control that is disabled. Signal Forms 
 
 ## States
 
-| State    | How it looks                                                              | How to trigger it                     |
-| -------- | ------------------------------------------------------------------------- | ------------------------------------- |
-| Rest     | 1px `border-control` on `surface`                                         | default                               |
-| Hover    | border moves to `text-muted`                                              | pointer over a card                   |
-| Focus    | 2px ring in `focus` with 2px offset on the card                           | Tab into the group                    |
-| Selected | border and 1px inner outline in `accent-text`, fill `surface-raised`      | click, arrow keys, or `[(value)]`     |
-| Disabled | 45 percent opacity, `cursor: not-allowed`, the reason in the card         | `disabled` on the option, or the form |
+| State    | How it looks                                                         | How to trigger it                     |
+| -------- | -------------------------------------------------------------------- | ------------------------------------- |
+| Rest     | 1px `border-control` on `surface`                                    | default                               |
+| Hover    | border moves to `text-muted`                                         | pointer over a card                   |
+| Focus    | 2px ring in `focus` with 2px offset on the card                      | Tab into the group                    |
+| Selected | border and 1px inner outline in `accent-text`, fill `surface-raised` | click, arrow keys, or `[(value)]`     |
+| Disabled | 45 percent opacity, `cursor: not-allowed`, the reason in the card    | `disabled` on the option, or the form |
 
 There is no loading or error state; the price of a card is a string the caller controls. An empty
 `options` array renders an empty fieldset with its legend.
@@ -146,16 +146,16 @@ least 40px tall on mobile.
 
 ## Rendered classes and tokens
 
-| Class                | Applies when                    |
-| -------------------- | ------------------------------- |
-| `z-options`          | on the `<fieldset>`             |
-| `z-options--compact` | with `compact`                  |
-| `z-options__legend`  | on the `<legend>`               |
-| `z-option`           | on every card `<label>`         |
-| `z-option__title`    | the name of the option          |
-| `z-option__desc`     | the sentence, or the reason     |
-| `z-option__price`    | the amount, in mono             |
-| `z-option__badge`    | on the projected `z-badge`      |
+| Class                | Applies when                |
+| -------------------- | --------------------------- |
+| `z-options`          | on the `<fieldset>`         |
+| `z-options--compact` | with `compact`              |
+| `z-options__legend`  | on the `<legend>`           |
+| `z-option`           | on every card `<label>`     |
+| `z-option__title`    | the name of the option      |
+| `z-option__desc`     | the sentence, or the reason |
+| `z-option__price`    | the amount, in mono         |
+| `z-option__badge`    | on the projected `z-badge`  |
 
 Tokens: `--border-control` and `--text-muted` for the frame, `--accent-text` (in the Minecraft
 subtheme `--mc-accent`) for the chosen card, `--surface` and `--surface-raised` for the fills,
