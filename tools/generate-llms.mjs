@@ -1238,6 +1238,30 @@ function slotSatz(slots) {
   );
 }
 
+/** Classes whose section prints the guide example and the JSDoc example. */
+const BEIDE = new Set();
+
+/** The attribute names inside the tags of an html fragment, brackets dropped. */
+function attributeIn(html) {
+  const namen = new Set();
+  for (const [, innen] of html.matchAll(/<[a-z][\w-]*([^>]*)>/g)) {
+    for (const [, name] of innen.matchAll(/([[(]*[A-Za-z][\w.-]*[\])]*)(?==|\s|\/|$)/g)) {
+      namen.add(name.replace(/[[\]()]/g, '').toLowerCase());
+    }
+  }
+  return namen;
+}
+
+/** Whether the JSDoc example uses a tag or an attribute the guide example lacks. */
+function ergaenzt(jsdoc, leitfaden) {
+  const da = attributeIn(leitfaden);
+  const tags = (html) => new Set([...html.matchAll(/<([a-z][\w-]*)/g)].map((m) => m[1]));
+  const daTags = tags(leitfaden);
+  return (
+    [...attributeIn(jsdoc)].some((n) => !da.has(n)) || [...tags(jsdoc)].some((t) => !daTags.has(t))
+  );
+}
+
 function bausteinAbschnitt(e, leitfaden, beispielBesitzer) {
   const aus = [];
   const kopf = e.selektor ? `\`${e.selektor}\`` : e.art;
@@ -1307,8 +1331,20 @@ function bausteinAbschnitt(e, leitfaden, beispielBesitzer) {
   }
 
   const beispiel = leitfaden?.beispiel ?? null;
+  const baustein = ['component', 'directive'].includes(e.art);
   if (beispiel && beispielBesitzer === e.name) {
     aus.push('', 'Example:', '', '```html', beispiel, '```');
+    // The guide shows one scenario; the JSDoc example may show a selector or
+    // an attribute the guide never uses (`iconOnly` with `aria-label`,
+    // `a[zBtn] routerLink`), and then both are printed.
+    if (e.beispiel?.sprache === 'html' && ergaenzt(e.beispiel.code, beispiel)) {
+      BEIDE.add(e.name);
+      aus.push('', 'More, from the API reference:', '', '```html', e.beispiel.code, '```');
+    }
+  } else if (beispiel && !baustein && e.beispiel) {
+    // A service's own example is TypeScript, the guide's is the markup of the
+    // layout class next to it; the service keeps its own.
+    aus.push('', 'Example:', '', `\`\`\`${e.beispiel.sprache}`, e.beispiel.code, '```');
   } else if (beispiel) {
     aus.push('', `Example: see ${beispielBesitzer}.`);
   } else if (e.beispiel) {
@@ -1407,6 +1443,7 @@ function baueDateien() {
   const leitfadenVon = new Map();
   const besitzerVon = new Map();
   const bekannt = new Set(eintraege.map((e) => e.name));
+  const artVon = new Map(eintraege.map((e) => [e.name, e.art]));
   for (const l of leitfaeden) {
     // The guide prints its example under the class it is named after
     // (wizard.md -> ZWizard), else under the first class it imports.
@@ -1415,10 +1452,14 @@ function baueDateien() {
       .split('-')
       .map((t) => t.charAt(0).toUpperCase() + t.slice(1))
       .join('')}`;
+    // A service (ZDialog, ZToast) has no markup of its own: the html example
+    // goes to the component or directive the guide also covers.
+    const istBaustein = (k) => ['component', 'directive'].includes(artVon.get(k));
     const besitzer =
-      l.klassen.includes(eigen) && bekannt.has(eigen)
+      [eigen, ...l.klassen].find((k) => l.klassen.includes(k) && istBaustein(k)) ??
+      (l.klassen.includes(eigen) && bekannt.has(eigen)
         ? eigen
-        : l.klassen.find((k) => bekannt.has(k));
+        : l.klassen.find((k) => bekannt.has(k)));
     for (const k of l.klassen) {
       // A class several guides import (`ZConfig` in config.md and wizard.md)
       // stays with the guide that owns it: the wizard's guide must not take
@@ -1908,6 +1949,7 @@ console.log(
 console.log(
   `guide examples: ${beispiele.beigetragen} of ${beispiele.erwartet} guides with an html example contribute one.`,
 );
+console.log(`guide and JSDoc example both: ${BEIDE.size} classes (${[...BEIDE].join(', ')}).`);
 console.log(`llms.txt ${kb(ergebnis.kurz)}, llms-full.txt ${kb(ergebnis.voll)}`);
 
 if (Buffer.byteLength(ergebnis.kurz, 'utf8') > 8 * 1024) {

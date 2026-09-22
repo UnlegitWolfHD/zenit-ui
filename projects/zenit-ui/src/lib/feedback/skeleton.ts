@@ -38,7 +38,7 @@ import { booleanAttribute, ChangeDetectionStrategy, Component, input } from '@an
     class: 'z-skel',
     '[class.z-skel--thumb]': `thumb()`,
     '[class.z-skel--tile]': `tile()`,
-    '[style.width]': `width() || null`,
+    '[style.width]': `tile() ? null : width() || null`,
     'aria-hidden': 'true',
   },
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -63,7 +63,8 @@ export class ZSkeleton {
   /**
    * Renders the placeholder of a `button[zGameTile]`: a 3:4 cover area, a
    * title line and a price line with the gaps of the tile, for a
-   * `z-game-grid` that is still loading. Boolean attribute.
+   * `z-game-grid` that is still loading. The grid cell sets its width, so
+   * {@link width} does not apply. Boolean attribute.
    *
    * @default false
    */

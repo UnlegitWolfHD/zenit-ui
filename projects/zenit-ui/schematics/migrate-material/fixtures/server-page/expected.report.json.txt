@@ -377,7 +377,7 @@
           "kind": "manual",
           "code": "spinner-in-button",
           "reason": "The spinner sits inside a <button> and was left alone: zBtn shows its own spinner.",
-          "fix": "Replace it with [loading] on the button: [loading]=\"saving\", and remove the spinner and the label swap around it. loading also disables the button."
+          "fix": "Replace it with [loading] on the button: [loading]=\"saving\", and remove the spinner and the label swap around it. loading also locks the button."
         },
         {
           "line": 103,

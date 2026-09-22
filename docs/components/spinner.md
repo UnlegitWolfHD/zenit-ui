@@ -68,7 +68,7 @@ motion. It is the only rotating element in the system.
   value your binding wrote in between. Whether the spinner is decorative is asked of the element,
   not of the static attributes, so `[attr.aria-label]="name()"` is never hidden behind
   `aria-hidden="true"`; take the name away again and the spinner is decorative as before.
-- Inside a loading button the surrounding `zBtn` sets `aria-busy="true"` and disables the control.
+- Inside a loading button the surrounding `zBtn` sets `aria-busy="true"` and locks it (`aria-disabled`, stays focusable).
 
 ## Responsive
 

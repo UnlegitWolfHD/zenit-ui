@@ -747,7 +747,7 @@ class Planner extends TmplAstRecursiveVisitor {
         element,
         'spinner-in-button',
         `The spinner sits inside a <${button.name}> and was left alone: zBtn shows its own spinner.`,
-        `Replace it with [loading] on the button${condition ? `: [loading]="${condition}"` : ''}, and remove the spinner and the label swap around it. loading also disables the button.`,
+        `Replace it with [loading] on the button${condition ? `: [loading]="${condition}"` : ''}, and remove the spinner and the label swap around it. loading also locks the button.`,
       );
 
       return;

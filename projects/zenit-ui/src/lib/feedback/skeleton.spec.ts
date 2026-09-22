@@ -83,4 +83,18 @@ describe('ZSkeleton', () => {
     expect(skel.classList.contains('z-skel--tile')).toBe(false);
     expect(skel.children.length).toBe(0);
   });
+
+  it('ignores width on a tile, which takes its grid cell', () => {
+    const { skel, host, rendere } = baue();
+    host.breite.set('40%');
+    host.kachel.set(true);
+    rendere();
+
+    expect(skel.style.width).toBe('');
+
+    host.kachel.set(false);
+    rendere();
+
+    expect(skel.style.width).toBe('40%');
+  });
 });
