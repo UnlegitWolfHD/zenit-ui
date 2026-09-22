@@ -1,4 +1,6 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
+import { SPIELE } from '../muster/beispieldaten';
 import {
   ZButton,
   ZConsole,
@@ -8,6 +10,7 @@ import {
   ZFaq,
   ZGameGrid,
   ZGameTile,
+  ZGameTileLink,
   ZHero,
   ZHeroActions,
   ZHeroAside,
@@ -42,6 +45,7 @@ const STARTZEILEN: ZConsoleLine[] = [
 @Component({
   selector: 'demo-werkzeuge-page',
   imports: [
+    RouterLink,
     ZButton,
     ZConsole,
     ZEmptyAction,
@@ -49,6 +53,7 @@ const STARTZEILEN: ZConsoleLine[] = [
     ZFaq,
     ZGameGrid,
     ZGameTile,
+    ZGameTileLink,
     ZHero,
     ZHeroActions,
     ZHeroAside,
@@ -205,6 +210,24 @@ const STARTZEILEN: ZConsoleLine[] = [
           (coverError)="coverFehler.update((n) => n + 1)"
         ></button>
       </z-game-grid>
+
+      <p class="demo-cap caption">
+        Als Link: a[zGameTile] sieht aus wie die Kachel, führt aber zur Bestellung des Spiels
+        (routerLink mit queryParams). Kein aria-pressed, keine Auswahl; der Linkname ist Titel und
+        Preis.
+      </p>
+
+      <z-game-grid>
+        @for (spiel of linkSpiele; track spiel.titel) {
+          <a
+            zGameTile
+            [title]="spiel.titel"
+            [price]="spiel.preis"
+            routerLink="/muster/server-erstellen"
+            [queryParams]="{ spiel: spiel.titel }"
+          ></a>
+        }
+      </z-game-grid>
     </section>
 
     <section class="demo-section">
@@ -276,6 +299,12 @@ export class WerkzeugePage {
 
   /** Four placeholders; a real page shows as many as it normally lists. */
   protected readonly kachelPlaetze = [1, 2, 3, 4];
+
+  /**
+   * Games of the link grid, from the same list /muster/server-erstellen reads
+   * `?spiel=` against, so each tile really opens the order of its game.
+   */
+  protected readonly linkSpiele = SPIELE.slice(0, 3);
 
   protected readonly spiele = [
     { titel: 'Terraria', preis: 'ab 1,98\u00a0€ / Monat' },

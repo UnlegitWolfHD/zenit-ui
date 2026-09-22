@@ -150,8 +150,8 @@
    (.z-root .z-footer__list a and .z-footer__base a, both (0,2,1)) and no link
    that carries a library class, because each of those has an a. counter-rule at
    (0,2,1) or more: a.z-btn with its five variants and the Minecraft primary,
-   a.z-skip-link, a.z-tab, a.z-side__item, a.z-header__link, a.z-row and
-   a.z-row__link.
+   a.z-skip-link, a.z-tab, a.z-side__item, a.z-header__link, a.z-row,
+   a.z-row__link and a.z-game.
 
    That counter-rule is the pattern to keep. No anchor the library renders today
    carries a class without one, which is why lowering the base rule changes

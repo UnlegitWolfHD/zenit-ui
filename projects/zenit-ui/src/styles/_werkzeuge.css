@@ -15,6 +15,10 @@
 .z-game[aria-pressed="true"] .z-game__cover { outline: 2px solid var(--accent-text); outline-offset: -2px; }
 .z-game__title { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .z-game__price { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 12px; line-height: 16px; color: var(--text-muted); }
+/* Addition to the reference: a[zGameTile]. The counter-rule every library
+   class on an anchor needs (_grundlage.css), so the link tile keeps the text
+   colour of the button tile and gets no underline on hover. */
+.z-root a.z-game, .z-root a.z-game:hover { color: inherit; text-decoration: none; }
 
 /* SpecList */
 .z-spec { display: grid; grid-template-columns: minmax(120px, 200px) minmax(0, 1fr); margin: 0; }

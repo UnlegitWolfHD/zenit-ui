@@ -94,6 +94,7 @@ const ANGULAR = new Set([
   'ngSwitch',
   'ngSwitchCase',
   'ngTemplateOutlet',
+  'queryParams',
   'routerLink',
   'routerLinkActive',
   'routerLinkActiveOptions',

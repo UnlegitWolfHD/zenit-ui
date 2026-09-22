@@ -10,6 +10,20 @@ import {
 } from '@angular/core';
 
 /**
+ * Content of a game tile, shared by {@link ZGameTile} and {@link ZGameTileLink}:
+ * the cover area with image or text fallback, then title and price.
+ */
+const KACHEL = `<span class="z-game__cover" aria-hidden="true">
+    @if (cover() && !coverFailed()) {
+      <img [src]="cover()" alt="" (error)="coverFehlt()" />
+    } @else {
+      {{ title() }}
+    }
+  </span>
+  <span class="z-game__title">{{ title() }}</span>
+  <span class="z-game__price">{{ price() }}</span>`;
+
+/**
  * Grid of the game tiles: `auto-fill` from 128px width, so the number of
  * columns follows the available space.
  *
@@ -36,7 +50,8 @@ export class ZGameGrid {}
 /**
  * Selectable game tile in the price calculator on the start page, under
  * `/preise` and in the order assistant. Sits on a `<button>` through the
- * attribute `zGameTile`.
+ * attribute `zGameTile`. A tile that leads to a page instead of changing a
+ * selection is {@link ZGameTileLink}, `a[zGameTile]`.
  *
  * Renders the class `z-game` on the host and inside it `span.z-game__cover`
  * with the 3:4 cover image, then `span.z-game__title` and
@@ -74,15 +89,7 @@ export class ZGameGrid {}
   // The API table prescribes button[zGameTile]: a component with an attribute
   // selector, like Button.
   selector: 'button[zGameTile]',
-  template: `<span class="z-game__cover" aria-hidden="true">
-      @if (cover() && !coverFailed()) {
-        <img [src]="cover()" alt="" (error)="coverFehlt()" />
-      } @else {
-        {{ title() }}
-      }
-    </span>
-    <span class="z-game__title">{{ title() }}</span>
-    <span class="z-game__price">{{ price() }}</span>`,
+  template: KACHEL,
   host: {
     class: 'z-game',
     '[attr.type]': `typ`,
@@ -144,6 +151,88 @@ export class ZGameTile {
    * {@link cover} is a new URL, so the flag falls back to `false` with it
    * instead of hiding an image that may well load.
    */
+  protected readonly coverFailed = linkedSignal<string, boolean>({
+    source: this.cover,
+    computation: () => false,
+  });
+
+  /** `(error)` of the `<img>`: text fallback from now on, and one report. */
+  protected coverFehlt(): void {
+    this.coverFailed.set(true);
+    this.coverError.emit();
+  }
+}
+
+/**
+ * Game tile as a link, for a grid whose tiles lead somewhere, for example to
+ * the order of that game. Sits on an `<a>` through the attribute `zGameTile`
+ * and looks exactly like {@link ZGameTile}: same class `z-game`, same cover
+ * area with the same text fallback for a missing or failing cover, same title
+ * and price, same hover and focus ring.
+ *
+ * It has no selected state and no `aria-pressed`: a link navigates, it does
+ * not toggle. The target is the caller's: `href` or `routerLink` on the same
+ * `<a>`, which the component leaves alone, so the tile is a real, crawlable
+ * link. The accessible name is title plus price, "Minecraft ab 1,98 € /
+ * Monat", because the cover area is `aria-hidden`, as on the button. The
+ * native `title` attribute is suppressed on the host, so the {@link title}
+ * input never becomes a browser tooltip.
+ *
+ * @example
+ * ```html
+ * <z-game-grid>
+ *   <a
+ *     zGameTile
+ *     title="Minecraft"
+ *     price="ab 1,98 € / Monat"
+ *     cover="/covers/minecraft.jpg"
+ *     routerLink="/user/games/create"
+ *     [queryParams]="{ game: 'minecraft' }"
+ *   ></a>
+ * </z-game-grid>
+ * ```
+ */
+@Component({
+  selector: 'a[zGameTile]',
+  template: KACHEL,
+  host: {
+    class: 'z-game',
+    '[attr.title]': `null`,
+  },
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class ZGameTileLink {
+  /**
+   * Name of the game. Stands below the cover and, without a {@link cover}, as
+   * the text fallback on the cover area as well.
+   *
+   * @default ''
+   */
+  readonly title = input('');
+
+  /**
+   * Starting price including the period, for example "ab 1,98 € / Monat",
+   * shown in the mono face below the title.
+   *
+   * @default ''
+   */
+  readonly price = input('');
+
+  /**
+   * `src` of the cover image in 3:4 format. Empty shows the title as text on
+   * the cover area instead, and so does a URL that fails to load.
+   *
+   * @default ''
+   */
+  readonly cover = input('');
+
+  /**
+   * Fires once when the {@link cover} fails to load, so an application can log
+   * the dead URL. The tile already shows the text fallback by then.
+   */
+  readonly coverError = output<void>();
+
+  /** True once the browser reported `error` for the current cover. */
   protected readonly coverFailed = linkedSignal<string, boolean>({
     source: this.cover,
     computation: () => false,
