@@ -172,6 +172,9 @@ There is no disabled, loading, error or empty state.
 - The `<nav>` is a navigation landmark and takes its name from `navLabel`. Set it; the page usually
   has more than one navigation, and two navigations must not share a name.
 - The active link carries `aria-current="page"`, which also drives the `accent-subtle` background.
+  The `active` input owns that attribute, so do not combine it with `routerLinkActive` and its
+  `ariaCurrentWhenActive`: the host binding writes last and would overwrite what the router set.
+  Feed `active` from the router instead.
 - The menu button is a `<button type="button">` with `aria-label` from `menuLabel`, `aria-expanded`
   reflecting the open state and `aria-controls` pointing at the generated id of the `<nav>`.
 - Escape closes the open menu and moves the focus back to the menu button, so the keyboard does not

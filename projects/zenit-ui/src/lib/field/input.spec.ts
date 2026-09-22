@@ -84,6 +84,17 @@ class EigenUngueltigHost {
   readonly ungueltig = signal(false);
 }
 
+/** A caller that binds `aria-invalid` and keeps writing while it is lent. */
+@Component({
+  imports: [ZInput],
+  template: `<input zInput [attr.aria-invalid]="eigen()" [invalid]="ungueltig()" />`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class GebundenUngueltigHost {
+  readonly ungueltig = signal(true);
+  readonly eigen = signal<string | null>('false');
+}
+
 @Component({
   imports: [ZInput, FormsModule],
   template: `<input zInput [(ngModel)]="wert" />`,
@@ -339,6 +350,26 @@ describe('ZInput', () => {
     fixture.detectChanges();
 
     expect(feld.getAttribute('aria-invalid')).toBe('true');
+  });
+
+  it('holds aria-invalid against a caller binding and gives back its latest value', async () => {
+    const fixture = TestBed.createComponent(GebundenUngueltigHost);
+    fixture.detectChanges();
+    const feld = fixture.nativeElement.querySelector('input');
+
+    expect(feld.getAttribute('aria-invalid')).toBe('true');
+
+    fixture.componentInstance.eigen.set('grammar');
+    fixture.detectChanges();
+    // The MutationObserver answers in a microtask.
+    await Promise.resolve();
+
+    expect(feld.getAttribute('aria-invalid'), 'die Eingabe hält').toBe('true');
+
+    fixture.componentInstance.ungueltig.set(false);
+    fixture.detectChanges();
+
+    expect(feld.getAttribute('aria-invalid'), 'der letzte Wert des Aufrufers').toBe('grammar');
   });
 
   it('applies to textarea[zInput] in the same way', () => {

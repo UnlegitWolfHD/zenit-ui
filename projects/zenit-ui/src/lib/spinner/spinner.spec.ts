@@ -21,6 +21,17 @@ class EigenerNameHost {
   readonly label = signal('');
 }
 
+/** The caller binds the name instead of writing it as a static attribute. */
+@Component({
+  imports: [ZSpinner],
+  template: `<z-spinner [attr.aria-label]="eigen()" [label]="label()" />`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class GebundenerNameHost {
+  readonly label = signal('');
+  readonly eigen = signal<string | null>('Wird geladen');
+}
+
 describe('ZSpinner', () => {
   function baue(): { spinner: HTMLElement; host: SpinnerHost; rendere: () => void } {
     const fixture = TestBed.createComponent(SpinnerHost);
@@ -82,6 +93,45 @@ describe('ZSpinner', () => {
 
     expect(spinner.getAttribute('role')).toBe('status');
     expect(spinner.getAttribute('aria-label')).toBe('Wird geladen');
+    expect(spinner.hasAttribute('aria-hidden')).toBe(false);
+  });
+
+  // A name read once at construction is not there yet when the caller binds it,
+  // so the spinner used to hide a name the caller had written.
+  it('is not decorative when the caller binds the name, and follows that binding', async () => {
+    const fixture = TestBed.createComponent(GebundenerNameHost);
+    fixture.detectChanges();
+    const spinner: HTMLElement = fixture.nativeElement.querySelector('z-spinner');
+
+    expect(spinner.getAttribute('aria-label')).toBe('Wird geladen');
+    expect(spinner.hasAttribute('aria-hidden')).toBe(false);
+
+    // The caller takes its name back: without one the spinner is decorative.
+    fixture.componentInstance.eigen.set(null);
+    fixture.detectChanges();
+    await Promise.resolve();
+
+    expect(spinner.getAttribute('aria-hidden')).toBe('true');
+  });
+
+  it('holds the label against a caller binding and gives back its latest value', async () => {
+    const fixture = TestBed.createComponent(GebundenerNameHost);
+    fixture.componentInstance.label.set('Wird gestartet');
+    fixture.detectChanges();
+    const spinner: HTMLElement = fixture.nativeElement.querySelector('z-spinner');
+
+    expect(spinner.getAttribute('aria-label')).toBe('Wird gestartet');
+
+    fixture.componentInstance.eigen.set('Lädt weiter');
+    fixture.detectChanges();
+    await Promise.resolve();
+
+    expect(spinner.getAttribute('aria-label'), 'die Eingabe hält').toBe('Wird gestartet');
+
+    fixture.componentInstance.label.set('');
+    fixture.detectChanges();
+
+    expect(spinner.getAttribute('aria-label'), 'der letzte Wert des Aufrufers').toBe('Lädt weiter');
     expect(spinner.hasAttribute('aria-hidden')).toBe(false);
   });
 });

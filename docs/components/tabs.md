@@ -91,7 +91,9 @@ being disabled.
 ## Accessibility
 
 - The active tab carries `aria-current="page"`. That attribute is both what assistive technology
-  announces and what the stylesheet draws the 2px underline from.
+  announces and what the stylesheet draws the 2px underline from. The `active` input owns it, so do
+  not combine it with `routerLinkActive` and its `ariaCurrentWhenActive`: the host binding writes
+  last and would overwrite what the router set. Feed `active` from the router instead.
 - Put an `aria-label` on the `<nav>` naming the area the tabs belong to, so the landmark is
   distinguishable from the other navigations on the page.
 - Every tab is a real link, so it brings its own keyboard support: Tab moves to it, Enter follows

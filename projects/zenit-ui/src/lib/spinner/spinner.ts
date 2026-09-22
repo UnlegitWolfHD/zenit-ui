@@ -1,7 +1,9 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  HostAttributeToken,
+  DestroyRef,
+  effect,
+  ElementRef,
   inject,
   input,
 } from '@angular/core';
@@ -34,7 +36,6 @@ import { leiheAttribut } from '../a11y/host-attribute';
   template: ``,
   host: {
     class: 'z-spinner',
-    '[attr.aria-hidden]': `label() || eigenerName ? null : 'true'`,
   },
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -48,19 +49,37 @@ export class ZSpinner {
    */
   readonly label = input('');
 
-  /**
-   * A `role` or an `aria-label` the caller wrote on the host. Then the spinner
-   * is not decorative and must not be hidden, even without {@link label}.
-   */
-  protected readonly eigenerName =
-    inject(new HostAttributeToken('role'), { optional: true }) ??
-    inject(new HostAttributeToken('aria-label'), { optional: true });
-
   constructor() {
+    const wirt = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
     // Both as borrowed attributes, not as host bindings: a host binding writes
     // `null` as soon as `label` is empty and thereby deletes the `role` and
     // the `aria-label` of the caller.
     leiheAttribut('role', () => (this.label() ? 'status' : null));
     leiheAttribut('aria-label', () => this.label() || null);
+
+    /**
+     * Only a spinner that nobody names is decorative. The question is asked of
+     * the element, not of the static attributes at construction: a caller that
+     * binds `[attr.aria-label]` has written nothing yet at that point, and its
+     * name would be hidden behind `aria-hidden="true"` for good.
+     */
+    const messen = (): void => {
+      if (this.label() || wirt.hasAttribute('role') || wirt.hasAttribute('aria-label')) {
+        wirt.removeAttribute('aria-hidden');
+      } else {
+        wirt.setAttribute('aria-hidden', 'true');
+      }
+    };
+    // Third effect on purpose: effects of one injection context run in the
+    // order they were created, so both borrows above have given their
+    // attributes back by the time this one reads the element.
+    effect(messen);
+    if (typeof MutationObserver === 'undefined') {
+      return;
+    }
+    // The caller may name the spinner at any time, and take the name back.
+    const beobachter = new MutationObserver(messen);
+    beobachter.observe(wirt, { attributes: true, attributeFilter: ['role', 'aria-label'] });
+    inject(DestroyRef).onDestroy(() => beobachter.disconnect());
   }
 }

@@ -67,9 +67,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   no longer `aria-hidden="true"`. `<z-table-container>` borrows `role`, `tabindex` and `aria-label`
   only while the table actually overflows and gives the caller's values back when it fits again,
   instead of writing `null` over them on every resize.
+- **A borrowed attribute holds against a caller's binding and gives back its latest value.** The
+  first version remembered the value at borrow time and let every later write of the caller win, so
+  `<z-segment [attr.aria-label]="name()" ariaLabel="Marke">` lost the input's name as soon as
+  `name()` changed and got a stale one back afterwards, a `z-table-container` lost `role="region"`
+  and its tab stop while it was still scrolling, and a caller that cleared its binding saw the
+  deleted value resurrected on give-back. `leiheAttribut` now watches the attribute while it is
+  borrowed, notes each write of the caller as the value to give back and asserts the library value
+  again, the same way `button[zBtn]` holds its `tabindex` while a link is locked.
+- **`z-spinner` decides from the element, not from the static attributes.** `role` and `aria-label`
+  were read once at construction, when a caller's `[attr.aria-label]` had written nothing yet, so a
+  bound name was silently hidden behind `aria-hidden="true"`. The question is asked of the element
+  now and answered again whenever the caller writes or removes those attributes.
+- **No `MutationObserver` on the server.** Both writers create their observer lazily and only where
+  the global exists: `<input zInput>` inside a `z-field` with a hint writes its token during the
+  first change detection run, which used to throw `MutationObserver is not defined` while rendering
+  on the server. Only the re-assertion against a caller is missing there, and nothing re-asserts
+  before the browser takes over.
 - **One rule for host bindings on attributes a caller writes.** The three ways out are
   `leiheAttribut` (borrow a single value), `ZTokenAttribut` (own one token of a list) and
   `HostAttributeToken` (read a static attribute once), all in `projects/zenit-ui/src/lib/a11y/`;
+  at most one token writer per attribute and end on one element, which a development-mode check
+  enforces instead of letting two of them push a token back and forth until the tab freezes;
   `zTooltip` and the field share the token implementation instead of carrying two copies of the
   same `MutationObserver` guard. The rule for new blocks is in `CONTRIBUTING.md` under "Host
   bindings and caller attributes". With `landmark` off, `z-app-header` and `z-footer` still own
