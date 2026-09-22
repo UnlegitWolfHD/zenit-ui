@@ -656,9 +656,13 @@ function leseLeitfaeden() {
   }
   for (const name of dateien) {
     const text = readFileSync(join(DOCS, 'components', name), 'utf8');
+    // A section runs to the next `## ` heading or to the end of the file.
+    // `(?![\s\S])` is the end of input: JavaScript has no `\Z`, which matched a
+    // literal "Z" and cut every section at its first capital Z, so no guide
+    // example and no "Don't" line ever reached llms-full.txt.
     const abschnitt = (ueberschrift) => {
       const treffer = text.match(
-        new RegExp(`^##\\s+${ueberschrift}\\s*$([\\s\\S]*?)(?=^##\\s|\\Z)`, 'm'),
+        new RegExp(`^##\\s+${ueberschrift}\\s*$([\\s\\S]*?)(?=^##\\s|(?![\\s\\S]))`, 'm'),
       );
       return treffer ? treffer[1] : '';
     };
@@ -1234,6 +1238,30 @@ function slotSatz(slots) {
   );
 }
 
+/** Classes whose section prints the guide example and the JSDoc example. */
+const BEIDE = new Set();
+
+/** The attribute names inside the tags of an html fragment, brackets dropped. */
+function attributeIn(html) {
+  const namen = new Set();
+  for (const [, innen] of html.matchAll(/<[a-z][\w-]*([^>]*)>/g)) {
+    for (const [, name] of innen.matchAll(/([[(]*[A-Za-z][\w.-]*[\])]*)(?==|\s|\/|$)/g)) {
+      namen.add(name.replace(/[[\]()]/g, '').toLowerCase());
+    }
+  }
+  return namen;
+}
+
+/** Whether the JSDoc example uses a tag or an attribute the guide example lacks. */
+function ergaenzt(jsdoc, leitfaden) {
+  const da = attributeIn(leitfaden);
+  const tags = (html) => new Set([...html.matchAll(/<([a-z][\w-]*)/g)].map((m) => m[1]));
+  const daTags = tags(leitfaden);
+  return (
+    [...attributeIn(jsdoc)].some((n) => !da.has(n)) || [...tags(jsdoc)].some((t) => !daTags.has(t))
+  );
+}
+
 function bausteinAbschnitt(e, leitfaden, beispielBesitzer) {
   const aus = [];
   const kopf = e.selektor ? `\`${e.selektor}\`` : e.art;
@@ -1303,8 +1331,20 @@ function bausteinAbschnitt(e, leitfaden, beispielBesitzer) {
   }
 
   const beispiel = leitfaden?.beispiel ?? null;
+  const baustein = ['component', 'directive'].includes(e.art);
   if (beispiel && beispielBesitzer === e.name) {
     aus.push('', 'Example:', '', '```html', beispiel, '```');
+    // The guide shows one scenario; the JSDoc example may show a selector or
+    // an attribute the guide never uses (`iconOnly` with `aria-label`,
+    // `a[zBtn] routerLink`), and then both are printed.
+    if (e.beispiel?.sprache === 'html' && ergaenzt(e.beispiel.code, beispiel)) {
+      BEIDE.add(e.name);
+      aus.push('', 'More, from the API reference:', '', '```html', e.beispiel.code, '```');
+    }
+  } else if (beispiel && !baustein && e.beispiel) {
+    // A service's own example is TypeScript, the guide's is the markup of the
+    // layout class next to it; the service keeps its own.
+    aus.push('', 'Example:', '', `\`\`\`${e.beispiel.sprache}`, e.beispiel.code, '```');
   } else if (beispiel) {
     aus.push('', `Example: see ${beispielBesitzer}.`);
   } else if (e.beispiel) {
@@ -1403,9 +1443,30 @@ function baueDateien() {
   const leitfadenVon = new Map();
   const besitzerVon = new Map();
   const bekannt = new Set(eintraege.map((e) => e.name));
+  const artVon = new Map(eintraege.map((e) => [e.name, e.art]));
   for (const l of leitfaeden) {
-    const besitzer = l.klassen.find((k) => bekannt.has(k));
+    // The guide prints its example under the class it is named after
+    // (wizard.md -> ZWizard), else under the first class it imports.
+    const eigen = `Z${l.datei
+      .replace(/^.*\/|\.md$/g, '')
+      .split('-')
+      .map((t) => t.charAt(0).toUpperCase() + t.slice(1))
+      .join('')}`;
+    // A service (ZDialog, ZToast) has no markup of its own: the html example
+    // goes to the component or directive the guide also covers.
+    const istBaustein = (k) => ['component', 'directive'].includes(artVon.get(k));
+    const besitzer =
+      [eigen, ...l.klassen].find((k) => l.klassen.includes(k) && istBaustein(k)) ??
+      (l.klassen.includes(eigen) && bekannt.has(eigen)
+        ? eigen
+        : l.klassen.find((k) => bekannt.has(k)));
     for (const k of l.klassen) {
+      // A class several guides import (`ZConfig` in config.md and wizard.md)
+      // stays with the guide that owns it: the wizard's guide must not take
+      // the configurator's example away from it.
+      if (leitfadenVon.has(k) && besitzer !== k) {
+        continue;
+      }
       leitfadenVon.set(k, l);
       besitzerVon.set(k, besitzer);
     }
@@ -1617,7 +1678,14 @@ function baueDateien() {
     ]),
   ].join('\n');
 
-  return { kurz: normalisiere(kurz), voll: normalisiere(voll), eintraege, bausteine, konstanten };
+  return {
+    kurz: normalisiere(kurz),
+    voll: normalisiere(voll),
+    eintraege,
+    bausteine,
+    konstanten,
+    leitfaeden,
+  };
 }
 
 function kuerze(text) {
@@ -1654,7 +1722,7 @@ function normalisiere(text) {
  * directive, service and provider function in `llms-full.txt`, every input,
  * model and output with its default, every selector in `llms.txt`.
  */
-function pruefe({ kurz, voll, eintraege, bausteine }) {
+function pruefe({ kurz, voll, eintraege, bausteine, leitfaeden }) {
   const fehler = [];
   let mitglieder = 0;
 
@@ -1694,8 +1762,46 @@ function pruefe({ kurz, voll, eintraege, bausteine }) {
   fehler.push(...keinePfade(voll), ...keinePfade(kurz));
   const fences = pruefeFences(voll, eintraege);
   fehler.push(...fences.fehler);
+  const beispiele = pruefeBeispiele(voll, leitfaeden);
+  fehler.push(...beispiele.fehler);
 
-  return { fehler, mitglieder, selektoren: selektoren.size, fences };
+  return { fehler, mitglieder, selektoren: selektoren.size, fences, beispiele };
+}
+
+/**
+ * Every guide with an html fence under `## Examples` has to have its example
+ * in llms-full.txt. The guides are counted here line by line, independently
+ * of the section regex of {@link leseLeitfaeden}: that regex once ended every
+ * section at the first capital "Z" (`\Z` is no anchor in JavaScript), and not
+ * a single guide example reached the file while every other check was green.
+ */
+function pruefeBeispiele(voll, leitfaeden) {
+  const fehler = [];
+  const verzeichnis = join(DOCS, 'components');
+  const mitBeispiel = readdirSync(verzeichnis)
+    .filter((n) => n.endsWith('.md') && n !== 'README.md')
+    .filter((n) => {
+      const zeilen = readFileSync(join(verzeichnis, n), 'utf8').split(/\r?\n/);
+      const start = zeilen.findIndex((z) => /^##\s+Examples\s*$/.test(z));
+      if (start < 0) {
+        return false;
+      }
+      const ende = zeilen.findIndex((z, i) => i > start && /^##\s/.test(z));
+      return zeilen.slice(start, ende < 0 ? undefined : ende).some((z) => z.startsWith('```html'));
+    });
+  const beigetragen = leitfaeden.filter(
+    (l) =>
+      l.beispiel &&
+      voll.includes(`Example:\n\n\`\`\`html\n${normalisiere(l.beispiel).trimEnd()}\n\`\`\``),
+  );
+  if (beigetragen.length < mitBeispiel.length) {
+    const da = new Set(beigetragen.map((l) => l.datei));
+    const fehlend = mitBeispiel.filter((n) => !da.has(`docs/components/${n}`));
+    fehler.push(
+      `only ${beigetragen.length} of ${mitBeispiel.length} guides with an html example reach llms-full.txt; missing: ${fehlend.join(', ')}`,
+    );
+  }
+  return { fehler, beigetragen: beigetragen.length, erwartet: mitBeispiel.length };
 }
 
 /**
@@ -1810,7 +1916,7 @@ function pruefeFences(text, eintraege) {
 
 const nurPruefen = process.argv.includes('--check');
 const ergebnis = baueDateien();
-const { fehler, mitglieder, selektoren, fences } = pruefe(ergebnis);
+const { fehler, mitglieder, selektoren, fences, beispiele } = pruefe(ergebnis);
 
 const kb = (t) => `${(Buffer.byteLength(t, 'utf8') / 1024).toFixed(1)} kB`;
 
@@ -1840,6 +1946,10 @@ console.log(
 console.log(
   `ts fences: ${fences.ganze} whole files ${fences.art}, ${fences.teile} fragments skipped.`,
 );
+console.log(
+  `guide examples: ${beispiele.beigetragen} of ${beispiele.erwartet} guides with an html example contribute one.`,
+);
+console.log(`guide and JSDoc example both: ${BEIDE.size} classes (${[...BEIDE].join(', ')}).`);
 console.log(`llms.txt ${kb(ergebnis.kurz)}, llms-full.txt ${kb(ergebnis.voll)}`);
 
 if (Buffer.byteLength(ergebnis.kurz, 'utf8') > 8 * 1024) {

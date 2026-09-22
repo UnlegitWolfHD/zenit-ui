@@ -96,7 +96,7 @@ One row per row of the table "Material ablösen" in `spec/guidelines/30-angular.
 <button zBtn="ghost" iconOnly type="button" aria-label="Löschen"><z-icon name="delete" /></button>
 ```
 
-`mat-flat-button` → `primary`, `mat-stroked-button` → `secondary` (the default, so bare `zBtn` is secondary), `mat-button` → `ghost`, `mat-icon-button` → `iconOnly`. Extra inputs: `size: 'sm' | 'md' | 'lg'`, `block`, `loading`, `disabled`. `loading` puts a spinner in front of the label and disables the button, which replaces the usual "disable it and swap the label" pattern.
+`mat-flat-button` → `primary`, `mat-stroked-button` → `secondary` (the default, so bare `zBtn` is secondary), `mat-button` → `ghost`, `mat-icon-button` → `iconOnly`. Extra inputs: `size: 'sm' | 'md' | 'lg'`, `block`, `loading`, `disabled`. `loading` puts a spinner in front of the label and locks the button while it keeps the focus, which replaces the usual "disable it and swap the label" pattern.
 
 Watch the acceptance rule: at most one primary button per screen height. A Material page with three `color="primary"` buttons becomes one primary plus secondaries.
 

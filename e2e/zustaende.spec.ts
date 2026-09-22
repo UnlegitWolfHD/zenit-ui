@@ -975,12 +975,53 @@ test.describe('slider-steppers', () => {
 });
 
 test.describe('Lädt und Fehler', () => {
+  // z-skeleton tile holds the cell of a button[zGameTile]. Measured against a
+  // tile in the grid of the same width above it, not in the same grid: next
+  // to a tile, the row would stretch the skeleton to the tile's height and the
+  // comparison would pass by construction.
+  for (const breite of [1440, 375]) {
+    test(`skeleton tile has the box of a game tile at ${breite}px`, async ({ page }) => {
+      await seiteOeffnen(page, 'werkzeuge', breite);
+      const laden = page.getByRole('group', { name: 'Spiele werden geladen' });
+      await expect(laden).toHaveAttribute('aria-busy', 'true');
+
+      const masse = await page.evaluate(() => {
+        const box = (el: Element | null) => {
+          const r = el!.getBoundingClientRect();
+          return { breite: r.width, hoehe: r.height };
+        };
+        const kachel = document.querySelector('z-game-grid .z-game');
+        const skel = document.querySelector('z-game-grid .z-skel--tile');
+        return {
+          kachel: box(kachel),
+          skel: box(skel),
+          coverKachel: box(kachel!.querySelector('.z-game__cover')),
+          coverSkel: box(skel!.querySelector('.z-skel__cover')),
+          rasterGleich:
+            kachel!.parentElement!.getBoundingClientRect().width ===
+            skel!.parentElement!.getBoundingClientRect().width,
+        };
+      });
+
+      expect(masse.rasterGleich).toBe(true);
+      expect(Math.abs(masse.skel.breite - masse.kachel.breite)).toBeLessThanOrEqual(1);
+      expect(Math.abs(masse.skel.hoehe - masse.kachel.hoehe)).toBeLessThanOrEqual(1);
+      expect(Math.abs(masse.coverSkel.hoehe - masse.coverKachel.hoehe)).toBeLessThanOrEqual(1);
+      console.log(
+        `${breite}px: tile ${JSON.stringify(masse.kachel)}, skeleton ${JSON.stringify(masse.skel)}`,
+      );
+    });
+  }
+
   test('Button lädt: Spinner vor dem Text, aria-busy und gesperrt', async ({ page }) => {
     await seiteOeffnen(page, 'grundlage');
     const laedt = page.getByRole('button', { name: 'Wird gestartet' }).first();
 
     await expect(laedt).toHaveAttribute('aria-busy', 'true');
-    await expect(laedt).toBeDisabled();
+    // Locked through aria-disabled, not through the native disabled: the
+    // button that triggered the action keeps the focus.
+    await expect(laedt).toHaveAttribute('aria-disabled', 'true');
+    await expect(laedt).not.toHaveAttribute('disabled');
     expect(
       await laedt.evaluate((el) => el.firstElementChild?.classList.contains('z-spinner') ?? false),
       'Spinner steht nicht vor dem Text',

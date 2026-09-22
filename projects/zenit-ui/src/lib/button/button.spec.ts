@@ -48,6 +48,42 @@ class LinkHost {
 })
 class AriaHost {}
 
+/** A caller that listens itself, inside a form, next to a text field. */
+@Component({
+  imports: [ZButton],
+  template: `<form (submit)="$event.preventDefault(); gesendet = gesendet + 1">
+    <input aria-label="Servername" />
+    <button
+      zBtn
+      type="submit"
+      [loading]="laedt()"
+      [disabled]="gesperrt()"
+      (click)="geklickt = geklickt + 1"
+    >
+      Speichern
+    </button>
+  </form>`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class FormularHost {
+  readonly laedt = signal(false);
+  readonly gesperrt = signal(false);
+  geklickt = 0;
+  gesendet = 0;
+}
+
+/** An aria-disabled the caller binds, next to the lock of the library. */
+@Component({
+  imports: [ZButton],
+  template: `<button zBtn [attr.aria-disabled]="aria()" [loading]="laedt()">Stoppen</button>
+    <a zBtn href="#start" [attr.aria-disabled]="aria()" [disabled]="laedt()">Starten</a>`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class AriaBindungHost {
+  readonly aria = signal<string | null>('true');
+  readonly laedt = signal(false);
+}
+
 /** A tabindex the caller wrote: static on the button, bound on the link. */
 @Component({
   imports: [ZButton],
@@ -148,7 +184,8 @@ describe('ZButton', () => {
     fixture.detectChanges();
 
     expect(button.querySelector('z-spinner')).not.toBeNull();
-    expect(button.hasAttribute('disabled')).toBe(true);
+    expect(button.hasAttribute('disabled')).toBe(false);
+    expect(button.getAttribute('aria-disabled')).toBe('true');
     expect(button.getAttribute('aria-busy')).toBe('true');
 
     const knoten = Array.from(button.childNodes) as Node[];
@@ -170,6 +207,100 @@ describe('ZButton', () => {
 
     expect(button.hasAttribute('disabled')).toBe(true);
     expect(button.getAttribute('aria-busy')).toBeNull();
+  });
+
+  // spec/guidelines/15-zustaende.md, "Lädt": the button that triggered the
+  // action shows the spinner, so it has to keep the focus. A native disabled
+  // would drop it to body.
+  describe('loading without the native disabled', () => {
+    function geladen(): {
+      fixture: ReturnType<typeof TestBed.createComponent<FormularHost>>;
+      button: HTMLButtonElement;
+    } {
+      const fixture = TestBed.createComponent(FormularHost);
+      document.body.appendChild(fixture.nativeElement);
+      fixture.detectChanges();
+      return { fixture, button: fixture.nativeElement.querySelector('button') };
+    }
+
+    it('keeps the focus on the button when loading turns on', () => {
+      const { fixture, button } = geladen();
+      button.focus();
+      expect(document.activeElement).toBe(button);
+
+      fixture.componentInstance.laedt.set(true);
+      fixture.detectChanges();
+
+      expect(document.activeElement).toBe(button);
+      expect(button.hasAttribute('disabled')).toBe(false);
+      expect(button.hasAttribute('tabindex')).toBe(false);
+      expect(button.getAttribute('aria-disabled')).toBe('true');
+      expect(button.getAttribute('aria-busy')).toBe('true');
+      fixture.nativeElement.remove();
+    });
+
+    it('swallows the click before the (click) of the caller and the form see it', () => {
+      const { fixture, button } = geladen();
+      fixture.componentInstance.laedt.set(true);
+      fixture.detectChanges();
+
+      const klick = new MouseEvent('click', { bubbles: true, cancelable: true });
+      button.dispatchEvent(klick);
+
+      expect(klick.defaultPrevented).toBe(true);
+      expect(fixture.componentInstance.geklickt).toBe(0);
+      expect(fixture.componentInstance.gesendet).toBe(0);
+      fixture.nativeElement.remove();
+    });
+
+    it('swallows Enter and Space, and lets other keys through', () => {
+      const { fixture, button } = geladen();
+      fixture.componentInstance.laedt.set(true);
+      fixture.detectChanges();
+
+      for (const key of ['Enter', ' ']) {
+        const taste = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
+        button.dispatchEvent(taste);
+        expect(taste.defaultPrevented, key).toBe(true);
+      }
+      const tab = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true });
+      button.dispatchEvent(tab);
+      expect(tab.defaultPrevented).toBe(false);
+      fixture.nativeElement.remove();
+    });
+
+    it('lets the click through again once loading is off', () => {
+      const { fixture, button } = geladen();
+      fixture.componentInstance.laedt.set(true);
+      fixture.detectChanges();
+      fixture.componentInstance.laedt.set(false);
+      fixture.detectChanges();
+
+      button.click();
+
+      expect(button.hasAttribute('aria-disabled')).toBe(false);
+      expect(button.hasAttribute('aria-busy')).toBe(false);
+      expect(fixture.componentInstance.geklickt).toBe(1);
+      expect(fixture.componentInstance.gesendet).toBe(1);
+      fixture.nativeElement.remove();
+    });
+
+    it('keeps the native disabled for disabled alone and when both are set', () => {
+      const { fixture, button } = geladen();
+      fixture.componentInstance.gesperrt.set(true);
+      fixture.detectChanges();
+
+      expect(button.hasAttribute('disabled')).toBe(true);
+      expect(button.hasAttribute('aria-disabled')).toBe(false);
+
+      fixture.componentInstance.laedt.set(true);
+      fixture.detectChanges();
+
+      expect(button.hasAttribute('disabled')).toBe(true);
+      expect(button.hasAttribute('aria-disabled')).toBe(false);
+      expect(button.getAttribute('aria-busy')).toBe('true');
+      fixture.nativeElement.remove();
+    });
   });
 
   it('locks an a[zBtn] through aria-disabled and tabindex and swallows the click', () => {
@@ -322,6 +453,94 @@ describe('ZButton', () => {
 
       expect(link.hasAttribute('tabindex')).toBe(false);
     });
+  });
+
+  // The library borrows aria-disabled instead of binding it: a host binding
+  // deleted a bound value of the caller on every change detection run.
+  describe('aria-disabled of the caller', () => {
+    it('keeps a static aria-disabled through loading and back', () => {
+      @Component({
+        imports: [ZButton],
+        template: `<button zBtn aria-disabled="true" [loading]="laedt()">Stoppen</button>`,
+        changeDetection: ChangeDetectionStrategy.OnPush,
+      })
+      class StatischHost {
+        readonly laedt = signal(false);
+      }
+      const fixture = TestBed.createComponent(StatischHost);
+      fixture.detectChanges();
+      const button = fixture.nativeElement.querySelector('button');
+
+      expect(button.getAttribute('aria-disabled')).toBe('true');
+      fixture.componentInstance.laedt.set(true);
+      fixture.detectChanges();
+      expect(button.getAttribute('aria-disabled')).toBe('true');
+      fixture.componentInstance.laedt.set(false);
+      fixture.detectChanges();
+      expect(button.getAttribute('aria-disabled')).toBe('true');
+    });
+
+    it('keeps a bound aria-disabled and swallows the click while it says true', () => {
+      const fixture = TestBed.createComponent(AriaBindungHost);
+      fixture.detectChanges();
+      const button = fixture.nativeElement.querySelector('button');
+
+      expect(button.getAttribute('aria-disabled')).toBe('true');
+      const klick = new MouseEvent('click', { bubbles: true, cancelable: true });
+      button.dispatchEvent(klick);
+      expect(klick.defaultPrevented).toBe(true);
+
+      fixture.componentInstance.aria.set('false');
+      fixture.detectChanges();
+      expect(button.getAttribute('aria-disabled')).toBe('false');
+      const frei = new MouseEvent('click', { bubbles: true, cancelable: true });
+      button.dispatchEvent(frei);
+      expect(frei.defaultPrevented).toBe(false);
+    });
+
+    for (const [was, auswahl] of [
+      ['a loading button', 'button'],
+      ['a locked link', 'a'],
+    ] as const) {
+      it(`holds "true" on ${was} while the binding changes, and gives back the latest value`, async () => {
+        const fixture = TestBed.createComponent(AriaBindungHost);
+        fixture.componentInstance.aria.set('false');
+        fixture.detectChanges();
+        const element = fixture.nativeElement.querySelector(auswahl);
+
+        fixture.componentInstance.laedt.set(true);
+        fixture.detectChanges();
+        expect(element.getAttribute('aria-disabled')).toBe('true');
+
+        // The binding writes while the library holds the attribute.
+        fixture.componentInstance.aria.set('mixed');
+        fixture.detectChanges();
+        await Promise.resolve();
+        expect(element.getAttribute('aria-disabled')).toBe('true');
+
+        fixture.componentInstance.laedt.set(false);
+        fixture.detectChanges();
+        expect(element.getAttribute('aria-disabled')).toBe('mixed');
+      });
+
+      it(`removes the attribute from ${was} when the caller cleared it meanwhile`, async () => {
+        const fixture = TestBed.createComponent(AriaBindungHost);
+        fixture.componentInstance.aria.set('false');
+        fixture.detectChanges();
+        const element = fixture.nativeElement.querySelector(auswahl);
+
+        fixture.componentInstance.laedt.set(true);
+        fixture.detectChanges();
+        fixture.componentInstance.aria.set(null);
+        fixture.detectChanges();
+        await Promise.resolve();
+        expect(element.getAttribute('aria-disabled')).toBe('true');
+
+        fixture.componentInstance.laedt.set(false);
+        fixture.detectChanges();
+        expect(element.hasAttribute('aria-disabled')).toBe(false);
+      });
+    }
   });
 
   it('swallows the click on a button with aria-disabled', () => {

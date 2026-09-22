@@ -80,7 +80,7 @@ changed, converted: icon 6, button 7, tooltip 3, spinner 1, chip 1
 | 74:11 | button | review | button-no-name | The icon-only button has no accessible name: z-icon is aria-hidden and a tooltip is a description, not a label. | Add an aria-label, usually the tooltip text: [attr.aria-label]="'Server ' + server.name + ' löschen'". |
 | 74:11 | button | review | button-warn | color="warn" was dropped: zenit-ui has no colour input, colour must come from the context. | Candidate for zBtn="danger": use it only where the action destroys something, and confirm it with a dialog. |
 | 74:11 | tooltip | review | tooltip-disabled-merged | [matTooltipDisabled]="!server.deletable" was merged into the text: an empty zTooltip shows nothing. | Check the expression. |
-| 100:5 | spinner | manual | spinner-in-button | The spinner sits inside a <button> and was left alone: zBtn shows its own spinner. | Replace it with [loading] on the button: [loading]="saving", and remove the spinner and the label swap around it. loading also disables the button. |
+| 100:5 | spinner | manual | spinner-in-button | The spinner sits inside a <button> and was left alone: zBtn shows its own spinner. | Replace it with [loading] on the button: [loading]="saving", and remove the spinner and the label swap around it. loading also locks the button. |
 | 103:3 | button | review | several-primaries | This template now has 2 buttons with zBtn="primary". The design system allows at most one primary per screen height. | Keep the one action the screen exists for as primary and make the others zBtn (secondary) or zBtn="ghost". |
 
 - info `button-colour` x3, lines 30, 94, 103

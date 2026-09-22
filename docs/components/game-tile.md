@@ -34,9 +34,9 @@ available space. The content is the tiles.
 | `cover`    | `string`  | `''`    | `src` of the cover image in 3:4 format. Empty shows the title as text on the cover area instead.              |
 | `selected` | `boolean` | `false` | Marks the tile as the chosen game. Boolean attribute.                                                         |
 
-| Output         | Type   | Description                                                                              |
-| -------------- | ------ | ---------------------------------------------------------------------------------------- |
-| `(coverError)` | `void` | The `cover` failed to load. The tile has already switched to the text fallback by then.  |
+| Output         | Type   | Description                                                                             |
+| -------------- | ------ | --------------------------------------------------------------------------------------- |
+| `(coverError)` | `void` | The `cover` failed to load. The tile has already switched to the text fallback by then. |
 
 The selection itself is the native `(click)` event. The element renders its own content, so the
 tag stays empty in your template.
@@ -128,15 +128,18 @@ Next to the summary the selection feeds:
 
 ## States
 
-| State        | How it looks                                             | How to trigger it            |
-| ------------ | -------------------------------------------------------- | ---------------------------- |
-| Rest         | cover area with a 1px `border` outline                   | default                      |
-| Hover        | outline moves to `border-control`                        | pointer over the tile        |
-| Focus        | 2px ring in `focus` with 2px offset                      | Tab, `:focus-visible`        |
-| Selected     | 2px outline in `accent-text`, `aria-pressed="true"`      | `selected`                   |
-| Cover failed | the title in `display` on the cover area, no `<img>`     | the `cover` URL fails to load |
+| State        | How it looks                                           | How to trigger it              |
+| ------------ | ------------------------------------------------------ | ------------------------------ |
+| Rest         | cover area with a 1px `border` outline                 | default                        |
+| Hover        | outline moves to `border-control`                      | pointer over the tile          |
+| Focus        | 2px ring in `focus` with 2px offset                    | Tab, `:focus-visible`          |
+| Selected     | 2px outline in `accent-text`, `aria-pressed="true"`    | `selected`                     |
+| Cover failed | the title in `display` on the cover area, no `<img>`   | the `cover` URL fails to load  |
+| Loading      | `<z-skeleton tile />` in place of each tile, same cell | `z-game-grid` with `aria-busy` |
 
-There is no disabled, loading or empty state. A game that cannot be ordered is left out of the
+There is no disabled or empty state, and the tile has no loading state of its own: while the games
+load, the grid holds `z-skeleton tile` placeholders, which take exactly the cell of a tile (see
+[Skeleton](skeleton.md)). A game that cannot be ordered is left out of the
 grid. Selecting a tile changes nothing visually beyond the outline: no glow, no scaling. "Cover
 failed" is the same rendering as a tile without a cover, so the grid keeps its rhythm, and it also
 reports `(coverError)`.
@@ -167,13 +170,13 @@ aspect ratio at every size.
 
 ## Rendered classes and tokens
 
-| Class           | Applies when     |
-| --------------- | ---------------- |
-| `z-games`       | on the grid host |
-| `z-game`        | on each tile     |
+| Class           | Applies when                    |
+| --------------- | ------------------------------- |
+| `z-games`       | on the grid host                |
+| `z-game`        | on each tile                    |
 | `z-game__cover` | inside each tile, `aria-hidden` |
-| `z-game__title` | inside each tile |
-| `z-game__price` | inside each tile |
+| `z-game__title` | inside each tile                |
+| `z-game__price` | inside each tile                |
 
 Tokens: `--space-2` to `--space-4` for the gaps, `--radius-md` for the cover, `--surface-raised`
 for the cover area, `--border` and `--border-control` for the outline, `--accent-text` for the

@@ -16,6 +16,7 @@ import {
   ZPanelActions,
   ZPriceLine,
   ZPriceSummary,
+  ZSkeleton,
   ZSpecItem,
   ZSpecList,
 } from 'zenit-ui';
@@ -55,6 +56,7 @@ const STARTZEILEN: ZConsoleLine[] = [
     ZPanel,
     ZPanelActions,
     ZPriceSummary,
+    ZSkeleton,
     ZSpecList,
   ],
   template: `
@@ -178,6 +180,17 @@ const STARTZEILEN: ZConsoleLine[] = [
       </z-game-grid>
 
       <p class="demo-cap caption">
+        Lädt: z-skeleton tile hält die Zelle einer Kachel, Cover, Titel und Preis in denselben
+        Maßen. Das Raster trägt aria-busy und ein aria-label.
+      </p>
+
+      <z-game-grid role="group" aria-busy="true" aria-label="Spiele werden geladen">
+        @for (platz of kachelPlaetze; track platz) {
+          <z-skeleton tile />
+        }
+      </z-game-grid>
+
+      <p class="demo-cap caption">
         Cover fehlgeschlagen: diese Kachel lädt /covers/fehlt.jpg, das es nicht gibt. Nach dem
         Fehler steht derselbe Text-Fallback wie ohne Cover, kein kaputtes Bild. (coverError) hat das
         {{ coverFehler() }}-mal gemeldet.
@@ -260,6 +273,9 @@ export class WerkzeugePage {
     { titel: 'Valheim', preis: 'ab 2,70\u00a0€' },
     { titel: '7 Days to Die', preis: 'ab 3,95\u00a0€' },
   ];
+
+  /** Four placeholders; a real page shows as many as it normally lists. */
+  protected readonly kachelPlaetze = [1, 2, 3, 4];
 
   protected readonly spiele = [
     { titel: 'Terraria', preis: 'ab 1,98\u00a0€ / Monat' },

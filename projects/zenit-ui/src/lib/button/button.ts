@@ -6,10 +6,10 @@ import {
   DestroyRef,
   effect,
   ElementRef,
-  HostAttributeToken,
   inject,
   input,
 } from '@angular/core';
+import { leiheAttribut } from '../a11y/host-attribute';
 import { ZSpinner } from '../spinner';
 
 /**
@@ -30,14 +30,21 @@ export type ZButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
  * `md` adds no class. The content is projected as is; while {@link loading} is
  * set a `z-spinner` sits in front of it.
  *
- * Accessibility: on a `<button>`, {@link disabled} and {@link loading} set the
- * native `disabled` attribute; {@link loading} additionally sets
- * `aria-busy="true"`. An `<a>` cannot be disabled natively, so it gets
- * `aria-disabled="true"` and `tabindex="-1"` instead, and the click is
- * swallowed. A caller may also write a static `aria-disabled="true"` onto a
- * `<button>`: the button then stays focusable and can explain the reason in a
- * tooltip, which a real `disabled` would prevent, and its click is swallowed
- * as well. Icon-only buttons need an `aria-label` from the caller.
+ * Accessibility: on a `<button>`, {@link disabled} sets the native `disabled`
+ * attribute, so a deliberately locked button leaves the tab order.
+ * {@link loading} sets `aria-busy="true"` and `aria-disabled="true"` instead
+ * and swallows click, Enter and Space, but leaves the button focusable: the
+ * button that triggered the action keeps the focus while it spins, and a
+ * submit button in a form blocks the implicit submission from Enter in a field
+ * as well. With both set, `disabled` wins and the lock is native. An `<a>`
+ * cannot be disabled natively, so it gets `aria-disabled="true"` and
+ * `tabindex="-1"` instead, and the click is swallowed. A caller may also write
+ * `aria-disabled="true"` onto a `<button>`, statically or through
+ * `[attr.aria-disabled]`: the button then stays focusable and can explain the
+ * reason in a tooltip, which a real `disabled` would prevent, and its click is
+ * swallowed as well. The attribute is only borrowed while the library locks:
+ * its `"true"` wins then, and the caller's latest value comes back when the
+ * lock goes. Icon-only buttons need an `aria-label` from the caller.
  *
  * The component never touches `type`: the native default stays, so a
  * `<button zBtn>` inside a form submits it. A button that only triggers an
@@ -67,10 +74,8 @@ export type ZButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
     '[class.z-btn--lg]': `size() === 'lg'`,
     '[class.z-btn--icon]': `iconOnly()`,
     '[class.z-btn--block]': `block()`,
-    '[attr.disabled]': `istLink || !gesperrt() ? null : ""`,
-    '[attr.aria-disabled]': `ariaGesperrt || (istLink && gesperrt()) ? "true" : null`,
+    '[attr.disabled]': `istLink || !disabled() ? null : ""`,
     '[attr.aria-busy]': `loading() ? "true" : null`,
-    '(click)': `aufKlick($event)`,
   },
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -109,7 +114,10 @@ export class ZButton {
 
   /**
    * Shows a spinner in front of the content, sets `aria-busy="true"` and locks
-   * the button just like {@link disabled}. Boolean attribute.
+   * the button without taking it out of the tab order: `aria-disabled="true"`
+   * and a swallowed click, Enter and Space instead of the native `disabled`,
+   * so the button that triggered the action keeps the focus. Together with
+   * {@link disabled} the native lock wins. Boolean attribute.
    *
    * @default false
    */
@@ -127,19 +135,24 @@ export class ZButton {
 
   protected readonly istLink =
     inject<ElementRef<HTMLElement>>(ElementRef).nativeElement.nodeName === 'A';
-  /**
-   * Static `aria-disabled="true"` written by the caller. That keeps a
-   * `<button>` focusable so it can show the reason in a tooltip, which a real
-   * `disabled` would prevent. Without reading it here the host binding would
-   * delete the attribute.
-   */
-  protected readonly ariaGesperrt =
-    inject(new HostAttributeToken('aria-disabled'), { optional: true }) === 'true';
   protected readonly variante = computed<ZButtonVariant>(() => this.zBtn() || 'secondary');
   protected readonly gesperrt = computed(() => this.disabled() || this.loading());
+  /**
+   * Locked without the native `disabled`: every locked link, and a loading
+   * button that is not also `disabled`. It stays focusable, carries
+   * `aria-disabled="true"` and its activation is swallowed.
+   */
+  protected readonly weich = computed(() =>
+    this.istLink ? this.gesperrt() : this.loading() && !this.disabled(),
+  );
 
   constructor() {
     const wirt = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+    // Borrowed, not bound: a host binding would delete an `aria-disabled` of
+    // the caller, static or bound, on every change detection run while the
+    // button is not soft-locked. The caller's value stands while the library
+    // has none, and its latest value comes back when the lock goes.
+    leiheAttribut('aria-disabled', () => (this.weich() ? 'true' : null));
     /** What the caller last wrote, and what it gets back when the lock goes. */
     let geliehen: string | null = null;
     let gesetzt = false;
@@ -194,17 +207,28 @@ export class ZButton {
       }
     });
     inject(DestroyRef).onDestroy(() => beobachter?.disconnect());
-  }
 
-  /**
-   * An `<a>` and a `<button aria-disabled="true">` stay clickable. The click is
-   * therefore caught before another listener on the same element sees it (for
-   * example `routerLink`). `href` is left untouched.
-   */
-  protected aufKlick(ereignis: Event): void {
-    if (this.ariaGesperrt || (this.istLink && this.gesperrt())) {
+    // Whatever carries `aria-disabled="true"` stays clickable: a locked link, a
+    // loading button, a button the caller locked that way. Its activation is
+    // caught in the capture phase, which runs before every listener on the
+    // element in the bubble phase, so neither a `(click)` of the caller nor
+    // `routerLink` sees it, and `preventDefault` keeps a submit button from
+    // submitting its form. The implicit submission from Enter in a text field
+    // is a click on the default button as well, so it is caught here too.
+    // Enter and Space are caught on `keydown`, before they turn into a click.
+    // `href` is left untouched.
+    const schlucke = (ereignis: Event): void => {
+      const taste = (ereignis as KeyboardEvent).key;
+      if (
+        wirt.getAttribute('aria-disabled') !== 'true' ||
+        (ereignis.type === 'keydown' && taste !== 'Enter' && taste !== ' ')
+      ) {
+        return;
+      }
       ereignis.preventDefault();
       ereignis.stopImmediatePropagation();
-    }
+    };
+    wirt.addEventListener('click', schlucke, true);
+    wirt.addEventListener('keydown', schlucke, true);
   }
 }

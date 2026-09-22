@@ -75,28 +75,38 @@ A full-width button in a form on a phone, and a destructive one:
 
 ## States
 
-| State    | How it looks                                                                                                                                 | How to trigger it                                                   |
-| -------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| Rest     | as in the reference                                                                                                                          | default                                                             |
-| Hover    | `primary` moves to `accent-hover`, `secondary` gets `surface-hover`, `ghost` gets `surface-raised` and `text`, `danger` gets `danger-subtle` | pointer over the button                                             |
-| Focus    | 2px ring in `focus` with 2px offset                                                                                                          | Tab, `:focus-visible` only                                          |
-| Active   | same as hover, no style of its own                                                                                                           | pressing                                                            |
-| Disabled | 45 percent opacity, `cursor: not-allowed`                                                                                                    | `disabled`, or `loading`                                            |
-| Loading  | spinner in front of the content, `aria-busy="true"`, locked                                                                                  | `[loading]="true"`; the label follows the action ("Wird gestartet") |
+| State    | How it looks                                                                                                                                              | How to trigger it                                                   |
+| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| Rest     | as in the reference                                                                                                                                       | default                                                             |
+| Hover    | `primary` moves to `accent-hover`, `secondary` gets `surface-hover`, `ghost` gets `surface-raised` and `text`, `danger` gets `danger-subtle`              | pointer over the button                                             |
+| Focus    | 2px ring in `focus` with 2px offset                                                                                                                       | Tab, `:focus-visible` only                                          |
+| Active   | same as hover, no style of its own                                                                                                                        | pressing                                                            |
+| Disabled | 45 percent opacity, `cursor: not-allowed`, native `disabled`, out of the tab order                                                                        | `disabled`, alone or together with `loading`                        |
+| Loading  | spinner in front of the content, 45 percent opacity, `aria-busy="true"` and `aria-disabled="true"`; keeps the focus, click, Enter and Space are swallowed | `[loading]="true"`; the label follows the action ("Wird gestartet") |
 
 There is no error or empty state; the field or the page around the button carries those.
 
 ## Accessibility
 
-- On a `<button>`, `disabled` and `loading` set the native `disabled` attribute, so the control
-  leaves the tab order.
+- On a `<button>`, `disabled` sets the native `disabled` attribute, so a deliberately locked
+  button leaves the tab order; the reason stands as a sentence next to it.
+- `loading` locks without the native `disabled`: the button gets `aria-busy="true"` and
+  `aria-disabled="true"`, stays in the tab order and keeps the focus while it spins, which is what
+  the triggering button of an action needs (a native `disabled` would drop the focus to `body`).
+  Click, Enter and Space are caught in the capture phase on the button, before a `(click)` of the
+  caller: nothing fires and a `type="submit"` button does not submit its form. That includes the
+  implicit submission from Enter in a text field, which the browser runs as a click on the default
+  button. With `disabled` and `loading` both set, `disabled` wins and the lock is native.
 - An `<a>` cannot be disabled natively. It gets `aria-disabled="true"` and `tabindex="-1"` instead,
   and the click is swallowed before `routerLink` sees it. A `tabindex` of the caller's own, static
   or bound, is only borrowed for that: the lock holds even while the binding writes new values, and
   the last value the caller wanted is back on the element as soon as the lock goes.
-- A caller may write a static `aria-disabled="true"` on a `<button>` instead of `disabled`. The
-  button then stays focusable so a tooltip can explain the reason, and its click is swallowed as
-  well. Repeat the reason as a sentence for keyboard users.
+- A caller may write `aria-disabled="true"` on a `<button>` instead of `disabled`, statically or
+  through `[attr.aria-disabled]`. The button then stays focusable so a tooltip can explain the
+  reason, and its click, Enter and Space are swallowed as well. Repeat the reason as a sentence for
+  keyboard users. The library only borrows the attribute while it locks (`loading`, a locked link):
+  its `"true"` wins then, also against a binding that keeps writing, and the caller's latest value,
+  or no attribute, is back when the lock goes.
 - An icon-only button has no text, so the caller supplies the `aria-label`.
 - The label is a verb plus its object ("Server erstellen"), not "Los" or "Zum Dashboard".
 
