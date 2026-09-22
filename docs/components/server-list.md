@@ -82,7 +82,9 @@ It adds no class and no markup and replaces both `image` and the initial. The th
 32px box, its `radius-sm` and its `surface-hover` fill; an `<img>` in the slot fills it the same way
 the `image` does. With `thumb` set to `false` the slot is not rendered either. The thumbnail is
 `aria-hidden`, so whatever the slot holds is decoration and its information has to stand as text in
-`[zRowMeta]` as well.
+`[zRowMeta]` as well. Nothing focusable goes into the slot, no link, button or input: it would stay
+a tab stop inside `aria-hidden` (axe `aria-hidden-focus`). A slot element inside an `@if` is fine;
+while the condition is false the row shows image or initial.
 
 ### `a[zRowLink]`
 
@@ -271,7 +273,9 @@ the customer cannot open is left out.
 - The thumbnail is decoration, whatever it shows: image, initial or the content of `[zRowThumb]`.
   The whole `.z-row__thumb` is `aria-hidden`, so a screen reader hears neither the initial nor an
   icon or image put into the slot. Whatever it shows, the game of a server for example, has to
-  stand as text in the row as well, usually in `meta` or `[zRowMeta]`.
+  stand as text in the row as well, usually in `meta` or `[zRowMeta]`. For the same reason nothing
+  focusable, no link, button or input, goes into `[zRowThumb]`: it would remain a tab stop inside
+  `aria-hidden`.
 - The hit area of `a[zRowLink]` is the whole row, so that is where its focus ring is drawn: on the
   stretched `::after`, not around the title text. There is exactly one ring, 2px in `focus` with a
   2px offset.

@@ -3,6 +3,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  contentChild,
   Directive,
   input,
   linkedSignal,
@@ -189,7 +190,9 @@ export class ZRowAction {}
  * both the {@link ZRowMain.image} and the initial. It adds no class and no
  * markup. Without it the row falls back to the `image` input. The thumbnail is
  * `aria-hidden`, so the content is decoration: what it shows has to stand as
- * text in the row as well, usually in {@link ZRowMeta}.
+ * text in the row as well, usually in {@link ZRowMeta}. Nothing focusable goes
+ * into the slot, no link, button or input: it would stay a tab stop inside
+ * `aria-hidden`.
  *
  * @example
  * ```html
@@ -232,13 +235,14 @@ export class ZRowThumb {}
   template: `
     @if (thumb()) {
       <span class="z-row__thumb" aria-hidden="true">
-        <ng-content select="[zRowThumb]">
+        <ng-content select="[zRowThumb]" />
+        @if (!eigenesMedium()) {
           @if (image() && !imageFailed()) {
             <img [src]="image()" alt="" (error)="imageFailed.set(true)" />
           } @else {
             {{ initiale() }}
           }
-        </ng-content>
+        }
       </span>
     }
     <div class="z-row__text">
@@ -259,8 +263,8 @@ export class ZRowThumb {}
 })
 export class ZRowMain {
   /**
-   * Name of the entry. Without an image its first character, uppercased, fills
-   * the thumbnail.
+   * Name of the entry. Without an image and without {@link thumbText} its
+   * first character, uppercased, fills the thumbnail.
    *
    * @default ''
    */
@@ -308,6 +312,14 @@ export class ZRowMain {
     source: this.image,
     computation: () => false,
   });
+
+  /**
+   * The projected {@link ZRowThumb}, if one is rendered right now. A query and
+   * not the fallback content of `<ng-content>`: a slot element inside an `@if`
+   * occupies the slot even while the condition is false, which would leave an
+   * empty thumbnail instead of image or initial.
+   */
+  protected readonly eigenesMedium = contentChild(ZRowThumb);
 
   protected readonly initiale = computed(() =>
     (this.thumbText().trim() || this.title().trim()).charAt(0).toUpperCase(),

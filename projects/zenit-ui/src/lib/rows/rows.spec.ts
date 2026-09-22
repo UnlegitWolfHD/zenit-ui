@@ -78,6 +78,20 @@ class ThumbHost {
   readonly thumb = signal(true);
 }
 
+/** A projected medium that comes and goes with a condition of the caller. */
+@Component({
+  imports: [ZRowMain, ZRowThumb],
+  template: `<z-row-main title="survival-01" thumbText="Valheim">
+    @if (eigenes()) {
+      <span zRowThumb>E</span>
+    }
+  </z-row-main>`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class BedingterThumbHost {
+  readonly eigenes = signal(false);
+}
+
 describe('ZRows', () => {
   it('sets columns as the CSS variable --z-cols on z-rows', () => {
     const fixture = TestBed.createComponent(RowsHost);
@@ -262,6 +276,24 @@ describe('ZRows', () => {
       expect(thumb.firstElementChild?.classList).toContain('eigenes-medium');
       expect(thumb.querySelector('img')).toBeNull();
       expect(thumb.textContent?.trim()).toBe('D');
+    });
+
+    it('falls back to image or initial while a [zRowThumb] inside @if is false', () => {
+      const fixture = TestBed.createComponent(BedingterThumbHost);
+      fixture.detectChanges();
+      const text = () => thumbVon(fixture).textContent?.trim();
+
+      expect(text()).toBe('V');
+
+      fixture.componentInstance.eigenes.set(true);
+      fixture.detectChanges();
+
+      expect(text()).toBe('E');
+
+      fixture.componentInstance.eigenes.set(false);
+      fixture.detectChanges();
+
+      expect(text()).toBe('V');
     });
 
     it('hides every thumbnail from the accessible name, whatever it shows', () => {
