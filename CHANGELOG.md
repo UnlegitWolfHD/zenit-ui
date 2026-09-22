@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Signal conventions.** `docs/signals.md` holds the rules this workspace follows (`input()`, `output()`, `computed()`, `linkedSignal()`, `resource()`, no effect for what a computed can do), an audit table over library and applications, and the places that deliberately deviate. The library tears down through `DestroyRef` instead of `ngOnDestroy`.
 - **Row that is a link and carries actions.** `[zRowTitle]` and `a[zRowLink]` put the link on the title of a `div[zRow]`, where its stretched `::after` makes the whole row clickable with one tab stop and one focus ring, and `[zRowAction]` lifts the buttons of the row above that overlay. A `<button>` inside an `<a>` is invalid markup, so this is the way a row gets both a target and its own actions.
 - **`[zRowMeta]`.** The meta line of a row as a slot instead of a string, so an address, a port or a file name inside it takes `z-mono` while the rest of the line stays in the body face, as CLAUDE.md asks.
-- **`ZDialog.confirm({ restoreFocusTo })`.** Names the element that gets the focus when the dialog closes, as an `HTMLElement`, an `ElementRef` or a CSS selector. It is what an action opened from a menu needs: the menu has closed by then, so the CDK's own memory of the trigger is gone.
+- **`ZDialog.confirm({ restoreFocusTo })`.** Names the element that gets the focus when the dialog closes, as an `HTMLElement`, an `ElementRef` or a CSS selector. Set it when the element that opened the dialog is gone by then, a deleted row for example. A dialog opened from a menu item needs nothing: `ZDialog` finds the menu trigger by itself.
 - **`headingLevel` on `z-hero`.** 1, 2 or 3, default 1, so a page that already owns an `<h1>` does not end up with two. The class and with it the type size stay the same on every level.
 - **Example application `beispiel-app`.** One complete page, "Gameserver" of the customer area, as the template for real pages: shell with skip link, AppHeader, Footer and toast outlet; PageHeader with one fact and one primary; filter row as a Signal Form; panel "Meine Server" with ServerList, row link, row menu and Pagination; every state from `spec/guidelines/15-zustaende.md` reachable through `?zustand=laden|leer|fehler`, plus the filtered-to-nothing case; toast after a restart and a confirmation with the server name before deleting. It consumes the library from the built package in `dist/zenit-ui` through a `paths` override in its tsconfigs, following the setup steps of the package README, and thereby proves that the package works. Scripts `build:beispiel`, `start:beispiel` and `e2e:beispiel`; `check` and the CI workflow build and test it as well. Documentation in `projects/beispiel-app/README.md`.
 - **The example application shows its own wiring.** Every region of the Gameserver page carries a disclosure ("So ist es eingebunden") with the source that produces it, and the page "Einbindung" (`/einbindung`) walks through the setup steps with the real files: `tsconfig` paths, the `styles` of `angular.json`, `index.html`, the font imports, the providers, the toast outlet and an own theme, plus the `ng add` shortcut. The blocks come from `tools/generate-example-snippets.mjs`, which copies the files verbatim into `quelltexte.generated.ts`; the regions are cut out at runtime by a tested pure function, and `npm run check:snippets` fails the build when the copy no longer matches the sources. New components `app-code-block` (mono, own scroll region, copy button with toast) and `app-theme-control` (scheme and accent from the header, stored by `ZTheme`).
@@ -43,6 +43,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **A long dialog scrolls in its body instead of past the screen.** Through `ZDialog.open()` the
+  limit of the reference never reached the dialog: the CDK loads the styles of `.cdk-overlay-pane`
+  at runtime, so its `max-height: 100%` stood after the library stylesheet, and `max-height: inherit`
+  of `.z-dialog` inherited from the host element of the opened component in between. Measured on a
+  form of twelve fields at 1440×700, the dialog ended at 1163px. The limit is repeated as
+  `.cdk-overlay-pane.z-dialog-panel`, container and component host pass it on as flex columns, and
+  only `.z-dialog__body` scrolls: heading and actions stay. `dvh` where the browser has it and
+  `env(safe-area-inset-bottom)` on the mobile footer keep URL bar and home bar off the actions. A
+  body that scrolls without holding a tabbable element becomes a tab stop of its own (WCAG 2.1
+  SC 2.1.1), a `role="group"` named by the heading, decided by `InteractivityChecker` and watched
+  while the dialog stands.
+- **Tooltip and menu answer a scroll in any container.** Both relied on `ScrollDispatcher`, which
+  only hears the window and containers marked `cdkScrollable`: in the body of a scrolling dialog the
+  tooltip stood still while its trigger moved away and the menu stayed open. Each listens for
+  `scroll` on the document in the capture phase while it is open, and only for a scroller the trigger
+  sits in, so a console that follows its own log leaves the overlays of the panel header alone. The
+  tooltip goes like the native `title`, unless the trigger holds the focus: then it follows, steps
+  aside while a clipping container covers the trigger and comes back with it. The menu closes and
+  hands focus back to the trigger only when focus was inside it; a trigger that keeps its place in a
+  sticky header keeps its menu, and the scroll that was still running when the menu opened is
+  ignored until it comes to rest.
+- **One Escape closes one layer.** A tooltip took the key together with the dialog behind it, and a
+  menu did the same, so a form of twelve fields was lost to the key that was meant for the menu. The
+  tooltip catches Escape in the capture phase of the document and the menu stops it in the bubble
+  phase of its own host, both before the keyboard dispatcher of the CDK on `document.body`, and only
+  while they really stand.
+- **A dialog opened from a menu item returns focus to the menu trigger.** The CDK closes the menu
+  with the click, so the item that was focused no longer exists when the dialog closes and the focus
+  fell to `<body>`. `ZDialog` finds the trigger through the `aria-controls` of `CdkMenuTrigger`;
+  `restoreFocusTo` still wins where it is given, and a target without `focus()`, which is what
+  `viewChild('trigger')` on a component host yields, is dropped with a warning in the development
+  build instead of silently focusing nothing.
+- **The tooltip no longer overwrites `aria-describedby` of its trigger.** The id of the panel is one
+  token in the list while the panel stands and is taken out again afterwards, so an input keeps the
+  hint and the error that a `z-field` links to it, even while the field rewrites the attribute on
+  every keystroke. The rewrite used to cost the description; answering it naively costs the tab,
+  because Chromium queues a mutation record for an unchanged value as well.
+- **A `tabindex` written by the caller survives `zBtn`.** The host binding evaluated to `null` for
+  everything but a locked link and thereby deleted the attribute, so `<button zBtn iconOnly
+  tabindex="-1">` inside an input group became a tab stop. `tabindex` is only touched on a locked
+  link now: the lock borrows the value, holds against a binding that keeps writing, and gives the
+  last value back when it goes.
 - **The package loads without AOT linking.** `ZTableContainer` queried `ZTable` and `ZWizard` queried `ZWizardStep` before those classes were declared. A signal query's predicate is part of the static partial declaration, so a consumer whose unit tests load the package unlinked (the Vitest runner of `@angular/build:unit-test` keeps packages outside the test bundle, with or without `aot: false`) got `ReferenceError: Cannot access 'ZTable' before initialization` from every spec that imports anything from `zenit-ui`. Application builds were never affected. The classes are reordered, no API changed. New gates so it cannot return: `npm run check:order` (source scan with file and line, plus import cycles), `npm run check:bundle` (imports the built bundle in plain Node with the JIT compiler) and `npm run test:beispiel:jit` (the example application's specs against the unlinked package), all part of `npm run check` and CI.
 - **Tooltip stays open while the pointer is on it** (WCAG 2.1 SC 1.4.13): the overlay no longer closes when the pointer moves from the trigger onto the tooltip, and its text updates while it is open.
 - **Slider keeps model and track on one value**: a clamped value is written back to the input, so thumb, fill and model cannot drift apart.

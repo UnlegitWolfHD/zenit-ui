@@ -57,19 +57,25 @@ export interface ZConfirmConfig {
    * Without it focus goes back to whatever was focused before the dialog
    * opened, which is the CDK default.
    *
-   * Set it when the trigger is gone by then. A menu item is the usual case: the
-   * CDK menu closes with the click, so pass the menu trigger instead.
+   * Set it when the trigger is gone by then, for example a row that the
+   * confirmed action deletes. A dialog opened from a menu item needs nothing:
+   * `ZDialog` returns focus to the menu trigger by itself.
+   *
+   * A template reference on a component host, `<button zBtn #werkzeuge>` for
+   * example, yields the component instance and not its element, so read it as
+   * an `ElementRef`. Something without `focus()` is dropped with a warning in
+   * the development build.
    *
    * @example
    * ```html
-   * <button #trigger zBtn="ghost" [cdkMenuTriggerFor]="aktionen">…</button>
+   * <div #werkzeuge class="z-cluster">…</div>
    * ```
    * ```ts
-   * readonly trigger = viewChild.required<ElementRef<HTMLElement>>('trigger');
+   * readonly werkzeuge = viewChild.required('werkzeuge', { read: ElementRef });
    *
    * loeschen(): void {
    *   this.dialog
-   *     .confirm({ …, restoreFocusTo: this.trigger() })
+   *     .confirm({ …, restoreFocusTo: this.werkzeuge() })
    *     .subscribe((ja) => (ja ? this.entferne() : undefined));
    * }
    * ```

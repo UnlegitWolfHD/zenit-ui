@@ -33,6 +33,31 @@ class MenuHost {
   geloescht = 0;
 }
 
+/** A menu whose entries lead somewhere: two links and one button. */
+@Component({
+  imports: [CdkMenuTrigger, Z_MENU],
+  template: `
+    <button [cdkMenuTriggerFor]="menue">Seiten</button>
+    <ng-template #menue>
+      <z-menu>
+        <a zMenuItem icon="dns" href="#daten" (triggered)="geoeffnet = geoeffnet + 1">
+          Server öffnen
+        </a>
+        <a zMenuItem icon="delete" danger [disabled]="gesperrt()" href="#papierkorb">
+          Papierkorb
+        </a>
+        <button zMenuItem (triggered)="kopiert = kopiert + 1">Adresse kopieren</button>
+      </z-menu>
+    </ng-template>
+  `,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class LinkMenuHost {
+  readonly gesperrt = signal(false);
+  geoeffnet = 0;
+  kopiert = 0;
+}
+
 describe('ZMenu', () => {
   let fixture: ComponentFixture<MenuHost>;
   let host: MenuHost;
@@ -162,6 +187,170 @@ describe('ZMenu', () => {
     expect(menue()).toBeNull();
   });
 
+  /** A scroll somewhere in the document, heard in the capture phase. */
+  function scrolleAn(ziel: EventTarget): void {
+    ziel.dispatchEvent(new Event('scroll'));
+    fixture.detectChanges();
+  }
+
+  /**
+   * Closing is armed once the scrolling that was running when the menu opened
+   * has come to rest. `scrollend` says so; the two quiet animation frames of
+   * the fallback are nothing a synchronous test can wait for.
+   */
+  function zurRuhe(): void {
+    document.dispatchEvent(new Event('scrollend'));
+  }
+
+  /**
+   * Puts the trigger into a box of its own, which jsdom does not do. A scroll
+   * only counts for the menu when it moves the trigger, so a test that wants to
+   * be heard has to move it.
+   */
+  function liegtBei(top: number): void {
+    ausloeser.getBoundingClientRect = () =>
+      ({ top, bottom: top + 20, left: 10, right: 30, width: 20, height: 20 }) as DOMRect;
+  }
+
+  // The scroll strategy of the CDK builds on ScrollDispatcher, which only hears
+  // the window and containers marked cdkScrollable; the menu therefore listens
+  // on the document in the capture phase.
+  it('closes on a scroll under it and hands the focus back to the trigger', () => {
+    liegtBei(100);
+    oeffne();
+    zurRuhe();
+    eintraege()[0].focus();
+    liegtBei(40);
+
+    scrolleAn(document);
+
+    expect(menue()).toBeNull();
+    expect(document.activeElement).toBe(ausloeser);
+  });
+
+  it('leaves the focus where it is when it was not inside the menu', () => {
+    liegtBei(100);
+    oeffne();
+    zurRuhe();
+    const feld = document.createElement('input');
+    document.body.append(feld);
+    feld.focus();
+    liegtBei(40);
+
+    scrolleAn(document);
+
+    expect(menue()).toBeNull();
+    expect(document.activeElement).toBe(feld);
+    feld.remove();
+  });
+
+  // A trigger reached with the keyboard is scrolled into view, and those events
+  // arrive after the menu has opened. They must not close it again.
+  it('ignores the scroll that was still running when it opened', () => {
+    liegtBei(100);
+    oeffne();
+    liegtBei(40);
+
+    scrolleAn(document);
+
+    expect(menue()).not.toBeNull();
+
+    liegtBei(10);
+    zurRuhe();
+    scrolleAn(document);
+
+    expect(menue()).toBeNull();
+  });
+
+  // The menu hangs where the trigger stood when it opened, and the CDK locks
+  // that position: a trigger that has moved on in the meantime leaves it
+  // pointing at nothing, so arming closes it right away.
+  it('closes at once when the trigger has moved away during that scroll', () => {
+    liegtBei(100);
+    oeffne();
+    liegtBei(40);
+    scrolleAn(document);
+
+    expect(menue()).not.toBeNull();
+
+    zurRuhe();
+
+    expect(menue()).toBeNull();
+  });
+
+  // A trigger in a sticky header keeps its place while the page scrolls, and
+  // with it its menu, exactly as the tooltip does.
+  it('stays open while the trigger keeps its place on the screen', () => {
+    liegtBei(100);
+    oeffne();
+    zurRuhe();
+
+    scrolleAn(document);
+
+    expect(menue()).not.toBeNull();
+  });
+
+  // Same defect class as the tooltip had: one Escape may not close the dialog
+  // behind the menu as well.
+  it('takes the Escape it uses away from everything below it', () => {
+    oeffne();
+    const unten = vi.fn();
+    document.body.addEventListener('keydown', unten);
+
+    menue()?.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', keyCode: 27, bubbles: true, cancelable: true }),
+    );
+    fixture.detectChanges();
+
+    expect(menue()).toBeNull();
+    expect(unten).not.toHaveBeenCalled();
+    document.body.removeEventListener('keydown', unten);
+  });
+
+  // A console that follows its own log scrolls on every line; the trigger does
+  // not sit in it, so the menu stays where it is.
+  it('stays open when a container the trigger is not in scrolls', () => {
+    const fremder = document.createElement('div');
+    document.body.append(fremder);
+    liegtBei(100);
+    oeffne();
+    zurRuhe();
+    liegtBei(40);
+
+    scrolleAn(fremder);
+
+    expect(menue()).not.toBeNull();
+    fremder.remove();
+  });
+
+  it('stays open when the scroll happens inside the menu itself', () => {
+    oeffne();
+    zurRuhe();
+
+    scrolleAn(menue()!);
+
+    expect(menue()).not.toBeNull();
+  });
+
+  it('listens for scrolling only while it is open', () => {
+    const horcher = vi.spyOn(document, 'addEventListener');
+
+    oeffne();
+    // ScrollDispatcher of the CDK registers one of its own without options, so
+    // the one with the options object is the one of the menu.
+    const optionen = horcher.mock.calls
+      .map(([typ, , optionen]) => (typ === 'scroll' ? optionen : undefined))
+      .find((optionen) => typeof optionen === 'object' && optionen !== null) as
+      AddEventListenerOptions | undefined;
+
+    expect(optionen).toMatchObject({ capture: true, passive: true });
+    expect(optionen?.signal?.aborted).toBe(false);
+
+    klicke(eintraege()[0]);
+
+    expect(optionen?.signal?.aborted).toBe(true);
+  });
+
   it('keeps the typeahead label free of the icon ligature', async () => {
     oeffne();
     const kopieren = eintraege()[0];
@@ -187,5 +376,164 @@ describe('ZMenu', () => {
     await new Promise((fertig) => setTimeout(fertig, 250));
 
     expect(document.activeElement).toBe(kopieren);
+  });
+});
+
+describe('ZMenuItem as a link', () => {
+  let fixture: ComponentFixture<LinkMenuHost>;
+  let host: LinkMenuHost;
+  let behaelter: OverlayContainer;
+  let ausloeser: HTMLButtonElement;
+
+  function menue(): HTMLElement | null {
+    return behaelter.getContainerElement().querySelector('z-menu');
+  }
+
+  function links(): HTMLAnchorElement[] {
+    return Array.from(behaelter.getContainerElement().querySelectorAll('a[zMenuItem]'));
+  }
+
+  function oeffne(): void {
+    ausloeser.click();
+    fixture.detectChanges();
+  }
+
+  /** A key on the entry, the way the browser sends it: bubbling from there. */
+  function taste(ziel: HTMLElement, key: string, keyCode: number): void {
+    ziel.dispatchEvent(new KeyboardEvent('keydown', { key, keyCode, bubbles: true }));
+    fixture.detectChanges();
+  }
+
+  beforeEach(() => {
+    fixture = TestBed.createComponent(LinkMenuHost);
+    host = fixture.componentInstance;
+    behaelter = TestBed.inject(OverlayContainer);
+    fixture.detectChanges();
+    ausloeser = fixture.nativeElement.querySelector('button');
+    oeffne();
+  });
+
+  afterEach(() => {
+    behaelter.ngOnDestroy();
+  });
+
+  it('gives a link the same role and class as a button entry', () => {
+    const [oeffnen, papierkorb] = links();
+
+    expect(oeffnen.getAttribute('role')).toBe('menuitem');
+    expect(oeffnen.classList.contains('z-menu__item')).toBe(true);
+    expect(papierkorb.classList.contains('z-menu__item--danger')).toBe(true);
+    expect(oeffnen.querySelector('z-icon')?.textContent).toBe('dns');
+  });
+
+  it('leaves href alone and writes no type attribute', () => {
+    const [oeffnen] = links();
+
+    // _setType() of the CDK only touches a <button>; a type on a link would be
+    // the media type of its target.
+    expect(oeffnen.hasAttribute('type')).toBe(false);
+    expect(oeffnen.getAttribute('href')).toBe('#daten');
+  });
+
+  it('fires triggered on a click and closes the menu', () => {
+    links()[0].click();
+    fixture.detectChanges();
+
+    expect(host.geoeffnet).toBe(1);
+    expect(menue()).toBeNull();
+  });
+
+  // Space activates an entry in the ARIA menu pattern, but the browser clicks
+  // only buttons, so z-menu turns the key into a click on the link.
+  it('activates a link with Space, exactly once', () => {
+    taste(links()[0], ' ', 32);
+
+    expect(host.geoeffnet).toBe(1);
+    expect(menue()).toBeNull();
+  });
+
+  it('closes the menu on Enter', () => {
+    taste(links()[0], 'Enter', 13);
+
+    expect(host.geoeffnet).toBe(1);
+    expect(menue()).toBeNull();
+  });
+
+  /** A click the way the browser sends it, so it can be cancelled. */
+  function klicke(ziel: HTMLElement, optionen: MouseEventInit = {}): MouseEvent {
+    const ereignis = new MouseEvent('click', { bubbles: true, cancelable: true, ...optionen });
+    ziel.dispatchEvent(ereignis);
+    fixture.detectChanges();
+    return ereignis;
+  }
+
+  // `CdkMenuItem` cancels the click of a locked entry, but `RouterLink` listens
+  // on the same element and navigates regardless of `defaultPrevented`, so the
+  // click has to be stopped before it ever reaches the entry.
+  it('stops click and Space on a disabled link before the link sees them', () => {
+    host.gesperrt.set(true);
+    fixture.detectChanges();
+    const papierkorb = links()[1];
+    const amLink = vi.fn();
+    papierkorb.addEventListener('click', amLink);
+
+    expect(papierkorb.getAttribute('aria-disabled')).toBe('true');
+    expect(papierkorb.tabIndex).toBe(-1);
+    expect(papierkorb.getAttribute('href')).toBe('#papierkorb');
+
+    const ereignis = klicke(papierkorb);
+    taste(papierkorb, ' ', 32);
+
+    expect(amLink).not.toHaveBeenCalled();
+    expect(ereignis.defaultPrevented).toBe(true);
+    expect(menue()).not.toBeNull();
+  });
+
+  // The middle click of the browser opens a link in a new tab and arrives as
+  // `auxclick`, which a locked entry has to swallow as well.
+  it('stops the middle click on a disabled link', () => {
+    host.gesperrt.set(true);
+    fixture.detectChanges();
+    const papierkorb = links()[1];
+    const amLink = vi.fn();
+    papierkorb.addEventListener('auxclick', amLink);
+
+    const ereignis = new MouseEvent('auxclick', { bubbles: true, cancelable: true, button: 1 });
+    papierkorb.dispatchEvent(ereignis);
+    fixture.detectChanges();
+
+    expect(amLink).not.toHaveBeenCalled();
+    expect(ereignis.defaultPrevented).toBe(true);
+    expect(menue()).not.toBeNull();
+  });
+
+  it('leaves the middle click on an open link to the browser', () => {
+    const ereignis = new MouseEvent('auxclick', { bubbles: true, cancelable: true, button: 1 });
+    links()[0].dispatchEvent(ereignis);
+    fixture.detectChanges();
+
+    expect(ereignis.defaultPrevented).toBe(false);
+    expect(host.geoeffnet).toBe(0);
+    expect(menue()).not.toBeNull();
+  });
+
+  // Ctrl, Cmd, Shift and Alt belong to the browser: it opens a new tab or
+  // downloads the target, and the menu stays open, as with a middle click.
+  it('leaves a click with a modifier to the browser and keeps the menu', () => {
+    const ereignis = klicke(links()[0], { ctrlKey: true });
+
+    expect(ereignis.defaultPrevented).toBe(false);
+    expect(host.geoeffnet).toBe(0);
+    expect(menue()).not.toBeNull();
+  });
+
+  it('finds a link entry through the typeahead without its icon ligature', async () => {
+    const oeffnen = links()[0];
+
+    // Without the own typeaheadLabel the CDK would read "dnsServer öffnen".
+    menue()?.dispatchEvent(new KeyboardEvent('keydown', { key: 's', keyCode: 83, bubbles: true }));
+    await new Promise((fertig) => setTimeout(fertig, 250));
+
+    expect(document.activeElement).toBe(oeffnen);
   });
 });

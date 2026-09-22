@@ -526,9 +526,11 @@ test.describe('Combobox im Dialog', () => {
     await page.getByRole('button', { name: 'Server anpassen', exact: true }).click();
     const dialog = page.locator('.z-dialog');
     await expect(dialog).toBeVisible();
+    // Gescrollt wird im Rumpf: Kopf und Fußzeile des Dialogs bleiben stehen.
+    const rumpf = page.locator('.z-dialog__body');
 
-    // Ohne wirklich scrollbaren Dialog prüft der Test nichts.
-    expect(await dialog.evaluate((el) => el.scrollHeight - el.clientHeight)).toBeGreaterThan(20);
+    // Ohne wirklich scrollbaren Rumpf prüft der Test nichts.
+    expect(await rumpf.evaluate((el) => el.scrollHeight - el.clientHeight)).toBeGreaterThan(20);
 
     const feld = page.locator('#kd-version');
     await feld.focus();
@@ -538,20 +540,31 @@ test.describe('Combobox im Dialog', () => {
     // Ein innerer Container: der ScrollDispatcher des CDK hört ihn nicht,
     // der Capture-Horcher der Combobox schon. Ein Stück gescrollt, bleibt das
     // Feld im Dialog: die Liste geht mit, statt stehen zu bleiben.
-    const obenVorher = await page.locator('.z-listbox').evaluate((el) => {
-      return el.getBoundingClientRect().top;
-    });
-    await dialog.evaluate((el) => {
+    // Gemessen wird der Abstand zwischen Liste und Feld, nicht eine feste Zahl:
+    // er bleibt, wenn die Liste mitgeht, und wächst, wenn sie stehen bleibt.
+    const abstand = () =>
+      page.evaluate(() => {
+        const liste = document.querySelector('.z-listbox')?.getBoundingClientRect();
+        const feld = document.querySelector('#kd-version')?.getBoundingClientRect();
+        return liste && feld ? Math.round(liste.top - feld.top) : Number.NaN;
+      });
+    const oben = () => page.locator('#kd-version').evaluate((el) => el.getBoundingClientRect().top);
+    // Das Panel steht unter dem Feld, sobald das CDK es gesetzt hat; direkt
+    // nach dem Öffnen steht es noch woanders.
+    await expect.poll(abstand, { message: 'die Liste steht unter dem Feld' }).toBeGreaterThan(0);
+    const abstandVorher = await abstand();
+    const feldVorher = await oben();
+    await rumpf.evaluate((el) => {
       el.scrollTop = 60;
     });
-    await expect
-      .poll(() => page.locator('.z-listbox').evaluate((el) => el.getBoundingClientRect().top))
-      .toBeLessThan(obenVorher - 40);
+
+    await expect.poll(oben, { message: 'das Feld ist mitgescrollt' }).toBeLessThan(feldVorher - 20);
+    await expect.poll(abstand, { message: 'die Liste hängt weiter am Feld' }).toBe(abstandVorher);
     await expect(page.locator('.z-listbox')).toBeVisible();
 
-    // Bis ans Ende gescrollt, ist das Feld aus dem Dialog heraus: jetzt gibt es
+    // Bis ans Ende gescrollt, ist das Feld aus dem Rumpf heraus: jetzt gibt es
     // nichts mehr, worauf die Liste zeigen könnte.
-    await dialog.evaluate((el) => {
+    await rumpf.evaluate((el) => {
       el.scrollTop = el.scrollHeight;
     });
 

@@ -48,6 +48,29 @@ class LinkHost {
 })
 class AriaHost {}
 
+/** A tabindex the caller wrote: static on the button, bound on the link. */
+@Component({
+  imports: [ZButton],
+  template: `<button zBtn iconOnly tabindex="-1" aria-label="Leeren">x</button>
+    <a zBtn href="#start" [attr.tabindex]="stopp()" [disabled]="gesperrt()">Starten</a>`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class TabindexHost {
+  readonly gesperrt = signal(false);
+  readonly stopp = signal<string | null>('-1');
+}
+
+/** The property binding instead of the attribute binding. */
+@Component({
+  imports: [ZButton],
+  template: `<a zBtn href="#start" [tabIndex]="stopp()" [disabled]="gesperrt()">Starten</a>`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class TabIndexPropertyHost {
+  readonly gesperrt = signal(false);
+  readonly stopp = signal(5);
+}
+
 describe('ZButton', () => {
   it('is secondary without a value and with an empty zBtn', () => {
     const fixture = TestBed.createComponent(StandardHost);
@@ -187,6 +210,118 @@ describe('ZButton', () => {
     // tooltip can show the reason.
     expect(button.hasAttribute('disabled')).toBe(false);
     expect(button.hasAttribute('tabindex')).toBe(false);
+  });
+
+  // A host binding that writes null deletes what the author wrote. The button
+  // only touches `tabindex` where it has to: on a locked link.
+  describe('tabindex of the caller', () => {
+    it('keeps a static tabindex on an open button', () => {
+      const fixture = TestBed.createComponent(TabindexHost);
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('button').getAttribute('tabindex')).toBe('-1');
+    });
+
+    it('keeps a bound tabindex on an open link and follows it', () => {
+      const fixture = TestBed.createComponent(TabindexHost);
+      fixture.detectChanges();
+      const link = fixture.nativeElement.querySelector('a');
+
+      expect(link.getAttribute('tabindex')).toBe('-1');
+
+      fixture.componentInstance.stopp.set(null);
+      fixture.detectChanges();
+
+      expect(link.hasAttribute('tabindex')).toBe(false);
+    });
+
+    it('takes a locked link out of the tab order and gives the value back', () => {
+      const fixture = TestBed.createComponent(TabindexHost);
+      fixture.detectChanges();
+      const link = fixture.nativeElement.querySelector('a');
+      fixture.componentInstance.stopp.set('0');
+      fixture.detectChanges();
+
+      expect(link.getAttribute('tabindex')).toBe('0');
+
+      fixture.componentInstance.gesperrt.set(true);
+      fixture.detectChanges();
+
+      expect(link.getAttribute('tabindex')).toBe('-1');
+      expect(link.getAttribute('aria-disabled')).toBe('true');
+
+      fixture.componentInstance.gesperrt.set(false);
+      fixture.detectChanges();
+
+      // The value the binding last wrote is back, not a deleted attribute.
+      expect(link.getAttribute('tabindex')).toBe('0');
+    });
+
+    // A binding keeps writing while the lock stands: every value it writes
+    // would put the locked link back into the tab order.
+    it('holds the lock against a bound tabindex that changes meanwhile', async () => {
+      const fixture = TestBed.createComponent(TabindexHost);
+      fixture.detectChanges();
+      const link = fixture.nativeElement.querySelector('a');
+      fixture.componentInstance.stopp.set('5');
+      fixture.detectChanges();
+      fixture.componentInstance.gesperrt.set(true);
+      fixture.detectChanges();
+
+      expect(link.getAttribute('tabindex')).toBe('-1');
+
+      fixture.componentInstance.stopp.set('7');
+      fixture.detectChanges();
+      // The MutationObserver answers in a microtask.
+      await Promise.resolve();
+
+      expect(link.getAttribute('tabindex'), 'der gesperrte Link bleibt heraußen').toBe('-1');
+
+      fixture.componentInstance.gesperrt.set(false);
+      fixture.detectChanges();
+
+      // The value the caller last wanted, not the one from before the lock.
+      expect(link.getAttribute('tabindex')).toBe('7');
+    });
+
+    it('does the same for a bound tabIndex property', async () => {
+      const fixture = TestBed.createComponent(TabIndexPropertyHost);
+      fixture.detectChanges();
+      const link = fixture.nativeElement.querySelector('a');
+
+      expect(link.getAttribute('tabindex')).toBe('5');
+
+      fixture.componentInstance.gesperrt.set(true);
+      fixture.detectChanges();
+      fixture.componentInstance.stopp.set(7);
+      fixture.detectChanges();
+      await Promise.resolve();
+
+      expect(link.getAttribute('tabindex')).toBe('-1');
+
+      fixture.componentInstance.gesperrt.set(false);
+      fixture.detectChanges();
+
+      expect(link.getAttribute('tabindex')).toBe('7');
+    });
+
+    it('leaves a link without a tabindex of its own without one', () => {
+      const fixture = TestBed.createComponent(LinkHost);
+      fixture.detectChanges();
+      const link = fixture.nativeElement.querySelector('a');
+
+      expect(link.hasAttribute('tabindex')).toBe(false);
+
+      fixture.componentInstance.gesperrt.set(true);
+      fixture.detectChanges();
+
+      expect(link.getAttribute('tabindex')).toBe('-1');
+
+      fixture.componentInstance.gesperrt.set(false);
+      fixture.detectChanges();
+
+      expect(link.hasAttribute('tabindex')).toBe(false);
+    });
   });
 
   it('swallows the click on a button with aria-disabled', () => {

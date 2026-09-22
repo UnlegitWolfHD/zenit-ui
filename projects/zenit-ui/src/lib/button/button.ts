@@ -3,6 +3,8 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  DestroyRef,
+  effect,
   ElementRef,
   HostAttributeToken,
   inject,
@@ -67,7 +69,6 @@ export type ZButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
     '[class.z-btn--block]': `block()`,
     '[attr.disabled]': `istLink || !gesperrt() ? null : ""`,
     '[attr.aria-disabled]': `ariaGesperrt || (istLink && gesperrt()) ? "true" : null`,
-    '[attr.tabindex]': `istLink && gesperrt() ? "-1" : null`,
     '[attr.aria-busy]': `loading() ? "true" : null`,
     '(click)': `aufKlick($event)`,
   },
@@ -117,7 +118,8 @@ export class ZButton {
   /**
    * Locks the button. On a `<button>` this is the native `disabled` attribute,
    * on an `<a>` it is `aria-disabled="true"` with `tabindex="-1"` and a
-   * swallowed click. Boolean attribute.
+   * swallowed click; a `tabindex` of the caller's own comes back when the lock
+   * goes. Boolean attribute.
    *
    * @default false
    */
@@ -135,6 +137,56 @@ export class ZButton {
     inject(new HostAttributeToken('aria-disabled'), { optional: true }) === 'true';
   protected readonly variante = computed<ZButtonVariant>(() => this.zBtn() || 'secondary');
   protected readonly gesperrt = computed(() => this.disabled() || this.loading());
+
+  constructor() {
+    const wirt = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+    /** What the caller last wrote, and what it gets back when the lock goes. */
+    let geliehen: string | null = null;
+    let gesetzt = false;
+    const sperren = (): void => {
+      if (!gesetzt) {
+        geliehen = wirt.getAttribute('tabindex');
+        gesetzt = true;
+      }
+      if (wirt.getAttribute('tabindex') !== '-1') {
+        wirt.setAttribute('tabindex', '-1');
+      }
+    };
+    // A binding of the caller keeps writing while the link is locked, and every
+    // value it writes would put the locked link back into the tab order. The
+    // observer notes the new value and asserts the lock again; it runs only
+    // while the link is locked, and writing `-1` over `-1` is skipped, so it
+    // cannot answer its own record.
+    const beobachter = new MutationObserver(() => {
+      geliehen = wirt.getAttribute('tabindex');
+      if (geliehen === '-1') {
+        return;
+      }
+      sperren();
+    });
+    // A locked link is taken out of the tab order, and only then is `tabindex`
+    // touched at all: a host binding would write on every change and thereby
+    // delete a `tabindex` the caller wrote, static or bound. The lock borrows
+    // the attribute and gives back what stood there last.
+    effect(() => {
+      if (this.istLink && this.gesperrt()) {
+        sperren();
+        beobachter.observe(wirt, { attributes: true, attributeFilter: ['tabindex'] });
+        return;
+      }
+      beobachter.disconnect();
+      if (!gesetzt) {
+        return;
+      }
+      gesetzt = false;
+      if (geliehen === null) {
+        wirt.removeAttribute('tabindex');
+      } else {
+        wirt.setAttribute('tabindex', geliehen);
+      }
+    });
+    inject(DestroyRef).onDestroy(() => beobachter.disconnect());
+  }
 
   /**
    * An `<a>` and a `<button aria-disabled="true">` stay clickable. The click is

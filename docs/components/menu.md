@@ -14,6 +14,11 @@ Collects the rarer actions of an object behind a button.
 - For the one or two main actions of a screen. Those stay visible as buttons.
 - For a choice that changes the view. That is `z-segment` or `z-select`.
 
+An entry that **does** something is a `<button>`: copy, restart, delete. An entry that **leads**
+somewhere is an `<a>`: the detail page of a server, the invoice, the documentation. A link entry can
+be opened in a new tab with Ctrl or the middle mouse button, and it shows its target in the status
+bar, which a button cannot.
+
 ## Import
 
 ```ts
@@ -37,7 +42,11 @@ const imports = [Z_MENU, CdkMenuTrigger];
 No inputs, no outputs. The surface of the menu; the content is the entries. Keyboard handling, roles
 and closing come from `CdkMenu` in `@angular/cdk/menu`, which runs as a host directive.
 
-### `button[zMenuItem]`
+### `button[zMenuItem]`, `a[zMenuItem]`
+
+Selector: `button[zMenuItem], a[zMenuItem]`. Both render the same entry; the tag says whether it
+does something or leads somewhere. `href` and `routerLink` stay with the caller, the library has no
+router and touches neither.
 
 | Input      | Type      | Default | Description                                                    |
 | ---------- | --------- | ------- | -------------------------------------------------------------- |
@@ -49,7 +58,20 @@ and closing come from `CdkMenu` in `@angular/cdk/menu`, which runs as a host dir
 | ----------- | ------- | --------------------------------------------------------------- |
 | `triggered` | `void`  | the entry is used by click, Enter or Space. From `CdkMenuItem`. |
 
-The content is the text of the entry: a verb plus its object ("Adresse kopieren").
+The content is the text of the entry: a verb plus its object ("Adresse kopieren"), or the name of
+the target on a link ("Rechnungen").
+
+On a link, a plain click, Enter and Space all follow the link and close the menu, and `(triggered)`
+fires along with it. A click with Ctrl, Cmd, Shift or Alt and a middle click belong to the browser:
+it opens a new tab or downloads the target, and the menu stays open, the way it does on any link.
+`z-menu` stops such a click at its own element, so a `(click)` handler of the application on the
+entry does not see it; a listener that has to count every click, analytics for example, belongs on
+the document in the capture phase.
+
+`disabled` puts `aria-disabled="true"` on the entry, and `z-menu` swallows the click in the capture
+phase before the link sees it, so the `href` can stay as it is. That capture is what makes the lock
+hold: `CdkMenuItem` does cancel the click, but `RouterLink` listens on the same element and
+navigates regardless of `defaultPrevented`.
 
 ### `z-menu-separator`
 
@@ -80,6 +102,23 @@ A more-menu in a panel header:
     <button zMenuItem icon="power_settings_new" danger (triggered)="hartBeenden()">
       Hart beenden
     </button>
+    <button zMenuItem icon="delete" danger (triggered)="loeschen()">Server löschen</button>
+  </z-menu>
+</ng-template>
+```
+
+Entries that lead somewhere, next to one that does something:
+
+```html
+<button zBtn="ghost" iconOnly type="button" aria-label="Mehr" [cdkMenuTriggerFor]="mehr">
+  <z-icon name="more_vert" />
+</button>
+
+<ng-template #mehr>
+  <z-menu>
+    <a zMenuItem icon="dns" routerLink="/user/server/1">Server öffnen</a>
+    <a zMenuItem icon="description" href="https://docs.example.com/ftp">FTP einrichten</a>
+    <z-menu-separator />
     <button zMenuItem icon="delete" danger (triggered)="loeschen()">Server löschen</button>
   </z-menu>
 </ng-template>
@@ -128,17 +167,58 @@ function loeschen(): void {
 The menu itself opens and closes without an animation. There is no loading, error or empty state: a
 menu with nothing in it is not rendered.
 
+## Scrolling
+
+A scroll of a container the trigger sits in closes the menu, the way a menu of the operating system
+goes. That holds for the page as well as for an inner container, the body of a scrolling dialog or a
+scroll container of your own. Another scroller on the same screen does not: a console that follows
+its own log scrolls on every line, and the menu in the panel header above it has to stay.
+
+Two scrolls are ignored on purpose. One inside the menu itself, and the one that was still running
+when the menu opened: a trigger reached with the keyboard is scrolled into view, and with smooth
+scrolling those events arrive for about a second afterwards. Closing is armed once that scrolling
+has come to rest, at the `scrollend` of the browser or after two animation frames without a scroll
+event.
+
+Focus returns to the trigger only when it was inside the menu, so scrolling with the pointer does
+not pull it away from whatever is being typed somewhere else.
+
+A trigger that keeps its place on the screen keeps its menu: a scroll that leaves the trigger box
+where it was changes nothing, so a menu opened from a sticky or fixed header survives the page
+scrolling under it, exactly as a tooltip does.
+
+`z-menu` listens for `scroll` on the document in the capture phase, looks its trigger up through the
+`aria-controls` that `CdkMenuTrigger` sets and closes through `menuStack.closeAll()` of the CDK,
+which also takes submenus. A trigger without `aria-controls` cannot be found, and then every scroll
+counts, the way it did before: that is the case for the first moments after opening, and for good
+with `cdkContextMenuTriggerFor`, which has no trigger element at all.
+
+Two limits are known and accepted. A menu opened less than about 30ms after the key that moved the
+focus can still see the very first scroll event of that movement and close with it. And with smooth
+scrolling of the application itself, a menu opened while such a scroll runs closes as soon as the
+scrolling comes to rest, because the CDK locks its position and it would otherwise point at a place
+the trigger has left. The CDK's own scroll strategy builds on `ScrollDispatcher`, which only
+hears the window and containers marked `cdkScrollable`, so a menu inside an unannotated container
+used to stand still while its trigger moved away under it. The listener lives exactly as long as the
+open menu, because `z-menu` only exists while the menu hangs in its overlay.
+
 ## Accessibility
 
 - Role, focus management and the `disabled` input come from `CdkMenuItem` as a host directive, which
   also provides the `(triggered)` output.
 - Arrow keys move through the entries, Home and End jump to the ends, a click outside and Escape
   close the menu, and focus returns to the trigger.
+- Escape closes the menu and nothing else: the key stops at the menu, so a dialog behind it stays
+  open and takes a second Escape, and a header menu the menu was opened from does the same.
 - The CDK typeahead label is set to the text without the icon ligature after every render. Without
   that the raw `textContent` would start with the ligature ("content_copyAdresse kopieren") and
   typing the first letter would not find the entry.
 - The separator carries `role="separator"` and is never focusable.
 - The trigger is an icon-only button and needs its own `aria-label`.
+- A scroll of a container around the trigger closes the menu and hands focus back to the trigger, but
+  only when focus was inside the menu; otherwise it stays where the visitor put it.
+- A dialog opened from an entry returns focus to the trigger by itself: `ZDialog` finds it through
+  the `aria-controls` of `CdkMenuTrigger`, because the entry is gone by the time the dialog closes.
 
 ## Responsive
 
@@ -167,12 +247,22 @@ one, `--font-mono` and `--text-muted` for a shortcut hint, `--control-md` for th
   it gets `display: block`.
 - Addition to the reference: below 640px an entry is raised to 40px, because click targets are at
   least 40px tall on mobile.
+- Addition to the reference: an entry may be a link, and `.z-root a` (0,1,1) beats `.z-menu__item`
+  (0,1,0), which would colour it `accent-text` and underline it on hover. The colours of the
+  reference are restored with the same weight, the way the `a.z-btn` rules in `_grundlage.css` do.
+- Addition to the library: `z-menu` turns Space on a link entry into a click, because the browser
+  clicks only buttons and the ARIA menu pattern has Space activate an entry. It catches the click of
+  a locked link in the same capture phase, because `RouterLink` navigates although `CdkMenuItem` has
+  cancelled the event, and it lets a click with a modifier through to the browser untouched.
 
 ## Do / Don't
 
 - Do keep to three to seven entries, each a verb plus its object.
+- Do use an `<a>` for an entry that leads somewhere, so it can be opened in a new tab.
 - Do put destructive entries at the bottom, behind a separator, and open a dialog from them.
 - Do give the trigger an `aria-label`.
+- Do let a scroll close the menu; it is what the entries were anchored to that moved.
+- Do lock a link entry with `disabled` rather than by removing its `href`; the menu stops the click.
 - Don't put the main actions of a screen in a menu.
 - Don't put a scrim behind the menu; only a dialog has one.
 - Don't rely on `textContent` order; the icon comes first in the DOM but not in the typeahead label.
