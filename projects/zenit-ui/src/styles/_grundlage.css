@@ -6,29 +6,38 @@
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-body);
-  font-size: 14px;
-  line-height: 20px;
   -webkit-font-smoothing: antialiased;
 }
-/* Deviation from the reference: the rule above is written for the page, but the
-   documented setup puts z-root on <html> as well as on <body>. On <html> its
-   14px also move 1rem from 16px to 14px for everything else in the document and
-   override the size the visitor set in the browser. An application that adopts
-   the library page by page keeps its old styles in rem, and all of them shrink
-   by 12.5% the moment z-root is set.
-   The library needs neither value on <html>: its components compute in px.
-   The one rem in styles/_*.css is the 1rem of .z-legacy below, which hands the
-   visitor's size back to a page that is not migrated; the only other relative
-   lengths are em on letter-spacing and text-underline-offset, which refer to
-   the element's own font size. body.z-root carries the class itself and therefore keeps 14px/20px
-   from the rule above; every component inherits from there, and the CDK overlay
-   container hangs on <body> too, so overlays are unaffected.
-   The class therefore has to sit on BOTH elements, as the README prescribes.
-   With z-root on <html> alone the page now renders at 16px/normal instead of
-   14px/20px, because nothing sets the page size any more. That is a behaviour
-   change for a setup that was already wrong before; it used to be hidden.
-   100%, not 16px: a visitor who raised the browser font size keeps it. */
-html.z-root { font-size: 100%; line-height: normal; }
+/* Deviation from the reference: bundle.css writes font-size: 14px and
+   line-height: 20px into the rule above, which is meant for the page, while the
+   documented setup puts z-root on <html> as well as on <body>. On <html> those
+   14px move 1rem from 16px to 14px for the whole document and override the size
+   the visitor set in the browser: an application that adopts the library page by
+   page keeps its old styles in rem, and all of them shrink by 12.5% the moment
+   the class is set. So the two declarations are split off into the rule below,
+   which leaves <html> out. The library needs neither value there, its components
+   compute in px. The one rem in styles/_*.css is the 1rem of .z-legacy below,
+   which hands the visitor's size back to a page that is not migrated; the only
+   other relative lengths are em on letter-spacing and text-underline-offset,
+   which refer to the element's own font size.
+   :where() adds (0,0,0), so the rule still weighs (0,1,0), exactly what .z-root
+   weighed before: body.z-root and every nested page container keep the same
+   weight against an application class on the same element, a tie decided by
+   source order. And since the library now sets nothing at all on <html>, an
+   application's own html { font-size: … } is the only author rule there and wins
+   at every specificity and in either include order, the html { font-size:
+   var(--base-font-size) } of a user setting included.
+   Not html.z-root { font-size: 100% }: that is (0,1,1) and beat exactly that
+   application rule (measured: --base-font-size 14px and 18px both rendered
+   16px). Not html:where(.z-root) either: :where() adds nothing, so it is the
+   tag alone at (0,0,1) and loses to .z-root (0,1,0) in any order, leaving
+   <html> at the 14px it is meant to shed.
+   body.z-root carries the class itself and keeps 14px/20px; every component
+   inherits from there, and the CDK overlay container hangs on <body> too, so
+   overlays are unaffected. The class therefore has to sit on BOTH elements, as
+   the README prescribes: with z-root on <html> alone the page renders at
+   16px/normal, because nothing sets the page size any more. */
+.z-root:where(:not(html)) { font-size: 14px; line-height: 20px; }
 /* Addition to the reference: .z-legacy, the class for a subtree that is not
    migrated yet (docs/legacy.md). An application that adopts the library route
    by route has z-root on <html> and <body>, and body.z-root hands 14px/20px
@@ -82,8 +91,9 @@ html.z-root { font-size: 100%; line-height: normal; }
         .z-root :focus-visible                      outline        exempt
         .z-root :where(a), :where(a):hover          color, line    exempt
         .z-root :where(p, li, ...) a:not(...)       underline      exempt
-      Kept: .z-root itself and html.z-root / body.z-root (they match the class,
-      not a bare element), :where(:root) color-scheme and
+      Kept: .z-root itself, .z-root:where(:not(html)) and html.z-root /
+      body.z-root (they match the class, not a bare element; the size rule is
+      the one .z-legacy overrides by source order), :where(:root) color-scheme and
       .z-root:has(.z-stickybar[data-stuck]) (document level), and every class
       rule.
       The focus ring is exempt as well, for a measured reason: focus is white
