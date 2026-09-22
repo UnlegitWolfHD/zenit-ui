@@ -98,6 +98,9 @@ There is no loading, error or empty state. An empty `options` array renders an e
 
 - The host is a `role="group"` named by `ariaLabel`. Give every segment a name; the page usually
   has more than one.
+- An `aria-label` written on `<z-segment>` itself works as well, static or bound: `ariaLabel` wins
+  while it holds a value, and the attribute stands while it does not. `aria-labelledby` is never
+  written by the component, so it always belongs to you.
 - The chosen option carries `aria-pressed="true"`, all others `"false"`, so the state is announced
   either way.
 - Every button is an ordinary tab stop: Tab moves between them, Enter or Space picks one. There is

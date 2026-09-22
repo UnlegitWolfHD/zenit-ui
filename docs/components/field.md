@@ -89,6 +89,8 @@ loading or empty state.
 - `for` makes the `<label>` point at the control, so clicking the label focuses it.
 - Hint and error are referenced through `aria-describedby`; the error wins while it is set, so a
   screen reader never reads a stale hint.
+- That reference is added to the `aria-describedby` of the control as a single token and taken out
+  again, so an `aria-describedby` you wrote on the control yourself keeps every id it names.
 - The error sentence names the cause and the next step, as every error message in this system does.
 - Setting `error` does not mark the control invalid by itself: add `invalid` on the `input zInput`,
   which is what sets `aria-invalid="true"`.

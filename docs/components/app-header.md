@@ -167,9 +167,14 @@ There is no disabled, loading, error or empty state.
 - The host carries `role="banner"`, so the header is the banner landmark of the page. A page has one
   of them, and it sits outside `<main>`: a preview of the header inside the content passes
   `[landmark]="false"`.
+- With `landmark` off the host binding still owns the `role` attribute and writes `null` there, so a
+  role of your own goes on a wrapper around `<z-app-header>`, not on the header itself.
 - The `<nav>` is a navigation landmark and takes its name from `navLabel`. Set it; the page usually
   has more than one navigation, and two navigations must not share a name.
 - The active link carries `aria-current="page"`, which also drives the `accent-subtle` background.
+  The `active` input owns that attribute, so do not combine it with `routerLinkActive` and its
+  `ariaCurrentWhenActive`: the host binding writes last and would overwrite what the router set.
+  Feed `active` from the router instead.
 - The menu button is a `<button type="button">` with `aria-label` from `menuLabel`, `aria-expanded`
   reflecting the open state and `aria-controls` pointing at the generated id of the `<nav>`.
 - Escape closes the open menu and moves the focus back to the menu button, so the keyboard does not

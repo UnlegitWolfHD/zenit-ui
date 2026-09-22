@@ -235,6 +235,8 @@ A list of invoices, where the amount and the date are the mono columns:
 
 - The container is a `role="region"` with `tabindex="0"` and an `aria-label`, so a keyboard user can
   reach and scroll it. Override the German default with what the table holds.
+- All three are borrowed only while there is something to scroll: a `role`, an `aria-label` or a
+  `tabindex` you wrote on `<z-table-container>` yourself comes back as soon as the table fits again.
 - Each row checkbox needs an `ariaLabel` naming that row; the header checkbox is named "Alle
   auswählen".
 - The table stays native, so `<th>`, `<thead>` and the column relationships reach assistive

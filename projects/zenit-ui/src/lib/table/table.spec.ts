@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideZenitLabels, Z_LABELS_EN } from '../labels';
 import { ZNum, ZTable, ZTableContainer, ZTableName } from './table';
@@ -61,6 +61,30 @@ class TableHost {}
 })
 class EigenesLabelHost {}
 
+/** The caller binds the three attributes and keeps writing while they are lent. */
+@Component({
+  imports: [ZTableContainer],
+  template: `<z-table-container
+    [attr.role]="rolle()"
+    [attr.tabindex]="tabindex()"
+    [attr.aria-label]="marke()"
+  />`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class GebundeneRolleHost {
+  readonly rolle = signal<string | null>('group');
+  readonly tabindex = signal<string | null>('-1');
+  readonly marke = signal<string | null>('Rechnungen');
+}
+
+/** The caller makes the container a region of its own, overflow or not. */
+@Component({
+  imports: [ZTableContainer],
+  template: `<z-table-container role="group" aria-label="Rechnungen" tabindex="-1" />`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class EigeneRolleHost {}
+
 describe('ZTable', () => {
   /** Renders the host with a wrapper that is too narrow for its content, or not. */
   function mitUeberlauf<T>(typ: new () => T, ueberlauf: boolean): ComponentFixture<T> {
@@ -97,6 +121,58 @@ describe('ZTable', () => {
     expect(huelle(fixture).getAttribute('role')).toBeNull();
     expect(huelle(fixture).getAttribute('tabindex')).toBeNull();
     expect(huelle(fixture).getAttribute('aria-label')).toBeNull();
+  });
+
+  it('keeps role, aria-label and tabindex of the caller while everything fits', () => {
+    const fixture = mitUeberlauf(EigeneRolleHost, false);
+
+    expect(huelle(fixture).getAttribute('role')).toBe('group');
+    expect(huelle(fixture).getAttribute('aria-label')).toBe('Rechnungen');
+    expect(huelle(fixture).getAttribute('tabindex')).toBe('-1');
+  });
+
+  it('gives the three attributes of the caller back after an overflow', () => {
+    const fixture = mitUeberlauf(EigeneRolleHost, true);
+
+    expect(huelle(fixture).getAttribute('role')).toBe('region');
+    expect(huelle(fixture).getAttribute('tabindex')).toBe('0');
+
+    messwerte(huelle(fixture), 640, 640);
+    letzterRuf?.();
+    fixture.detectChanges();
+
+    expect(huelle(fixture).getAttribute('role')).toBe('group');
+    expect(huelle(fixture).getAttribute('aria-label')).toBe('Rechnungen');
+    expect(huelle(fixture).getAttribute('tabindex')).toBe('-1');
+  });
+
+  // A caller binding that writes while the container overflows used to win, so
+  // the scroll region lost its role and its tab stop under a live binding.
+  it('holds the scroll region against a caller binding and gives its values back', async () => {
+    const fixture = mitUeberlauf(GebundeneRolleHost, true);
+    const el = huelle(fixture);
+
+    expect(el.getAttribute('role')).toBe('region');
+    expect(el.getAttribute('tabindex')).toBe('0');
+
+    fixture.componentInstance.rolle.set('list');
+    fixture.componentInstance.tabindex.set('-1');
+    fixture.componentInstance.marke.set('Rechnungen 2026');
+    fixture.detectChanges();
+    // The MutationObserver answers in a microtask.
+    await Promise.resolve();
+
+    expect(el.getAttribute('role'), 'die Region hält').toBe('region');
+    expect(el.getAttribute('tabindex'), 'der Tabstopp hält').toBe('0');
+    expect(el.getAttribute('aria-label')).toBe('Tabelle, seitlich scrollbar');
+
+    messwerte(el, 640, 640);
+    letzterRuf?.();
+    fixture.detectChanges();
+
+    expect(el.getAttribute('role'), 'der letzte Wert des Aufrufers').toBe('list');
+    expect(el.getAttribute('tabindex')).toBe('-1');
+    expect(el.getAttribute('aria-label')).toBe('Rechnungen 2026');
   });
 
   it('follows a resize of the wrapper through the ResizeObserver', () => {

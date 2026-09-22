@@ -63,6 +63,11 @@ motion. It is the only rotating element in the system.
   message is announced politely.
 - Without a label the host is `aria-hidden="true"` and purely decorative. Use that only when the
   surrounding text already reports the state.
+- A `role` or an `aria-label` you write on `<z-spinner>` yourself survives, static as well as bound:
+  `label` wins while it holds a value and gives the attributes back when it is empty, including a
+  value your binding wrote in between. Whether the spinner is decorative is asked of the element,
+  not of the static attributes, so `[attr.aria-label]="name()"` is never hidden behind
+  `aria-hidden="true"`; take the name away again and the spinner is decorative as before.
 - Inside a loading button the surrounding `zBtn` sets `aria-busy="true"` and disables the control.
 
 ## Responsive

@@ -498,6 +498,97 @@ test.describe('aria-describedby while the tooltip stands', () => {
     expect(messung.wert, 'die id des Panels steht wieder da').toMatch(/^z-tooltip-\d+$/);
     expect(await antwortet(page), 'die Seite antwortet noch').toBe(true);
   });
+
+  /**
+   * Three writers on the same attribute: the caller with an id of its own, the
+   * `z-field` with its hint and its error, and the tooltip with the id of its
+   * panel. Each of them owns one token. The field keeps the front of the list,
+   * the tooltip the back, so no two of them push each other around, and the
+   * caller's token stands in between and is never touched.
+   */
+  test('caller, field and tooltip hold their token through hint, error and none', async ({
+    page,
+  }) => {
+    await langerDialog(page, 1440, 700);
+    const feld = page.getByRole('textbox', { name: 'Anzeigename' });
+    await feld.focus();
+    await expect(page.getByRole('tooltip')).toBeVisible();
+    const panelId = (await page.getByRole('tooltip').getAttribute('id'))!;
+
+    /** The caller writes its own description, the way a binding of its own does. */
+    await page.evaluate(() =>
+      document.querySelector('#demo-lang-anzeige')!.setAttribute('aria-describedby', 'p-fremd'),
+    );
+
+    async function ids(): Promise<string[]> {
+      return ((await feld.getAttribute('aria-describedby')) ?? '').split(/\s+/).filter(Boolean);
+    }
+
+    // The caller wiped both foreign tokens; they come back around its own.
+    await expect
+      .poll(ids, { message: 'der Tooltip steht wieder da' })
+      .toEqual(['p-fremd', panelId]);
+
+    // One character: the error appears.
+    await feld.pressSequentially('a');
+    await expect(page.getByText('Mindestens 3 Zeichen')).toBeVisible();
+    await expect
+      .poll(ids, { message: 'Fehler vorn, Tooltip hinten' })
+      .toEqual(['demo-lang-anzeige-error', 'p-fremd', panelId]);
+
+    // Two more: the error gives way to the hint, and only that token changes.
+    await feld.pressSequentially('bc');
+    await expect(page.getByText('3 von 32 Zeichen')).toBeVisible();
+    await expect
+      .poll(ids, { message: 'der Hinweis löst den Fehler ab' })
+      .toEqual(['demo-lang-anzeige-hint', 'p-fremd', panelId]);
+
+    // And back to nothing: the field takes its own token and nothing else.
+    await feld.press('Control+a');
+    await feld.press('Backspace');
+    await expect(page.getByText('3 von 32 Zeichen')).toHaveCount(0);
+    await expect
+      .poll(ids, { message: 'nur noch Aufrufer und Tooltip' })
+      .toEqual(['p-fremd', panelId]);
+
+    expect(await antwortet(page), 'die Seite antwortet noch').toBe(true);
+  });
+
+  /**
+   * The same cycle, counted: every step costs a handful of mutations and then
+   * stops. A writer that answers its own record would count into the thousands
+   * here instead of hanging the test only on the timeout.
+   */
+  test('the whole cycle costs a bounded number of mutations', async ({ page }) => {
+    await langerDialog(page, 1440, 700);
+    const feld = page.getByRole('textbox', { name: 'Anzeigename' });
+    await feld.focus();
+    await expect(page.getByRole('tooltip')).toBeVisible();
+
+    await page.evaluate(() => {
+      const el = document.querySelector('#demo-lang-anzeige')!;
+      const fenster = window as unknown as { zaehler: number };
+      fenster.zaehler = 0;
+      new MutationObserver((eintraege) => (fenster.zaehler += eintraege.length)).observe(el, {
+        attributes: true,
+        attributeFilter: ['aria-describedby'],
+      });
+    });
+
+    await feld.pressSequentially('abc');
+    await expect(page.getByText('3 von 32 Zeichen')).toBeVisible();
+    await feld.press('Control+a');
+    await feld.press('Backspace');
+    await expect(page.getByText('3 von 32 Zeichen')).toHaveCount(0);
+    await page.waitForTimeout(1000);
+
+    const zaehler = await page.evaluate(() => (window as unknown as { zaehler: number }).zaehler, {
+      timeout: 10_000,
+    });
+
+    expect(zaehler, 'vier Tastendrücke, keine Schleife').toBeLessThanOrEqual(20);
+    expect(await antwortet(page), 'die Seite antwortet noch').toBe(true);
+  });
 });
 
 test.describe('colour schemes', () => {

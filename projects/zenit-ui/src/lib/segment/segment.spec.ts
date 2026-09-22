@@ -46,6 +46,34 @@ class FormControlHost {
   readonly steuerung = new FormControl('liste');
 }
 
+/** The caller names the group with the plain attribute instead of the input. */
+@Component({
+  imports: [ZSegment],
+  template: `<z-segment
+    [options]="sichten"
+    aria-label="Ansicht"
+    aria-labelledby="ueberschrift"
+    [ariaLabel]="marke()"
+  />`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class EigenesLabelHost {
+  readonly sichten = SICHTEN;
+  readonly marke = signal('');
+}
+
+/** The caller binds the attribute and keeps writing while the input holds it. */
+@Component({
+  imports: [ZSegment],
+  template: `<z-segment [options]="sichten" [attr.aria-label]="eigen()" [ariaLabel]="marke()" />`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class GebundenesLabelHost {
+  readonly sichten = SICHTEN;
+  readonly marke = signal('Marke');
+  readonly eigen = signal<string | null>('N1');
+}
+
 function knoepfe(fixture: { nativeElement: HTMLElement }): HTMLButtonElement[] {
   return Array.from(fixture.nativeElement.querySelectorAll('button'));
 }
@@ -78,6 +106,67 @@ describe('ZSegment', () => {
     fixture.detectChanges();
 
     expect(gruppe.hasAttribute('aria-label')).toBe(false);
+  });
+
+  // The host binding used to write null whenever ariaLabel was empty, which
+  // left <z-segment aria-label="Ansicht"> as a role="group" without any name.
+  it('keeps an aria-label of the caller, and the input wins while it is set', () => {
+    const fixture = TestBed.createComponent(EigenesLabelHost);
+    fixture.detectChanges();
+    const gruppe: HTMLElement = fixture.nativeElement.querySelector('z-segment');
+
+    expect(gruppe.getAttribute('aria-label')).toBe('Ansicht');
+    expect(gruppe.getAttribute('aria-labelledby')).toBe('ueberschrift');
+
+    fixture.componentInstance.marke.set('Zeitraum');
+    fixture.detectChanges();
+
+    expect(gruppe.getAttribute('aria-label')).toBe('Zeitraum');
+
+    fixture.componentInstance.marke.set('');
+    fixture.detectChanges();
+
+    expect(gruppe.getAttribute('aria-label')).toBe('Ansicht');
+  });
+
+  // The borrowed value used to be the one at borrow time: a caller binding that
+  // wrote while the input held the attribute won, and the give-back restored a
+  // value the caller had long replaced.
+  it('holds the input against a caller binding and gives back its latest value', async () => {
+    const fixture = TestBed.createComponent(GebundenesLabelHost);
+    fixture.detectChanges();
+    const gruppe: HTMLElement = fixture.nativeElement.querySelector('z-segment');
+
+    expect(gruppe.getAttribute('aria-label')).toBe('Marke');
+
+    fixture.componentInstance.eigen.set('N2');
+    fixture.detectChanges();
+    // The MutationObserver answers in a microtask.
+    await Promise.resolve();
+
+    expect(gruppe.getAttribute('aria-label'), 'die Eingabe hält').toBe('Marke');
+
+    fixture.componentInstance.marke.set('');
+    fixture.detectChanges();
+
+    expect(gruppe.getAttribute('aria-label'), 'der letzte Wert des Aufrufers').toBe('N2');
+  });
+
+  it('gives nothing back when the caller took its bound attribute away', async () => {
+    const fixture = TestBed.createComponent(GebundenesLabelHost);
+    fixture.detectChanges();
+    const gruppe: HTMLElement = fixture.nativeElement.querySelector('z-segment');
+
+    fixture.componentInstance.eigen.set(null);
+    fixture.detectChanges();
+    await Promise.resolve();
+
+    expect(gruppe.getAttribute('aria-label')).toBe('Marke');
+
+    fixture.componentInstance.marke.set('');
+    fixture.detectChanges();
+
+    expect(gruppe.hasAttribute('aria-label'), 'nichts wird wiederbelebt').toBe(false);
   });
 
   it('works with model() in both directions', async () => {

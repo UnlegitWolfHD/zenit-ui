@@ -2,10 +2,12 @@ import {
   AfterContentChecked,
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   ElementRef,
   inject,
   input,
 } from '@angular/core';
+import { ZTokenAttribut } from '../a11y/host-attribute';
 import { ZField } from './field';
 
 /**
@@ -52,10 +54,18 @@ export class ZSelect implements AfterContentChecked {
 
   private readonly el = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly feld = inject(ZField, { optional: true });
+  private ziel?: HTMLSelectElement;
+  private beschreibung?: ZTokenAttribut;
+
+  constructor() {
+    // The `<select>` belongs to the caller and may outlive the component, so
+    // it keeps its own description and loses only the id of the field.
+    inject(DestroyRef).onDestroy(() => this.beschreibung?.setze(null));
+  }
 
   /**
-   * Keeps `aria-describedby` on the projected `<select>` in sync with the hint
-   * or error of the surrounding `z-field`.
+   * Keeps the id of the hint or the error of the surrounding `z-field` in the
+   * `aria-describedby` of the projected `<select>`.
    *
    * The `<select>` is projected content, so a host binding cannot reach it.
    * Content hooks run in the view that declares the content, so this hook
@@ -63,18 +73,22 @@ export class ZSelect implements AfterContentChecked {
    * later behind an `@if`. No signal tracking needed, hence no race with the
    * change detection guard.
    *
+   * The id is one token among whatever the caller wrote on the `<select>`, not
+   * the whole attribute: writing the attribute as a whole used to delete a
+   * `aria-describedby` of the caller's own.
+   *
    * @internal Angular lifecycle hook.
    */
   ngAfterContentChecked(): void {
-    const id = this.feld?.beschreibung() ?? null;
     const ziel = this.el.nativeElement.querySelector('select');
     if (!ziel) {
       return;
     }
-    if (id) {
-      ziel.setAttribute('aria-describedby', id);
-    } else {
-      ziel.removeAttribute('aria-describedby');
+    if (ziel !== this.ziel) {
+      this.beschreibung?.setze(null);
+      this.beschreibung = new ZTokenAttribut(ziel, 'aria-describedby', 'vorn');
+      this.ziel = ziel;
     }
+    this.beschreibung?.setze(this.feld?.beschreibung() ?? null);
   }
 }
