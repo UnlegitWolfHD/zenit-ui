@@ -85,6 +85,15 @@ scheme files win in either include order. `base.css` keeps the declaration for
 `[data-theme="dark"]`, which puts a dark subtree back into the dark palette
 inside a light page.
 
+**A scheme on a subtree.** `data-theme` works on any element, not only on
+`<html>`: every token and `color-scheme` are redeclared there and inherit into
+the subtree. The documented use is an island without surface inside an old
+light page, `class="z-root z-root--transparent" data-theme="light"`, whose
+scheme follows the ground below it and not the visitor's choice
+([legacy.md](legacy.md#an-island-without-its-own-surface)). `ZTheme` only ever
+writes `<html>` and leaves such an attribute alone. An accent other than `rot`
+has to be repeated on the same element as `data-accent`.
+
 ## Page width
 
 **The page width is a setting of the application, not a fixed value of the

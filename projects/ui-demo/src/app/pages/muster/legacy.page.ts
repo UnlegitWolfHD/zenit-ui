@@ -9,6 +9,7 @@ import {
 import {
   Z_MENU,
   ZAlert,
+  ZBadge,
   ZButton,
   ZDialog,
   ZField,
@@ -84,6 +85,7 @@ export class Altlast {}
     Altlast,
     LegacyMigriert,
     ZAlert,
+    ZBadge,
     ZButton,
     ZFooter,
     ZFooterBase,
@@ -147,6 +149,18 @@ export class Altlast {}
       <h3>Umgezogene Seite im Inhaltsbereich</h3>
       <div class="z-root demo-legacy-seite" data-legacy="verschachtelt" tabindex="-1">
         <demo-legacy-migriert praefix="insel" />
+      </div>
+
+      <!-- An island without its own surface: the ground of the old page shows
+           through, so the island takes the scheme of that ground, light here,
+           whatever the scheme of the shell is. -->
+      <h3>Insel ohne Fläche</h3>
+      <div class="z-root z-root--transparent" data-theme="light" data-legacy="flach">
+        <div class="z-cluster">
+          <z-badge status="info" dot>In der Warteschlange, Platz 2</z-badge>
+          <span class="caption z-muted">Start in etwa 3 Minuten</span>
+          <button zBtn="secondary" size="sm" type="button">Abbrechen</button>
+        </div>
       </div>
     </div>
 

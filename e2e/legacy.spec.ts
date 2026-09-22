@@ -278,6 +278,97 @@ for (const schema of SCHEMATA) {
 }
 
 /**
+ * `.z-root--transparent`, an island without its own surface (docs/legacy.md).
+ * The light ground of the old page (#fafafa) shows through, so the island
+ * carries `data-theme="light"`: its text colour is the scheme's, and it has to
+ * fit the ground it stands on, not the scheme of the shell.
+ */
+function inselMessen(page: Page) {
+  return page.evaluate(() => {
+    const zerlegen = (rgb: string) => rgb.match(/[\d.]+/g)!.map(Number);
+    const leuchtdichte = (rgb: string) => {
+      const [r, g, b] = zerlegen(rgb).map((c) => {
+        const v = c / 255;
+        return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+      });
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    };
+    const kontrast = (a: string, b: string) => {
+      const la = leuchtdichte(a);
+      const lb = leuchtdichte(b);
+      return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+    };
+    const insel = document.querySelector('[data-legacy="flach"]')!;
+    const grund = getComputedStyle(insel.closest('.demo-alt')!).backgroundColor;
+    const stil = getComputedStyle(insel);
+    return {
+      hintergrund: stil.backgroundColor,
+      grund,
+      farbe: stil.color,
+      colorScheme: stil.colorScheme,
+      fontSize: stil.fontSize,
+      textKontrast: kontrast(stil.color, grund),
+      mutedKontrast: kontrast(getComputedStyle(insel.querySelector('.z-muted')!).color, grund),
+    };
+  });
+}
+
+for (const schema of SCHEMATA) {
+  test(`${schema}: an island without surface takes the ground of the old page and stays readable`, async ({
+    page,
+  }) => {
+    await schemaSetzen(page, schema);
+    await seiteOeffnen(page, ROUTE, 1440);
+
+    const gemessen = await inselMessen(page);
+    expect(gemessen.hintergrund, 'no surface of its own').toBe('rgba(0, 0, 0, 0)');
+    expect(gemessen.grund).toBe('rgb(250, 250, 250)');
+    // The scheme of the ground, whatever the shell runs: light text tokens.
+    expect(gemessen.farbe).toBe('rgb(24, 24, 27)');
+    expect(gemessen.colorScheme).toBe('light');
+    // Still a z-root: the page size of the library, not the 1rem of .z-legacy.
+    expect(gemessen.fontSize).toBe('14px');
+    expect(gemessen.textKontrast).toBeGreaterThanOrEqual(12);
+    expect(gemessen.mutedKontrast).toBeGreaterThanOrEqual(7);
+
+    const ergebnis = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
+      .include('[data-legacy="flach"]')
+      .analyze();
+    expect(ergebnis.violations.map((v) => v.id)).toEqual([]);
+  });
+}
+
+test('an island without surface and without a matching scheme is unreadable on a light ground', async ({
+  page,
+}) => {
+  await schemaSetzen(page, 'dark');
+  await seiteOeffnen(page, ROUTE, 1440);
+  await page.locator('[data-legacy="flach"]').evaluate((el) => el.removeAttribute('data-theme'));
+
+  // The documented misuse: the dark tokens of the shell on #fafafa.
+  const gemessen = await inselMessen(page);
+  expect(gemessen.farbe).toBe('rgb(242, 242, 243)');
+  expect(gemessen.textKontrast).toBeLessThan(1.1);
+  expect(gemessen.mutedKontrast).toBeLessThan(2.5);
+
+  const ergebnis = await new AxeBuilder({ page })
+    .withTags(['wcag2aa'])
+    .include('[data-legacy="flach"]')
+    .analyze();
+  expect(ergebnis.violations.map((v) => v.id)).toContain('color-contrast');
+});
+
+test('the island without surface looks as documented', async ({ page }) => {
+  await schemaSetzen(page, 'dark');
+  await seiteOeffnen(page, ROUTE, 1440);
+  await page.mouse.move(0, 0);
+  await expect(page.locator('[data-legacy="flach"]')).toHaveScreenshot(
+    'legacy-insel-ohne-flaeche.png',
+  );
+});
+
+/**
  * The rem base belongs to the application. `_grundlage.css` sets neither
  * `font-size` nor `line-height` on `<html>`: the two declarations of the
  * reference rule live in `.z-root:where(:not(html))`, which still weighs

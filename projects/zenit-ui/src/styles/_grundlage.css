@@ -8,6 +8,13 @@
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
 }
+/* Addition to the reference: an island without its own surface, for migrated
+   blocks inside an old page (docs/legacy.md). Everything of .z-root stays,
+   tokens, text colour, type and the base rules; only the ground of the
+   surrounding page shows through. The text colour is still the scheme's, so
+   the island needs a scheme that fits that ground: data-theme="light" from
+   themes.css on a light ground. Same weight as .z-root and later, so it wins. */
+.z-root--transparent { background: transparent; }
 /* Deviation from the reference: bundle.css writes font-size: 14px and
    line-height: 20px into the rule above, which is meant for the page, while the
    documented setup puts z-root on <html> as well as on <body>. On <html> those

@@ -116,6 +116,11 @@ The class `z-root` belongs on `<html>` and on `<body>`. It sets background, text
 </html>
 ```
 
+A small migrated block inside an old page is a `z-root` island. `z-root` paints `--bg`; on an old
+light ground use `class="z-root z-root--transparent" data-theme="light"` (needs `themes.css`), so
+the island shows the old ground and carries the scheme that fits it. When to take which is in
+[`docs/legacy.md`](../../docs/legacy.md#an-island-without-its-own-surface).
+
 ### 3. Self-host the fonts
 
 The library loads no font. Your application brings four, all self-hosted, so that no request to Google is needed:
