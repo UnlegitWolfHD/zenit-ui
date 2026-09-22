@@ -89,8 +89,9 @@ inside a light page.
 `<html>`: every token and `color-scheme` are redeclared there and inherit into
 the subtree. The documented use is an island without surface inside an old
 light page, `class="z-root z-root--transparent" data-theme="light"`, whose
-scheme follows the ground below it and not the visitor's choice
-([legacy.md](legacy.md#an-island-without-its-own-surface)). `ZTheme` only ever
+scheme follows the ground below it and not the visitor's choice, on a ground no
+darker than light `--surface-raised` (`#eaeaee`)
+([legacy.md](legacy.md#an-island-without-its-own-surface) has the limits). `ZTheme` only ever
 writes `<html>` and leaves such an attribute alone. An accent other than `rot`
 has to be repeated on the same element as `data-accent`.
 

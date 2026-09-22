@@ -178,26 +178,36 @@ of a page, the base rules and the focus ring.
 
 The text colour is still the scheme's, and that is the catch. **An island without surface has to
 carry the scheme of the ground it stands on.** Measured on the light ground of `/muster/legacy`
-(`#fafafa`):
+(`#fafafa`), and on two light greys for the limit:
 
-| Island                                     | `text` | `text-muted` | `text-subtle` |
-| ------------------------------------------ | ------ | ------------ | ------------- |
-| transparent, tokens of `dark` (the shell)  | 1.07:1 | 2.43:1       | 3.65:1        |
-| transparent, `data-theme="light"`          | 16.97:1 | 8.39:1      | 5.44:1        |
-| painted (`z-root` alone), `dark`           | on its own `bg`, as on every page | | |
+| Island                                                          | `text`  | `text-muted` | `text-subtle` |
+| --------------------------------------------------------------- | ------- | ------------ | ------------- |
+| transparent, tokens of `dark` (the shell), on `#fafafa`         | 1.07:1  | 2.43:1       | 3.65:1        |
+| transparent, `data-theme="light"`, on `#fafafa`                 | 16.97:1 | 8.39:1       | 5.44:1        |
+| transparent, `data-theme="light"`, on `#eaeaee` (light `surface-raised`) | 14.77:1 | 7.30:1 | 4.74:1 |
+| transparent, `data-theme="light"`, on `#dfdfe5` (light `surface-hover`)  | 13.35:1 | **6.60:1** | **4.28:1** |
+| painted (`z-root` alone), `dark`                                | on its own `bg`, as on every page | | |
+
+Bold is below the rule: `text-muted` needs 7:1 and `text-subtle` 4.5:1.
 
 So the rule is:
 
-- **Light old ground:** `class="z-root z-root--transparent" data-theme="light"`. This needs
-  `themes.css` in the `styles` of `angular.json` (see [theming.md](theming.md#how-to-include)); it
-  changes nothing where no `data-theme` is set. Without `themes.css` there is no light scheme to
-  switch to, and the only readable island is the painted one.
+- **Light old ground:** `class="z-root z-root--transparent" data-theme="light"`, as long as the
+  ground is no darker than light `--surface-raised` (`#eaeaee`). That is the darkest ground the gate
+  measures the text levels of `light` on: `text-muted` 7.30:1 and `text-subtle` 4.74:1 there. On
+  light `--surface-hover` (`#dfdfe5`) they drop to 6.60:1 and 4.28:1, and on the grey of a Material
+  card (`#e0e0e0`) to 6.63:1 and 4.31:1, both below the rule; such a ground is "any other ground"
+  below. This needs `themes.css` in the `styles` of `angular.json` (see
+  [theming.md](theming.md#how-to-include)); it changes nothing where no `data-theme` is set. Without
+  `themes.css` there is no light scheme to switch to, and the only readable island is the painted
+  one.
 - **Dark old ground:** `class="z-root z-root--transparent"` without an attribute, as long as the
   ground is no lighter than `--surface-raised` (`#15151a`). That is the lightest ground the gate
   measures the text levels of `dark` on: `text-muted` 7.17:1 and `text-subtle` 4.78:1 there. On
   `--surface-hover` (`#1b1b21`) they drop to 6.75:1 and 4.50:1, below the rule for `text-muted`, and
   `text-subtle` fails on anything lighter than a grey of `#1b1b1b`.
-- **Any other ground, or when in doubt:** `z-root` alone. The dark block is visible, but it is
+- **Any other ground, or when in doubt:** `z-root` alone, including a light grey darker than
+  `#eaeaee` and a dark grey lighter than `#15151a`. The dark block is visible, but it is
   readable, which a transparent island on the wrong ground is not.
 
 The scheme of the island follows its ground, not the choice of the visitor, because the ground of an
