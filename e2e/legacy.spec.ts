@@ -188,6 +188,78 @@ for (const schema of SCHEMATA) {
     expect(await ring('[data-legacy="verschachtelt"]')).toBe(ringSeite);
   });
 
+  // New for the footer ground (docs/pakete.md, Festlegung 1): `[data-legacy="fuss"]`
+  // is the `z-footer` the demo page places inside `.z-legacy` itself, right on
+  // the light `.demo-alt` surface (#fafafa), so this measures the case the
+  // background addition is for. Colours are read as computed `rgb()` strings
+  // and compared against a `var(--token)` probe, the same trick `pruefeFokusRing`
+  // in pruefungen.ts uses for `--focus`. `.z-footer__base` and its link already
+  // carry their own `color` in bundle.css (`text-subtle`, `.z-root
+  // .z-footer__base a` -> `text-muted`), unlike a plain link in `z-alert__body`,
+  // which has none of its own and falls back to the base rule that `.z-legacy`
+  // switches off, and then to `.demo-alt a`'s blue. The footer's own rules are
+  // not part of that switched-off set, so they are expected to hold here too:
+  // no `color` addition needed, only the `background` this test guards.
+  test(`${schema}: the footer above the legacy island keeps the page ground and stays readable`, async ({
+    page,
+  }) => {
+    await schemaSetzen(page, schema);
+    await seiteOeffnen(page, ROUTE, 1440);
+
+    const gemessen = await page.evaluate(() => {
+      const tokenFarbe = (token: string) => {
+        const probe = document.createElement('span');
+        probe.style.color = `var(${token})`;
+        document.body.appendChild(probe);
+        const farbe = getComputedStyle(probe).color;
+        probe.remove();
+        return farbe;
+      };
+      const zerlegen = (rgb: string) => {
+        const teile = rgb.match(/[\d.]+/g)!.map(Number);
+        return { r: teile[0], g: teile[1], b: teile[2] };
+      };
+      const leuchtdichte = ({ r, g, b }: { r: number; g: number; b: number }) => {
+        const k = (c: number) => {
+          const v = c / 255;
+          return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+        };
+        return 0.2126 * k(r) + 0.7152 * k(g) + 0.0722 * k(b);
+      };
+      const kontrast = (a: string, b: string) => {
+        const la = leuchtdichte(zerlegen(a));
+        const lb = leuchtdichte(zerlegen(b));
+        return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+      };
+
+      const footer = document.querySelector('[data-legacy="fuss"]')!;
+      const basis = footer.querySelector('.z-footer__base')!;
+      const link = footer.querySelector('.z-footer__base a')!;
+      const bg = tokenFarbe('--bg');
+      const basisFarbe = getComputedStyle(basis).color;
+      const linkFarbe = getComputedStyle(link).color;
+
+      return {
+        insel: footer.closest('[data-legacy="insel"]') !== null,
+        footerHintergrund: getComputedStyle(footer).backgroundColor,
+        bg,
+        basisFarbe,
+        linkFarbe,
+        textSubtleToken: tokenFarbe('--text-subtle'),
+        textMutedToken: tokenFarbe('--text-muted'),
+        basisKontrast: kontrast(basisFarbe, bg),
+        linkKontrast: kontrast(linkFarbe, bg),
+      };
+    });
+
+    expect(gemessen.insel, 'the footer sits inside the .z-legacy island').toBe(true);
+    expect(gemessen.footerHintergrund).toBe(gemessen.bg);
+    expect(gemessen.basisFarbe).toBe(gemessen.textSubtleToken);
+    expect(gemessen.linkFarbe).toBe(gemessen.textMutedToken);
+    expect(gemessen.basisKontrast).toBeGreaterThanOrEqual(4.5);
+    expect(gemessen.linkKontrast).toBeGreaterThanOrEqual(4.5);
+  });
+
   test(`${schema}: axe finds nothing on the page`, async ({ page }) => {
     await schemaSetzen(page, schema);
     await seiteOeffnen(page, ROUTE, 1440);

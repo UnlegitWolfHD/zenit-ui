@@ -287,6 +287,7 @@ It registers the stylesheets in `angular.json` in the prescribed order, merges `
 - `div[zRow]` resets `cursor` to `auto`. A row is only clickable as `a[zRow]`; the non-interactive variant must not look clickable.
 - The CDK backdrop runs without a fade (`transition: none`). Transitions are limited to `color`, `background-color` and `border-color`.
 - Below 640px a `[zRowAction]` keeps its cell and its row gets a third column. The reference hides every cell of a row from the third on, which also hid the menu button of a row, so its entries were unreachable on a phone.
+- `z-footer` carries `background: var(--bg)`, like `z-app-header`. The reference has none, because its page ground already is `--bg`; the addition keeps the footer readable above a legacy surface while an application migrates route by route, and changes nothing on a migrated page, since the colour is the same as the page. Measured on a light `.z-legacy` island (`e2e/legacy.spec.ts`): `.z-footer__base` and its links already carry their own `color` (`text-subtle`, `text-muted`), so nothing inherits from the legacy surface and no `color` was added.
 
 ## Rules
 
