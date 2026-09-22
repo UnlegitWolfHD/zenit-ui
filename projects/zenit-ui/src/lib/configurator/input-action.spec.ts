@@ -104,9 +104,13 @@ describe('ZInputAction', () => {
     fixture.componentInstance.laeuft.set(true);
     fixture.detectChanges();
 
-    expect(knopf(fixture).disabled).toBe(true);
+    // A loading zBtn locks through aria-disabled and keeps the focus; the
+    // native disabled is left to `disabled`.
+    expect(knopf(fixture).disabled).toBe(false);
+    expect(knopf(fixture).getAttribute('aria-disabled')).toBe('true');
     expect(knopf(fixture).querySelector('z-spinner')).not.toBeNull();
 
+    knopf(fixture).click();
     enter(fixture);
 
     expect(fixture.componentInstance.gerufen()).toBeNull();
