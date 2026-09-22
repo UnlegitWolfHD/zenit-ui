@@ -43,6 +43,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **`aria-describedby` of a field belongs to the caller too.** `input[zInput]`, `textarea[zInput]`
+  and the `<select>` inside `z-select` bound the whole attribute to the hint or the error id of the
+  surrounding `z-field`, so `<input zInput aria-describedby="p-eigen">` lost its own reference to
+  the field's id, and a field without hint and error deleted the attribute outright. The id of the
+  field is now one token in front of whatever the caller wrote, static or bound, it is removed again
+  when hint and error are gone, the attribute disappears with its last token, and no token is
+  written twice. A `zTooltip` on the same control adds its own id at the back, so caller, field and
+  tooltip write the same attribute without deleting each other; the field keeps the front and the
+  tooltip the back, so the two never push each other around. `aria-invalid` of the caller is kept
+  the same way: while `invalid` holds, the library value stands, and afterwards the caller's own
+  comes back. Unit tests in `projects/zenit-ui/src/lib/field/input.spec.ts` ("aria-describedby with
+  three writers"), and two Chromium tests in `e2e/overlays-scroll.spec.ts` run hint, error and none
+  through while a tooltip stands, with a bounded mutation count so a writer that answers its own
+  record fails instead of freezing the tab.
+- **`<z-segment aria-label="Ansicht">` names the group again.** The host binding wrote `null`
+  whenever the `ariaLabel` input was empty and deleted the attribute the caller had written, which
+  left a `role="group"` with no accessible name at all. The attribute is borrowed now: the input
+  wins while it holds a value, the caller's attribute stands while it does not, static as well as
+  bound. `aria-labelledby` is never written by the component.
+- **`z-spinner` and `z-table-container` stop deleting attributes of the caller.** A `role` or an
+  `aria-label` on `<z-spinner>` survives an empty `label`, and a spinner the caller named itself is
+  no longer `aria-hidden="true"`. `<z-table-container>` borrows `role`, `tabindex` and `aria-label`
+  only while the table actually overflows and gives the caller's values back when it fits again,
+  instead of writing `null` over them on every resize.
+- **One rule for host bindings on attributes a caller writes.** The three ways out are
+  `leiheAttribut` (borrow a single value), `ZTokenAttribut` (own one token of a list) and
+  `HostAttributeToken` (read a static attribute once), all in `projects/zenit-ui/src/lib/a11y/`;
+  `zTooltip` and the field share the token implementation instead of carrying two copies of the
+  same `MutationObserver` guard. The rule for new blocks is in `CONTRIBUTING.md` under "Host
+  bindings and caller attributes". With `landmark` off, `z-app-header` and `z-footer` still own
+  their `role` attribute by design; a role of your own goes on a wrapper, which both guides now say.
+
 - **A long dialog scrolls in its body instead of past the screen.** Through `ZDialog.open()` the
   limit of the reference never reached the dialog: the CDK loads the styles of `.cdk-overlay-pane`
   at runtime, so its `max-height: 100%` stood after the library stylesheet, and `max-height: inherit`

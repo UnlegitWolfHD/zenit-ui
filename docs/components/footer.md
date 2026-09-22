@@ -137,6 +137,8 @@ There is no active, disabled, loading, error or empty state. Red is not used in 
 - The host carries `role="contentinfo"`, so the footer is the contentinfo landmark of the page. A
   page has one of them, and it sits outside `<main>`: a preview of the footer inside the content
   passes `[landmark]="false"`.
+- With `landmark` off the host binding still owns the `role` attribute and writes `null` there, so a
+  role of your own goes on a wrapper around `<z-footer>`, not on the footer itself.
 - Each column heading is an `<h2>`, so the footer takes part in the heading outline. Leave `heading`
   empty rather than rendering an empty level.
 - The links sit in a real `<ul>`, so their number is announced.

@@ -179,6 +179,12 @@ There is no loading or empty state; the placeholder in `text-subtle` covers the 
 - `invalid` sets `aria-invalid="true"`, which is also what the danger border hooks onto.
 - Inside a `z-field` the `aria-describedby` attribute points at that field's hint or error, and
   switches to the error as soon as one is set.
+- The id of the field is **one token** in that attribute, in front of whatever you wrote there
+  yourself, static or bound; it is removed again when hint and error are gone, and the attribute
+  disappears with the last token. A `zTooltip` on the same input adds its own id at the back while
+  its panel stands, so caller, field and tooltip share the attribute without deleting each other.
+  The same holds for `aria-invalid`: while `invalid` is set the library value stands, afterwards a
+  value of yours comes back.
 - A field without a visible label, for example a filter in a toolbar, needs an `aria-label` from the
   caller.
 

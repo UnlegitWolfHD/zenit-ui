@@ -122,7 +122,8 @@ the `aria-describedby` that points at it.
 - The visible label comes from `z-field`, tied through `for` and the `id` of the `<select>`.
 - Inside a `z-field` the projected `<select>` receives that field's `aria-describedby`, pointing at
   the hint or the error, and it is kept in sync after every content check, so a `<select>` that
-  appears later behind an `@if` is wired too.
+  appears later behind an `@if` is wired too. The id is one token added in front of what you wrote
+  on the `<select>` yourself, never the whole attribute.
 - A select without a visible label, for example in a filter row, needs an `aria-label`.
 - `aria-invalid="true"` announces the error and draws the border; the sentence in `z-field` names
   the cause and the next step, so colour is never the only carrier.
