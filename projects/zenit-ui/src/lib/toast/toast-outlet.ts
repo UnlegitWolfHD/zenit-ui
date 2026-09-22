@@ -25,7 +25,8 @@ import { ZToast, ZToastItem } from './toast';
  * therefore renders the two regions from the start, empty, and puts each toast
  * into the matching one: `role="status"` with `aria-live="polite"` for neutral,
  * info, success and warning, `role="alert"` with `aria-live="assertive"` for
- * danger, because only a failure is worth interrupting for. The toast
+ * danger, because only a failure is worth interrupting for. The option `live`
+ * of a toast overrides that, for example to announce a warning assertively. The toast
  * elements carry no `role` of their own, because a live region nested in a live
  * region is announced twice. Both regions set `aria-atomic="false"`, which
  * overrides the `true` implied by `status` and `alert`: with up to three toasts
@@ -122,17 +123,21 @@ export class ZToastOutlet {
    * regions does not change what the eye sees.
    */
   protected readonly gruppen = computed(() => {
-    const mitReihe = this.toasts().map((toast, reihe) => ({ toast, reihe }));
+    const mitReihe = this.toasts().map((toast, reihe) => ({
+      toast,
+      reihe,
+      live: toast.live ?? (toast.status === 'danger' ? 'assertive' : 'polite'),
+    }));
     return [
       {
         rolle: 'status',
         live: 'polite',
-        toasts: mitReihe.filter(({ toast }) => toast.status !== 'danger'),
+        toasts: mitReihe.filter((eintrag) => eintrag.live === 'polite'),
       },
       {
         rolle: 'alert',
         live: 'assertive',
-        toasts: mitReihe.filter(({ toast }) => toast.status === 'danger'),
+        toasts: mitReihe.filter((eintrag) => eintrag.live === 'assertive'),
       },
     ];
   });

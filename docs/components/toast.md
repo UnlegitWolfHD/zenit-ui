@@ -18,7 +18,7 @@ Confirms that something happened and disappears by itself.
 ## Import
 
 ```ts
-import { ZToast, ZToastOutlet, ZToastStatus } from 'zenit-ui';
+import { provideZenitToast, ZToast, ZToastOutlet, ZToastStatus } from 'zenit-ui';
 ```
 
 ## API
@@ -38,13 +38,13 @@ Provided in root, so `inject(ZToast)` works anywhere.
 
 | Method                    | Returns                         | Description                                                                                                 |
 | ------------------------- | ------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `show(text, options?)`    | `number`                        | Shows a toast and returns its id. While three toasts are visible the oldest is closed first.                |
+| `show(text, options?)`    | `number`                        | Shows a toast and returns its id. While three toasts are visible the oldest one that is not standing is closed first; see "How many at a time". |
 | `info(text, options?)`    | `number`                        | Status `info` with the icon `info`, both overridable. Duration and live region as for a neutral toast.      |
 | `success(text, options?)` | `number`                        | Status `success` with the icon `check_circle`, both overridable through `options`.                          |
 | `warning(text, options?)` | `number`                        | Status `warning` with the icon `warning`, both overridable. Duration and live region as for a neutral toast. |
 | `error(text, options?)`   | `number`                        | Status `danger`, the icon `error` and `duration: 0`, so it stays until it is closed. All three overridable. |
-| `dismiss(id?)`            | `void`                          | Closes that toast and stops its timer. Without an id all toasts are closed.                                 |
-| `toasts`                  | `Signal<readonly ZToastItem[]>` | The visible toasts, oldest first. Read by the outlet.                                                       |
+| `dismiss(id?)`            | `void`                          | Closes that toast and stops its timer, or takes it out of the queue. Without an id all toasts are closed, the waiting ones included. |
+| `toasts`                  | `Signal<readonly ZToastItem[]>` | The visible toasts, oldest first. Read by the outlet. Waiting toasts are not in it.                         |
 
 `ZToastOptions`:
 
@@ -55,7 +55,33 @@ Provided in root, so `inject(ZToast)` works anywhere.
 | `icon`        | `string`                                                      | none                                 | Material Icons ligature.                                                        |
 | `actionLabel` | `string`                                                      | none                                 | Label of the extra action, for example `Rückgängig`.                            |
 | `action`      | `() => void`                                                  | none                                 | Called when the action is used. The toast closes afterwards.                    |
-| `duration`    | `number`                                                      | `5000`, or `8000` with `actionLabel` | Milliseconds visible. `0` keeps it until it is closed.                          |
+| `duration`    | `number`                                                      | `5000`, or `8000` with `actionLabel` | Milliseconds visible. `0` keeps it until it is closed. A waiting toast's time starts when it becomes visible. |
+| `live`        | `'polite' \| 'assertive'`                                     | `'assertive'` for `danger`, else `'polite'` | Live region the toast is announced in. `'assertive'` puts a `warning` into the `role="alert"` region. |
+
+### `provideZenitToast(config)`
+
+Application root only; `ZToast` is a root service and reads the config of the root injector once.
+Without the provider the defaults apply.
+
+| Field        | Type                    | Default     | Description                                                                                                                                         |
+| ------------ | ----------------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `maxVisible` | `number`                | `3`         | How many toasts are visible at a time, at least 1.                                                                                                  |
+| `overflow`   | `'replace' \| 'queue'`  | `'replace'` | While every place is taken: `'replace'` closes the oldest toast that is not standing, `'queue'` never closes one and lets the new toast wait instead. |
+
+### How many at a time
+
+A toast is **standing** when it has `duration: 0` or an action. A standing toast is never closed to
+make room, in either mode: it holds something the customer still has to read or use, "Neue Version
+verfügbar" with "Aktualisieren" for example.
+
+- `'replace'`, the default: a fourth toast closes the oldest visible toast that is not standing,
+  exactly as before for toasts without an action. Only when every visible toast is standing does the
+  new one wait.
+- `'queue'`: nothing is closed early. A toast beyond `maxVisible` waits and moves in, oldest first,
+  as soon as a place is free.
+
+A waiting toast is not in `toasts`, its duration starts only when it becomes visible, and
+`dismiss(id)` takes it out of the queue before it is ever shown.
 
 Only `error()` sets `duration: 0`. `info()` and `warning()` use the same 5000ms as a neutral toast,
 8000ms with an action, because a warning that has to be read is an alert on the page, not a toast.
@@ -124,6 +150,16 @@ function zeigen(titel: string, meldung: string, typ: AppToastTyp): void {
 `show` sets no icon. To keep the icons of `info()`, `success()`, `warning()` and `error()`, call
 those methods instead and pass the title through the options.
 
+An app whose own service announced warnings as urgently as errors and must not lose any toast:
+
+```ts
+// app.config.ts
+providers: [provideZenitToast({ overflow: 'queue' })];
+
+// the service of the app
+toast.warning('Danach wird Beispiel-Server 1 gesperrt', { live: 'assertive' });
+```
+
 A permanent toast and closing it again by id:
 
 ```ts
@@ -160,13 +196,20 @@ An outlet whose close button is named in another language:
 A status is never the colour alone. `info` and `warning` tint the icon only, the toast keeps the
 plain surface of the reference, and the text says what happened.
 
-At most three toasts at a time, the newest at the bottom; a fourth one closes the oldest. There is
-no hover, focus or disabled state on the toast itself; the two buttons inside it have theirs.
+At most three toasts at a time, the newest at the bottom; a fourth one closes the oldest one that is
+not standing, or waits (see "How many at a time"). There is no hover, focus or disabled state on the
+toast itself; the two buttons inside it have theirs.
 
 ## Accessibility
 
 - A `danger` toast carries `role="alert"` and is announced at once; every other toast, `info` and
-  `warning` included, carries `role="status"` and is announced politely.
+  `warning` included, carries `role="status"` and is announced politely. `live` overrides that per
+  toast: `live: 'assertive'` puts a warning into the `role="alert"` region. Keep it for what really
+  has to interrupt; an assertive announcement cuts off whatever the screen reader is saying.
+- A toast that waits in the queue is announced when it moves in, not when it is created, because
+  that is when it enters the live region.
+- A standing toast is never closed to make room, so its action stays reachable by keyboard until the
+  customer closes it or uses it.
 - A title is read before the message, because both stand in the same live region and the title comes
   first in the dom. It needs no heading role; a toast is not a section of the page.
 - The close button has an `aria-label` from `closeLabel`, with a German default that can be
@@ -229,4 +272,5 @@ the reference toast has neither.
 - Do let errors stay until they are closed; that is what `error()` already does.
 - Don't use a toast for an error the customer has to act on; that is an alert.
 - Don't show more than three at a time; the service already caps it.
+- Do give a toast that must not get lost an action or `duration: 0`; it is then never pushed out.
 - Don't animate a toast sliding in; it fades over 150ms.
