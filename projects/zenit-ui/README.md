@@ -211,7 +211,7 @@ Entries marked "(addition)" are not part of the reference table (`spec/guideline
 | Pagination | `z-pagination` | `[(page)]`, `[(pageSize)]` (25), `total`, `itemLabel`; `pageSizeOptions`, `pageSizeLabel`, `rangeLabel`, `ariaLabelPrev`, `ariaLabelNext` (additions) |
 | Alert | `z-alert` | `status`, `title`, `icon`; content is the text; slot `[zAlertAction]` |
 | EmptyState | `z-empty-state` | `title`; content is the text; slot `[zEmptyAction]` |
-| Skeleton | `z-skeleton` | `width`, `thumb` |
+| Skeleton | `z-skeleton` | `width`, `thumb`, `tile` |
 | Sidebar | `z-sidebar`, `z-sidebar-group`, `[zSidebarItem]` | `ariaLabel`; `label`; `icon`, `active`, `count` |
 | AppHeader | `z-app-header`, `a[zHeaderLink]`, `[zBrand]` | `navLabel`; `active`; slot `[zHeaderEnd]`; `menuLabel` (addition); `[(open)]` (addition) |
 | PageHeader | `z-page-header` | `title`, `sub`; content are the actions |

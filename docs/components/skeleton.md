@@ -7,6 +7,7 @@ Holds the space while a list or a metric loads.
 - In a list or a table, after 300ms of loading, with as many placeholder rows as are normally
   expected, two or three.
 - In the same grid as the real rows, so nothing jumps when the data arrives.
+- With `tile` in a `z-game-grid` that loads, one placeholder per expected game tile.
 
 ## When not to use
 
@@ -23,12 +24,13 @@ import { ZSkeleton } from 'zenit-ui';
 
 Selector: `z-skeleton`
 
-| Input   | Type      | Default | Description                                                                          |
-| ------- | --------- | ------- | ------------------------------------------------------------------------------------ |
-| `width` | `string`  | `''`    | CSS length for the placeholder, for example `40%` or `64px`. Empty means full width. |
-| `thumb` | `boolean` | `false` | Renders a square instead of a line, for the image area of a row. Boolean attribute.  |
+| Input   | Type      | Default | Description                                                                                                |
+| ------- | --------- | ------- | ---------------------------------------------------------------------------------------------------------- |
+| `width` | `string`  | `''`    | CSS length for the placeholder, for example `40%` or `64px`. Empty means full width.                       |
+| `thumb` | `boolean` | `false` | Renders a square instead of a line, for the image area of a row. Boolean attribute.                        |
+| `tile`  | `boolean` | `false` | Renders the placeholder of a `button[zGameTile]`: 3:4 cover, title line and price line. Boolean attribute. |
 
-No outputs, no content projection, no forms support. The host is always `aria-hidden="true"`.
+No outputs, no content projection, no forms support. `width` does not apply to `tile`; the grid cell sets its width. The host is always `aria-hidden="true"`.
 
 ## Examples
 
@@ -49,6 +51,17 @@ Two placeholder rows in the grid of a server list:
     </div>
   </z-rows>
 </z-panel>
+```
+
+A game grid that is still loading. Each placeholder takes exactly the cell of a tile, so the grid
+does not move when the tiles arrive; the grid names itself and carries `aria-busy`:
+
+```html
+<z-game-grid role="group" aria-busy="true" aria-label="Spiele werden geladen">
+  <z-skeleton tile />
+  <z-skeleton tile />
+  <z-skeleton tile />
+</z-game-grid>
 ```
 
 Plain lines, at full width and at a percentage:
@@ -96,18 +109,24 @@ which is the single permanent animation in the system and sits behind
 ## Responsive
 
 The placeholder is a block whose width comes from `width`, so it follows the grid it sits in at
-every width. The `thumb` variant stays 32px square, matching `z-row__thumb`.
+every width. The `thumb` variant stays 32px square, matching `z-row__thumb`. The `tile` variant
+follows its grid cell: the cover is 3:4 of the cell width, so at every width its box equals that of
+a `button[zGameTile]` in the same grid (about 139 by 238px in the demo at 1440 and at 375px).
 
 ## Rendered classes and tokens
 
-| Class           | Applies when |
-| --------------- | ------------ |
-| `z-skel`        | always       |
-| `z-skel--thumb` | `thumb`      |
+| Class           | Applies when                                               |
+| --------------- | ---------------------------------------------------------- |
+| `z-skel`        | always                                                     |
+| `z-skel--thumb` | `thumb`                                                    |
+| `z-skel--tile`  | `tile`, with `z-skel__cover` and two `z-skel__line` inside |
 
 An inline `width` is written when `width` is not empty. Tokens: `--radius-sm` for the corner,
 `--surface-hover` for the fill. The 12px line height, the 32px square and the 1.2s opacity animation
-are literal values from the reference stylesheet.
+are literal values from the reference stylesheet. Addition to the reference: `z-skel--tile` repeats
+the boxes of `.z-game` with `--space-2` between them and `--radius-md` on the cover; its text lines
+are one line box tall (`1lh`), the price line at the 12px/16px of `.z-game__price`, each with a 12px
+bar centred in it.
 
 ## Do / Don't
 

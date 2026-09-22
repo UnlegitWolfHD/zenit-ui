@@ -25,6 +25,18 @@
 /* Skeleton */
 .z-skel { display: block; height: 12px; border-radius: var(--radius-sm); background: var(--surface-hover); }
 .z-skel--thumb { width: 32px; height: 32px; }
+/* Addition to the reference: the placeholder of a button[zGameTile] for a
+   z-game-grid that loads. It repeats the boxes of .z-game (_werkzeuge.css):
+   a grid with the gap space-2, a 3:4 cover area in radius-md, a title line
+   one line box of the inherited type tall and a price line of 12px/16px, the
+   values of .z-game__price. Each text line draws a bar of the 12px skeleton
+   height centred in its line box, so the cell is exactly the cell of a tile.
+   The host keeps the opacity animation; its own fill is dropped. */
+.z-skel--tile { display: grid; gap: var(--space-2); height: auto; min-width: 0; border-radius: 0; background: none; }
+.z-skel__cover { aspect-ratio: 3 / 4; width: 100%; border-radius: var(--radius-md); background: var(--surface-hover); }
+.z-skel__line { height: 12px; margin-block: calc((1lh - 12px) / 2); border-radius: var(--radius-sm); background: var(--surface-hover); }
+.z-skel__line--title { width: 72%; font-weight: 600; }
+.z-skel__line--price { width: 48%; font-size: 12px; line-height: 16px; }
 @media (prefers-reduced-motion: no-preference) {
   .z-skel { animation: z-skel 1.2s ease-in-out infinite alternate; }
   @keyframes z-skel { from { opacity: 1; } to { opacity: 0.5; } }

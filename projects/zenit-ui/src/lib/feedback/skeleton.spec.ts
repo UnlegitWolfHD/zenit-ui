@@ -4,12 +4,13 @@ import { ZSkeleton } from './skeleton';
 
 @Component({
   imports: [ZSkeleton],
-  template: `<z-skeleton [width]="breite()" [thumb]="thumb()" />`,
+  template: `<z-skeleton [width]="breite()" [thumb]="thumb()" [tile]="kachel()" />`,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 class SkeletonHost {
   readonly breite = signal('');
   readonly thumb = signal(false);
+  readonly kachel = signal(false);
 }
 
 describe('ZSkeleton', () => {
@@ -58,5 +59,28 @@ describe('ZSkeleton', () => {
     rendere();
 
     expect(skel.classList.contains('z-skel--thumb')).toBe(true);
+  });
+
+  it('renders cover, title line and price line only with tile', () => {
+    const { skel, host, rendere } = baue();
+
+    expect(skel.children.length).toBe(0);
+
+    host.kachel.set(true);
+    rendere();
+
+    expect(skel.classList.contains('z-skel--tile')).toBe(true);
+    expect(Array.from(skel.children, (kind) => kind.className)).toEqual([
+      'z-skel__cover',
+      'z-skel__line z-skel__line--title',
+      'z-skel__line z-skel__line--price',
+    ]);
+    expect(skel.getAttribute('aria-hidden')).toBe('true');
+
+    host.kachel.set(false);
+    rendere();
+
+    expect(skel.classList.contains('z-skel--tile')).toBe(false);
+    expect(skel.children.length).toBe(0);
   });
 });
