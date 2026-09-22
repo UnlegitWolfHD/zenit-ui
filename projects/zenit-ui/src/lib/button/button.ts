@@ -6,10 +6,10 @@ import {
   DestroyRef,
   effect,
   ElementRef,
-  HostAttributeToken,
   inject,
   input,
 } from '@angular/core';
+import { leiheAttribut } from '../a11y/host-attribute';
 import { ZSpinner } from '../spinner';
 
 /**
@@ -39,10 +39,12 @@ export type ZButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
  * as well. With both set, `disabled` wins and the lock is native. An `<a>`
  * cannot be disabled natively, so it gets `aria-disabled="true"` and
  * `tabindex="-1"` instead, and the click is swallowed. A caller may also write
- * a static `aria-disabled="true"` onto a `<button>`: the button then stays
- * focusable and can explain the reason in a tooltip, which a real `disabled`
- * would prevent, and its click is swallowed as well. Icon-only buttons need an
- * `aria-label` from the caller.
+ * `aria-disabled="true"` onto a `<button>`, statically or through
+ * `[attr.aria-disabled]`: the button then stays focusable and can explain the
+ * reason in a tooltip, which a real `disabled` would prevent, and its click is
+ * swallowed as well. The attribute is only borrowed while the library locks:
+ * its `"true"` wins then, and the caller's latest value comes back when the
+ * lock goes. Icon-only buttons need an `aria-label` from the caller.
  *
  * The component never touches `type`: the native default stays, so a
  * `<button zBtn>` inside a form submits it. A button that only triggers an
@@ -73,7 +75,6 @@ export type ZButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
     '[class.z-btn--icon]': `iconOnly()`,
     '[class.z-btn--block]': `block()`,
     '[attr.disabled]': `istLink || !disabled() ? null : ""`,
-    '[attr.aria-disabled]': `ariaGesperrt || weich() ? "true" : null`,
     '[attr.aria-busy]': `loading() ? "true" : null`,
   },
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -134,14 +135,6 @@ export class ZButton {
 
   protected readonly istLink =
     inject<ElementRef<HTMLElement>>(ElementRef).nativeElement.nodeName === 'A';
-  /**
-   * Static `aria-disabled="true"` written by the caller. That keeps a
-   * `<button>` focusable so it can show the reason in a tooltip, which a real
-   * `disabled` would prevent. Without reading it here the host binding would
-   * delete the attribute.
-   */
-  protected readonly ariaGesperrt =
-    inject(new HostAttributeToken('aria-disabled'), { optional: true }) === 'true';
   protected readonly variante = computed<ZButtonVariant>(() => this.zBtn() || 'secondary');
   protected readonly gesperrt = computed(() => this.disabled() || this.loading());
   /**
@@ -155,6 +148,11 @@ export class ZButton {
 
   constructor() {
     const wirt = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+    // Borrowed, not bound: a host binding would delete an `aria-disabled` of
+    // the caller, static or bound, on every change detection run while the
+    // button is not soft-locked. The caller's value stands while the library
+    // has none, and its latest value comes back when the lock goes.
+    leiheAttribut('aria-disabled', () => (this.weich() ? 'true' : null));
     /** What the caller last wrote, and what it gets back when the lock goes. */
     let geliehen: string | null = null;
     let gesetzt = false;

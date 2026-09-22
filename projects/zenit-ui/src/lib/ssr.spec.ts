@@ -226,7 +226,12 @@ describe('rendering without the observer globals', () => {
 
     expect(link.getAttribute('tabindex')).toBe('-1');
     expect(link.getAttribute('aria-disabled')).toBe('true');
-    expect(fixture.nativeElement.querySelector('button')?.getAttribute('aria-busy')).toBe('true');
+    const knopf: HTMLButtonElement = fixture.nativeElement.querySelector('button');
+    expect(knopf.getAttribute('aria-busy')).toBe('true');
+    // aria-disabled is borrowed through leiheAttribut, whose observer is
+    // missing here; the value itself has to be in the HTML all the same.
+    expect(knopf.getAttribute('aria-disabled')).toBe('true');
+    expect(knopf.hasAttribute('disabled')).toBe(false);
     expect(fixture.nativeElement.querySelector('z-spinner')).not.toBeNull();
   });
 

@@ -101,9 +101,12 @@ There is no error or empty state; the field or the page around the button carrie
   and the click is swallowed before `routerLink` sees it. A `tabindex` of the caller's own, static
   or bound, is only borrowed for that: the lock holds even while the binding writes new values, and
   the last value the caller wanted is back on the element as soon as the lock goes.
-- A caller may write a static `aria-disabled="true"` on a `<button>` instead of `disabled`. The
-  button then stays focusable so a tooltip can explain the reason, and its click is swallowed as
-  well. Repeat the reason as a sentence for keyboard users.
+- A caller may write `aria-disabled="true"` on a `<button>` instead of `disabled`, statically or
+  through `[attr.aria-disabled]`. The button then stays focusable so a tooltip can explain the
+  reason, and its click, Enter and Space are swallowed as well. Repeat the reason as a sentence for
+  keyboard users. The library only borrows the attribute while it locks (`loading`, a locked link):
+  its `"true"` wins then, also against a binding that keeps writing, and the caller's latest value,
+  or no attribute, is back when the lock goes.
 - An icon-only button has no text, so the caller supplies the `aria-label`.
 - The label is a verb plus its object ("Server erstellen"), not "Los" or "Zum Dashboard".
 

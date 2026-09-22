@@ -72,6 +72,18 @@ class FormularHost {
   gesendet = 0;
 }
 
+/** An aria-disabled the caller binds, next to the lock of the library. */
+@Component({
+  imports: [ZButton],
+  template: `<button zBtn [attr.aria-disabled]="aria()" [loading]="laedt()">Stoppen</button>
+    <a zBtn href="#start" [attr.aria-disabled]="aria()" [disabled]="laedt()">Starten</a>`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class AriaBindungHost {
+  readonly aria = signal<string | null>('true');
+  readonly laedt = signal(false);
+}
+
 /** A tabindex the caller wrote: static on the button, bound on the link. */
 @Component({
   imports: [ZButton],
@@ -441,6 +453,94 @@ describe('ZButton', () => {
 
       expect(link.hasAttribute('tabindex')).toBe(false);
     });
+  });
+
+  // The library borrows aria-disabled instead of binding it: a host binding
+  // deleted a bound value of the caller on every change detection run.
+  describe('aria-disabled of the caller', () => {
+    it('keeps a static aria-disabled through loading and back', () => {
+      @Component({
+        imports: [ZButton],
+        template: `<button zBtn aria-disabled="true" [loading]="laedt()">Stoppen</button>`,
+        changeDetection: ChangeDetectionStrategy.OnPush,
+      })
+      class StatischHost {
+        readonly laedt = signal(false);
+      }
+      const fixture = TestBed.createComponent(StatischHost);
+      fixture.detectChanges();
+      const button = fixture.nativeElement.querySelector('button');
+
+      expect(button.getAttribute('aria-disabled')).toBe('true');
+      fixture.componentInstance.laedt.set(true);
+      fixture.detectChanges();
+      expect(button.getAttribute('aria-disabled')).toBe('true');
+      fixture.componentInstance.laedt.set(false);
+      fixture.detectChanges();
+      expect(button.getAttribute('aria-disabled')).toBe('true');
+    });
+
+    it('keeps a bound aria-disabled and swallows the click while it says true', () => {
+      const fixture = TestBed.createComponent(AriaBindungHost);
+      fixture.detectChanges();
+      const button = fixture.nativeElement.querySelector('button');
+
+      expect(button.getAttribute('aria-disabled')).toBe('true');
+      const klick = new MouseEvent('click', { bubbles: true, cancelable: true });
+      button.dispatchEvent(klick);
+      expect(klick.defaultPrevented).toBe(true);
+
+      fixture.componentInstance.aria.set('false');
+      fixture.detectChanges();
+      expect(button.getAttribute('aria-disabled')).toBe('false');
+      const frei = new MouseEvent('click', { bubbles: true, cancelable: true });
+      button.dispatchEvent(frei);
+      expect(frei.defaultPrevented).toBe(false);
+    });
+
+    for (const [was, auswahl] of [
+      ['a loading button', 'button'],
+      ['a locked link', 'a'],
+    ] as const) {
+      it(`holds "true" on ${was} while the binding changes, and gives back the latest value`, async () => {
+        const fixture = TestBed.createComponent(AriaBindungHost);
+        fixture.componentInstance.aria.set('false');
+        fixture.detectChanges();
+        const element = fixture.nativeElement.querySelector(auswahl);
+
+        fixture.componentInstance.laedt.set(true);
+        fixture.detectChanges();
+        expect(element.getAttribute('aria-disabled')).toBe('true');
+
+        // The binding writes while the library holds the attribute.
+        fixture.componentInstance.aria.set('mixed');
+        fixture.detectChanges();
+        await Promise.resolve();
+        expect(element.getAttribute('aria-disabled')).toBe('true');
+
+        fixture.componentInstance.laedt.set(false);
+        fixture.detectChanges();
+        expect(element.getAttribute('aria-disabled')).toBe('mixed');
+      });
+
+      it(`removes the attribute from ${was} when the caller cleared it meanwhile`, async () => {
+        const fixture = TestBed.createComponent(AriaBindungHost);
+        fixture.componentInstance.aria.set('false');
+        fixture.detectChanges();
+        const element = fixture.nativeElement.querySelector(auswahl);
+
+        fixture.componentInstance.laedt.set(true);
+        fixture.detectChanges();
+        fixture.componentInstance.aria.set(null);
+        fixture.detectChanges();
+        await Promise.resolve();
+        expect(element.getAttribute('aria-disabled')).toBe('true');
+
+        fixture.componentInstance.laedt.set(false);
+        fixture.detectChanges();
+        expect(element.hasAttribute('aria-disabled')).toBe(false);
+      });
+    }
   });
 
   it('swallows the click on a button with aria-disabled', () => {
