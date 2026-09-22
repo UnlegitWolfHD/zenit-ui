@@ -150,18 +150,35 @@ export class ZDialog {
    *
    * @example
    * ```ts
-   * import { ElementRef, inject, viewChild } from '@angular/core';
-   * import { ZDialog } from 'zenit-ui';
+   * import { ChangeDetectionStrategy, Component, ElementRef, inject, viewChild } from '@angular/core';
+   * import { ZButton, ZDialog } from 'zenit-ui';
+   * import { NotizDialog } from './notiz-dialog';
    *
-   * // `read: ElementRef` is the point: on `<button zBtn #werkzeuge>` the
-   * // reference would otherwise yield the ZButton instance, which has no
-   * // focus(), and the focus would silently land on <body>.
-   * const werkzeuge = viewChild.required('werkzeuge', { read: ElementRef });
-   * const dialog = inject(ZDialog);
+   * @Component({
+   *   selector: 'app-serverzeile',
+   *   imports: [ZButton],
+   *   template: `
+   *     <div #werkzeuge class="z-cluster">
+   *       <button zBtn="secondary" type="button">Hochladen</button>
+   *     </div>
+   *     <button zBtn="ghost" type="button" (click)="notiz()">Notiz bearbeiten</button>
+   *   `,
+   *   changeDetection: ChangeDetectionStrategy.OnPush,
+   * })
+   * export class Serverzeile {
+   *   private readonly dialog = inject(ZDialog);
    *
-   * // The row that carried the trigger is gone once the dialog confirms the
-   * // deletion, so focus goes to the toolbar above the list instead.
-   * dialog.open(NotizDialog, { restoreFocusTo: werkzeuge() });
+   *   // `read: ElementRef` is the point: on `<button zBtn #werkzeuge>` the
+   *   // reference would otherwise yield the ZButton instance, which has no
+   *   // focus(), and the focus would silently land on <body>.
+   *   private readonly werkzeuge = viewChild.required('werkzeuge', { read: ElementRef });
+   *
+   *   // The row that carried the trigger is gone once the dialog confirms the
+   *   // deletion, so focus goes to the toolbar above the list instead.
+   *   protected notiz(): void {
+   *     this.dialog.open(NotizDialog, { restoreFocusTo: this.werkzeuge() });
+   *   }
+   * }
    * ```
    */
   open<R = unknown, D = unknown, C = unknown>(

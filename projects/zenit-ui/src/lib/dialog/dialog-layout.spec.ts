@@ -208,6 +208,16 @@ describe('ZDialogLayout', () => {
     });
   }
 
+  // The controls in the first legend of a disabled fieldset stay operable, so
+  // one of them is a tab stop and the body needs none.
+  it('leaves the body alone for a control in the legend of a disabled fieldset', async () => {
+    const { rumpf } = await rumpfMit(
+      '<fieldset disabled><legend><button>Mehr</button></legend><input /></fieldset>',
+    );
+
+    expect(rumpf.hasAttribute('tabindex')).toBe(false);
+  });
+
   it('leaves the body alone as soon as one real tab stop is in it', async () => {
     const { rumpf } = await rumpfMit('<button tabindex="-1">Mehr</button><input />');
 

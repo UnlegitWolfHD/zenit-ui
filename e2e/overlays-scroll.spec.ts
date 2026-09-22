@@ -302,8 +302,9 @@ test.describe('an overlay opened while the trigger is still being scrolled', () 
   }) => {
     await amEnde(page);
 
-    // Two steps back: the menu trigger, then the tooltip trigger at the very
-    // top of the body, which the browser now scrolls into view.
+    // Three steps back: the field above, the menu trigger, then the tooltip
+    // trigger at the very top of the body, which the browser scrolls into view.
+    await page.keyboard.press('Shift+Tab');
     await page.keyboard.press('Shift+Tab');
     await page.keyboard.press('Shift+Tab');
     const hinweis = page.getByRole('button', { name: 'Hinweis zur Welt' });
@@ -388,25 +389,114 @@ test.describe('nested scrollers', () => {
     await page.addStyleTag({
       content:
         '.z-dialog-panel .z-dialog { max-height: 320px; overflow: auto; }' +
-        '.z-dialog-panel .z-dialog__body { max-height: 600px; }',
+        '.z-dialog-panel .z-dialog__body { height: 600px; max-height: none; flex: none; }',
     });
     const karteEl = karte(page);
     const hinweis = page.getByRole('button', { name: 'Hinweis zur Welt' });
     await hinweis.focus();
     await expect(page.getByRole('tooltip')).toBeVisible();
 
-    // The body takes the trigger out of sight.
-    await rumpf(page).evaluate((el) => (el.scrollTop = 200));
+    // Just far enough: the trigger sits above the top edge of the body and
+    // still inside the box of the card around it. Asking only the scroller of
+    // the event would call it visible.
+    await rumpf(page).evaluate((el) => (el.scrollTop = 60));
     await expect(page.getByRole('tooltip')).toHaveCount(0);
+    const lage = await page.evaluate(() => {
+      const knopf = document
+        .querySelector('.cdk-overlay-container button[aria-label="Hinweis zur Welt"]')!
+        .getBoundingClientRect();
+      const rumpfKasten = document
+        .querySelector('.cdk-overlay-container .z-dialog__body')!
+        .getBoundingClientRect();
+      const karteKasten = document
+        .querySelector('.cdk-overlay-container .z-dialog')!
+        .getBoundingClientRect();
+      return { knopf: knopf.bottom, rumpf: rumpfKasten.top, karte: karteKasten.top };
+    });
+    expect(lage.knopf, 'der Auslöser steht über der Kante des Rumpfs').toBeLessThanOrEqual(
+      lage.rumpf,
+    );
+    expect(lage.knopf, 'und noch im Kasten der Karte').toBeGreaterThan(lage.karte);
 
     // The outer scroller moves a little: the trigger is still behind the top
-    // edge of the body, so the panel has to stay away.
+    // edge of the body, so the panel has to stay away. Asked after a moment,
+    // because a panel that comes back needs a frame to do it.
     await karteEl.evaluate((el) => (el.scrollTop = 5));
+    await page.waitForTimeout(200);
     await expect(page.getByRole('tooltip'), 'kommt nicht zurück').toHaveCount(0);
 
     // Back in the body, and it is there again.
     await rumpf(page).evaluate((el) => (el.scrollTop = 0));
     await expect(page.getByRole('tooltip')).toBeVisible();
+  });
+});
+
+/**
+ * The tooltip writes its id into `aria-describedby` of the trigger, and the
+ * caller writes that attribute too: a `z-field` links its error there on every
+ * keystroke. Answering that write with another one freezes the tab, because
+ * Chromium queues a mutation record even for an unchanged value, so the
+ * observer would call itself for as long as the page lives. jsdom cannot show
+ * that; this runs in the browser and fails fast instead of hanging the suite.
+ */
+test.describe('aria-describedby while the tooltip stands', () => {
+  test.setTimeout(30_000);
+
+  /** Does the page still run timers? Returns false when it does not answer. */
+  async function antwortet(page: Page): Promise<boolean> {
+    return page.evaluate(
+      () =>
+        new Promise<boolean>((fertig) => {
+          setTimeout(() => fertig(true), 50);
+        }),
+      { timeout: 1000 },
+    );
+  }
+
+  test('the field writes its error and the page keeps running', async ({ page }) => {
+    await langerDialog(page, 1440, 700);
+    const feld = page.getByRole('textbox', { name: 'Anzeigename' });
+    await feld.focus();
+    await expect(page.getByRole('tooltip')).toBeVisible();
+    const panelId = await page.getByRole('tooltip').getAttribute('id');
+
+    // One keystroke: the error appears and z-field rewrites aria-describedby.
+    await feld.pressSequentially('a');
+    await expect(page.getByText('Mindestens 3 Zeichen')).toBeVisible();
+
+    expect(await antwortet(page), 'die Seite antwortet noch').toBe(true);
+    const werte = (await feld.getAttribute('aria-describedby'))?.split(/\s+/) ?? [];
+    expect(werte, 'Fehlertext und Tooltip stehen beide da').toEqual([
+      'demo-lang-anzeige-error',
+      panelId,
+    ]);
+  });
+
+  test('a caller that clears the attribute costs at most four mutations', async ({ page }) => {
+    await langerDialog(page, 1440, 700);
+    const feld = page.getByRole('textbox', { name: 'Anzeigename' });
+    await feld.focus();
+    await expect(page.getByRole('tooltip')).toBeVisible();
+
+    // Everything in one go in the page: a binding going to null is a
+    // removeAttribute, and two seconds are counted afterwards.
+    const messung = await page.evaluate(
+      async () => {
+        const el = document.querySelector('#demo-lang-anzeige') as HTMLElement;
+        let zaehler = 0;
+        const zaehlen = new MutationObserver((eintraege) => (zaehler += eintraege.length));
+        zaehlen.observe(el, { attributes: true, attributeFilter: ['aria-describedby'] });
+        el.removeAttribute('aria-describedby');
+        await new Promise((fertig) => setTimeout(fertig, 2000));
+        zaehlen.disconnect();
+        return { zaehler, wert: el.getAttribute('aria-describedby') };
+      },
+      { timeout: 10_000 },
+    );
+
+    expect(messung.zaehler, 'zwei Sekunden, ein paar Mutationen').toBeLessThanOrEqual(4);
+    expect(messung.wert, 'die id des Panels steht wieder da').toMatch(/^z-tooltip-\d+$/);
+    expect(await antwortet(page), 'die Seite antwortet noch').toBe(true);
   });
 });
 

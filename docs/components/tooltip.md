@@ -100,11 +100,16 @@ scroll that brought the trigger into view for example, changes nothing.
 
 ## Accessibility
 
-- The trigger carries `aria-describedby` only while the panel hangs in the DOM. A permanent
-  reference would point at a missing id most of the time.
+- The id of the panel is one token in `aria-describedby` of the trigger while the panel hangs in the
+  DOM, and it is taken out again afterwards: a permanent reference would point at a missing id most
+  of the time. Whatever the trigger already carries there stays, the hint and the error that a
+  `z-field` links to its control for example, and it stays even when the field rewrites the
+  attribute while the panel stands.
 - The panel appears on pointer **and** on focus, so it is reachable with the keyboard.
 - Escape closes it, and only it: the key stops at the tooltip, so a dialog behind it takes a second
-  Escape (WAI-ARIA Practices). Without an open panel the key belongs to whatever is below.
+  Escape (WAI-ARIA Practices). Without an open panel the key belongs to whatever is below. One
+  layer per key: a trigger that carries a tooltip and a menu inside a dialog takes four Escapes,
+  because the tooltip shows itself again as soon as the focus is back on the trigger.
 - A disabled button fires no events, so put the tooltip on the surrounding element. Repeat the same
   reason as a visible sentence: a tooltip alone is not reachable on a touch device.
 - A tooltip never replaces the `aria-label` of an icon-only button. Set both.

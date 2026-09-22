@@ -57,6 +57,26 @@ export function naechsteId(praefix: string): string {
 export class ZDialogActions {}
 
 /**
+ * Switched off by something around the control, which the checker of the CDK
+ * does not read: it only knows the `disabled` of the control itself. `:disabled`
+ * covers a disabled `fieldset` the way the HTML standard defines it, including
+ * the exception that the controls in its first `<legend>` stay operable, and the
+ * `closest` behind it catches the browsers that do not.
+ */
+function ausserBetrieb(element: HTMLElement): boolean {
+  if (element.closest('[inert]')) {
+    return true;
+  }
+  if (element.matches(':disabled')) {
+    return true;
+  }
+  return (
+    !!element.closest('fieldset:disabled') &&
+    !element.closest('fieldset:disabled > legend:first-of-type')
+  );
+}
+
+/**
  * Everything that could be a tab stop. Whether it really is one is decided by
  * `InteractivityChecker`, which knows the dozen reasons why it might not be.
  */
@@ -233,9 +253,7 @@ export class ZDialogLayout {
         // for everything invisible.
         this.pruefer.isTabbable(element) &&
         this.pruefer.isFocusable(element) &&
-        // The checker reads the `disabled` of the control itself, not the two
-        // ways a whole subtree is switched off around it.
-        !element.closest('[inert], fieldset:disabled'),
+        !ausserBetrieb(element),
     );
   }
 }

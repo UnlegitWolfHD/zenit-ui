@@ -179,6 +179,16 @@ export class ZTooltip {
     if (this.sichtbar()) {
       return;
     }
+    // A trigger that is already cut off by a container around it gets no panel
+    // yet: `overflow: clip` never sends a scroll event, so the first paint is
+    // the only moment to ask. The listeners start anyway, so a scroll that
+    // brings the trigger back into view brings the panel with it.
+    const kasten = this.host.nativeElement.getBoundingClientRect();
+    if ((kasten.width || kasten.height) && this.verdeckt(kasten)) {
+      this.verankert = kasten;
+      this.horcheWaehrendOffen();
+      return;
+    }
     this.zeigeFlaeche(text);
     this.horcheWaehrendOffen();
   }
@@ -206,8 +216,11 @@ export class ZTooltip {
     this.sichtbar.set(true);
     this.beschreibe(true);
     // The caller may rewrite the attribute while the panel stands: a binding of
-    // its own, or the hint and the error of a `z-field` around the control.
-    // Adding is idempotent, so answering the change cannot loop.
+    // its own, or the hint and the error of a `z-field` around the control. The
+    // id goes back in, and `beschreibe` writes only when the value really
+    // changes: Chromium queues a record for a `setAttribute` with an unchanged
+    // value as well, and answering that record with another write freezes the
+    // tab in the microtask checkpoint.
     this.beobachter ??= new MutationObserver(() => this.beschreibe(true));
     this.beobachter.observe(this.host.nativeElement, {
       attributes: true,
@@ -236,17 +249,28 @@ export class ZTooltip {
    */
   private beschreibe(dazu: boolean): void {
     const wirt = this.host.nativeElement;
-    const werte = (wirt.getAttribute('aria-describedby') ?? '')
-      .split(/\s+/)
-      .filter((wert) => wert && wert !== this.tooltipId);
+    const steht = wirt.getAttribute('aria-describedby');
+    const werte = (steht ?? '').split(/\s+/).filter((wert) => wert && wert !== this.tooltipId);
     if (dazu) {
       werte.push(this.tooltipId);
     }
-    if (werte.length) {
-      wirt.setAttribute('aria-describedby', werte.join(' '));
-    } else {
+    const soll = werte.join(' ');
+    // Nothing to do is nothing to write. A `setAttribute` with the value that
+    // already stands there still queues a mutation record in Chromium, and the
+    // observer above would answer it with the next write, which never ends.
+    if (soll === (steht ?? '')) {
+      return;
+    }
+    if (soll) {
+      wirt.setAttribute('aria-describedby', soll);
+    } else if (steht !== null) {
       wirt.removeAttribute('aria-describedby');
     }
+    // The record of this write is the observer's own echo and would call it one
+    // more time for nothing. `takeRecords` drops exactly that one: no other
+    // script can have run since the write, and everything the caller queued
+    // before was already delivered to the callback that is running now.
+    this.beobachter?.takeRecords();
   }
 
   /**

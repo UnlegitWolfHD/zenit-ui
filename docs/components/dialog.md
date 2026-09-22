@@ -47,11 +47,10 @@ onto the CDK's `restoreFocus`. Left out, focus goes back to whatever was focused
 opened, which is the CDK default and right in almost every case. Set it when the trigger is gone by
 then, for example a row that the confirmed action deletes.
 
-It takes an `HTMLElement`, an `ElementRef<HTMLElement>` or a CSS selector. A template reference on
-a component host (`<button zBtn #trigger>`) yields the component instance, so read it as an
-`ElementRef`: `viewChild('trigger', { read: ElementRef })`. Something without `focus()` is dropped
-with a warning in the development build, and focus returns the way it would have without the
-parameter.
+A template reference on a component host (`<button zBtn #trigger>`) yields the component instance,
+so read it as an `ElementRef`: `viewChild('trigger', { read: ElementRef })`. Something without
+`focus()` is dropped with a warning in the development build, and focus returns the way it would
+have without the parameter.
 
 One case needs nothing: a dialog opened from a menu item. The CDK menu closes with the click and
 takes the focused item with it, so `open()` looks for the menu around the focused element and
@@ -160,26 +159,44 @@ Opened from a row whose delete removes the row itself, so focus goes to the tool
 Opened from a menu item nothing has to be passed at all:
 
 ```ts
-import { ElementRef, inject, viewChild } from '@angular/core';
-import { ZDialog } from 'zenit-ui';
+import { ChangeDetectionStrategy, Component, ElementRef, inject, viewChild } from '@angular/core';
+import { ZButton, ZDialog } from 'zenit-ui';
 
-const dialog = inject(ZDialog);
-// `read: ElementRef` is the point: on a component host such as
-// `<button zBtn #werkzeuge>` the reference would yield the ZButton instance,
-// which has no focus(), and the focus would silently land on <body>.
-const werkzeuge = viewChild.required('werkzeuge', { read: ElementRef });
+@Component({
+  selector: 'app-serverliste',
+  imports: [ZButton],
+  template: `
+    <div #werkzeuge class="z-cluster">
+      <button zBtn="secondary" type="button">Hochladen</button>
+    </div>
+    <button zBtn="danger" type="button" (click)="loeschen()">Beispiel-Server 1 löschen</button>
+  `,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class Serverliste {
+  private readonly dialog = inject(ZDialog);
 
-function loeschen(): void {
-  dialog
-    .confirm({
-      title: 'Beispiel-Server 1 löschen?',
-      body: 'Welt, Konfiguration und alle 3 Backups werden sofort gelöscht.',
-      confirmLabel: 'Server löschen',
-      cancelLabel: 'Abbrechen',
-      danger: true,
-      restoreFocusTo: werkzeuge(),
-    })
-    .subscribe((ja) => (ja ? entferne() : undefined));
+  // `read: ElementRef` is the point: on a component host such as
+  // `<button zBtn #werkzeuge>` the reference would yield the ZButton instance,
+  // which has no focus(), and the focus would silently land on <body>.
+  private readonly werkzeuge = viewChild.required('werkzeuge', { read: ElementRef });
+
+  protected loeschen(): void {
+    this.dialog
+      .confirm({
+        title: 'Beispiel-Server 1 löschen?',
+        body: 'Welt, Konfiguration und alle 3 Backups werden sofort gelöscht.',
+        confirmLabel: 'Server löschen',
+        cancelLabel: 'Abbrechen',
+        danger: true,
+        restoreFocusTo: this.werkzeuge(),
+      })
+      .subscribe((ja) => (ja ? this.entferne() : undefined));
+  }
+
+  private entferne(): void {
+    // Die Zeile verschwindet, der Fokus steht danach auf der Werkzeugleiste.
+  }
 }
 ```
 
@@ -245,7 +262,8 @@ also hear a scroll container of your own around the dialog, which `cdkScrollable
 for otherwise, and both ignore a scroller the trigger does not sit in.
 
 Escape inside the dialog goes to the overlay above it first: a tooltip that stands or a menu that is
-open takes it, and only the second Escape closes the dialog. A dialog with a long form is not lost
+open takes it, and only the second Escape closes the dialog. One layer per key, and a trigger that
+carries both takes four: tooltip, menu, tooltip again as the focus returns to the trigger, dialog. A dialog with a long form is not lost
 to the key that was meant for the menu.
 
 ## Rendered classes and tokens

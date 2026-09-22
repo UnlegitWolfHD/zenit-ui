@@ -3,6 +3,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  DestroyRef,
   effect,
   ElementRef,
   HostAttributeToken,
@@ -139,21 +140,41 @@ export class ZButton {
 
   constructor() {
     const wirt = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+    /** What the caller last wrote, and what it gets back when the lock goes. */
     let geliehen: string | null = null;
     let gesetzt = false;
+    const sperren = (): void => {
+      if (!gesetzt) {
+        geliehen = wirt.getAttribute('tabindex');
+        gesetzt = true;
+      }
+      if (wirt.getAttribute('tabindex') !== '-1') {
+        wirt.setAttribute('tabindex', '-1');
+      }
+    };
+    // A binding of the caller keeps writing while the link is locked, and every
+    // value it writes would put the locked link back into the tab order. The
+    // observer notes the new value and asserts the lock again; it runs only
+    // while the link is locked, and writing `-1` over `-1` is skipped, so it
+    // cannot answer its own record.
+    const beobachter = new MutationObserver(() => {
+      geliehen = wirt.getAttribute('tabindex');
+      if (geliehen === '-1') {
+        return;
+      }
+      sperren();
+    });
     // A locked link is taken out of the tab order, and only then is `tabindex`
     // touched at all: a host binding would write on every change and thereby
     // delete a `tabindex` the caller wrote, static or bound. The lock borrows
-    // the attribute and gives back what stood there.
+    // the attribute and gives back what stood there last.
     effect(() => {
       if (this.istLink && this.gesperrt()) {
-        if (!gesetzt) {
-          geliehen = wirt.getAttribute('tabindex');
-          gesetzt = true;
-        }
-        wirt.setAttribute('tabindex', '-1');
+        sperren();
+        beobachter.observe(wirt, { attributes: true, attributeFilter: ['tabindex'] });
         return;
       }
+      beobachter.disconnect();
       if (!gesetzt) {
         return;
       }
@@ -164,6 +185,7 @@ export class ZButton {
         wirt.setAttribute('tabindex', geliehen);
       }
     });
+    inject(DestroyRef).onDestroy(() => beobachter.disconnect());
   }
 
   /**

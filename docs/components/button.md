@@ -91,7 +91,9 @@ There is no error or empty state; the field or the page around the button carrie
 - On a `<button>`, `disabled` and `loading` set the native `disabled` attribute, so the control
   leaves the tab order.
 - An `<a>` cannot be disabled natively. It gets `aria-disabled="true"` and `tabindex="-1"` instead,
-  and the click is swallowed before `routerLink` sees it.
+  and the click is swallowed before `routerLink` sees it. A `tabindex` of the caller's own, static
+  or bound, is only borrowed for that: the lock holds even while the binding writes new values, and
+  the last value the caller wanted is back on the element as soon as the lock goes.
 - A caller may write a static `aria-disabled="true"` on a `<button>` instead of `disabled`. The
   button then stays focusable so a tooltip can explain the reason, and its click is swallowed as
   well. Repeat the reason as a sentence for keyboard users.

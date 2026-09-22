@@ -1,6 +1,6 @@
 import { DialogRef } from '@angular/cdk/dialog';
 import { CdkMenuTrigger } from '@angular/cdk/menu';
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { form, FormField } from '@angular/forms/signals';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -93,6 +93,18 @@ interface LangesFeld {
           <z-icon name="more_vert" />
         </button>
       </div>
+      <!-- Live validation next to a tooltip: while the panel stands, the field
+           rewrites aria-describedby of the input on every keystroke. -->
+      <z-field label="Anzeigename" for="demo-lang-anzeige" [error]="anzeigeFehler()">
+        <input
+          zInput
+          id="demo-lang-anzeige"
+          placeholder="Welt von Kian"
+          zTooltip="Steht später in der Serverliste"
+          [value]="anzeige()"
+          (input)="anzeige.set($any($event.target).value)"
+        />
+      </z-field>
       @for (feld of felder; track feld.id) {
         <z-field [label]="feld.label" [for]="feld.id">
           <input zInput [id]="feld.id" [placeholder]="feld.platzhalter" />
@@ -116,6 +128,14 @@ interface LangesFeld {
 })
 export class LangerDialog {
   protected readonly ref = inject<DialogRef<boolean>>(DialogRef);
+
+  protected readonly anzeige = signal('');
+  /** Reported while typing, so the field writes its error id during input. */
+  protected readonly anzeigeFehler = computed(() =>
+    this.anzeige().length > 0 && this.anzeige().length < 3
+      ? 'Mindestens 3 Zeichen, damit der Name in der Liste lesbar bleibt.'
+      : '',
+  );
 
   protected readonly felder: readonly LangesFeld[] = [
     { id: 'demo-lang-name', label: 'Servername', platzhalter: 'Beispiel-Server 2' },
