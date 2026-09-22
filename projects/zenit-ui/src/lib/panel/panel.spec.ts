@@ -46,6 +46,17 @@ class AktionenHost {}
 })
 class PaginationHost {}
 
+@Component({
+  imports: [ZPanel],
+  template: `<z-panel title="GET /api/v1/gameservers" headingLevel="2" [titleMono]="mono()">
+    <p>Zeile</p>
+  </z-panel>`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class MonoHost {
+  readonly mono = signal(true);
+}
+
 describe('ZPanel', () => {
   it('renders the title as h3.z-panel__title and no native title attribute', () => {
     const fixture = TestBed.createComponent(PanelHost);
@@ -130,5 +141,20 @@ describe('ZPanel', () => {
 
     const stellung = body.compareDocumentPosition(panel.querySelector('z-pagination'));
     expect(stellung & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('sets the title in mono with titleMono and keeps the heading', () => {
+    const fixture = TestBed.createComponent(MonoHost);
+    fixture.detectChanges();
+    const titel = fixture.nativeElement.querySelector('.z-panel__title');
+
+    expect(titel.tagName).toBe('H2');
+    expect(titel.classList).toContain('z-mono');
+    expect(titel.textContent.trim()).toBe('GET /api/v1/gameservers');
+
+    fixture.componentInstance.mono.set(false);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.z-panel__title').className).toBe('z-panel__title');
   });
 });

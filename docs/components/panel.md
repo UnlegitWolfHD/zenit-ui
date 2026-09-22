@@ -27,6 +27,7 @@ import { ZPanel, ZPanelActions } from 'zenit-ui';
 | ------- | --------- | ------- | -------------------------------------------------------------------------------------------------------------- |
 | `title` | `string`  | `''`    | Panel title in normal capitalization, without an icon. Empty renders no header, unless an action is projected. |
 | `headingLevel` | `2 \| 3 \| 4` | `3` | Tag of the title. Raise it to `2` where the panel sits directly under the page `<h1>`. The size never changes with it. |
+| `titleMono` | `boolean` | `false` | Sets the title in the mono face (`z-mono` on the heading), for a title that is a technical value as a whole: an endpoint, a file name, a configuration key. Boolean attribute. |
 | `flush` | `boolean` | `false` | Removes the padding of the body so lists and tables reach the border. Boolean attribute.                       |
 | `busy`  | `boolean` | `false` | Marks the panel as loading and sets `aria-busy="true"`. Boolean attribute.                                     |
 
@@ -99,6 +100,14 @@ Metrics in one panel, and a panel whose last row is the pager:
 </z-panel>
 ```
 
+A panel named by an endpoint, the title in mono:
+
+```html
+<z-panel title="GET /api/v1/gameservers" titleMono headingLevel="2">
+  <p>Liefert deine Server mit Status, Adresse und Tarif.</p>
+</z-panel>
+```
+
 ## States
 
 | State   | How it looks                                             | How to trigger it                     |
@@ -117,6 +126,8 @@ The panel has no hover, focus or disabled state; the controls inside it do.
 - The title is an `<h3>`, so it takes part in the heading outline. Keep the page `<h1>` in
   `z-page-header` above it. A panel that sits directly under that `<h1>` is a section of its own and
   sets `headingLevel="2"`, so no level is skipped; below a section heading the default `3` fits.
+- `titleMono` changes the face only: the title stays the same heading with the same text, so the
+  outline and what a screen reader reads do not change.
 - The native `title` attribute is suppressed on the host, so the browser shows no tooltip of its own
   because of the `title` input.
 
@@ -133,6 +144,7 @@ its own breakpoints: the row grid collapses below 640px, a table scrolls inside
 | `z-panel`              | always (host)                         |
 | `z-panel__header`      | `title` set or an action is projected |
 | `z-panel__title`       | `title` is not empty (on `h2`, `h3` or `h4`) |
+| `z-mono`               | on `.z-panel__title`, with `titleMono` |
 | `z-panel__body`        | always                                |
 | `z-panel__body--flush` | `flush`                               |
 

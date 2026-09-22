@@ -93,6 +93,15 @@ import {
           <button zEmptyAction zBtn="secondary">Ticket erstellen</button>
         </z-empty-state>
       </z-panel>
+
+      <p class="demo-cap caption">
+        Ohne Panel als eigener Abschnitt: headingLevel macht den Titel zur Überschrift, hier h3
+        unter dem h2 dieses Abschnitts. Eine 404-Seite setzt 1. Die Größe bleibt gleich.
+      </p>
+      <z-empty-state title="Seite nicht gefunden" headingLevel="3">
+        Die Adresse gibt es nicht. Prüfe den Link oder geh zur Startseite.
+        <a zEmptyAction zBtn="secondary" href="#">Zur Startseite</a>
+      </z-empty-state>
     </section>
 
     <section class="demo-section">

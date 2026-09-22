@@ -24,6 +24,7 @@ import { ZEmptyState, ZEmptyAction } from 'zenit-ui';
 | Input   | Type     | Default | Description                                                                                 |
 | ------- | -------- | ------- | ------------------------------------------------------------------------------------------- |
 | `title` | `string` | `''`    | Title that names the state, for example `Keine offenen Tickets`. Empty means no title line. |
+| `headingLevel` | `1 \| 2 \| 3 \| 4` | none | Makes the title an `h1` to `h4`. Unset, it stays a `span`. Set it where the empty state is a section or a page of its own; `1` for a page such as a 404. The size never changes with it. |
 
 No outputs. Content projection:
 
@@ -82,6 +83,15 @@ Inside a stopped console, where the log itself is the empty area:
 </z-console>
 ```
 
+A page that is nothing but this state, the 404, with the title as its `<h1>`:
+
+```html
+<z-empty-state title="Seite nicht gefunden" headingLevel="1">
+  Die Adresse gibt es nicht. Prüfe den Link oder geh zur Startseite.
+  <a zEmptyAction zBtn="secondary" routerLink="/">Zur Startseite</a>
+</z-empty-state>
+```
+
 ## States
 
 The empty state is itself a state: it is what a panel shows instead of its rows. It has no hover,
@@ -95,6 +105,9 @@ load of the running servers.
 
 - The title and the sentence are plain text, read in document order. The component adds no role and
   no live region.
+- Inside a panel the title stays a `span`: the panel title is the heading of that block. Where the
+  empty state stands on its own, `headingLevel` makes its title a real heading, so the page keeps a
+  heading outline without a hidden `<h1>`. Pick the level that follows the heading above it.
 - There is no large grey icon, so nothing has to be hidden from assistive technology.
 - The native `title` attribute is suppressed on the host, so the browser shows no tooltip of its own
   because of the `title` input.
@@ -110,7 +123,7 @@ screen.
 | Class            | Applies when         |
 | ---------------- | -------------------- |
 | `z-empty`        | on the host, always  |
-| `z-empty__title` | `title` is not empty |
+| `z-empty__title` | `title` is not empty (`span`, or `h1` to `h4` with `headingLevel`) |
 | `z-empty__body`  | always               |
 
 Tokens: `--space-2`, `--space-4` and `--space-7` for gaps and padding, `--text-muted` for the body

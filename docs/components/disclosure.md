@@ -27,6 +27,7 @@ Selector: `z-disclosure`
 | --------- | --------- | ------- | ---------------------------------------------------------------- |
 | `title`   | `string`  | `''`    | Name of the section in the `<summary>`.                          |
 | `summary` | `string`  | `''`    | What is inside, in keywords. Empty renders nothing.              |
+| `titleMono` | `boolean` | `false` | Sets the title in the mono face, in a `span.z-mono` inside the `<summary>`, for a section named by an endpoint or a key. Boolean attribute. |
 | `open`    | `boolean` | `false` | Whether it is open, two-way bindable through `[(open)]`.         |
 
 | Output       | Payload   | Fires when                                                  |
@@ -62,6 +63,14 @@ protected readonly expertenZeile = computed(() =>
 );
 ```
 
+A section named by an endpoint, the title in mono:
+
+```html
+<z-disclosure title="GET /api/v1/gameservers" summary="Liste deiner Server" titleMono>
+  <p>Antwort 200 mit Status, Adresse und Tarif je Server.</p>
+</z-disclosure>
+```
+
 ## States
 
 | State  | How it looks                                                      | How to trigger it        |
@@ -79,6 +88,10 @@ reachable by keyboard and announced with its expanded state, and the component a
 handling of its own. The `title` input is kept off the host, so the browser hangs no tooltip of its
 own on the whole block.
 
+With `titleMono` the title stands in a `span.z-mono` inside the `<summary>`. The span has no role,
+so the `<summary>` keeps the title and the short line as its accessible name, exactly as without the
+option. Nothing interactive goes into the `<summary>`; that is why this is an option and not a slot.
+
 ## Responsive
 
 The summary is 48px tall at every width, which already meets the mobile minimum. The body is a grid
@@ -90,6 +103,7 @@ that reflows by itself.
 | --------------------- | ---------------------- |
 | `z-disclosure`        | on the `<details>`     |
 | `z-disclosure__body`  | on the content wrapper |
+| `z-mono`              | on the title span, with `titleMono` |
 
 Tokens: `--border` for the frame and the divider, `--surface` for the fill, `--text-muted` for the
 short line and the sign, `--radius-md`, `--font-mono` for "+" and "−", `--space-3` and `--space-4`

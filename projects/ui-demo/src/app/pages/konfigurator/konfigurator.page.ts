@@ -510,6 +510,12 @@ export class FreieEingabe {
         </z-field>
       </z-disclosure>
       <p class="demo-grund body-sm">Zweite Disclosure offen: {{ expertenOffen() }}</p>
+      <p class="demo-cap caption">
+        Titel in mono über titleMono, hier ein Endpunkt. Er bleibt der Name des summary.
+      </p>
+      <z-disclosure title="GET /api/v1/gameservers" summary="Liste deiner Server" titleMono>
+        <p class="demo-sub">Antwort 200 mit Status, Adresse und Tarif je Server.</p>
+      </z-disclosure>
     </section>
 
     <section class="demo-section">
