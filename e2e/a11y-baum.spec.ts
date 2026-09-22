@@ -949,7 +949,7 @@ test.describe('game tiles', () => {
     // CDP schreibt Wahrheitswerte als 1 und 0, und ein "false" lässt der Baum
     // als Standardzustand weg; vorgelesen wird es so oder so.
     const zustand = (wert: string | undefined) =>
-      (({ '1': 'true', '0': 'false' })[wert ?? ''] ?? wert) ?? 'false';
+      ({ '1': 'true', '0': 'false' })[wert ?? ''] ?? wert ?? 'false';
 
     melden(
       'Spielkacheln /werkzeuge 1440px',
