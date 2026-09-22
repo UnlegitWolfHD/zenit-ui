@@ -1071,11 +1071,16 @@ carries it.`;
 
 const SERVICES = `**\`ZDialog\`** (root service, \`inject(ZDialog)\`) wraps \`@angular/cdk/dialog\`. Focus trap,
 Escape, backdrop and focus return come from the CDK. Focus lands on the first tabbable element
-when the dialog opens and returns to the trigger when it closes; pass \`restoreFocusTo\` when the
-trigger is gone by then (opened from a menu: pass the menu trigger). The dialog's own component
-has \`<z-dialog title="…">\` as its root element and \`[zDialogActions]\` for its buttons.
+when the dialog opens and returns to the trigger when it closes, also to a menu trigger. Pass
+\`restoreFocusTo\` only when the trigger is gone by then. It takes an element: \`zBtn\` is a
+component host, so read the trigger with \`viewChild.required('trigger', { read: ElementRef })\`;
+a component instance is dropped with a warning in dev mode. The dialog's own component has
+\`<z-dialog title="…">\` as its root element and \`[zDialogActions]\` for its buttons.
 
 \`\`\`ts
+// <button zBtn="danger" #trigger (click)="loesche(name)">Löschen</button>
+readonly trigger = viewChild.required('trigger', { read: ElementRef });
+
 this.dialog
   .confirm({
     title: \`Server "\${name}" löschen?\`,
