@@ -65,9 +65,10 @@ export interface ZToastItem {
   /** Line above the message, empty for a single-line toast. */
   readonly title: string;
   /**
-   * Which of the five looks the toast has, and which live region announces it:
-   * `danger` goes into the assertive one, the other four into the polite one.
-   * Always set here; `show()` falls back to `neutral`.
+   * Which of the five looks the toast has. Without {@link live} it also picks
+   * the live region: `danger` goes into the assertive one, the other four into
+   * the polite one; `live` overrides that. Always set here; `show()` falls
+   * back to `neutral`.
    */
   readonly status: ZToastStatus;
   /** Name of the Material Icons ligature, empty for no icon. */
@@ -127,7 +128,7 @@ const Z_TOAST_CONFIG = new InjectionToken<ZToastConfig>('Z_TOAST_CONFIG', {
  * };
  * ```
  */
-export function provideZenitToast(config: ZToastConfig): EnvironmentProviders {
+export function provideZenitToast(config: ZToastConfig = {}): EnvironmentProviders {
   return makeEnvironmentProviders([{ provide: Z_TOAST_CONFIG, useValue: config }]);
 }
 
@@ -172,7 +173,10 @@ export class ZToast {
   private readonly liste = signal<readonly ZToastItem[]>([]);
   private warteschlange: readonly Wartend[] = [];
   private readonly config = inject(Z_TOAST_CONFIG);
-  private readonly hoechstens = Math.max(1, this.config.maxVisible ?? 3);
+  private readonly hoechstens = Math.max(
+    1,
+    Number.isFinite(this.config.maxVisible) ? Number(this.config.maxVisible) : 3,
+  );
   /** Ids of the standing toasts, visible or waiting: never closed to make room. */
   private readonly stehend = new Set<number>();
 
@@ -295,17 +299,20 @@ export class ZToast {
   }
 
   /**
-   * `'replace'`: while every place is taken and a toast waits, the oldest
-   * visible toast that is not standing gives way. Each dismissal lets the head
-   * of the queue move in, so the loop ends when nothing waits any more or no
-   * visible toast may give way.
+   * `'replace'`: one new toast frees at most one place. While every place is
+   * taken, the oldest visible toast that is not standing gives way, and the
+   * head of the queue moves in, which is the new toast only when nothing else
+   * waits. One and not a loop: a loop would also close the toast that just
+   * moved in, and every further one after it, so a waiting toast could vanish
+   * without ever having been in `toasts`. Only visible toasts give way; a
+   * waiting one is never dropped.
    */
   private platzMachen(): void {
-    while (this.warteschlange.length > 0 && this.liste().length >= this.hoechstens) {
-      const aeltester = this.liste().find((t) => !this.stehend.has(t.id));
-      if (!aeltester) {
-        return;
-      }
+    if (this.warteschlange.length === 0 || this.liste().length < this.hoechstens) {
+      return;
+    }
+    const aeltester = this.liste().find((t) => !this.stehend.has(t.id));
+    if (aeltester) {
       this.dismiss(aeltester.id);
     }
   }

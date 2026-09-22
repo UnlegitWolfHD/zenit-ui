@@ -318,6 +318,40 @@ describe('ZToast', () => {
     expect(vi.getTimerCount()).toBe(0);
   });
 
+  it('never drops a waiting toast when a new one arrives with overflow replace', () => {
+    const gesehen = new Set<string>();
+    const merken = () => dienst.toasts().forEach((toast) => gesehen.add(toast.text));
+    const s1 = dienst.show('S1', { duration: 0 });
+    dienst.show('S2', { duration: 0 });
+    dienst.show('S3', { duration: 0 });
+    dienst.show('N1');
+    dienst.show('N2');
+    merken();
+
+    dienst.dismiss(s1);
+    merken();
+    expect(dienst.toasts().map((toast) => toast.text)).toEqual(['S2', 'S3', 'N1']);
+
+    dienst.success('N3');
+    merken();
+    expect(dienst.toasts().map((toast) => toast.text)).toEqual(['S2', 'S3', 'N2']);
+
+    vi.advanceTimersByTime(5000);
+    merken();
+    expect(dienst.toasts().map((toast) => toast.text)).toEqual(['S2', 'S3', 'N3']);
+    expect([...gesehen]).toEqual(['S1', 'S2', 'S3', 'N1', 'N2', 'N3']);
+  });
+
+  it('falls back to three places for a maxVisible that is not a number', () => {
+    dienst = mitConfig({ maxVisible: Number.NaN });
+    dienst.show('Eins');
+    dienst.show('Zwei');
+    dienst.show('Drei');
+    dienst.show('Vier');
+
+    expect(dienst.toasts().map((toast) => toast.text)).toEqual(['Zwei', 'Drei', 'Vier']);
+  });
+
   it('shows as many toasts as maxVisible allows', () => {
     dienst = mitConfig({ maxVisible: 2 });
     dienst.show('Eins');

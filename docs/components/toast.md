@@ -75,8 +75,9 @@ make room, in either mode: it holds something the customer still has to read or 
 verfügbar" with "Aktualisieren" for example.
 
 - `'replace'`, the default: a fourth toast closes the oldest visible toast that is not standing,
-  exactly as before for toasts without an action. Only when every visible toast is standing does the
-  new one wait.
+  exactly as before for timed toasts without an action. Only when every visible toast is standing
+  does the new one wait. One new toast frees at most one place, and only a visible toast gives way:
+  a waiting toast is never dropped, it moves in before the newer ones.
 - `'queue'`: nothing is closed early. A toast beyond `maxVisible` waits and moves in, oldest first,
   as soon as a place is free.
 
