@@ -58,6 +58,12 @@ inside the link, see "Brand and end slot on small screens".
 
 Pure slot marker for the right-hand end: credit, avatar or buttons. It adds no class and no markup.
 
+No primary button in the end slot: the header stands on every screen of the site, so a primary
+there is a second one on every screen that already has its own, which breaks "höchstens ein
+primärer Button pro Bildschirmhöhe" (`CLAUDE.md`). Use `ghost` or `secondary`, the way the start
+page `/muster/startseite` does, and leave the one primary to the hero, the price summary or the
+page header.
+
 ## Examples
 
 The customer area, with credit and avatar:
@@ -74,7 +80,8 @@ The customer area, with credit and avatar:
 </z-app-header>
 ```
 
-A public page, with the two calls to action:
+A public page, with the two calls to action. Neither of them is `primary`: the primary of the page
+stands in the hero below.
 
 ```html
 <z-app-header navLabel="Hauptnavigation">
@@ -83,7 +90,7 @@ A public page, with the two calls to action:
   <a zHeaderLink href="/preise">Preise</a>
   <a zHeaderLink href="/hardware">Hardware</a>
   <a zBtn="ghost" size="sm" zHeaderEnd href="/anmelden">Anmelden</a>
-  <a zBtn="primary" size="sm" zHeaderEnd href="/neu">Server erstellen</a>
+  <a zBtn="secondary" size="sm" zHeaderEnd href="/neu">Server erstellen</a>
 </z-app-header>
 ```
 
@@ -205,7 +212,7 @@ Measured on `/muster/kopfzeile` of the demo with a 60×40px image in the brand (
 
 | End slot                                                    | Needs | 360 | 375 | 412 | 899 | before, 360/375 |
 | ----------------------------------------------------------- | ----- | --- | --- | --- | --- | --------------- |
-| `a[zBtn="ghost"]` "Login" + `a[zBtn="primary"]` "Registrieren", `sm` | 182px | 57  | 57  | 57  | 57  | 126             |
+| `a[zBtn="ghost"]` "Login" + `a[zBtn="secondary"]` "Registrieren", `sm` | 182px | 57 | 57 | 57 | 57 | 126 |
 | `a[zBtn="secondary"]` "Zum Dashboard", `sm`                | 133px | 57  | 57  | 57  | 57  | 62              |
 | balance link in `z-mono` "12,34 €" + icon button            | 135px | 57  | 57  | 57  | 57  | 62              |
 | `z-skeleton width="160px"`                                  | 160px | 57  | 57  | 57  | 57  | 62              |

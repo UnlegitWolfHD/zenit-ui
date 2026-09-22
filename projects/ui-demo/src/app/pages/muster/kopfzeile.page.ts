@@ -54,6 +54,11 @@ const PLATZHALTER =
 
     <section class="demo-section">
       <h2 class="heading-2">Öffentlich, abgemeldet</h2>
+      <p class="demo-cap caption">
+        Kein primärer Button im rechten Bereich: die Kopfzeile steht auf jedem Bildschirm, ein
+        primärer wäre dort der zweite neben dem der Seite. Ghost und secondary, den einen primären
+        trägt der Hero.
+      </p>
       <div class="demo-randlos">
         <z-app-header navLabel="Navigation abgemeldet" [landmark]="false" data-kopf="abgemeldet">
           <a zBrand href="/muster/kopfzeile"
@@ -63,7 +68,7 @@ const PLATZHALTER =
             <a zHeaderLink href="/muster/kopfzeile" [active]="link === 'Gameserver'">{{ link }}</a>
           }
           <a zBtn="ghost" size="sm" zHeaderEnd href="/muster/kopfzeile">Login</a>
-          <a zBtn="primary" size="sm" zHeaderEnd href="/muster/kopfzeile">Registrieren</a>
+          <a zBtn="secondary" size="sm" zHeaderEnd href="/muster/kopfzeile">Registrieren</a>
         </z-app-header>
       </div>
     </section>
@@ -146,7 +151,7 @@ const PLATZHALTER =
             <a zHeaderLink href="/muster/kopfzeile">{{ link }}</a>
           }
           <a zBtn="ghost" size="sm" zHeaderEnd href="/muster/kopfzeile">Anmelden</a>
-          <a zBtn="primary" size="sm" zHeaderEnd href="/muster/kopfzeile">Server erstellen</a>
+          <a zBtn="secondary" size="sm" zHeaderEnd href="/muster/kopfzeile">Server erstellen</a>
         </z-app-header>
       </div>
     </section>

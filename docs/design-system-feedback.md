@@ -475,6 +475,8 @@ The result is almost certainly right, but "almost certainly" is the wrong standa
 
 **Proposed change:** three sentences: closes on link click and Escape, focus returns to the button, no scroll lock; and one API row for `open`.
 
+**Also:** `spec/components/AppHeader/README.md` puts "Server erstellen" into the end slot as `primary, z-btn--sm`, while `CLAUDE.md` allows "höchstens ein primärer Button pro Bildschirmhöhe" — and the header is on every screen, so that primary is a second one next to the hero's, the price summary's or the page header's. The library's demo and `docs/components/app-header.md` use `secondary` there, the way the reference start page already does; the README should say so.
+
 ---
 
 ## 22. `z-root` on `<html>` and `<body>` cannot coexist with pages that are not migrated yet
