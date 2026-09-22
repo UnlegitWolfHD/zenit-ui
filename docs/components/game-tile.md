@@ -34,8 +34,16 @@ available space. The content is the tiles.
 | `cover`    | `string`  | `''`    | `src` of the cover image in 3:4 format. Empty shows the title as text on the cover area instead.              |
 | `selected` | `boolean` | `false` | Marks the tile as the chosen game. Boolean attribute.                                                         |
 
-No outputs of its own: use the native `(click)` event. The element renders its own content, so the
+| Output         | Type   | Description                                                                              |
+| -------------- | ------ | ---------------------------------------------------------------------------------------- |
+| `(coverError)` | `void` | The `cover` failed to load. The tile has already switched to the text fallback by then.  |
+
+The selection itself is the native `(click)` event. The element renders its own content, so the
 tag stays empty in your template.
+
+A cover that 404s needs no handling: the tile drops into the text fallback of a missing cover, so
+no broken-image icon is ever shown. `(coverError)` is there to log the dead URL, and it fires once
+per URL — a new `cover` is tried again.
 
 The host gets `type="button"`, so a tile inside a form does not submit it; a static `type` written
 by the caller stays.
@@ -78,6 +86,18 @@ Without a cover, which shows the name in the `display` face on the cover area:
 <button zGameTile title="GTA V" price="ab 6,98 € / Monat" (click)="spiel.set('gta')"></button>
 ```
 
+The same fallback when the cover is gone, with the dead URL logged:
+
+```html
+<button
+  zGameTile
+  title="Rust"
+  price="ab 4,98 € / Monat"
+  cover="/covers/rust.jpg"
+  (coverError)="melde('/covers/rust.jpg')"
+></button>
+```
+
 Rendered from a list, with the price coming from the price service:
 
 ```html
@@ -108,25 +128,36 @@ Next to the summary the selection feeds:
 
 ## States
 
-| State    | How it looks                                        | How to trigger it     |
-| -------- | --------------------------------------------------- | --------------------- |
-| Rest     | cover area with a 1px `border` outline              | default               |
-| Hover    | outline moves to `border-control`                   | pointer over the tile |
-| Focus    | 2px ring in `focus` with 2px offset                 | Tab, `:focus-visible` |
-| Selected | 2px outline in `accent-text`, `aria-pressed="true"` | `selected`            |
+| State        | How it looks                                             | How to trigger it            |
+| ------------ | -------------------------------------------------------- | ---------------------------- |
+| Rest         | cover area with a 1px `border` outline                   | default                      |
+| Hover        | outline moves to `border-control`                        | pointer over the tile        |
+| Focus        | 2px ring in `focus` with 2px offset                      | Tab, `:focus-visible`        |
+| Selected     | 2px outline in `accent-text`, `aria-pressed="true"`      | `selected`                   |
+| Cover failed | the title in `display` on the cover area, no `<img>`     | the `cover` URL fails to load |
 
-There is no disabled, loading, error or empty state. A game that cannot be ordered is left out of
-the grid. Selecting a tile changes nothing visually beyond the outline: no glow, no scaling.
+There is no disabled, loading or empty state. A game that cannot be ordered is left out of the
+grid. Selecting a tile changes nothing visually beyond the outline: no glow, no scaling. "Cover
+failed" is the same rendering as a tile without a cover, so the grid keeps its rhythm, and it also
+reports `(coverError)`.
 
 ## Accessibility
 
 - The tile is a toggle button and always carries `aria-pressed`, `"true"` when selected and
   `"false"` otherwise, so the state is announced either way.
-- The cover image has an empty `alt`, because the title stands right below it as text.
+- The cover area carries `aria-hidden="true"` and the image an empty `alt`, because the area shows
+  either a picture of what the title below it says or, without a cover and when a cover fails to
+  load, that title as text. Visible text inside a button goes into its accessible name, so without
+  the attribute a tile with no cover would be announced as "Rust Rust ab 4,98 € / Monat". Nothing
+  is lost: the title is the next element and is announced from there.
+- A failed cover therefore changes nothing a screen reader hears. Role and state stay as they are —
+  the tile is a toggle button with `aria-pressed` — and the name stays title plus price, the same
+  name the tile had while its cover was still loading.
 - The native `title` attribute is suppressed on the host, so the browser shows no tooltip of its own
   because of the `title` input.
-- Title and price are visible text, so the accessible name of the button is "Minecraft ab 1,98 € /
-  Monat", which is what a screen reader should hear.
+- Title and price are visible text, so the accessible name of every tile is "Minecraft ab 1,98 € /
+  Monat", which is what a screen reader should hear, with a cover, without one and with one that
+  failed.
 
 ## Responsive
 
@@ -140,7 +171,7 @@ aspect ratio at every size.
 | --------------- | ---------------- |
 | `z-games`       | on the grid host |
 | `z-game`        | on each tile     |
-| `z-game__cover` | inside each tile |
+| `z-game__cover` | inside each tile, `aria-hidden` |
 | `z-game__title` | inside each tile |
 | `z-game__price` | inside each tile |
 

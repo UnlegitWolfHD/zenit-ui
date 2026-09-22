@@ -142,6 +142,19 @@ const STARTZEILEN: ZConsoleLine[] = [
           </ul>
         </z-panel>
       </z-hero>
+
+      <p class="demo-cap caption">
+        Unterseite: size="lg" stellt den Titel auf display-lg (40px), so wie ihn jede Seite außer
+        Startseite und /minecraft trägt. Unterseiten kommen oft ohne rechte Spalte aus. Text von
+        /preise. Unter 640px sind beide Größen gleich groß.
+      </p>
+
+      <z-hero
+        headingLevel="2"
+        size="lg"
+        title="Preise"
+        lead="Nach Stunden abgerechnet und nach oben auf den Monatspreis gedeckelt, ab 1,98&nbsp;€ im Monat."
+      />
     </section>
 
     <section class="demo-section">
@@ -161,6 +174,22 @@ const STARTZEILEN: ZConsoleLine[] = [
             (click)="gewaehlt.set(spiel.titel)"
           ></button>
         }
+      </z-game-grid>
+
+      <p class="demo-cap caption">
+        Cover fehlgeschlagen: diese Kachel lädt /covers/fehlt.jpg, das es nicht gibt. Nach dem
+        Fehler steht derselbe Text-Fallback wie ohne Cover, kein kaputtes Bild. (coverError) hat das
+        {{ coverFehler() }}-mal gemeldet.
+      </p>
+
+      <z-game-grid>
+        <button
+          zGameTile
+          title="Ark: Survival Ascended"
+          price="ab 6,98&nbsp;€ / Monat"
+          cover="/covers/fehlt.jpg"
+          (coverError)="coverFehler.update((n) => n + 1)"
+        ></button>
       </z-game-grid>
     </section>
 
@@ -218,6 +247,9 @@ const STARTZEILEN: ZConsoleLine[] = [
 export class WerkzeugePage {
   protected readonly zeilen = signal<ZConsoleLine[]>([...STARTZEILEN]);
   protected readonly gewaehlt = signal('Terraria');
+
+  /** How often (coverError) reported the dead cover URL; the tile fires once. */
+  protected readonly coverFehler = signal(0);
 
   /** Seconds since midnight, continuing from the last line of the preview. */
   private uhr = 12 * 3600 + 7 * 60 + 15;

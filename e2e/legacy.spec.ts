@@ -456,6 +456,37 @@ test('the limits docs/legacy.md states: second level, both classes on one elemen
   });
 });
 
+/**
+ * Waits until the CDK backdrop is the one of a fully open overlay, and until a
+ * closed overlay has taken its backdrop out of the document again.
+ *
+ * The CDK attaches the backdrop with `opacity: 0` and adds
+ * `cdk-overlay-backdrop-showing` only in the next animation frame, and it
+ * removes the element only once the fade-out has ended. `lesen` walks every
+ * element of the overlay container and records the class list and the opacity,
+ * so a reading taken between attach and that frame differs from one taken after
+ * it — `div.cdk-overlay-backdrop z-backdrop` at `opacity: 0` against
+ * `div.cdk-overlay-backdrop z-backdrop cdk-overlay-backdrop-showing` at
+ * `opacity: 1`. Both readings of a comparison have to be taken in the same
+ * state, which is what this waits for: shown before the reading, gone after it.
+ * The library switches the fade itself off (`.z-backdrop.cdk-overlay-backdrop
+ * { transition: none }`), so this is a wait for one frame, not for 400ms.
+ *
+ * Tooltip and toast have no backdrop at all; there both calls are a no-op.
+ */
+async function hintergrund(page: Page, zustand: 'offen' | 'zu'): Promise<void> {
+  const alle = page.locator('.cdk-overlay-backdrop');
+  if (zustand === 'zu') {
+    await expect(alle).toHaveCount(0);
+    return;
+  }
+  if ((await alle.count()) === 0) {
+    return;
+  }
+  await expect(alle).toHaveClass(/cdk-overlay-backdrop-showing/);
+  await expect(alle).toHaveCSS('opacity', '1');
+}
+
 /** Opens one overlay from the given trigger row, reads it, closes it again. */
 async function overlayLesen(page: Page, reihe: string, art: string) {
   const knopf = (name: string) => page.locator(`${reihe} button`, { hasText: name });
@@ -479,6 +510,7 @@ async function overlayLesen(page: Page, reihe: string, art: string) {
     wurzel,
   );
   expect(ausserhalb, `${art} renders outside .z-legacy`).toBe(true);
+  await hintergrund(page, 'offen');
   const gelesen = await lesen(page, wurzel);
 
   if (art === 'toast') {
@@ -491,6 +523,7 @@ async function overlayLesen(page: Page, reihe: string, art: string) {
     await page.keyboard.press('Escape');
     await page.locator('.z-dialog, .z-menu').waitFor({ state: 'detached' });
   }
+  await hintergrund(page, 'zu');
   return gelesen;
 }
 

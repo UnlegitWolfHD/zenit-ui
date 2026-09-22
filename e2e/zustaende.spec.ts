@@ -759,6 +759,66 @@ test.describe('Aktiv und gewählt', () => {
   });
 });
 
+/**
+ * The two sizes of the hero. The design system gives the start page and
+ * /minecraft `display-xl` and every sub-page `display-lg`, which the reference
+ * stylesheet only has below 640px. So `size="lg"` has to render at a wide
+ * viewport exactly what `size="xl"` renders below 640px, and it must not grow
+ * back on a phone.
+ */
+test.describe('hero-lg', () => {
+  const SCHRIFT = ['fontSize', 'lineHeight', 'letterSpacing', 'fontFamily', 'fontWeight'] as const;
+
+  const hero = (page: Page, text: string) =>
+    page.locator('z-hero').filter({ hasText: text }).first();
+  const titel = (page: Page, text: string) => hero(page, text).locator('.z-hero__title');
+
+  const XL = 'Gameserver aus Nürnberg';
+  const LG = 'Preise';
+
+  test('lg bei 1440px misst wie xl bei 639px, und unter 640px bleibt lg bei lg', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await seiteOeffnen(page, 'werkzeuge');
+    const xlBreit = await stil(titel(page, XL), SCHRIFT);
+    const lgBreit = await stil(titel(page, LG), SCHRIFT);
+
+    expect(xlBreit.fontSize, 'xl bei 1440px').toBe('56px');
+    expect(xlBreit.lineHeight, 'xl bei 1440px').toBe('60px');
+    expect(lgBreit.fontSize, 'lg bei 1440px').toBe('40px');
+    expect(lgBreit.lineHeight, 'lg bei 1440px').toBe('44px');
+
+    await page.setViewportSize({ width: 639, height: 900 });
+    const xlSchmal = await stil(titel(page, XL), SCHRIFT);
+    const lgSchmal = await stil(titel(page, LG), SCHRIFT);
+
+    expect(lgBreit, 'lg bei 1440px ist nicht der xl-Titel bei 639px').toEqual(xlSchmal);
+    expect(lgSchmal, 'lg ändert sich unter 640px').toEqual(lgBreit);
+    test.info().annotations.push({
+      type: 'hero-lg',
+      description:
+        `xl@1440 ${xlBreit.fontSize}/${xlBreit.lineHeight}/${xlBreit.letterSpacing}, ` +
+        `lg@1440 ${lgBreit.fontSize}/${lgBreit.lineHeight}/${lgBreit.letterSpacing}, ` +
+        `xl@639 ${xlSchmal.fontSize}/${xlSchmal.lineHeight}/${xlSchmal.letterSpacing}, ` +
+        `lg@639 ${lgSchmal.fontSize}/${lgSchmal.lineHeight}/${lgSchmal.letterSpacing}`,
+    });
+  });
+
+  test('z-hero--lg steht nur am lg-Hero, die Überschrift behält ihre Klasse', async ({ page }) => {
+    await seiteOeffnen(page, 'werkzeuge');
+
+    await expect(hero(page, XL)).not.toHaveClass(/z-hero--lg/);
+    await expect(hero(page, LG)).toHaveClass(/z-hero--lg/);
+    await expect(titel(page, LG)).toHaveClass('z-hero__title');
+    // Die Größe hängt nicht an der Ebene: beide Vorschauen sind h2.
+    await expect(titel(page, XL)).toHaveJSProperty('tagName', 'H2');
+    await expect(titel(page, LG)).toHaveJSProperty('tagName', 'H2');
+
+    await expect(hero(page, LG)).toHaveScreenshot('zustaende-hero-lg.png');
+  });
+});
+
 test.describe('Lädt und Fehler', () => {
   test('Button lädt: Spinner vor dem Text, aria-busy und gesperrt', async ({ page }) => {
     await seiteOeffnen(page, 'grundlage');
@@ -805,6 +865,34 @@ test.describe('Lädt und Fehler', () => {
     await expect(page.locator('z-field').filter({ has: feld })).toHaveScreenshot(
       'zustaende-input-error.png',
     );
+  });
+
+  test('game-tile mit totem Cover: Text-Fallback statt kaputtem Bild', async ({ page }) => {
+    await seiteOeffnen(page, 'werkzeuge');
+    const kachel = page.getByRole('button', { name: /Ark: Survival Ascended/ });
+    const cover = kachel.locator('.z-game__cover');
+
+    // Das Bild ist weg, sobald der Browser den Fehler meldet; ein kaputtes
+    // Bildsymbol kann deshalb gar nicht stehen bleiben.
+    await expect(cover.locator('img')).toHaveCount(0);
+    await expect(cover).toHaveText('Ark: Survival Ascended');
+    // Dieselbe Darstellung wie ohne Cover: Titel in display auf der Coverfläche.
+    expect((await stil(cover, ['fontFamily'])).fontFamily).toContain('Space Grotesk');
+
+    // Am Bedienelement ändert sich nichts: Schaltfläche mit aria-pressed, und
+    // der Name ist Titel plus Preis, genau wie bei einer Kachel mit heilem und
+    // bei einer ohne Cover. Die Coverfläche ist aria-hidden, deshalb steht der
+    // Text-Fallback nicht im Namen.
+    await expect(kachel).toHaveAttribute('aria-pressed', 'false');
+    await expect(cover).toHaveAttribute('aria-hidden', 'true');
+    await expect(kachel).toHaveAccessibleName(/^Ark: Survival Ascended ab 6,98/);
+    await expect(page.getByRole('button', { name: /Terraria/ })).toHaveAccessibleName(
+      /^Terraria ab 1,98/,
+    );
+    // (coverError) hat genau einmal gemeldet.
+    await expect(page.getByText('1-mal gemeldet')).toBeVisible();
+
+    await expect(kachel).toHaveScreenshot('zustaende-game-tile-cover-failed.png');
   });
 
   test('Tooltip erscheint bei Zeiger und Fokus und beschreibt den Auslöser', async ({ page }) => {

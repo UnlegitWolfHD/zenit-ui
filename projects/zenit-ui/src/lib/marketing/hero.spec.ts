@@ -4,7 +4,13 @@ import { ZHero, ZHeroActions, ZHeroAside } from './hero';
 
 @Component({
   imports: [ZHero],
-  template: `<z-hero [title]="titel()" [lead]="lead()" [note]="note()" [headingLevel]="ebene()" />`,
+  template: `<z-hero
+    [title]="titel()"
+    [lead]="lead()"
+    [note]="note()"
+    [headingLevel]="ebene()"
+    [size]="groesse()"
+  />`,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 class HeroHost {
@@ -12,6 +18,7 @@ class HeroHost {
   readonly lead = signal('');
   readonly note = signal('');
   readonly ebene = signal<1 | 2 | 3>(1);
+  readonly groesse = signal<'xl' | 'lg'>('xl');
 }
 
 /** The level as a static attribute, which reaches the input as a string. */
@@ -21,6 +28,14 @@ class HeroHost {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 class AttributHost {}
+
+/** The size as a static attribute, the way a sub-page writes it. */
+@Component({
+  imports: [ZHero],
+  template: `<z-hero title="Preise" size="lg" />`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class GroesseHost {}
 
 @Component({
   imports: [ZHero, ZHeroActions, ZHeroAside],
@@ -42,6 +57,38 @@ describe('ZHero', () => {
     expect(hero.classList.contains('z-hero')).toBe(true);
     expect(titel.classList.contains('z-hero__title')).toBe(true);
     expect(titel.textContent.trim()).toBe('Gameserver aus Nürnberg. In etwa 60 Sekunden online.');
+  });
+
+  it('carries no size class by default and adds z-hero--lg for size="lg"', () => {
+    const fixture = TestBed.createComponent(HeroHost);
+    fixture.detectChanges();
+    const hero = fixture.nativeElement.querySelector('z-hero');
+
+    // The default renders exactly what it rendered before the input existed.
+    expect(hero.className).toBe('z-hero');
+
+    fixture.componentInstance.groesse.set('lg');
+    fixture.detectChanges();
+
+    expect(hero.classList.contains('z-hero--lg')).toBe(true);
+    // The size sits on the host, so the heading keeps its one class and the
+    // tag stays whatever headingLevel says.
+    expect(hero.querySelector('h1.z-hero__title')).not.toBeNull();
+    expect(hero.querySelector('.z-hero__title').className).toBe('z-hero__title');
+
+    fixture.componentInstance.groesse.set('xl');
+    fixture.detectChanges();
+
+    expect(hero.classList.contains('z-hero--lg')).toBe(false);
+  });
+
+  it('takes size from a static attribute', () => {
+    const fixture = TestBed.createComponent(GroesseHost);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('z-hero').classList.contains('z-hero--lg')).toBe(
+      true,
+    );
   });
 
   it('renders h2 or h3 for headingLevel, with the same class and text', () => {

@@ -221,8 +221,8 @@ Entries marked "(addition)" are not part of the reference table (`spec/guideline
 | Toast | service `ZToast`, `z-toast-outlet` | `show`, `success`, `error`, `dismiss`; options `status`, `icon`, `actionLabel`, `action`, `duration`; `closeLabel` on `z-toast-outlet` (addition) |
 | Tooltip | `[zTooltip]` | text as the value |
 | Console | `z-console` | `lines: {time, text, level}[]`, `disabled`, `placeholder`; `(command)`; `logLabel`, `inputLabel`, `endLabel` (additions) |
-| Hero | `z-hero` | `title`, `lead`, `note`; slots `[zHeroActions]`, `[zHeroAside]` |
-| GameTile | `z-game-grid`, `button[zGameTile]` | `title`, `price`, `cover`, `selected` |
+| Hero | `z-hero` | `title`, `lead`, `note`; slots `[zHeroActions]`, `[zHeroAside]`; `size` (addition) |
+| GameTile | `z-game-grid`, `button[zGameTile]` | `title`, `price`, `cover`, `selected`; `(coverError)` (addition) |
 | PriceSummary | `z-price-summary` | `label`, `price`, `period`, `lines: {label, value}[]`, `note`; content is the button |
 | SpecList | `z-spec-list` | `items: {term, value, note, mono}[]` |
 | Faq | `z-faq` | `question`, `open`; content is the answer |

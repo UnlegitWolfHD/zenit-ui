@@ -5,6 +5,8 @@ import {
   HostAttributeToken,
   inject,
   input,
+  linkedSignal,
+  output,
 } from '@angular/core';
 
 /**
@@ -40,16 +42,21 @@ export class ZGameGrid {}
  * with the 3:4 cover image, then `span.z-game__title` and
  * `span.z-game__price`. Title and price stand below the cover, never on it.
  * Without a {@link cover} the title stands as text on the cover area instead
- * of an image. Selected means a 2px line in `accent-text`, no glow and no
- * scaling.
+ * of an image, and a cover whose URL fails to load drops into that same text
+ * fallback and reports {@link coverError}. Selected means a 2px line in
+ * `accent-text`, no glow and no scaling.
  *
  * Accessibility: the tile is a toggle button and always carries
  * `aria-pressed`, `"true"` when selected and `"false"` otherwise, so the state
- * is announced either way. The cover image has an empty `alt`, because the
- * title stands right below it as text. The native `title` attribute is
- * suppressed on the host, so the browser does not show its own tooltip because
- * of the {@link title} input. The host gets `type="button"`, so a tile inside a
- * form does not submit it; a static `type` written by the caller stays.
+ * is announced either way. The whole cover area is `aria-hidden`, because it
+ * shows either an image of what the title below it already says or that title
+ * as text; without it a tile with no cover, and one whose cover failed, would
+ * put the title into the accessible name twice. The image keeps its empty
+ * `alt` for the same reason. So the name of every tile is title plus price,
+ * whatever the cover does. The native `title` attribute is suppressed on the
+ * host, so the browser does not show its own tooltip because of the
+ * {@link title} input. The host gets `type="button"`, so a tile inside a form
+ * does not submit it; a static `type` written by the caller stays.
  *
  * @example
  * ```html
@@ -67,9 +74,9 @@ export class ZGameGrid {}
   // The API table prescribes button[zGameTile]: a component with an attribute
   // selector, like Button.
   selector: 'button[zGameTile]',
-  template: `<span class="z-game__cover">
-      @if (cover()) {
-        <img [src]="cover()" alt="" />
+  template: `<span class="z-game__cover" aria-hidden="true">
+      @if (cover() && !coverFailed()) {
+        <img [src]="cover()" alt="" (error)="coverFehlt()" />
       } @else {
         {{ title() }}
       }
@@ -103,11 +110,18 @@ export class ZGameTile {
 
   /**
    * `src` of the cover image in 3:4 format. Empty shows the title as text on
-   * the cover area instead.
+   * the cover area instead, and so does a URL that fails to load.
    *
    * @default ''
    */
   readonly cover = input('');
+
+  /**
+   * Fires once when the {@link cover} fails to load, so an application can log
+   * the dead URL. The tile handles the failure itself and needs no answer: it
+   * shows the text fallback of a missing cover from then on.
+   */
+  readonly coverError = output<void>();
 
   /**
    * Marks the tile as the chosen game: `aria-pressed="true"` plus the 2px line
@@ -124,4 +138,20 @@ export class ZGameTile {
    * here and written back, because the host binding would otherwise delete it.
    */
   protected readonly typ = inject(new HostAttributeToken('type'), { optional: true }) ?? 'button';
+
+  /**
+   * True once the browser reported `error` for the current cover. A new
+   * {@link cover} is a new URL, so the flag falls back to `false` with it
+   * instead of hiding an image that may well load.
+   */
+  protected readonly coverFailed = linkedSignal<string, boolean>({
+    source: this.cover,
+    computation: () => false,
+  });
+
+  /** `(error)` of the `<img>`: text fallback from now on, and one report. */
+  protected coverFehlt(): void {
+    this.coverFailed.set(true);
+    this.coverError.emit();
+  }
 }
