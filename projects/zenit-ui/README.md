@@ -218,7 +218,7 @@ Entries marked "(addition)" are not part of the reference table (`spec/guideline
 | Footer | `z-footer`, `z-footer-col` | `heading`; slot `[zFooterBase]` |
 | Dialog | service `ZDialog`, layout `z-dialog` | `open(component, config)`, `confirm({title, body, confirmLabel, cancelLabel, danger, requireText})` returns `Observable<boolean>`; slot `[zDialogActions]`; `requireLabel` and `cancelLabel` as a required field of the config (additions) |
 | Menu | `z-menu`, `button[zMenuItem]`, `z-menu-separator` | `icon`, `danger`, `disabled`, `(triggered)`; trigger `[cdkMenuTriggerFor]` |
-| Toast | service `ZToast`, `z-toast-outlet` | `show`, `success`, `error`, `dismiss`; options `status`, `icon`, `actionLabel`, `action`, `duration`; `closeLabel` on `z-toast-outlet` (addition) |
+| Toast | service `ZToast`, `z-toast-outlet` | `show`, `success`, `error`, `dismiss`; options `status`, `icon`, `actionLabel`, `action`, `duration`; `closeLabel` on `z-toast-outlet` (addition); option `live` and `provideZenitToast({ maxVisible, overflow })` (additions) |
 | Tooltip | `[zTooltip]` | text as the value |
 | Console | `z-console` | `lines: {time, text, level}[]`, `disabled`, `placeholder`; `(command)`; `logLabel`, `inputLabel`, `endLabel` (additions) |
 | Hero | `z-hero` | `title`, `lead`, `note`; slots `[zHeroActions]`, `[zHeroAside]`; `size` (addition) |

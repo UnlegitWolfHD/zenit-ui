@@ -64,6 +64,8 @@ API-Tabelle leer und die Bausteine stehen mit ihrem Text-Fallback da:
 | `image`  | ServerList (`z-row-main`) | Ohne Bild zeigt die Zeile die Anfangsbuchstaben in `z-row__thumb`, genau wie im Produkt ohne Serverbild                                                     |
 | `cover`  | GameTile                  | Ohne Bild trägt die Kachel Titel und Preis als Text (GameTile/preview.html zeigt denselben Fallback)                                                        |
 | `status` | Toast (`ZToastOptions`)   | `info()`, `success()`, `warning()` und `error()` setzen den Status bereits; ein zusätzlicher `status`-Aufruf von Hand würde dieselbe Aussage doppelt zeigen |
+| `live`   | Toast (`ZToastOptions`)   | Ändert nur die Live-Region, nichts Sichtbares; geprüft in `toast-outlet.spec.ts` |
+| `provideZenitToast` | Toast (`maxVisible`, `overflow`) | Gilt für die ganze Anwendung und würde jede Demo-Seite umstellen; Warteschlange und Vorrang stehender Toasts sind in `toast.spec.ts` geprüft |
 
 ## Beispielseiten
 
