@@ -1,4 +1,13 @@
-import { ChangeDetectionStrategy, Component, computed, Directive, input } from '@angular/core';
+import {
+  booleanAttribute,
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  contentChild,
+  Directive,
+  input,
+  linkedSignal,
+} from '@angular/core';
 
 /**
  * Row pattern for everything the customer owns: servers, domains, tickets,
@@ -176,20 +185,45 @@ export class ZRowLink {}
 export class ZRowAction {}
 
 /**
+ * Pure slot marker for an own medium in the thumbnail of a row, an icon or an
+ * image the caller renders itself. It lands in `.z-row__thumb` and replaces
+ * both the {@link ZRowMain.image} and the initial. It adds no class and no
+ * markup. Without it the row falls back to the `image` input. The thumbnail is
+ * `aria-hidden`, so the content is decoration: what it shows has to stand as
+ * text in the row as well, usually in {@link ZRowMeta}. Nothing focusable goes
+ * into the slot, no link, button or input: it would stay a tab stop inside
+ * `aria-hidden`.
+ *
+ * @example
+ * ```html
+ * <z-row-main title="beispiel.de" meta="Domain · läuft bis 18.09.2027">
+ *   <z-icon zRowThumb name="language" />
+ * </z-row-main>
+ * ```
+ */
+@Directive({ selector: '[zRowThumb]' })
+export class ZRowThumb {}
+
+/**
  * First column of a row: thumbnail, title and one meta line.
  *
  * Renders `<span class="z-row__thumb">` with the image or, without one, the
- * uppercased first character of the title, then `.z-row__title` and the
- * optional `.z-row__meta`. The host carries `z-row__main` and its native
+ * uppercased first character of {@link thumbText} or else of the title, then
+ * `.z-row__title` and the optional `.z-row__meta`. An image whose URL fails to
+ * load drops into the same initial, so no broken-image icon is shown. A
+ * {@link ZRowThumb} element replaces image and initial, and {@link thumb} set
+ * to `false` leaves the thumbnail out. The host carries `z-row__main` and its native
  * `title` attribute is cleared, so the {@link title} input never becomes a
- * browser tooltip. The image is decorative and gets an empty `alt`, the
- * accessible text of the row comes from title and meta.
+ * browser tooltip. The thumbnail is decoration: `.z-row__thumb` carries
+ * `aria-hidden="true"` and the image an empty `alt`, so a link row is read as
+ * title and meta only. Whatever the thumbnail shows, a game for example,
+ * therefore also belongs into the meta line as text.
  *
  * A `[zRowTitle]` element takes the place of the title text, which is how a
  * link gets into the title of a row, and a {@link ZRowMeta} element takes the
  * place of the meta text, which is how an address reaches the mono face.
- * {@link title} still feeds the initial of the thumbnail, so it stays set
- * either way.
+ * {@link title} still feeds the initial of the thumbnail unless
+ * {@link thumbText} is set, so it stays set either way.
  *
  * @example
  * ```html
@@ -199,13 +233,18 @@ export class ZRowAction {}
 @Component({
   selector: 'z-row-main',
   template: `
-    <span class="z-row__thumb">
-      @if (image()) {
-        <img [src]="image()" alt="" />
-      } @else {
-        {{ initiale() }}
-      }
-    </span>
+    @if (thumb()) {
+      <span class="z-row__thumb" aria-hidden="true">
+        <ng-content select="[zRowThumb]" />
+        @if (!eigenesMedium()) {
+          @if (image() && !imageFailed()) {
+            <img [src]="image()" alt="" (error)="imageFailed.set(true)" />
+          } @else {
+            {{ initiale() }}
+          }
+        }
+      </span>
+    }
     <div class="z-row__text">
       <div class="z-row__title">
         <ng-content select="[zRowTitle]">{{ title() }}</ng-content>
@@ -224,8 +263,8 @@ export class ZRowAction {}
 })
 export class ZRowMain {
   /**
-   * Name of the entry. Without an image its first character, uppercased, fills
-   * the thumbnail.
+   * Name of the entry. Without an image and without {@link thumbText} its
+   * first character, uppercased, fills the thumbnail.
    *
    * @default ''
    */
@@ -241,13 +280,50 @@ export class ZRowMain {
   readonly meta = input('');
 
   /**
-   * URL of the thumbnail. Empty falls back to the initial of the title.
+   * URL of the thumbnail. Empty falls back to the initial, and so does a URL
+   * that fails to load.
    *
    * @default ''
    */
   readonly image = input('');
 
-  protected readonly initiale = computed(() => this.title().trim().charAt(0).toUpperCase());
+  /**
+   * Text whose first character, uppercased, fills the thumbnail when there is
+   * no image or it fails to load, for example the game of a server whose
+   * {@link title} is its own name. Empty takes the initial of the title.
+   *
+   * @default ''
+   */
+  readonly thumbText = input('');
+
+  /**
+   * Shows the thumbnail. `false` leaves `.z-row__thumb` out, so the row starts
+   * with its title. Boolean attribute.
+   *
+   * @default true
+   */
+  readonly thumb = input(true, { transform: booleanAttribute });
+
+  /**
+   * True once the browser reported `error` for the current {@link image}. A new
+   * URL is tried again, so the flag falls back to `false` with it.
+   */
+  protected readonly imageFailed = linkedSignal<string, boolean>({
+    source: this.image,
+    computation: () => false,
+  });
+
+  /**
+   * The projected {@link ZRowThumb}, if one is rendered right now. A query and
+   * not the fallback content of `<ng-content>`: a slot element inside an `@if`
+   * occupies the slot even while the condition is false, which would leave an
+   * empty thumbnail instead of image or initial.
+   */
+  protected readonly eigenesMedium = contentChild(ZRowThumb);
+
+  protected readonly initiale = computed(() =>
+    (this.thumbText().trim() || this.title().trim()).charAt(0).toUpperCase(),
+  );
 }
 
 /**

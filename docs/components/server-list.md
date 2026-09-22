@@ -17,7 +17,7 @@ files.
 ## Import
 
 ```ts
-import { ZRows, ZRowsHead, ZRow, ZRowMain, ZRowNum, ZRowTitle, ZRowLink, ZRowAction } from 'zenit-ui';
+import { ZRows, ZRowsHead, ZRow, ZRowMain, ZRowNum, ZRowTitle, ZRowThumb, ZRowLink, ZRowAction } from 'zenit-ui';
 ```
 
 ## API
@@ -40,11 +40,13 @@ each of which is a tab stop of its own.
 
 ### `z-row-main`
 
-| Input   | Type     | Default | Description                                                                               |
-| ------- | -------- | ------- | ----------------------------------------------------------------------------------------- |
-| `title` | `string` | `''`    | Name of the entry. Without an image its first character, uppercased, fills the thumbnail. |
-| `meta`  | `string` | `''`    | One line under the title with game, version and address. Empty leaves it out.             |
-| `image` | `string` | `''`    | URL of the thumbnail. Empty falls back to the initial of the title.                       |
+| Input       | Type      | Default | Description                                                                                                                       |
+| ----------- | --------- | ------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `title`     | `string`  | `''`    | Name of the entry. Without an image and without `thumbText` its first character, uppercased, fills the thumbnail.                 |
+| `meta`      | `string`  | `''`    | One line under the title with game, version and address. Empty leaves it out.                                                     |
+| `image`     | `string`  | `''`    | URL of the thumbnail. Empty falls back to the initial, and so does a URL that fails to load.                                      |
+| `thumbText` | `string`  | `''`    | Text whose first character, uppercased, fills the thumbnail without an image, for example the game of a server. Empty takes `title`. |
+| `thumb`     | `boolean` | `true`  | Shows the thumbnail. `false` leaves `.z-row__thumb` out and the row starts with its title.                                         |
 
 Content projection:
 
@@ -52,9 +54,13 @@ Content projection:
 | ------------- | ------------------------------------------------------------------ |
 | `[zRowTitle]` | in `.z-row__title`, in place of the text of the `title` input      |
 | `[zRowMeta]`  | under the title, in place of the line the `meta` input would render |
+| `[zRowThumb]` | in `.z-row__thumb`, in place of the image and the initial          |
 
-`title` keeps feeding the initial of the thumbnail, so it stays set even when `[zRowTitle]` renders
-the visible title.
+`title` keeps feeding the initial of the thumbnail unless `thumbText` is set, so it stays set even
+when `[zRowTitle]` renders the visible title.
+
+An `image` that fails to load needs no handling: the thumbnail drops into the initial of a missing
+image, so no broken-image icon is ever shown, and a new URL is tried again.
 
 ### `[zRowTitle]`
 
@@ -68,6 +74,17 @@ that is more than plain text: an address, a port or a file name inside it carrie
 rest of the line stays in the body face, as CLAUDE.md asks. Use a block element, because the meta
 line clips with an ellipsis, which an inline element cannot do. Setting both `meta` and `[zRowMeta]`
 renders two lines, so pick one.
+
+### `[zRowThumb]`
+
+Pure slot marker for an own medium in the thumbnail, an icon or an image the caller renders itself.
+It adds no class and no markup and replaces both `image` and the initial. The thumbnail keeps its
+32px box, its `radius-sm` and its `surface-hover` fill; an `<img>` in the slot fills it the same way
+the `image` does. With `thumb` set to `false` the slot is not rendered either. The thumbnail is
+`aria-hidden`, so whatever the slot holds is decoration and its information has to stand as text in
+`[zRowMeta]` as well. Nothing focusable goes into the slot, no link, button or input: it would stay
+a tab stop inside `aria-hidden` (axe `aria-hidden-focus`). A slot element inside an `@if` is fine;
+while the condition is false the row shows image or initial.
 
 ### `a[zRowLink]`
 
@@ -200,6 +217,36 @@ With a thumbnail image instead of the initial:
 </a>
 ```
 
+A server list whose thumbnail shows the game, not the server. The title is the server's own name,
+so `thumbText` names the game for the initial, and the image may be missing or dead: both end in
+the "V" of Valheim, never in the initial of the server name and never in a broken image. The image
+is decorative, so the game also stands as text in the meta line:
+
+```html
+<a zRow routerLink="/user/server/4">
+  <z-row-main title="survival-01" [image]="server.game.iconUrl ?? ''" [thumbText]="server.game.name">
+    <div zRowMeta>{{ server.game.name }} · <span class="z-mono">203.0.113.13:2456</span></div>
+  </z-row-main>
+</a>
+```
+
+An own medium in the thumbnail, and a row without one:
+
+```html
+<z-rows columns="minmax(0, 2fr) 128px">
+  <div zRow>
+    <z-row-main title="beispiel.de" meta="Domain · läuft bis 18.09.2027">
+      <z-icon zRowThumb name="language" />
+    </z-row-main>
+    <span><z-badge status="success" dot>Aktiv</z-badge></span>
+  </div>
+  <div zRow>
+    <z-row-main title="Ticket 4711" meta="Letzte Antwort 18.09.2026, 15:55" [thumb]="false" />
+    <span><z-badge status="info" dot>Offen</z-badge></span>
+  </div>
+</z-rows>
+```
+
 ## States
 
 | State   | How it looks                                                   | How to trigger it                          |
@@ -211,17 +258,24 @@ With a thumbnail image instead of the initial:
 | Loading | skeleton rows in the same grid, `aria-busy` on the panel       | `busy` on the panel plus `z-skeleton` rows |
 | Empty   | `z-empty-state` instead of the rows, no pagination, no filters | render the empty state                     |
 | Error   | `z-alert` with the cause and the next step                     | render the alert                           |
+| Image failed | the initial of `thumbText` or `title` in the thumbnail, no `<img>` | the `image` URL fails to load        |
 
 A `div[zRow]` has no hover cursor; it is not clickable. There is no disabled state for a row: a row
 the customer cannot open is left out.
 
 ## Accessibility
 
-- A row as an `<a>` is one link, so the title and the meta line are read as its accessible text. The
-  thumbnail image carries an empty `alt`.
+- A row as an `<a>` is one link, so the title and the meta line are read as its accessible text,
+  and nothing else: `.z-row__thumb` carries `aria-hidden="true"` and its image an empty `alt`.
 - Actions inside a row are separate tab stops with their own `aria-label`. That is why a row with
   actions is a `<div>` with `a[zRowLink]` and never an `<a>` around a `<button>`, which is invalid
   markup and gives the two controls one tab stop.
+- The thumbnail is decoration, whatever it shows: image, initial or the content of `[zRowThumb]`.
+  The whole `.z-row__thumb` is `aria-hidden`, so a screen reader hears neither the initial nor an
+  icon or image put into the slot. Whatever it shows, the game of a server for example, has to
+  stand as text in the row as well, usually in `meta` or `[zRowMeta]`. For the same reason nothing
+  focusable, no link, button or input, goes into `[zRowThumb]`: it would remain a tab stop inside
+  `aria-hidden`.
 - The hit area of `a[zRowLink]` is the whole row, so that is where its focus ring is drawn: on the
   stretched `::after`, not around the title text. There is exactly one ring, 2px in `focus` with a
   2px offset.
@@ -249,7 +303,7 @@ row menu and everything in it stay reachable on a phone. Put the actions of a ro
 | `z-rows__head` | on the column head  |
 | `z-row`        | on each row         |
 | `z-row__main`  | on `z-row-main`     |
-| `z-row__thumb` | inside `z-row-main` |
+| `z-row__thumb` | inside `z-row-main`, unless `thumb` is `false`; `aria-hidden` |
 | `z-row__text`  | inside `z-row-main` |
 | `z-row__title` | inside `z-row-main` |
 | `z-row__meta`  | `meta` is not empty, or on `[zRowMeta]` |
@@ -270,6 +324,10 @@ Tokens: `--space-2` to `--space-4` for padding and gaps, `--border` for the line
 - Addition to the library: `.z-row__text` carries `min-width: 0`, which replaces the inline style
   the reference preview put on the text block of the row, and `.z-row__thumb img` fills the
   thumbnail the same way `.z-game__cover img` does.
+- Addition to the library: `thumbText`, `thumb`, `[zRowThumb]` and the fallback of a failed
+  `image`. The reference knows only image and initial of the title. None of the four adds a class
+  or a CSS rule; the fallback follows `button[zGameTile]`, whose cover drops into its text on
+  `error` the same way.
 - Addition to the reference: the stretched link. `40-bibliothek.md` asks both for rows that are
   links and for actions inside a row as their own tab stops, which a `<button>` inside an `<a>`
   cannot give. A row with `a[zRowLink]` becomes `position: relative`, the link's `::after` is
