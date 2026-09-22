@@ -11,6 +11,16 @@ class SpinnerHost {
   readonly label = signal('');
 }
 
+/** The caller announces the spinner itself instead of using `label`. */
+@Component({
+  imports: [ZSpinner],
+  template: `<z-spinner role="status" aria-label="Wird geladen" [label]="label()" />`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class EigenerNameHost {
+  readonly label = signal('');
+}
+
 describe('ZSpinner', () => {
   function baue(): { spinner: HTMLElement; host: SpinnerHost; rendere: () => void } {
     const fixture = TestBed.createComponent(SpinnerHost);
@@ -50,5 +60,28 @@ describe('ZSpinner', () => {
 
     expect(spinner.hasAttribute('role')).toBe(false);
     expect(spinner.getAttribute('aria-hidden')).toBe('true');
+  });
+
+  it('keeps the role and the aria-label the caller wrote and hides nothing', () => {
+    const fixture = TestBed.createComponent(EigenerNameHost);
+    fixture.detectChanges();
+    const spinner: HTMLElement = fixture.nativeElement.querySelector('z-spinner');
+
+    expect(spinner.getAttribute('role')).toBe('status');
+    expect(spinner.getAttribute('aria-label')).toBe('Wird geladen');
+    expect(spinner.hasAttribute('aria-hidden')).toBe(false);
+
+    // The input wins while it holds a value, and gives the attributes back.
+    fixture.componentInstance.label.set('Wird gestartet');
+    fixture.detectChanges();
+
+    expect(spinner.getAttribute('aria-label')).toBe('Wird gestartet');
+
+    fixture.componentInstance.label.set('');
+    fixture.detectChanges();
+
+    expect(spinner.getAttribute('role')).toBe('status');
+    expect(spinner.getAttribute('aria-label')).toBe('Wird geladen');
+    expect(spinner.hasAttribute('aria-hidden')).toBe(false);
   });
 });

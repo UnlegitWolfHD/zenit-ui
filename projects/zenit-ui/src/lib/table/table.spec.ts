@@ -61,6 +61,14 @@ class TableHost {}
 })
 class EigenesLabelHost {}
 
+/** The caller makes the container a region of its own, overflow or not. */
+@Component({
+  imports: [ZTableContainer],
+  template: `<z-table-container role="group" aria-label="Rechnungen" tabindex="-1" />`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class EigeneRolleHost {}
+
 describe('ZTable', () => {
   /** Renders the host with a wrapper that is too narrow for its content, or not. */
   function mitUeberlauf<T>(typ: new () => T, ueberlauf: boolean): ComponentFixture<T> {
@@ -97,6 +105,29 @@ describe('ZTable', () => {
     expect(huelle(fixture).getAttribute('role')).toBeNull();
     expect(huelle(fixture).getAttribute('tabindex')).toBeNull();
     expect(huelle(fixture).getAttribute('aria-label')).toBeNull();
+  });
+
+  it('keeps role, aria-label and tabindex of the caller while everything fits', () => {
+    const fixture = mitUeberlauf(EigeneRolleHost, false);
+
+    expect(huelle(fixture).getAttribute('role')).toBe('group');
+    expect(huelle(fixture).getAttribute('aria-label')).toBe('Rechnungen');
+    expect(huelle(fixture).getAttribute('tabindex')).toBe('-1');
+  });
+
+  it('gives the three attributes of the caller back after an overflow', () => {
+    const fixture = mitUeberlauf(EigeneRolleHost, true);
+
+    expect(huelle(fixture).getAttribute('role')).toBe('region');
+    expect(huelle(fixture).getAttribute('tabindex')).toBe('0');
+
+    messwerte(huelle(fixture), 640, 640);
+    letzterRuf?.();
+    fixture.detectChanges();
+
+    expect(huelle(fixture).getAttribute('role')).toBe('group');
+    expect(huelle(fixture).getAttribute('aria-label')).toBe('Rechnungen');
+    expect(huelle(fixture).getAttribute('tabindex')).toBe('-1');
   });
 
   it('follows a resize of the wrapper through the ResizeObserver', () => {

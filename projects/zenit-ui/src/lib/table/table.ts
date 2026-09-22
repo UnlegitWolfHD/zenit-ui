@@ -13,6 +13,7 @@ import {
   model,
   signal,
 } from '@angular/core';
+import { leiheAttribut } from '../a11y/host-attribute';
 import { injectZLabels } from '../labels';
 
 /**
@@ -72,6 +73,11 @@ export class ZTable {
  * three are left off: a table that cannot scroll would otherwise be a tab stop
  * that does nothing, on every desktop screen.
  *
+ * The three attributes are borrowed, not bound: what the caller wrote on
+ * `<z-table-container>` comes back when the overflow is gone, so a `role`, an
+ * `aria-label` or a `tabindex` of the caller's own survives a window that is
+ * resized wide enough.
+ *
  * @example
  * ```html
  * <z-table-container ariaLabel="Dateien, seitlich scrollbar">
@@ -94,9 +100,6 @@ export class ZTable {
   template: `<ng-content />`,
   host: {
     class: 'z-table-wrap',
-    '[attr.role]': `ueberlauf() ? 'region' : null`,
-    '[attr.tabindex]': `ueberlauf() ? '0' : null`,
-    '[attr.aria-label]': `ueberlauf() ? bereichText() : null`,
   },
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -122,6 +125,14 @@ export class ZTableContainer {
   protected readonly ueberlauf = signal(false);
 
   constructor() {
+    // Only while there is something to scroll does the library own these
+    // three. As host bindings they wrote `null` on every other change and
+    // deleted whatever the caller had put there; borrowed, the caller's values
+    // come back.
+    leiheAttribut('role', () => (this.ueberlauf() ? 'region' : null));
+    leiheAttribut('tabindex', () => (this.ueberlauf() ? '0' : null));
+    leiheAttribut('aria-label', () => (this.ueberlauf() ? this.bereichText() : null));
+
     const destroyRef = inject(DestroyRef);
     afterNextRender(() => {
       // Not every environment has a ResizeObserver; without one the wrapper
