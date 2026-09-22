@@ -1,6 +1,8 @@
+import { OverlayContainer } from '@angular/cdk/overlay';
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { ZTooltip } from '../tooltip';
 import { ZField } from './field';
 import { ZInput } from './input';
 import { ZInputGroup } from './input-group';
@@ -51,6 +53,36 @@ class GruppeHost {}
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 class TextareaHost {}
+
+/** The caller describes the control itself, and a tooltip writes there too. */
+@Component({
+  imports: [ZField, ZInput, ZTooltip],
+  template: `<z-field label="Servername" for="name" [hint]="hinweis()" [error]="fehler()">
+      <input
+        zInput
+        id="name"
+        zTooltip="Steht später in der Serverliste"
+        [attr.aria-describedby]="eigen()"
+      />
+    </z-field>
+    <p id="p-eigen">Nur du siehst ihn.</p>`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class DreiSchreiberHost {
+  readonly hinweis = signal('Nur Buchstaben und Ziffern');
+  readonly fehler = signal('');
+  readonly eigen = signal<string | null>('p-eigen');
+}
+
+/** A caller that marks the control invalid by hand. */
+@Component({
+  imports: [ZInput],
+  template: `<input zInput aria-invalid="true" [invalid]="ungueltig()" />`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class EigenUngueltigHost {
+  readonly ungueltig = signal(false);
+}
 
 @Component({
   imports: [ZInput, FormsModule],
@@ -207,6 +239,106 @@ describe('ZInput', () => {
     fixture.detectChanges();
 
     expect(feld.disabled).toBe(true);
+  });
+
+  describe('aria-describedby with three writers', () => {
+    let fixture: ReturnType<typeof TestBed.createComponent<DreiSchreiberHost>>;
+    let feld: HTMLInputElement;
+    let behaelter: OverlayContainer;
+
+    function ids(): string[] {
+      return (feld.getAttribute('aria-describedby') ?? '').split(/\s+/).filter(Boolean);
+    }
+
+    /** Opens the tooltip panel and returns its id. */
+    function zeigeTooltip(): string {
+      feld.dispatchEvent(new Event('mouseenter'));
+      fixture.detectChanges();
+      return behaelter.getContainerElement().querySelector('.z-tooltip')!.id;
+    }
+
+    beforeEach(() => {
+      fixture = TestBed.createComponent(DreiSchreiberHost);
+      behaelter = TestBed.inject(OverlayContainer);
+      fixture.detectChanges();
+      feld = fixture.nativeElement.querySelector('input');
+    });
+
+    it('adds the id of the field to what the caller wrote', () => {
+      expect(ids()).toEqual(['name-hint', 'p-eigen']);
+    });
+
+    it('swaps hint for error and takes only its own token back', () => {
+      fixture.componentInstance.fehler.set('Der Name ist schon vergeben.');
+      fixture.detectChanges();
+
+      expect(ids()).toEqual(['name-error', 'p-eigen']);
+
+      fixture.componentInstance.fehler.set('');
+      fixture.componentInstance.hinweis.set('');
+      fixture.detectChanges();
+
+      expect(ids()).toEqual(['p-eigen']);
+    });
+
+    it('puts its token back when the caller rewrites the whole attribute', async () => {
+      fixture.componentInstance.eigen.set('p-zwei');
+      fixture.detectChanges();
+      // The MutationObserver answers in a microtask.
+      await Promise.resolve();
+
+      expect(ids()).toEqual(['name-hint', 'p-zwei']);
+    });
+
+    it('holds the token of the field, of the caller and of the tooltip at once', async () => {
+      const panelId = zeigeTooltip();
+
+      expect(ids()).toEqual(['name-hint', 'p-eigen', panelId]);
+
+      fixture.componentInstance.fehler.set('Der Name ist schon vergeben.');
+      fixture.detectChanges();
+      await Promise.resolve();
+
+      expect(ids()).toEqual(['name-error', 'p-eigen', panelId]);
+
+      fixture.componentInstance.fehler.set('');
+      fixture.componentInstance.hinweis.set('');
+      fixture.detectChanges();
+      await Promise.resolve();
+
+      expect(ids()).toEqual(['p-eigen', panelId]);
+    });
+
+    it('writes no token twice when the caller names the id of the field itself', async () => {
+      fixture.componentInstance.eigen.set('name-hint');
+      fixture.detectChanges();
+      await Promise.resolve();
+
+      expect(ids()).toEqual(['name-hint']);
+    });
+
+    it('removes the attribute when the last token is gone', () => {
+      fixture.componentInstance.eigen.set(null);
+      fixture.componentInstance.hinweis.set('');
+      fixture.detectChanges();
+
+      expect(feld.hasAttribute('aria-describedby')).toBe(false);
+    });
+  });
+
+  it('keeps an aria-invalid the caller wrote when invalid goes back to false', () => {
+    const fixture = TestBed.createComponent(EigenUngueltigHost);
+    fixture.detectChanges();
+    const feld = fixture.nativeElement.querySelector('input');
+
+    expect(feld.getAttribute('aria-invalid')).toBe('true');
+
+    fixture.componentInstance.ungueltig.set(true);
+    fixture.detectChanges();
+    fixture.componentInstance.ungueltig.set(false);
+    fixture.detectChanges();
+
+    expect(feld.getAttribute('aria-invalid')).toBe('true');
   });
 
   it('applies to textarea[zInput] in the same way', () => {

@@ -1,4 +1,13 @@
-import { booleanAttribute, Directive, inject, input } from '@angular/core';
+import {
+  booleanAttribute,
+  DestroyRef,
+  Directive,
+  effect,
+  ElementRef,
+  inject,
+  input,
+} from '@angular/core';
+import { leiheAttribut, ZTokenAttribut } from '../a11y/host-attribute';
 import { ZField } from './field';
 
 /**
@@ -11,6 +20,15 @@ import { ZField } from './field';
  * Inside a `z-field` the `aria-describedby` attribute points at that field's
  * hint or error. The native `size` attribute is removed from the host, because
  * the input `size` carries `sm`/`md` here, which would be invalid HTML.
+ *
+ * Both attributes belong to the caller as much as to the library, so neither
+ * is a host binding. The id of the field is one token in front of whatever the
+ * caller wrote in `aria-describedby`, and it is removed again when hint and
+ * error are gone; a `zTooltip` on the same element adds its own token at the
+ * back, so caller, field and tooltip write the same attribute without deleting
+ * one another. `aria-invalid` is borrowed the same way: while {@link invalid}
+ * holds, the library value stands, and afterwards the caller's own value comes
+ * back.
  *
  * @example
  * ```html
@@ -29,8 +47,6 @@ import { ZField } from './field';
     class: 'z-input',
     '[class.z-input--sm]': `size() === 'sm'`,
     '[class.z-input--mono]': `mono()`,
-    '[attr.aria-invalid]': `invalid() && touched() ? "true" : null`,
-    '[attr.aria-describedby]': `feld?.beschreibung() ?? null`,
     // size is the name from the API table, but as a native attribute on the
     // <input> the value "sm" would be invalid HTML.
     '[attr.size]': `null`,
@@ -74,5 +90,18 @@ export class ZInput {
    */
   readonly touched = input(true, { transform: booleanAttribute });
 
-  protected readonly feld = inject(ZField, { optional: true });
+  private readonly feld = inject(ZField, { optional: true });
+
+  constructor() {
+    leiheAttribut('aria-invalid', () => (this.invalid() && this.touched() ? 'true' : null));
+    const beschreibung = new ZTokenAttribut(
+      inject<ElementRef<HTMLElement>>(ElementRef).nativeElement,
+      'aria-describedby',
+      'vorn',
+    );
+    effect(() => beschreibung.setze(this.feld?.beschreibung() ?? null));
+    // The element may outlive the directive, so it keeps every token the
+    // caller and a tooltip put there and loses only the one of the field.
+    inject(DestroyRef).onDestroy(() => beschreibung.setze(null));
+  }
 }

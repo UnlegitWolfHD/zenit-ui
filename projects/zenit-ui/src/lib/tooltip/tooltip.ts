@@ -11,6 +11,7 @@ import {
   input,
   signal,
 } from '@angular/core';
+import { ZTokenAttribut } from '../a11y/host-attribute';
 import { ZTooltipPanel } from './tooltip-panel';
 
 /**
@@ -105,6 +106,19 @@ export class ZTooltip {
   private readonly overlay = inject(Overlay);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly dokument = inject(DOCUMENT);
+  /**
+   * The id of the panel inside `aria-describedby` of the trigger, while the
+   * panel stands. The attribute is a list of ids and belongs to the caller: a
+   * static one, a binding, or the hint and the error that a `z-field` links to
+   * its control. Overwriting it would silently cut the control off from its
+   * own description, so only this one token is added and removed, and it keeps
+   * the back of the list, where a passing addition is read last.
+   */
+  private readonly beschreibung = new ZTokenAttribut(
+    this.host.nativeElement,
+    'aria-describedby',
+    'hinten',
+  );
   private overlayRef?: OverlayRef;
   private flaeche?: ComponentRef<ZTooltipPanel>;
 
@@ -118,8 +132,6 @@ export class ZTooltip {
   private horcher?: AbortController;
   /** The trigger box the panel was hung on; a scroll that leaves it is none. */
   private verankert?: DOMRect;
-  /** Watches `aria-describedby` while the panel stands; see {@link beschreibe}. */
-  private beobachter?: MutationObserver;
 
   constructor() {
     // The text can change while the panel hangs in the overlay, for example
@@ -143,10 +155,9 @@ export class ZTooltip {
       this.stoppeTimer();
       this.abbruch.abort();
       this.horcher?.abort();
-      this.beobachter?.disconnect();
       // The trigger may outlive the directive, so it keeps its own description
       // and loses only the id of the panel.
-      this.beschreibe(false);
+      this.beschreibung.setze(null);
       this.overlayRef?.dispose();
     });
   }
@@ -214,18 +225,10 @@ export class ZTooltip {
     this.flaeche.changeDetectorRef.detectChanges();
     this.verankert = this.host.nativeElement.getBoundingClientRect();
     this.sichtbar.set(true);
-    this.beschreibe(true);
     // The caller may rewrite the attribute while the panel stands: a binding of
-    // its own, or the hint and the error of a `z-field` around the control. The
-    // id goes back in, and `beschreibe` writes only when the value really
-    // changes: Chromium queues a record for a `setAttribute` with an unchanged
-    // value as well, and answering that record with another write freezes the
-    // tab in the microtask checkpoint.
-    this.beobachter ??= new MutationObserver(() => this.beschreibe(true));
-    this.beobachter.observe(this.host.nativeElement, {
-      attributes: true,
-      attributeFilter: ['aria-describedby'],
-    });
+    // its own, or the hint and the error of a `z-field` around the control.
+    // `ZTokenAttribut` watches for that and puts the id back.
+    this.beschreibung.setze(this.tooltipId);
   }
 
   /** Panel out of the overlay. Whoever keeps listening stays listening. */
@@ -233,44 +236,10 @@ export class ZTooltip {
     if (!this.sichtbar()) {
       return;
     }
-    this.beobachter?.disconnect();
-    this.beschreibe(false);
+    this.beschreibung.setze(null);
     this.overlayRef?.detach();
     this.flaeche = undefined;
     this.sichtbar.set(false);
-  }
-
-  /**
-   * Puts the id of the panel into `aria-describedby` of the trigger, or takes
-   * it out again. The attribute is a list of ids and belongs to the caller: a
-   * static one, a binding, or the hint and the error that a `z-field` links to
-   * its control. Overwriting it would silently cut the control off from its own
-   * description, so only this one token is added and removed.
-   */
-  private beschreibe(dazu: boolean): void {
-    const wirt = this.host.nativeElement;
-    const steht = wirt.getAttribute('aria-describedby');
-    const werte = (steht ?? '').split(/\s+/).filter((wert) => wert && wert !== this.tooltipId);
-    if (dazu) {
-      werte.push(this.tooltipId);
-    }
-    const soll = werte.join(' ');
-    // Nothing to do is nothing to write. A `setAttribute` with the value that
-    // already stands there still queues a mutation record in Chromium, and the
-    // observer above would answer it with the next write, which never ends.
-    if (soll === (steht ?? '')) {
-      return;
-    }
-    if (soll) {
-      wirt.setAttribute('aria-describedby', soll);
-    } else if (steht !== null) {
-      wirt.removeAttribute('aria-describedby');
-    }
-    // The record of this write is the observer's own echo and would call it one
-    // more time for nothing. `takeRecords` drops exactly that one: no other
-    // script can have run since the write, and everything the caller queued
-    // before was already delivered to the callback that is running now.
-    this.beobachter?.takeRecords();
   }
 
   /**

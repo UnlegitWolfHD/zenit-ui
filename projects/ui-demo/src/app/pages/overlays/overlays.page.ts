@@ -94,8 +94,14 @@ interface LangesFeld {
         </button>
       </div>
       <!-- Live validation next to a tooltip: while the panel stands, the field
-           rewrites aria-describedby of the input on every keystroke. -->
-      <z-field label="Anzeigename" for="demo-lang-anzeige" [error]="anzeigeFehler()">
+           puts its hint and its error id into aria-describedby of the input on
+           every keystroke, and the tooltip holds its own id there. -->
+      <z-field
+        label="Anzeigename"
+        for="demo-lang-anzeige"
+        [hint]="anzeigeHinweis()"
+        [error]="anzeigeFehler()"
+      >
         <input
           zInput
           id="demo-lang-anzeige"
@@ -135,6 +141,14 @@ export class LangerDialog {
     this.anzeige().length > 0 && this.anzeige().length < 3
       ? 'Mindestens 3 Zeichen, damit der Name in der Liste lesbar bleibt.'
       : '',
+  );
+  /**
+   * The counter takes over from the error, so typing runs through all three
+   * states of `aria-describedby`: nothing, the error id, the hint id. The
+   * tooltip on the same input writes there as well.
+   */
+  protected readonly anzeigeHinweis = computed(() =>
+    this.anzeige().length >= 3 ? `${this.anzeige().length} von 32 Zeichen` : '',
   );
 
   protected readonly felder: readonly LangesFeld[] = [
