@@ -65,6 +65,13 @@ jobs:
       # covers it, because `ng lint` runs every project with a lint target.
       - run: npx ng build beispiel-app
 
+      # Both applications prerendered in plain Node. Nothing else here renders
+      # on a server: the unit tests run in jsdom, which has MutationObserver,
+      # ResizeObserver and a layout, and the Playwright jobs run in a browser.
+      # The exit code is not enough, so the step also scans the build output,
+      # see the section "Server rendering" in CONTRIBUTING.md.
+      - run: npm run check:ssr
+
       - run: npx ng test zenit-ui --watch=false
 
       - run: npx ng test beispiel-app --watch=false
