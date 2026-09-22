@@ -129,8 +129,19 @@ export class ZStickyBar {
       if (!lebende.size) {
         horcher?.abort();
         horcher = undefined;
+        // Nothing is left to keep room for, and saying so needs no measuring.
+        this.dokument.documentElement.style.removeProperty('--z-stickybar');
+        return;
       }
-      miss(this.dokument);
+      // Destroying measures nothing. The bars that stay have not moved yet —
+      // this runs while the view is being torn down, so their boxes are still
+      // the ones from before — and on the server there is no box at all:
+      // `getBoundingClientRect` does not exist there, and the application is
+      // destroyed right after rendering, which made every page with two bars
+      // fail. The remaining bars are measured in the next frame instead, which
+      // the server never reaches, because its window has no
+      // `requestAnimationFrame`.
+      fenster?.requestAnimationFrame?.(() => miss(this.dokument));
     });
   }
 

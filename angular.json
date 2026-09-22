@@ -118,6 +118,12 @@
               "optimization": false,
               "extractLicenses": false,
               "sourceMap": true
+            },
+            "ssr": {
+              "server": "projects/ui-demo/src/main.server.ts",
+              "outputMode": "static",
+              "optimization": false,
+              "extractLicenses": false
             }
           },
           "defaultConfiguration": "production"
@@ -205,6 +211,12 @@
               "optimization": false,
               "extractLicenses": false,
               "sourceMap": true
+            },
+            "ssr": {
+              "server": "projects/beispiel-app/src/main.server.ts",
+              "outputMode": "static",
+              "optimization": false,
+              "extractLicenses": false
             }
           },
           "defaultConfiguration": "production"

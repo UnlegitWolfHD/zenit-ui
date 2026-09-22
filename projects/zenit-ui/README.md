@@ -246,6 +246,32 @@ The order is binding, because `:root` and `[data-theme="light"]` weigh the same 
 
 **These values are not part of the design system yet.** They were derived by the contrast rules in `docs/theming.md` and checked by `node tools/check-theme-contrast.mjs` (3 schemes × 4 accents, 456 pairs), but they still need the design owner's approval before they move into `tokens.json`. Everything about schemes, accents, the service, SSR and the gate is in [`docs/theming.md`](../../docs/theming.md).
 
+## Server rendering
+
+Every building block can be constructed and rendered on a server: no component
+touches `window`, `document.body`, `matchMedia`, `localStorage`,
+`MutationObserver`, `ResizeObserver` or a layout measurement while it is being
+constructed or during its first change detection run. Where a block needs one of
+those to do its work, it creates it lazily and only in a browser, and the
+missing behaviour is behaviour there is nothing to do about on a server anyway:
+no box changes size, nothing scrolls, and no caller rewrites an attribute.
+
+That is a guarantee about **one render with no user interaction**, which is what
+a prerender or an SSR response is. Everything an overlay does — menu, dialog,
+tooltip, toast — happens after a click and therefore only ever in a browser; the
+triggers themselves render on the server.
+
+`ZTheme` is safe to inject during SSR and reports the defaults. It writes
+exactly one thing into the server document: a `defaultScheme` other than
+`'system'` becomes `data-theme` on `<html>`, so the delivered HTML already
+carries the scheme. With `defaultScheme: 'system'` it writes nothing, because
+the server knows neither the stored choice nor the operating system — the init
+script from `zenitThemeInitScript()` in `<head>` resolves that in the browser
+before the first paint. Both halves are checked against the real prerendered
+HTML by `npm run check:ssr`.
+
+The gate itself is described in [`CONTRIBUTING.md`](../../CONTRIBUTING.md).
+
 ## Labels and languages
 
 The library holds no copy except the accessible names and the one sentence a component cannot leave empty. They live in one registry, so an application in another language sets them once at bootstrap:
