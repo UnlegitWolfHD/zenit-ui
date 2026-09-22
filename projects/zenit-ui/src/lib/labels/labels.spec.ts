@@ -106,6 +106,13 @@ describe('Z_LABELS', () => {
     }
   });
 
+  it('holds the names of the slider steppers, in both languages', () => {
+    expect(Z_LABELS_DE.sliderDecrease).toBe('Verringern');
+    expect(Z_LABELS_DE.sliderIncrease).toBe('Erhöhen');
+    expect(Z_LABELS_EN.sliderDecrease).toBe('Decrease');
+    expect(Z_LABELS_EN.sliderIncrease).toBe('Increase');
+  });
+
   it('holds the page size label of the pager, in both languages', () => {
     expect(Z_LABELS_DE.paginationPageSize).toBe('Einträge pro Seite');
     expect(Z_LABELS_EN.paginationPageSize).toBe('Items per page');

@@ -15,6 +15,8 @@ import {
   viewChild,
 } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
+import { ZIcon } from '../icon';
+import { injectZLabels } from '../labels';
 
 /** Set by the Angular build; a production build drops the branch around it. */
 declare const ngDevMode: boolean | undefined;
@@ -32,6 +34,15 @@ let laufendeNummer = 0;
  * range input, then `div.z-range__ticks` with one `<span>` per entry of
  * {@link ticks} and finally `span.z-field__hint`. Head label, ticks and hint
  * only appear when their input is filled.
+ *
+ * {@link steppers} adds a minus and a plus button left and right of the track,
+ * which the design system requires beyond twelve steps and on devices without a
+ * mouse. Each of them moves the value by one {@link step},
+ * clamped to the scale, and writes through the same path as the track, so model,
+ * form and `valueChange` see exactly one change. The scale stays what it is; the
+ * buttons only add a second way to reach it, and the range input keeps its own
+ * arrow keys, Home and End. A development build warns once per instance when a
+ * scale has more than twelve steps and {@link steppers} is off.
  *
  * Accessibility: the label is tied to the input through a generated `id`. With
  * no visible label the input takes {@link ariaLabel} instead, and only then.
@@ -76,6 +87,7 @@ let laufendeNummer = 0;
  */
 @Component({
   selector: 'z-slider',
+  imports: [ZIcon],
   template: `
     <div class="z-range__head">
       @if (label()) {
@@ -83,18 +95,44 @@ let laufendeNummer = 0;
       }
       <span class="z-range__value">{{ anzeige() }}</span>
     </div>
-    <input
-      #feld
-      type="range"
-      [id]="id"
-      [attr.aria-label]="label() ? null : ariaLabel() || null"
-      [disabled]="gesperrt()"
-      [attr.aria-valuetext]="anzeige()"
-      [attr.aria-describedby]="hint() ? hinweisId : null"
-      [attr.aria-invalid]="invalid() && touched() ? 'true' : null"
-      (input)="aufEingabe($event)"
-      (blur)="beruehrt()"
-    />
+    <div [class.z-range__row]="steppers()">
+      @if (steppers()) {
+        <button
+          type="button"
+          class="z-btn z-btn--ghost z-btn--icon z-btn--sm"
+          [attr.aria-label]="wenigerText"
+          [disabled]="gesperrt()"
+          [attr.aria-disabled]="amMinimum() ? 'true' : null"
+          (click)="stufe(-1)"
+        >
+          <z-icon name="remove" />
+        </button>
+      }
+      <input
+        #feld
+        type="range"
+        [id]="id"
+        [attr.aria-label]="label() ? null : ariaLabel() || null"
+        [disabled]="gesperrt()"
+        [attr.aria-valuetext]="anzeige()"
+        [attr.aria-describedby]="hint() ? hinweisId : null"
+        [attr.aria-invalid]="invalid() && touched() ? 'true' : null"
+        (input)="aufEingabe($event)"
+        (blur)="beruehrt()"
+      />
+      @if (steppers()) {
+        <button
+          type="button"
+          class="z-btn z-btn--ghost z-btn--icon z-btn--sm"
+          [attr.aria-label]="mehrText"
+          [disabled]="gesperrt()"
+          [attr.aria-disabled]="amMaximum() ? 'true' : null"
+          (click)="stufe(1)"
+        >
+          <z-icon name="add" />
+        </button>
+      }
+    </div>
     @if (ticks().length) {
       <div class="z-range__ticks" aria-hidden="true">
         @for (marke of ticks(); track $index) {
@@ -161,6 +199,20 @@ export class ZSlider implements ControlValueAccessor {
   readonly unit = input('');
 
   /**
+   * Adds a minus and a plus button left and right of the track, each moving the
+   * value by one {@link step}. The design system requires them beyond twelve
+   * steps and on devices without a mouse. Explicit on purpose:
+   * the component never switches them on by itself, because a slider that grows
+   * a pair of buttons the moment a `max` changes is a layout that moves without
+   * anyone asking for it. A development build warns once per instance when
+   * `(max - min) / step` is above twelve and this is still off. Boolean
+   * attribute.
+   *
+   * @default false
+   */
+  readonly steppers = input(false, { transform: booleanAttribute });
+
+  /**
    * Scale values printed below the track, for example `[2, 4, 8, 16]`. Purely
    * visual: the row is `aria-hidden`, and the values change nothing about the
    * scale itself. An empty list renders no tick row.
@@ -225,6 +277,22 @@ export class ZSlider implements ControlValueAccessor {
   private readonly formsGesperrt = signal(false);
   protected readonly gesperrt = computed(() => this.disabled() || this.formsGesperrt());
 
+  private readonly labels = injectZLabels();
+  /** Names of the two buttons; the registry is the only place they come from. */
+  protected readonly wenigerText = this.labels.sliderDecrease;
+  protected readonly mehrText = this.labels.sliderIncrease;
+
+  /**
+   * Upper end as the browsers read it: a `max` below `min` collapses the scale
+   * onto `min`, the same way the effect writes it onto the element.
+   */
+  protected readonly obergrenze = computed(() => Math.max(this.min(), this.max()));
+  protected readonly amMinimum = computed(() => this.value() <= this.min());
+  protected readonly amMaximum = computed(() => this.value() >= this.obergrenze());
+
+  /** The step the buttons move by; `0` and `NaN` would otherwise freeze them. */
+  private readonly schrittweite = computed(() => Math.abs(this.step()) || 1);
+
   private melde?: (wert: number) => void;
   private aufBeruehrt?: () => void;
 
@@ -276,8 +344,37 @@ export class ZSlider implements ControlValueAccessor {
             'ZSlider: Der Regler hat keinen zugänglichen Namen. Setze label="…" für ein sichtbares Label oder ariaLabel="…" ohne sichtbares Label.',
           );
         }
+        const stufen = (this.obergrenze() - this.min()) / this.schrittweite();
+        if (!this.steppers() && stufen > 12) {
+          console.warn(
+            `ZSlider: ${Math.round(stufen)} Stufen ohne steppers. ` +
+              'spec/components/Slider/README.md: "Bei mehr als 12 Stufen oder auf Geräten ohne ' +
+              'Maus zusätzlich Plus- und Minus-Buttons anbieten." Setze steppers am z-slider.',
+          );
+        }
       });
     }
+  }
+
+  /**
+   * One step up or down, the way the two buttons move the value: clamped to the
+   * scale and reported through the same path as an input on the track, so model,
+   * form and `valueChange` see exactly one change. A button that is only marked
+   * `aria-disabled` keeps the focus, so its click is swallowed here.
+   */
+  protected stufe(richtung: 1 | -1): void {
+    if (this.gesperrt() || (richtung < 0 ? this.amMinimum() : this.amMaximum())) {
+      return;
+    }
+    const ziel = Math.min(
+      Math.max(untracked(this.value) + richtung * this.schrittweite(), this.min()),
+      this.obergrenze(),
+    );
+    if (ziel === untracked(this.value)) {
+      return;
+    }
+    this.value.set(ziel);
+    this.melde?.(ziel);
   }
 
   protected aufEingabe(ereignis: Event): void {

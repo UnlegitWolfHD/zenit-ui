@@ -44,6 +44,12 @@ export interface ZLabels {
   /** Visible label of the page size select in `z-pagination`. */
   paginationPageSize: string;
 
+  /** `aria-label` of the minus button of `z-slider`, shown with `steppers`. */
+  sliderDecrease: string;
+
+  /** `aria-label` of the plus button of `z-slider`, shown with `steppers`. */
+  sliderIncrease: string;
+
   /** `aria-label` of the log region in `z-console`. */
   consoleLog: string;
 
@@ -218,6 +224,8 @@ export const Z_LABELS_DE = {
   paginationNav: 'Seitennavigation',
   paginationRange: (from, to, total, itemLabel) => `${from} bis ${to} von ${total} ${itemLabel}`,
   paginationPageSize: 'Einträge pro Seite',
+  sliderDecrease: 'Verringern',
+  sliderIncrease: 'Erhöhen',
   consoleLog: 'Serverlog',
   consoleInput: 'Befehl',
   consoleJumpToEnd: 'Zum Ende',
@@ -266,6 +274,8 @@ export const Z_LABELS_EN = {
   paginationNav: 'Pagination',
   paginationRange: (from, to, total, itemLabel) => `${from} to ${to} of ${total} ${itemLabel}`,
   paginationPageSize: 'Items per page',
+  sliderDecrease: 'Decrease',
+  sliderIncrease: 'Increase',
   consoleLog: 'Server log',
   consoleInput: 'Command',
   consoleJumpToEnd: 'Jump to end',

@@ -9,8 +9,8 @@ Keeps price and next step in view at the bottom edge of small screens.
 
 ## When not to use
 
-- Above 900px in a configurator. There `z-price-summary` sticks next to the form; set `mobileOnly`
-  and the bar steps aside by itself.
+- Above 900px in a configurator. There `z-price-summary` sticks next to the form in the
+  `[zConfigAside]` column ([Config](config.md)); set `mobileOnly` and the bar steps aside by itself.
 - For more than one action. The bar carries exactly one button.
 
 ## Import
@@ -90,8 +90,9 @@ Since it overlaps the page while scrolling, it stays one row tall.
 
 ## Responsive
 
-`mobileOnly` hides it from 900px on, which is where `z-price-summary` sticks next to the form. The
-bottom padding grows by `env(safe-area-inset-bottom)` on a device that reports an inset.
+`mobileOnly` hides it from 900px on, which is where `z-price-summary` sticks next to the form in
+the `[zConfigAside]` column of [Config](config.md). The bottom padding grows by
+`env(safe-area-inset-bottom)` on a device that reports an inset.
 
 ## Rendered classes and tokens
 

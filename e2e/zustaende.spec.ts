@@ -817,6 +817,128 @@ test.describe('hero-lg', () => {
 
     await expect(hero(page, LG)).toHaveScreenshot('zustaende-hero-lg.png');
   });
+
+  // Hero/README.md: sub-pages "kommen oft ohne rechte Spalte aus". bundle.css
+  // fixes .z-hero at 7fr/5fr above 900px, so such a hero would keep an empty
+  // right column at 1440px. Measured on the computed grid, not on a picture.
+  test('ohne [zHeroAside] eine Spalte bei 1440px, mit Aside 7 zu 5', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await seiteOeffnen(page, 'werkzeuge');
+
+    const spuren = async (text: string) =>
+      (await hero(page, text).evaluate((el) => getComputedStyle(el).gridTemplateColumns))
+        .split(' ')
+        .map((wert) => Number.parseFloat(wert));
+
+    // Der Hero der Unterseite hat keine rechte Spalte.
+    await expect(hero(page, LG).locator('[zHeroAside]')).toHaveCount(0);
+    const ohne = await spuren(LG);
+    const mit = await spuren(XL);
+
+    expect(ohne.length, `eine Spur erwartet, gemessen ${ohne.join(' ')}`).toBe(1);
+    expect(mit.length, `zwei Spuren erwartet, gemessen ${mit.join(' ')}`).toBe(2);
+    expect(mit[0] / mit[1], '7 zu 5').toBeCloseTo(7 / 5, 2);
+
+    // Der Titel füllt die volle Containerbreite, der Lead bleibt bei 52ch.
+    const heroKasten = (await hero(page, LG).boundingBox())!;
+    const titelKasten = (await titel(page, LG).boundingBox())!;
+    const leadKasten = (await hero(page, LG).locator('.z-hero__lead').boundingBox())!;
+
+    expect(titelKasten.width).toBeCloseTo(heroKasten.width, 0);
+    expect(titelKasten.width).toBeCloseTo(ohne[0], 0);
+    expect(leadKasten.width, 'der Lead behält sein eigenes Maß von 52ch').toBeLessThan(
+      titelKasten.width,
+    );
+
+    test.info().annotations.push({
+      type: 'hero-ohne-aside',
+      description:
+        `ohne Aside ${ohne.join(' ')}, mit Aside ${mit.join(' ')}, ` +
+        `Titel ${Math.round(titelKasten.width)}px, Lead ${Math.round(leadKasten.width)}px`,
+    });
+  });
+});
+
+/**
+ * Plus and minus next to the track, which spec/components/Slider/README.md:12
+ * requires beyond twelve steps. Both are ordinary tab stops, so the whole
+ * slider can be operated without a pointer; at the end of the scale the button
+ * on that side keeps the focus and only says aria-disabled.
+ */
+test.describe('slider-steppers', () => {
+  const regler = (page: Page) =>
+    page.locator('z-slider').filter({ has: page.getByRole('slider', { name: 'Tickrate' }) });
+  const spur = (page: Page) => page.getByRole('slider', { name: 'Tickrate' });
+  const weniger = (page: Page) => regler(page).getByRole('button', { name: 'Verringern' });
+  const mehr = (page: Page) => regler(page).getByRole('button', { name: 'Erhöhen' });
+
+  test('nur Tastatur: Tab auf Minus, Enter bewegt um einen step', async ({ page }) => {
+    await seiteOeffnen(page, 'formulare');
+
+    await expect(spur(page)).toHaveValue('64');
+
+    await spur(page).focus();
+    await page.keyboard.press('Shift+Tab');
+    await expect(weniger(page)).toBeFocused();
+
+    await page.keyboard.press('Enter');
+
+    await expect(spur(page)).toHaveValue('60');
+    await expect(regler(page).locator('.z-range__value')).toHaveText('60 Hz');
+    // Der Fokus bleibt auf dem Button, der gerade gedrückt wurde.
+    await expect(weniger(page)).toBeFocused();
+
+    await page.keyboard.press('Tab');
+    await expect(spur(page)).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(mehr(page)).toBeFocused();
+
+    await page.keyboard.press('Enter');
+
+    await expect(spur(page)).toHaveValue('64');
+  });
+
+  test('am Ende der Skala aria-disabled, fokussierbar und ohne Wirkung', async ({ page }) => {
+    await seiteOeffnen(page, 'formulare');
+
+    await spur(page).focus();
+    await page.keyboard.press('End');
+
+    await expect(spur(page)).toHaveValue('128');
+    await expect(mehr(page)).toHaveAttribute('aria-disabled', 'true');
+    // Nicht nativ gesperrt: der Button bleibt fokussierbar, nur die Wirkung ist weg.
+    await expect(mehr(page)).toHaveJSProperty('disabled', false);
+    await expect(weniger(page)).not.toHaveAttribute('aria-disabled', 'true');
+
+    await mehr(page).focus();
+    await page.keyboard.press('Enter');
+
+    await expect(spur(page)).toHaveValue('128');
+    await expect(mehr(page)).toBeFocused();
+
+    await spur(page).focus();
+    await page.keyboard.press('Home');
+
+    await expect(spur(page)).toHaveValue('20');
+    await expect(weniger(page)).toHaveAttribute('aria-disabled', 'true');
+    await expect(mehr(page)).not.toHaveAttribute('aria-disabled', 'true');
+  });
+
+  test('ein gesperrter Regler sperrt auch die Buttons', async ({ page }) => {
+    await seiteOeffnen(page, 'formulare');
+    const gesperrt = page
+      .locator('z-slider')
+      .filter({ has: page.getByRole('slider', { name: 'Aufbewahrung' }) });
+
+    await expect(gesperrt.getByRole('button', { name: 'Verringern' })).toBeDisabled();
+    await expect(gesperrt.getByRole('button', { name: 'Erhöhen' })).toBeDisabled();
+  });
+
+  test('Screenshot des Reglers mit steppers', async ({ page }) => {
+    await seiteOeffnen(page, 'formulare');
+
+    await expect(regler(page)).toHaveScreenshot('zustaende-slider-steppers.png');
+  });
 });
 
 test.describe('Lädt und Fehler', () => {

@@ -177,6 +177,20 @@ describe('ZHero', () => {
     expect(aktionen.nextElementSibling.classList.contains('z-hero__note')).toBe(true);
   });
 
+  // A sub-page hero has no right column at all. The slot has always been
+  // optional; what hangs on it is the single-column rule in _werkzeuge.css,
+  // `.z-hero:not(:has(> [zHeroAside]))`, so the hero must really stay without
+  // that child and the marker attribute must survive projection.
+  it('leaves the aside slot optional and keeps the text column as the only child', () => {
+    const fixture = TestBed.createComponent(HeroHost);
+    fixture.detectChanges();
+    const hero = fixture.nativeElement.querySelector('z-hero');
+
+    expect(hero.querySelector('[zHeroAside]')).toBeNull();
+    expect(hero.children.length).toBe(1);
+    expect(hero.firstElementChild.querySelector('.z-hero__title')).not.toBeNull();
+  });
+
   it('projects zHeroAside as the second column of the hero', () => {
     const fixture = TestBed.createComponent(SlotHost);
     fixture.detectChanges();

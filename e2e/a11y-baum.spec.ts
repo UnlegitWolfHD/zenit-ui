@@ -131,6 +131,7 @@ const LIGATUREN = [
   'play_arrow',
   'power_settings_new',
   'refresh',
+  'remove',
   'report',
   'restart_alt',
   'search',

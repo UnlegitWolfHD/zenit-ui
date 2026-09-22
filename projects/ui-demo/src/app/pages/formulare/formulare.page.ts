@@ -280,8 +280,20 @@ import {
           [max]="30"
           [step]="1"
           [ticks]="aufbewahrungStufen"
+          steppers
           hint="Der Tarif Flex speichert 7 Tage, länger geht erst ab Tarif Dauer."
           [formControl]="aufbewahrung"
+        />
+        <z-slider
+          label="Tickrate"
+          unit="Hz"
+          [min]="20"
+          [max]="128"
+          [step]="4"
+          [ticks]="tickrateStufen"
+          steppers
+          hint="Mehr Tickrate kostet CPU-Zeit. 64&nbsp;Hz reichen für die meisten Spiele."
+          [(value)]="tickrate"
         />
       </div>
 
@@ -291,6 +303,15 @@ import {
         Interop: Arbeitsspeicher <span class="z-mono">{{ arbeitsspeicher() }}&nbsp;GB</span> über
         model(), Speicher <span class="z-mono">{{ speicher.value }}&nbsp;GB</span> über formControl.
         CPU-Kerne sind über den Input deaktiviert, die Aufbewahrung über Forms.
+      </p>
+
+      <p class="demo-grund caption">
+        steppers: Aufbewahrung hat 29 Stufen, Tickrate 27. Ab mehr als 12 Stufen verlangt das
+        Design-System Plus und Minus neben der Spur. Beide Buttons bewegen den Wert um genau einen
+        step und melden ihn auf demselben Weg wie die Spur. Am Anfang und am Ende der Skala bleiben
+        sie sichtbar und fokussierbar und tragen aria-disabled; die Aufbewahrung ist über Forms
+        komplett gesperrt, dann sind auch die Buttons gesperrt. Tickrate
+        <span class="z-mono">{{ tickrate() }}&nbsp;Hz</span>.
       </p>
     </section>
 
@@ -404,7 +425,9 @@ export class FormularePage {
   protected readonly speicherStufen = [10, 40, 70, 100];
   protected readonly kernStufen = [1, 2, 3, 4, 5, 6, 7, 8];
   protected readonly aufbewahrungStufen = [1, 10, 20, 30];
+  protected readonly tickrateStufen = [20, 48, 76, 100, 128];
   protected readonly arbeitsspeicher = signal(6);
+  protected readonly tickrate = signal(64);
   protected readonly speicher = new FormControl(40, { nonNullable: true });
   protected readonly aufbewahrung = new FormControl(
     { value: 7, disabled: true },

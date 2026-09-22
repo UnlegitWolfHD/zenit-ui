@@ -211,8 +211,9 @@ interface SeitenEintrag {
 
       <p class="demo-cap caption">
         Öffentlich: dieselbe Leiste mit anderen Links, rechts Anmelden als ghost und Server
-        erstellen als primary in sm. Zustandsübersicht: hier stehen mehrere primäre Buttons
-        nebeneinander, auf einer echten Seite ist es höchstens einer je Bildschirmhöhe.
+        erstellen als secondary in sm. Kein primärer Button im rechten Bereich: die Kopfzeile steht
+        auf jedem Bildschirm, ein primärer wäre dort der zweite neben dem der Seite. Den einen
+        primären trägt der Hero, die Preisübersicht oder der PageHeader.
       </p>
       <z-panel flush>
         <z-app-header navLabel="Öffentliche Navigation" [landmark]="false">
@@ -227,7 +228,7 @@ interface SeitenEintrag {
             >
           }
           <a zBtn="ghost" zHeaderEnd href="#">Anmelden</a>
-          <a zBtn="primary" size="sm" zHeaderEnd href="#">Server erstellen</a>
+          <a zBtn="secondary" size="sm" zHeaderEnd href="#">Server erstellen</a>
         </z-app-header>
       </z-panel>
     </section>

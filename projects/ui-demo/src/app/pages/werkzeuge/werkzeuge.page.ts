@@ -145,8 +145,9 @@ const STARTZEILEN: ZConsoleLine[] = [
 
       <p class="demo-cap caption">
         Unterseite: size="lg" stellt den Titel auf display-lg (40px), so wie ihn jede Seite außer
-        Startseite und /minecraft trägt. Unterseiten kommen oft ohne rechte Spalte aus. Text von
-        /preise. Unter 640px sind beide Größen gleich groß.
+        Startseite und /minecraft trägt. Unterseiten kommen oft ohne rechte Spalte aus; ohne
+        [zHeroAside] steht der Hero auf jeder Breite einspaltig, der Lead bleibt bei 52 Zeichen.
+        Text von /preise. Unter 640px sind beide Größen gleich groß.
       </p>
 
       <z-hero
