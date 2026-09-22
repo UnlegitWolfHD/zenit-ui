@@ -277,6 +277,107 @@ for (const schema of SCHEMATA) {
   });
 }
 
+/**
+ * The rem base belongs to the application. `_grundlage.css` sets neither
+ * `font-size` nor `line-height` on `<html>`: the two declarations of the
+ * reference rule live in `.z-root:where(:not(html))`, which still weighs
+ * (0,1,0) but leaves the root element out. A plain `html { font-size: … }` at
+ * (0,0,1) is then the only author rule on `<html>` and wins at every
+ * specificity and in either include order. Its predecessor
+ * `html.z-root { font-size: 100% }` weighed (0,1,1) and beat the application
+ * instead: a product whose user setting reads
+ * `html { font-size: var(--base-font-size) }` rendered 16px for 14px and 18px
+ * alike, before and after `zenit-ui.css`.
+ */
+
+/** Puts `css` before the first or after the last stylesheet of the document. */
+function appRegel(page: Page, css: string, wo: 'vor' | 'nach') {
+  return page.evaluate(
+    ([text, stelle]) => {
+      const links = [...document.querySelectorAll('link[rel="stylesheet"]')];
+      const st = document.createElement('style');
+      st.dataset['appRegel'] = '1';
+      st.textContent = text;
+      const anker = stelle === 'vor' ? links[0] : links[links.length - 1];
+      anker.parentNode!.insertBefore(st, stelle === 'vor' ? anker : anker.nextSibling);
+    },
+    [css, wo] as const,
+  );
+}
+
+function appRegelWeg(page: Page) {
+  return page.evaluate(() =>
+    document.querySelectorAll('style[data-app-regel]').forEach((s) => s.remove()),
+  );
+}
+
+/** `<html>`, the page size on `<body>` and what `1rem` measures inside `wirt`. */
+function remBasis(page: Page, wirt = 'body') {
+  return page.evaluate((sel) => {
+    const el = document.querySelector(sel)!;
+    const probe = document.createElement('div');
+    probe.style.cssText = 'position:absolute;width:1rem';
+    el.appendChild(probe);
+    const einRem = getComputedStyle(probe).width;
+    probe.remove();
+    const html = getComputedStyle(document.documentElement);
+    const body = getComputedStyle(document.body);
+    return {
+      html: `${html.fontSize} / ${html.lineHeight}`,
+      body: `${body.fontSize} / ${body.lineHeight}`,
+      einRem,
+    };
+  }, wirt);
+}
+
+for (const groesse of [14, 18]) {
+  test(`an application rule html { font-size: ${groesse}px } at (0,0,1) wins, before and after the library stylesheet`, async ({
+    page,
+  }) => {
+    await seiteOeffnen(page, ROUTE, 1440);
+    // Without such a rule the library leaves `<html>` to the browser.
+    expect(await remBasis(page)).toEqual({
+      html: '16px / normal',
+      body: '14px / 20px',
+      einRem: '16px',
+    });
+
+    // The form a product uses for a user setting, which is what made the old
+    // (0,1,1) rule visible.
+    const regel = `html { --base-font-size: ${groesse}px; font-size: var(--base-font-size) }`;
+    for (const wo of ['vor', 'nach'] as const) {
+      await appRegel(page, regel, wo);
+      expect(await remBasis(page), `html rule ${wo} zenit-ui.css`).toEqual({
+        html: `${groesse}px / normal`,
+        // The page size stays with body.z-root, unchanged in both cases.
+        body: '14px / 20px',
+        einRem: `${groesse}px`,
+      });
+      await appRegelWeg(page);
+    }
+  });
+}
+
+test('1rem inside .z-legacy follows the application rule on <html>', async ({ page }) => {
+  await seiteOeffnen(page, ROUTE, 1440);
+  const insel = '[data-legacy="insel"]';
+  for (const groesse of [14, 18]) {
+    await appRegel(page, `html { font-size: ${groesse}px }`, 'nach');
+    const inselGroesse = await page.evaluate(
+      (sel) => getComputedStyle(document.querySelector(sel)!).fontSize,
+      insel,
+    );
+    // .z-legacy is `font-size: 1rem`, the one rem in the library's stylesheets.
+    expect({ ...(await remBasis(page, insel)), inselGroesse }).toEqual({
+      html: `${groesse}px / normal`,
+      body: '14px / 20px',
+      einRem: `${groesse}px`,
+      inselGroesse: `${groesse}px`,
+    });
+    await appRegelWeg(page);
+  }
+});
+
 test('a library component straight inside .z-legacy keeps its classes and loses the base rules', async ({
   page,
 }) => {

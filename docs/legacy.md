@@ -48,8 +48,9 @@ library components is described there as well, under
 ## What the class does
 
 **Inherited values.** `font-size: 1rem`, `line-height: normal` and `-webkit-font-smoothing: auto`,
-which is what a page has without the library. `1rem` is the size the visitor chose, because
-`html.z-root` leaves the rem base alone.
+which is what a page has without the library. `1rem` is the size the visitor chose, because the
+library sets no `font-size` on `<html>` at all, and the size your own `html { font-size: … }` names
+when you have one.
 
 **Family, colour, background and `color-scheme` are not reset.** The library cannot know what your
 old `body` rule said, and text in the shell's family and colour on the shell's ground is the
@@ -98,7 +99,7 @@ and stays 648px.
 | `.z-root :where(a)`, `.z-root :where(a):hover`                   | link colour, underline     | exempt             |
 | `.z-root :where(p, li, dd, label, …) a:not([class*="z-"])`       | underline in running text  | exempt             |
 | `.z-root :focus-visible`                                         | 2px ring in `focus`        | exempt, see below  |
-| `.z-root`, `html.z-root`, `body.z-root`                          | match the class, not a tag | unchanged          |
+| `.z-root`, `.z-root:where(:not(html))`, `html.z-root`, `body.z-root` | match the class, not a tag | unchanged      |
 | `:where(:root) { color-scheme: dark }`, `.z-root:has(.z-stickybar[data-stuck])` | document level | unchanged |
 | every class rule (`.z-btn`, `.z-alert`, …)                       |                            | unchanged          |
 
