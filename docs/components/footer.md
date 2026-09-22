@@ -122,6 +122,14 @@ bar without a wrapper. Putting it in a `.z-container` as well is a decision abou
 the component: the example application does it so that brand, page title and copyright stand on one
 line at every width.
 
+Addition to the reference: the footer carries its own `background: var(--bg)`, like `z-app-header`,
+so it stays readable above a legacy surface while an application migrates route by route (`.z-legacy`,
+[`docs/legacy.md`](../legacy.md)); on a migrated page the colour is the same as the page ground, so
+nothing changes there. Measured with a light `.z-legacy` island on `/muster/legacy`
+(`e2e/legacy.spec.ts`): `.z-footer__base` and its links already carry their own `color` from
+`bundle.css` (`text-subtle`, `text-muted`), so nothing inherits from the legacy surface and no
+`color` addition was needed.
+
 ## States
 
 | State | How it looks                        | How to trigger it     |
@@ -160,9 +168,9 @@ height.
 | `z-footer__list` | on each column's `<ul>`                 |
 | `z-footer__base` | always                                  |
 
-Tokens: `--border` for the line above and above the bottom row, `--space-3` to `--space-7` for the
-gaps and the padding, `--text-subtle` for the column headings and the bottom row, `--text-muted`
-and `--text` for the links, `--control-md` for the mobile click target.
+Tokens: `--bg` for the host's own ground, `--border` for the line above and above the bottom row,
+`--space-3` to `--space-7` for the gaps and the padding, `--text-subtle` for the column headings and
+the bottom row, `--text-muted` and `--text` for the links, `--control-md` for the mobile click target.
 
 ## Deviations from the reference
 

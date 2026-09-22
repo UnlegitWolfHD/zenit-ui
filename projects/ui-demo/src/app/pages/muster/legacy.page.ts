@@ -12,6 +12,8 @@ import {
   ZButton,
   ZDialog,
   ZField,
+  ZFooter,
+  ZFooterBase,
   ZInput,
   ZToast,
   ZToastOutlet,
@@ -83,6 +85,8 @@ export class Altlast {}
     LegacyMigriert,
     ZAlert,
     ZButton,
+    ZFooter,
+    ZFooterBase,
     ZToastOutlet,
     ZTooltip,
   ],
@@ -129,6 +133,16 @@ export class Altlast {}
         Von 02:00 bis 02:15 Uhr ist der Kundenbereich nicht erreichbar.
         <a href="/muster/legacy">Status ansehen</a>
       </z-alert>
+
+      <!-- Own ground (z-footer background: var(--bg)): stays readable above
+           the light surface of .demo-alt while this route is not migrated. -->
+      <h3>Footer über der Altlast-Fläche</h3>
+      <z-footer [landmark]="false" data-legacy="fuss">
+        <div zFooterBase>
+          <span>© 2026 Zenit-Hosting</span>
+          <a href="/muster/legacy">Impressum</a>
+        </div>
+      </z-footer>
 
       <h3>Umgezogene Seite im Inhaltsbereich</h3>
       <div class="z-root demo-legacy-seite" data-legacy="verschachtelt" tabindex="-1">
