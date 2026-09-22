@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import {
   ZButton,
   ZConsole,
@@ -8,6 +9,7 @@ import {
   ZFaq,
   ZGameGrid,
   ZGameTile,
+  ZGameTileLink,
   ZHero,
   ZHeroActions,
   ZHeroAside,
@@ -42,6 +44,7 @@ const STARTZEILEN: ZConsoleLine[] = [
 @Component({
   selector: 'demo-werkzeuge-page',
   imports: [
+    RouterLink,
     ZButton,
     ZConsole,
     ZEmptyAction,
@@ -49,6 +52,7 @@ const STARTZEILEN: ZConsoleLine[] = [
     ZFaq,
     ZGameGrid,
     ZGameTile,
+    ZGameTileLink,
     ZHero,
     ZHeroActions,
     ZHeroAside,
@@ -205,6 +209,24 @@ const STARTZEILEN: ZConsoleLine[] = [
           (coverError)="coverFehler.update((n) => n + 1)"
         ></button>
       </z-game-grid>
+
+      <p class="demo-cap caption">
+        Als Link: a[zGameTile] sieht aus wie die Kachel, führt aber zur Bestellung des Spiels
+        (routerLink mit queryParams). Kein aria-pressed, keine Auswahl; der Linkname ist Titel und
+        Preis.
+      </p>
+
+      <z-game-grid>
+        @for (spiel of linkSpiele; track spiel.slug) {
+          <a
+            zGameTile
+            [title]="spiel.titel"
+            [price]="spiel.preis"
+            routerLink="/muster/server-erstellen"
+            [queryParams]="{ spiel: spiel.slug }"
+          ></a>
+        }
+      </z-game-grid>
     </section>
 
     <section class="demo-section">
@@ -276,6 +298,13 @@ export class WerkzeugePage {
 
   /** Four placeholders; a real page shows as many as it normally lists. */
   protected readonly kachelPlaetze = [1, 2, 3, 4];
+
+  /** Games of the link grid, each leading to its order. Prices are sample text. */
+  protected readonly linkSpiele = [
+    { slug: 'palworld', titel: 'Palworld', preis: 'ab 5,98\u00a0€ / Monat' },
+    { slug: 'enshrouded', titel: 'Enshrouded', preis: 'ab 4,98\u00a0€ / Monat' },
+    { slug: 'satisfactory', titel: 'Satisfactory', preis: 'ab 5,48\u00a0€ / Monat' },
+  ];
 
   protected readonly spiele = [
     { titel: 'Terraria', preis: 'ab 1,98\u00a0€ / Monat' },

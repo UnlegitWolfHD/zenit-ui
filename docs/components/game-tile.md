@@ -1,21 +1,27 @@
 # GameTile
 
 Selects a game in the price calculator, on the start page, under `/preise` and in the order
-assistant.
+assistant, or, as a link, leads to the page of a game.
 
 ## When to use
 
-- In a grid of games the visitor picks from, with the cheapest one preselected on load.
+- `button[zGameTile]`: in a grid of games the visitor picks from, with the cheapest one preselected
+  on load. The click changes something on the same page, a calculator or a summary.
+- `a[zGameTile]`: in a grid of games where each tile leads somewhere else, for example to the order
+  of that game (`/user/games/create?game=minecraft`). It is a real link with an `href`: it opens in a
+  new tab, shows its target and is crawled.
 
 ## When not to use
 
-- As a link to a game's page. A tile is a toggle button that changes the calculator, not navigation.
+- A button tile for navigation, or a link tile for a selection. The first hides the target from
+  crawlers and from "open in new tab", the second reloads or leaves a page that only had to change a
+  value.
 - For more than about 15 games without a search field above the grid.
 
 ## Import
 
 ```ts
-import { ZGameGrid, ZGameTile } from 'zenit-ui';
+import { ZGameGrid, ZGameTile, ZGameTileLink } from 'zenit-ui';
 ```
 
 ## API
@@ -47,6 +53,23 @@ per URL — a new `cover` is tried again.
 
 The host gets `type="button"`, so a tile inside a form does not submit it; a static `type` written
 by the caller stays.
+
+### `a[zGameTile]`
+
+| Input   | Type     | Default | Description                                                                                                   |
+| ------- | -------- | ------- | ------------------------------------------------------------------------------------------------------------- |
+| `title` | `string` | `''`    | Name of the game. Stands below the cover and, without a `cover`, as the text fallback on the cover area.      |
+| `price` | `string` | `''`    | Starting price including the period, for example "ab 1,98 € / Monat", shown in the mono face below the title. |
+| `cover` | `string` | `''`    | `src` of the cover image in 3:4 format. Empty shows the title as text on the cover area instead.              |
+
+| Output         | Type   | Description                                                                             |
+| -------------- | ------ | --------------------------------------------------------------------------------------- |
+| `(coverError)` | `void` | The `cover` failed to load. The tile has already switched to the text fallback by then. |
+
+The same tile on an `<a>`: same class, same cover area with the same fallback, same hover and focus
+ring. There is no `selected` and no `aria-pressed`, because a link navigates and does not toggle.
+The target is yours: `href`, or `routerLink` with `queryParams`, on the same element. The component
+binds neither, so the library needs no router, and the host writes no `type` and no `role`.
 
 ## Examples
 
@@ -115,6 +138,29 @@ Rendered from a list, with the price coming from the price service:
 </z-game-grid>
 ```
 
+Tiles that lead to the order of each game, with the target as a router link:
+
+```html
+<z-game-grid>
+  @for (s of spiele(); track s.slug) {
+  <a
+    zGameTile
+    [title]="s.name"
+    [price]="s.abPreis"
+    [cover]="s.cover"
+    routerLink="/user/games/create"
+    [queryParams]="{ game: s.slug }"
+  ></a>
+  }
+</z-game-grid>
+```
+
+The same with a plain `href`, for a page without the router:
+
+```html
+<a zGameTile title="Rust" price="ab 4,98 € / Monat" href="/spiele/rust"></a>
+```
+
 Next to the summary the selection feeds:
 
 ```html
@@ -133,7 +179,7 @@ Next to the summary the selection feeds:
 | Rest         | cover area with a 1px `border` outline                 | default                        |
 | Hover        | outline moves to `border-control`                      | pointer over the tile          |
 | Focus        | 2px ring in `focus` with 2px offset                    | Tab, `:focus-visible`          |
-| Selected     | 2px outline in `accent-text`, `aria-pressed="true"`    | `selected`                     |
+| Selected     | 2px outline in `accent-text`, `aria-pressed="true"`    | `selected`, button only        |
 | Cover failed | the title in `display` on the cover area, no `<img>`   | the `cover` URL fails to load  |
 | Loading      | `<z-skeleton tile />` in place of each tile, same cell | `z-game-grid` with `aria-busy` |
 
@@ -146,7 +192,10 @@ reports `(coverError)`.
 
 ## Accessibility
 
-- The tile is a toggle button and always carries `aria-pressed`, `"true"` when selected and
+- `a[zGameTile]` is a link, announced as "Link, Minecraft ab 1,98 € / Monat": the same name as the
+  button, title plus price, with or without a cover and when the cover fails. It carries no
+  `aria-pressed` and no `role`; Enter follows it, Space scrolls the page as on every link.
+- The button tile and always carries `aria-pressed`, `"true"` when selected and
   `"false"` otherwise, so the state is announced either way.
 - The cover area carries `aria-hidden="true"` and the image an empty `alt`, because the area shows
   either a picture of what the title below it says or, without a cover and when a cover fails to
@@ -173,7 +222,7 @@ aspect ratio at every size.
 | Class           | Applies when                    |
 | --------------- | ------------------------------- |
 | `z-games`       | on the grid host                |
-| `z-game`        | on each tile                    |
+| `z-game`        | on each tile, button or link    |
 | `z-game__cover` | inside each tile, `aria-hidden` |
 | `z-game__title` | inside each tile                |
 | `z-game__price` | inside each tile                |
@@ -192,3 +241,6 @@ selected outline, `--font-display` for the text fallback, `--text-muted` for it 
 - Don't put the title and the price on the cover image.
 - Don't add a glow or a scale on selection; it is a 2px line in `accent-text`.
 - Don't use a gamepad placeholder; the fallback is the game's name in `display`.
+- Do use `a[zGameTile]` with `href` or `routerLink` when a tile leads to another page; don't put
+  `(click)` with `router.navigate` on the button tile.
+- Don't rebuild a tile from the `z-game__` classes; both variants render the same markup.
