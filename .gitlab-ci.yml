@@ -1,0 +1,207 @@
+# GitLab CI of the library: the checks of .github/workflows/ci.yml on Linux,
+# plus packing and publishing to an npm registry. What each job does, the
+# release steps and the one-time setup in GitLab: docs/veroeffentlichen.md.
+#
+# Not here: the Playwright runs (npm run e2e, npm run e2e:beispiel). Their
+# reference screenshots were recorded on Windows, carry no platform in their
+# path and are compared with zero tolerance, while Chromium renders text
+# differently on Linux, so every screenshot test would fail on these runners.
+# Linux baselines would have to be recorded on a Linux machine, not guessed.
+# Until then the Playwright runs stay with the Windows workflow in
+# .github/workflows/ci.yml and with `npm run check` plus both e2e runs locally
+# before a release.
+
+stages: [check, build, test, package, release]
+
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    # No second pipeline for a branch that already has an open merge request.
+    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
+      when: never
+    - if: $CI_COMMIT_BRANCH
+    - if: $CI_COMMIT_TAG
+
+default:
+  image: node:24
+  tags: [docker]
+
+variables:
+  # Name the package is published under. The repository keeps `zenit-ui`; only
+  # the packed dist/zenit-ui/package.json gets this name, see "Paketname" in
+  # docs/veroeffentlichen.md. npm sends only scoped packages to a registry of
+  # their own, and the GitLab instance endpoint wants the root namespace as
+  # scope, hence @hosting.
+  #
+  # Target registry: NPM_REGISTRY_URL (protected) and NPM_TOKEN (masked,
+  # protected, scoped to the environment npm-registry, so only verify-release
+  # and publish see it, not every job on a protected ref). Without
+  # NPM_REGISTRY_URL the jobs talk to the npm registry of this project with
+  # CI_JOB_TOKEN. CI_JOB_TOKEN never goes to any other registry: a job that
+  # sees the URL but not the token asks anonymously, and publish stops.
+  # The same pipeline can publish to npmjs.org
+  # (NPM_REGISTRY_URL=https://registry.npmjs.org/, a token of that account and
+  # a name or scope that belongs to it), but only with the owner's approval.
+  NPM_PACKAGE_NAME: '@hosting/zenit-ui'
+
+# npm cache as in the frontend: keyed by the lockfile, kept inside the project
+# directory so the runner can cache it.
+.npm-ci:
+  variables:
+    KUBERNETES_MEMORY_REQUEST: '2Gi'
+    KUBERNETES_MEMORY_LIMIT: '6Gi'
+  cache:
+    key:
+      files:
+        - package-lock.json
+    paths:
+      - .npm/
+  before_script:
+    - npm ci --cache .npm --prefer-offline --no-audit --no-fund
+
+# Registry, token and npm config for the jobs that talk to a registry. The
+# config lives in a temporary file outside the checkout and holds the literal
+# ${NPM_TOKEN}, which npm expands when it reads it, so the token is written
+# nowhere. Without a token the config stays empty and npm asks anonymously.
+# Prerelease versions (1.2.0-rc.1) go to the dist-tag `next`.
+.registry:
+  before_script:
+    - |
+      if [ -z "$NPM_REGISTRY_URL" ]; then
+        NPM_REGISTRY_URL="${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/npm/"
+        NPM_TOKEN="$CI_JOB_TOKEN"
+      fi
+    - case "$NPM_REGISTRY_URL" in */) ;; *) NPM_REGISTRY_URL="$NPM_REGISTRY_URL/" ;; esac
+    - export NPM_REGISTRY_URL NPM_TOKEN
+    - export NPM_CONFIG_USERCONFIG="$(mktemp)"
+    - |
+      if [ -n "$NPM_TOKEN" ]; then
+        echo "//${NPM_REGISTRY_URL#*://}:_authToken=\${NPM_TOKEN}" > "$NPM_CONFIG_USERCONFIG"
+      fi
+    - VERSION="$(node -p "require('./projects/zenit-ui/package.json').version")"
+    - case "$VERSION" in *-*) DIST_TAG=next ;; *) DIST_TAG=latest ;; esac
+
+lint:
+  extends: .npm-ci
+  stage: check
+  script:
+    - npm run lint
+    - npm run lint:css
+    - npm run format:check
+    # Every scheme times every accent against the contrast rules of docs/theming.md.
+    - npm run check:themes
+    # The example application still shows its own sources.
+    - npm run check:snippets
+    # Nothing evaluated at load time references a class declared further down.
+    - npm run check:order
+
+# Fails a tag early: tag and package version differ, or the version is taken.
+verify-release:
+  extends: .registry
+  stage: check
+  # prepare: the job gets the variables scoped to npm-registry, but GitLab
+  # records no deployment for it.
+  environment:
+    name: npm-registry
+    action: prepare
+  rules:
+    - if: $CI_COMMIT_TAG
+  script:
+    - node tools/check-release.mjs
+
+build-lib:
+  extends: .npm-ci
+  stage: build
+  script:
+    # llms texts, library and the compiled schematics that `ng add` needs.
+    - npm run build:lib
+    - npm run check:llms
+    # The bundle loads in plain Node with the JIT compiler, as a consumer's
+    # unit tests with `aot: false` load it.
+    - npm run check:bundle
+  artifacts:
+    paths:
+      - dist/zenit-ui/
+    expire_in: 1 week
+
+unit:
+  extends: .npm-ci
+  stage: test
+  needs: [build-lib]
+  script:
+    - npx ng test zenit-ui --watch=false
+    # beispiel-app compiles against dist/zenit-ui.
+    - npx ng test beispiel-app --watch=false
+    # The same specs with zenit-ui outside the test bundle, as an installed
+    # consumer runs them.
+    - npm run test:beispiel:jit
+    - npm run test:schematics
+
+apps:
+  extends: .npm-ci
+  stage: test
+  needs: [build-lib]
+  script:
+    - npx ng build ui-demo
+    - npx ng build beispiel-app
+    # Both applications prerendered in plain Node; the exit code and the
+    # output are checked, see "Server rendering" in CONTRIBUTING.md.
+    - npm run check:ssr
+
+# The tarball that is published, named for the registry and checked for its
+# content: only the built package, no sources, no config, no credentials.
+pack:
+  stage: package
+  needs: [build-lib]
+  script:
+    - mkdir -p pack
+    - cd dist/zenit-ui
+    - npm pkg set name="$NPM_PACKAGE_NAME"
+    - npm pack --pack-destination "$CI_PROJECT_DIR/pack"
+    - cd "$CI_PROJECT_DIR"
+    - node tools/check-pack.mjs pack/*.tgz
+  artifacts:
+    paths:
+      - pack/
+    expire_in: 1 week
+
+dry-run:
+  extends: .registry
+  stage: release
+  needs: [pack]
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  script:
+    - npm publish ./pack/*.tgz --dry-run --registry "$NPM_REGISTRY_URL" --tag "$DIST_TAG"
+
+# Only a protected tag v<semver> publishes, and only after every check of the
+# pipeline: `needs` lists them all, because a job with `needs` does not wait
+# for the earlier stages. The release gate runs once more right before the
+# upload.
+publish:
+  extends: .registry
+  stage: release
+  resource_group: npm-publish
+  environment:
+    name: npm-registry
+  needs:
+    - job: lint
+      artifacts: false
+    - job: verify-release
+      artifacts: false
+    - job: unit
+      artifacts: false
+    - job: apps
+      artifacts: false
+    - job: pack
+      artifacts: true
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/ && $CI_COMMIT_REF_PROTECTED == "true"
+  script:
+    - |
+      if [ -z "$NPM_TOKEN" ]; then
+        echo "NPM_REGISTRY_URL is set but NPM_TOKEN is not visible to this job: set it for the environment npm-registry." >&2
+        exit 1
+      fi
+    - node tools/check-release.mjs
+    - npm publish ./pack/*.tgz --registry "$NPM_REGISTRY_URL" --tag "$DIST_TAG"
