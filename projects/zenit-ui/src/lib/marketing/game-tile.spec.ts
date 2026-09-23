@@ -153,13 +153,13 @@ describe('ZGameTile', () => {
     expect(kachel.querySelector('.z-game__cover')?.textContent?.trim()).toBe('');
   });
 
-  // The tile has one rendering for every aspect ratio: the fit is CSS
-  // (object-fit: contain in _werkzeuge.css, measured in e2e/zustaende.spec.ts),
-  // so a landscape header and a 3:4 cover both keep the img after it loaded,
-  // with no class or attribute that depends on the format.
+  // One cover area for every image: the 460:215 ratio and object-fit: cover are
+  // CSS (_werkzeuge.css, measured in e2e/zustaende.spec.ts), so a store header
+  // and an image of another ratio both keep the same img after it loaded, with
+  // no class or attribute that depends on the format.
   for (const [format, breite, hoehe] of [
-    ['a landscape cover (460x215)', 460, 215],
-    ['a 3:4 cover (300x400)', 300, 400],
+    ['a store header (460x215)', 460, 215],
+    ['an image of another ratio (300x400)', 300, 400],
   ] as const) {
     it(`shows ${format} as the same img in the same cover area`, () => {
       const { kachel, host, rendere } = baue();
@@ -182,6 +182,26 @@ describe('ZGameTile', () => {
       expect(host.fehler).toBe(0);
     });
   }
+
+  // The fallback stands in the same cover area as an image, so it takes the
+  // same height; z-game__fallback carries the padding and the two-line limit.
+  it('puts the text fallback into z-game__fallback in the same cover area', () => {
+    const { kachel, host, rendere } = baue();
+    const cover = kachel.querySelector('.z-game__cover') as HTMLElement;
+
+    expect(cover.children.length).toBe(1);
+    expect(cover.firstElementChild?.className).toBe('z-game__fallback');
+    expect(cover.firstElementChild?.textContent).toBe('Valheim');
+
+    host.cover.set('/cover/fehlt.webp');
+    rendere();
+    (cover.querySelector('img') as HTMLImageElement).dispatchEvent(new Event('error'));
+    rendere();
+
+    expect(kachel.querySelector('.z-game__cover')).toBe(cover);
+    expect(cover.children.length).toBe(1);
+    expect(cover.firstElementChild?.className).toBe('z-game__fallback');
+  });
 
   it('falls back to the title text when the cover fails and reports it once', () => {
     const { kachel, host, rendere } = baue();

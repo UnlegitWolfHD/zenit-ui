@@ -715,19 +715,31 @@ test.describe('Aktiv und gewählt', () => {
     await expect(gewaehlt).toHaveScreenshot('zustaende-game-tile-selected.png');
   });
 
-  test('GameTile: ein Cover im Querformat steht ganz in der 3:4-Fläche', async ({ page }) => {
+  test('GameTile: Bildfläche im Store-Header-Format, Fallback gleich hoch', async ({ page }) => {
     await seiteOeffnen(page, 'werkzeuge');
-    const quer = page.getByRole('button', { name: /Querformat/ });
-    const hoch = page.getByRole('button', { name: /Hochformat 3:4/ });
-    const bild = quer.locator('.z-game__cover img');
+    const mitBild = page.getByRole('button', { name: /Querformat/ });
+    const ohneBild = page.getByRole('button', { name: /Ohne Bild/ });
+    const fehler = page.getByRole('button', { name: /Ladefehler/ });
+    const bild = mitBild.locator('.z-game__cover img');
     await expect(bild).toHaveJSProperty('complete', true);
+    await expect(fehler.locator('.z-game__cover img')).toHaveCount(0);
 
-    // contain draws the whole image into the box of the img, cover would cut
-    // off both sides of a landscape image and the words at its edges.
-    expect((await stil(bild, ['objectFit'])).objectFit, 'Cover wird beschnitten').toBe('contain');
+    // 460:215 filled by the image: a store header shows uncropped.
+    const flaeche = await kasten(mitBild.locator('.z-game__cover'));
+    expect(flaeche.width / flaeche.height).toBeCloseTo(460 / 215, 1);
+    expect((await stil(bild, ['objectFit'])).objectFit).toBe('cover');
+    const bildKasten = await kasten(bild);
+    expect(bildKasten.width).toBeCloseTo(flaeche.width, 0);
+    expect(bildKasten.height).toBeCloseTo(flaeche.height, 0);
 
-    // The tile keeps its 3:4 cell: same height as the tile with a 3:4 cover.
-    expect((await kasten(quer)).height).toBe((await kasten(hoch)).height);
+    // Without an image and after a failed one: the same area, the same tile.
+    for (const kachel of [ohneBild, fehler]) {
+      expect((await kasten(kachel.locator('.z-game__cover'))).height).toBeCloseTo(
+        flaeche.height,
+        0,
+      );
+      expect((await kasten(kachel)).height).toBeCloseTo((await kasten(mitBild)).height, 0);
+    }
   });
 
   test('Checkbox gewählt: accent als Fläche und Rahmen', async ({ page }) => {

@@ -25,9 +25,9 @@ import {
 } from 'zenit-ui';
 
 /**
- * Neutral test images, no game artwork: a grey box in the size of a store
- * header (460x215, landscape) and one in 3:4, each with a word at its left and
- * right edge, so the demo shows that the tile crops neither side.
+ * Neutral test image, no game artwork: a grey box in the size of a store
+ * header (460x215) with a word at its left and right edge, so the demo shows
+ * that the tile crops neither side of an image in its own ratio.
  */
 function testbild(breite: number, hoehe: number): string {
   return (
@@ -42,7 +42,6 @@ function testbild(breite: number, hoehe: number): string {
   );
 }
 const QUERFORMAT = testbild(460, 215);
-const HOCHFORMAT = testbild(300, 400);
 
 const STARTZEILEN: ZConsoleLine[] = [
   { time: '[12:04:27]', text: 'Starting minecraft server version 1.21.4' },
@@ -205,9 +204,10 @@ const STARTZEILEN: ZConsoleLine[] = [
       </z-game-grid>
 
       <p class="demo-cap caption">
-        Mit Bild: das Cover steht ganz in der 3:4-Fläche und wird nicht beschnitten. Links ein
-        Querformat im Maß eines Store-Headers (460 × 215), rechts ein 3:4-Bild. Beide sind neutrale
-        Testbilder mit einem Wort an jedem Rand.
+        Mit Bild, ohne Bild und mit Ladefehler in einem Raster: die Bildfläche hat das Maß eines
+        Store-Headers (460 × 215), ein Bild in diesem Format steht unbeschnitten darin. Das Testbild
+        ist neutral und trägt an jedem Rand ein Wort. Ohne Bild und nach einem Ladefehler steht der
+        Name auf derselben Fläche, alle Kacheln sind gleich hoch.
       </p>
 
       <z-game-grid>
@@ -217,11 +217,12 @@ const STARTZEILEN: ZConsoleLine[] = [
           price="ab 4,98&nbsp;€ / Monat"
           [cover]="querformat"
         ></button>
+        <button zGameTile title="Ohne Bild" price="ab 2,70&nbsp;€ / Monat"></button>
         <button
           zGameTile
-          title="Hochformat 3:4"
-          price="ab 2,70&nbsp;€ / Monat"
-          [cover]="hochformat"
+          title="Ladefehler"
+          price="ab 9,43&nbsp;€ / Monat"
+          cover="/covers/fehlt-quer.jpg"
         ></button>
       </z-game-grid>
 
@@ -338,9 +339,8 @@ export class WerkzeugePage {
     { titel: '7 Days to Die', preis: 'ab 3,95\u00a0€' },
   ];
 
-  /** Test images of the cover demo, see {@link testbild}. */
+  /** Test image of the cover demo, see {@link testbild}. */
   protected readonly querformat = QUERFORMAT;
-  protected readonly hochformat = HOCHFORMAT;
 
   /** Four placeholders; a real page shows as many as it normally lists. */
   protected readonly kachelPlaetze = [1, 2, 3, 4];
