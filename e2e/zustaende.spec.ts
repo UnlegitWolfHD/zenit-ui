@@ -715,6 +715,21 @@ test.describe('Aktiv und gewählt', () => {
     await expect(gewaehlt).toHaveScreenshot('zustaende-game-tile-selected.png');
   });
 
+  test('GameTile: ein Cover im Querformat steht ganz in der 3:4-Fläche', async ({ page }) => {
+    await seiteOeffnen(page, 'werkzeuge');
+    const quer = page.getByRole('button', { name: /Querformat/ });
+    const hoch = page.getByRole('button', { name: /Hochformat 3:4/ });
+    const bild = quer.locator('.z-game__cover img');
+    await expect(bild).toHaveJSProperty('complete', true);
+
+    // contain draws the whole image into the box of the img, cover would cut
+    // off both sides of a landscape image and the words at its edges.
+    expect((await stil(bild, ['objectFit'])).objectFit, 'Cover wird beschnitten').toBe('contain');
+
+    // The tile keeps its 3:4 cell: same height as the tile with a 3:4 cover.
+    expect((await kasten(quer)).height).toBe((await kasten(hoch)).height);
+  });
+
   test('Checkbox gewählt: accent als Fläche und Rahmen', async ({ page }) => {
     await seiteOeffnen(page, 'formulare');
     const gewaehlt = page.getByRole('checkbox', { name: 'server.properties' });

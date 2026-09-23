@@ -153,6 +153,36 @@ describe('ZGameTile', () => {
     expect(kachel.querySelector('.z-game__cover')?.textContent?.trim()).toBe('');
   });
 
+  // The tile has one rendering for every aspect ratio: the fit is CSS
+  // (object-fit: contain in _werkzeuge.css, measured in e2e/zustaende.spec.ts),
+  // so a landscape header and a 3:4 cover both keep the img after it loaded,
+  // with no class or attribute that depends on the format.
+  for (const [format, breite, hoehe] of [
+    ['a landscape cover (460x215)', 460, 215],
+    ['a 3:4 cover (300x400)', 300, 400],
+  ] as const) {
+    it(`shows ${format} as the same img in the same cover area`, () => {
+      const { kachel, host, rendere } = baue();
+      host.cover.set(`/cover/${breite}x${hoehe}.webp`);
+      rendere();
+      const bild = kachel.querySelector('.z-game__cover img') as HTMLImageElement;
+      Object.defineProperty(bild, 'naturalWidth', { value: breite });
+      Object.defineProperty(bild, 'naturalHeight', { value: hoehe });
+
+      bild.dispatchEvent(new Event('load'));
+      rendere();
+
+      expect(kachel.querySelector('.z-game__cover img')).toBe(bild);
+      expect(bild.getAttribute('src')).toBe(`/cover/${breite}x${hoehe}.webp`);
+      expect(bild.getAttribute('alt')).toBe('');
+      expect(bild.className).toBe('');
+      expect(kachel.className).toBe('z-game');
+      expect(kachel.querySelector('.z-game__cover')?.className).toBe('z-game__cover');
+      expect(kachel.querySelector('.z-game__cover')?.getAttribute('aria-hidden')).toBe('true');
+      expect(host.fehler).toBe(0);
+    });
+  }
+
   it('falls back to the title text when the cover fails and reports it once', () => {
     const { kachel, host, rendere } = baue();
     host.cover.set('/cover/fehlt.webp');

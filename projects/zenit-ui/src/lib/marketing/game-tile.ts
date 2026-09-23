@@ -53,9 +53,12 @@ export class ZGameGrid {}
  * attribute `zGameTile`. A tile that leads to a page instead of changing a
  * selection is {@link ZGameTileLink}, `a[zGameTile]`.
  *
- * Renders the class `z-game` on the host and inside it `span.z-game__cover`
- * with the 3:4 cover image, then `span.z-game__title` and
+ * Renders the class `z-game` on the host and inside it `span.z-game__cover`,
+ * a 3:4 area that shows the cover image whole, then `span.z-game__title` and
  * `span.z-game__price`. Title and price stand below the cover, never on it.
+ * The image is fitted, not cropped: a 3:4 cover fills the area, a landscape
+ * one such as a store header sits centred on `surface-raised` with nothing cut
+ * off, and every tile keeps the same cell in the grid.
  * Without a {@link cover} the title stands as text on the cover area instead
  * of an image, and a cover whose URL fails to load drops into that same text
  * fallback and reports {@link coverError}. Selected means a 2px line in
@@ -116,8 +119,10 @@ export class ZGameTile {
   readonly price = input('');
 
   /**
-   * `src` of the cover image in 3:4 format. Empty shows the title as text on
-   * the cover area instead, and so does a URL that fails to load.
+   * `src` of the cover image, any aspect ratio. It is shown whole in the 3:4
+   * cover area: 3:4 fills it, a landscape image sits centred without being
+   * cropped. Empty shows the title as text on the cover area instead, and so
+   * does a URL that fails to load.
    *
    * @default ''
    */
@@ -219,8 +224,10 @@ export class ZGameTileLink {
   readonly price = input('');
 
   /**
-   * `src` of the cover image in 3:4 format. Empty shows the title as text on
-   * the cover area instead, and so does a URL that fails to load.
+   * `src` of the cover image, any aspect ratio. It is shown whole in the 3:4
+   * cover area: 3:4 fills it, a landscape image sits centred without being
+   * cropped. Empty shows the title as text on the cover area instead, and so
+   * does a URL that fails to load.
    *
    * @default ''
    */

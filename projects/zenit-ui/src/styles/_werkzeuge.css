@@ -10,7 +10,12 @@
   display: grid; place-items: center; padding: var(--space-3); text-align: center;
   font-family: var(--font-display); font-weight: 700; font-size: 16px; line-height: 20px; color: var(--text-muted);
 }
-.z-game__cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* Deviation from the reference (cover): contain, so a cover of any aspect ratio,
+   a landscape store header above all, shows whole, lettering included. A 3:4
+   cover fills the width inside the padding as before and loses nothing at the
+   sides; anything wider sits centred on surface-raised. Every tile keeps the
+   3:4 cell, so the grid rows and z-skeleton tile stay as they are. */
+.z-game__cover img { width: 100%; height: 100%; object-fit: contain; display: block; }
 .z-game:hover .z-game__cover { outline-color: var(--border-control); }
 .z-game[aria-pressed="true"] .z-game__cover { outline: 2px solid var(--accent-text); outline-offset: -2px; }
 .z-game__title { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

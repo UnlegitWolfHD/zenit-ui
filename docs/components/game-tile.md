@@ -37,7 +37,7 @@ available space. The content is the tiles.
 | ---------- | --------- | ------- | ------------------------------------------------------------------------------------------------------------- |
 | `title`    | `string`  | `''`    | Name of the game. Stands below the cover and, without a `cover`, as the text fallback on the cover area.      |
 | `price`    | `string`  | `''`    | Starting price including the period, for example "ab 1,98 € / Monat", shown in the mono face below the title. |
-| `cover`    | `string`  | `''`    | `src` of the cover image in 3:4 format. Empty shows the title as text on the cover area instead.              |
+| `cover`    | `string`  | `''`    | `src` of the cover image, any aspect ratio, shown whole. Empty shows the title as text on the cover area.     |
 | `selected` | `boolean` | `false` | Marks the tile as the chosen game. Boolean attribute.                                                         |
 
 | Output         | Type   | Description                                                                             |
@@ -46,6 +46,12 @@ available space. The content is the tiles.
 
 The selection itself is the native `(click)` event. The element renders its own content, so the
 tag stays empty in your template.
+
+The cover is fitted into the 3:4 area, never cropped: a 3:4 cover fills it, a landscape image such
+as a store header (460×215) sits centred on `surface-raised` with its full width and all its
+lettering, and a square icon the same. The tile does not change its shape for a wide image, so a
+grid that mixes covers, headers and tiles without a cover keeps one row height, and `z-skeleton
+tile` still takes exactly the cell of a tile.
 
 A cover that 404s needs no handling: the tile drops into the text fallback of a missing cover, so
 no broken-image icon is ever shown. `(coverError)` is there to log the dead URL, and it fires once
@@ -60,7 +66,7 @@ by the caller stays.
 | ------- | -------- | ------- | ------------------------------------------------------------------------------------------------------------- |
 | `title` | `string` | `''`    | Name of the game. Stands below the cover and, without a `cover`, as the text fallback on the cover area.      |
 | `price` | `string` | `''`    | Starting price including the period, for example "ab 1,98 € / Monat", shown in the mono face below the title. |
-| `cover` | `string` | `''`    | `src` of the cover image in 3:4 format. Empty shows the title as text on the cover area instead.              |
+| `cover` | `string` | `''`    | `src` of the cover image, any aspect ratio, shown whole. Empty shows the title as text on the cover area.     |
 
 | Output         | Type   | Description                                                                             |
 | -------------- | ------ | --------------------------------------------------------------------------------------- |
@@ -174,14 +180,15 @@ Next to the summary the selection feeds:
 
 ## States
 
-| State        | How it looks                                           | How to trigger it              |
-| ------------ | ------------------------------------------------------ | ------------------------------ |
-| Rest         | cover area with a 1px `border` outline                 | default                        |
-| Hover        | outline moves to `border-control`                      | pointer over the tile          |
-| Focus        | 2px ring in `focus` with 2px offset                    | Tab, `:focus-visible`          |
-| Selected     | 2px outline in `accent-text`, `aria-pressed="true"`    | `selected`, button only        |
-| Cover failed | the title in `display` on the cover area, no `<img>`   | the `cover` URL fails to load  |
-| Loading      | `<z-skeleton tile />` in place of each tile, same cell | `z-game-grid` with `aria-busy` |
+| State        | How it looks                                            | How to trigger it              |
+| ------------ | ------------------------------------------------------- | ------------------------------ |
+| Rest         | cover area with a 1px `border` outline                  | default                        |
+| Landscape    | the image whole and centred, `surface-raised` around it | a `cover` wider than 3:4       |
+| Hover        | outline moves to `border-control`                       | pointer over the tile          |
+| Focus        | 2px ring in `focus` with 2px offset                     | Tab, `:focus-visible`          |
+| Selected     | 2px outline in `accent-text`, `aria-pressed="true"`     | `selected`, button only        |
+| Cover failed | the title in `display` on the cover area, no `<img>`    | the `cover` URL fails to load  |
+| Loading      | `<z-skeleton tile />` in place of each tile, same cell  | `z-game-grid` with `aria-busy` |
 
 There is no disabled or empty state, and the tile has no loading state of its own: while the games
 load, the grid holds `z-skeleton tile` placeholders, which take exactly the cell of a tile (see
@@ -214,8 +221,8 @@ reports `(coverError)`.
 ## Responsive
 
 The grid is `auto-fill` from 128px per column with `space-4` between the tiles, so the number of
-columns follows the available width down to 360px without a media query. The cover keeps its 3:4
-aspect ratio at every size.
+columns follows the available width down to 360px without a media query. The cover area keeps its
+3:4 aspect ratio at every size, whatever the ratio of the image in it.
 
 ## Rendered classes and tokens
 
@@ -231,7 +238,8 @@ Tokens: `--space-2` to `--space-4` for the gaps, `--radius-md` for the cover, `-
 for the cover area, `--border` and `--border-control` for the outline, `--accent-text` for the
 selected outline, `--font-display` for the text fallback, `--text-muted` for it and for the price,
 `--font-mono` for the price, `--focus` for the ring. The 128px column minimum, the 3:4 ratio and the
-16px fallback type are literal values from the reference stylesheet.
+16px fallback type are literal values from the reference stylesheet. The image is `object-fit: contain`
+where the reference has `cover`, so that nothing of a landscape image is cut off.
 
 ## Do / Don't
 
@@ -239,6 +247,8 @@ selected outline, `--font-display` for the text fallback, `--text-muted` for it 
 - Do give the price with its period ("ab 1,98 € / Monat").
 - Do put a search field above the grid from about 15 games on.
 - Don't put the title and the price on the cover image.
+- Don't crop a landscape image into the cover with your own CSS; pass it as `cover` and the tile
+  shows it whole.
 - Don't add a glow or a scale on selection; it is a 2px line in `accent-text`.
 - Don't use a gamepad placeholder; the fallback is the game's name in `display`.
 - Do use `a[zGameTile]` with `href` or `routerLink` when a tile leads to another page; don't put
