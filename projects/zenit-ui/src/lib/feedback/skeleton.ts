@@ -61,7 +61,7 @@ export class ZSkeleton {
   readonly thumb = input(false, { transform: booleanAttribute });
 
   /**
-   * Renders the placeholder of a `button[zGameTile]`: a 3:4 cover area, a
+   * Renders the placeholder of a `button[zGameTile]`: the landscape cover area, a
    * title line and a price line with the gaps of the tile, for a
    * `z-game-grid` that is still loading. The grid cell sets its width, so
    * {@link width} does not apply. Boolean attribute.

@@ -24,6 +24,25 @@ import {
   ZSpecList,
 } from 'zenit-ui';
 
+/**
+ * Neutral test image, no game artwork: a grey box in the size of a store
+ * header (460x215) with a word at its left and right edge, so the demo shows
+ * that the tile crops neither side of an image in its own ratio.
+ */
+function testbild(breite: number, hoehe: number): string {
+  return (
+    'data:image/svg+xml,' +
+    encodeURIComponent(
+      `<svg xmlns="http://www.w3.org/2000/svg" width="${breite}" height="${hoehe}" viewBox="0 0 ${breite} ${hoehe}">` +
+        `<rect width="${breite}" height="${hoehe}" fill="dimgray"/>` +
+        `<g font-family="sans-serif" font-size="40" fill="white" dominant-baseline="middle">` +
+        `<text x="8" y="${hoehe / 2}">links</text>` +
+        `<text x="${breite - 8}" y="${hoehe / 2}" text-anchor="end">rechts</text></g></svg>`,
+    )
+  );
+}
+const QUERFORMAT = testbild(460, 215);
+
 const STARTZEILEN: ZConsoleLine[] = [
   { time: '[12:04:27]', text: 'Starting minecraft server version 1.21.4' },
   { time: '[12:04:29]', text: 'Preparing level "world"' },
@@ -185,6 +204,29 @@ const STARTZEILEN: ZConsoleLine[] = [
       </z-game-grid>
 
       <p class="demo-cap caption">
+        Mit Bild, ohne Bild und mit Ladefehler in einem Raster: die Bildfläche hat das Maß eines
+        Store-Headers (460 × 215), ein Bild in diesem Format steht unbeschnitten darin. Das Testbild
+        ist neutral und trägt an jedem Rand ein Wort. Ohne Bild und nach einem Ladefehler steht der
+        Name auf derselben Fläche, alle Kacheln sind gleich hoch.
+      </p>
+
+      <z-game-grid>
+        <button
+          zGameTile
+          title="Querformat"
+          price="ab 4,98&nbsp;€ / Monat"
+          [cover]="querformat"
+        ></button>
+        <button zGameTile title="Ohne Bild" price="ab 2,70&nbsp;€ / Monat"></button>
+        <button
+          zGameTile
+          title="Ladefehler"
+          price="ab 9,43&nbsp;€ / Monat"
+          cover="/covers/fehlt-quer.jpg"
+        ></button>
+      </z-game-grid>
+
+      <p class="demo-cap caption">
         Lädt: z-skeleton tile hält die Zelle einer Kachel, Cover, Titel und Preis in denselben
         Maßen. Das Raster trägt aria-busy und ein aria-label.
       </p>
@@ -296,6 +338,9 @@ export class WerkzeugePage {
     { titel: 'Valheim', preis: 'ab 2,70\u00a0€' },
     { titel: '7 Days to Die', preis: 'ab 3,95\u00a0€' },
   ];
+
+  /** Test image of the cover demo, see {@link testbild}. */
+  protected readonly querformat = QUERFORMAT;
 
   /** Four placeholders; a real page shows as many as it normally lists. */
   protected readonly kachelPlaetze = [1, 2, 3, 4];

@@ -153,6 +153,56 @@ describe('ZGameTile', () => {
     expect(kachel.querySelector('.z-game__cover')?.textContent?.trim()).toBe('');
   });
 
+  // One cover area for every image: the 460:215 ratio and object-fit: cover are
+  // CSS (_werkzeuge.css, measured in e2e/zustaende.spec.ts), so a store header
+  // and an image of another ratio both keep the same img after it loaded, with
+  // no class or attribute that depends on the format.
+  for (const [format, breite, hoehe] of [
+    ['a store header (460x215)', 460, 215],
+    ['an image of another ratio (300x400)', 300, 400],
+  ] as const) {
+    it(`shows ${format} as the same img in the same cover area`, () => {
+      const { kachel, host, rendere } = baue();
+      host.cover.set(`/cover/${breite}x${hoehe}.webp`);
+      rendere();
+      const bild = kachel.querySelector('.z-game__cover img') as HTMLImageElement;
+      Object.defineProperty(bild, 'naturalWidth', { value: breite });
+      Object.defineProperty(bild, 'naturalHeight', { value: hoehe });
+
+      bild.dispatchEvent(new Event('load'));
+      rendere();
+
+      expect(kachel.querySelector('.z-game__cover img')).toBe(bild);
+      expect(bild.getAttribute('src')).toBe(`/cover/${breite}x${hoehe}.webp`);
+      expect(bild.getAttribute('alt')).toBe('');
+      expect(bild.className).toBe('');
+      expect(kachel.className).toBe('z-game');
+      expect(kachel.querySelector('.z-game__cover')?.className).toBe('z-game__cover');
+      expect(kachel.querySelector('.z-game__cover')?.getAttribute('aria-hidden')).toBe('true');
+      expect(host.fehler).toBe(0);
+    });
+  }
+
+  // The fallback stands in the same cover area as an image, so it takes the
+  // same height; z-game__fallback carries the padding and the two-line limit.
+  it('puts the text fallback into z-game__fallback in the same cover area', () => {
+    const { kachel, host, rendere } = baue();
+    const cover = kachel.querySelector('.z-game__cover') as HTMLElement;
+
+    expect(cover.children.length).toBe(1);
+    expect(cover.firstElementChild?.className).toBe('z-game__fallback');
+    expect(cover.firstElementChild?.textContent).toBe('Valheim');
+
+    host.cover.set('/cover/fehlt.webp');
+    rendere();
+    (cover.querySelector('img') as HTMLImageElement).dispatchEvent(new Event('error'));
+    rendere();
+
+    expect(kachel.querySelector('.z-game__cover')).toBe(cover);
+    expect(cover.children.length).toBe(1);
+    expect(cover.firstElementChild?.className).toBe('z-game__fallback');
+  });
+
   it('falls back to the title text when the cover fails and reports it once', () => {
     const { kachel, host, rendere } = baue();
     host.cover.set('/cover/fehlt.webp');

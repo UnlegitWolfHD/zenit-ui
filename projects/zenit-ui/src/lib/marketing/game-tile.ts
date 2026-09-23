@@ -17,7 +17,7 @@ const KACHEL = `<span class="z-game__cover" aria-hidden="true">
     @if (cover() && !coverFailed()) {
       <img [src]="cover()" alt="" (error)="coverFehlt()" />
     } @else {
-      {{ title() }}
+      <span class="z-game__fallback">{{ title() }}</span>
     }
   </span>
   <span class="z-game__title">{{ title() }}</span>
@@ -53,12 +53,15 @@ export class ZGameGrid {}
  * attribute `zGameTile`. A tile that leads to a page instead of changing a
  * selection is {@link ZGameTileLink}, `a[zGameTile]`.
  *
- * Renders the class `z-game` on the host and inside it `span.z-game__cover`
- * with the 3:4 cover image, then `span.z-game__title` and
- * `span.z-game__price`. Title and price stand below the cover, never on it.
- * Without a {@link cover} the title stands as text on the cover area instead
- * of an image, and a cover whose URL fails to load drops into that same text
- * fallback and reports {@link coverError}. Selected means a 2px line in
+ * Renders the class `z-game` on the host and inside it `span.z-game__cover`,
+ * a landscape area in the ratio of a store header (460:215), then
+ * `span.z-game__title` and `span.z-game__price`. Title and price stand below
+ * the cover, never on it. The image fills the area: a store header shows
+ * uncropped, an image of another ratio is cut centred.
+ * Without a {@link cover} the title stands as text, at most two lines in
+ * `span.z-game__fallback`, on the same area instead of an image, and a cover
+ * whose URL fails to load drops into that same text fallback and reports
+ * {@link coverError}. Every tile has the same height either way. Selected means a 2px line in
  * `accent-text`, no glow and no scaling.
  *
  * Accessibility: the tile is a toggle button and always carries
@@ -116,8 +119,10 @@ export class ZGameTile {
   readonly price = input('');
 
   /**
-   * `src` of the cover image in 3:4 format. Empty shows the title as text on
-   * the cover area instead, and so does a URL that fails to load.
+   * `src` of the cover image, ideally a store header in 460:215. It fills the
+   * landscape cover area; an image of another ratio is cut centred. Empty
+   * shows the title as text on the cover area instead, and so does a URL that
+   * fails to load.
    *
    * @default ''
    */
@@ -219,8 +224,10 @@ export class ZGameTileLink {
   readonly price = input('');
 
   /**
-   * `src` of the cover image in 3:4 format. Empty shows the title as text on
-   * the cover area instead, and so does a URL that fails to load.
+   * `src` of the cover image, ideally a store header in 460:215. It fills the
+   * landscape cover area; an image of another ratio is cut centred. Empty
+   * shows the title as text on the cover area instead, and so does a URL that
+   * fails to load.
    *
    * @default ''
    */
