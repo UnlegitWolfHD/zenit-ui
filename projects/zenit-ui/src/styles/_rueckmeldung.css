@@ -18,7 +18,9 @@
 
 /* EmptyState */
 .z-empty { display: grid; justify-items: center; gap: var(--space-2); padding: var(--space-7) var(--space-4); text-align: center; }
-.z-empty__title { font-weight: 600; }
+/* margin and font-size: addition for headingLevel, so an h1 to h4 looks
+   exactly like the span of the reference (no browser margin, no 2em). */
+.z-empty__title { font-weight: 600; margin: 0; font-size: inherit; }
 .z-empty__body { max-width: 40ch; color: var(--text-muted); }
 .z-empty .z-btn { margin-top: var(--space-2); }
 

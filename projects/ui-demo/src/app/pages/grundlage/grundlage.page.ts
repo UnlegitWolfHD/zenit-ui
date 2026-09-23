@@ -302,6 +302,13 @@ import {
       </z-panel>
 
       <p class="demo-cap caption">
+        Titel in mono über titleMono, für einen Titel, der als Ganzes ein technischer Wert ist.
+      </p>
+      <z-panel title="GET /api/v1/gameservers" titleMono>
+        <p class="demo-sub">Liefert deine Server mit Status, Adresse und Tarif.</p>
+      </z-panel>
+
+      <p class="demo-cap caption">
         Panel ohne Titel: der Kopf entfällt, der Inhalt steht direkt im Körper.
       </p>
       <z-panel>

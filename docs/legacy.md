@@ -98,6 +98,7 @@ and stays 648px.
 | `.z-root :where(button, input, select, textarea)`                | `font`, `color` inherit    | exempt             |
 | `.z-root :where(a)`, `.z-root :where(a):hover`                   | link colour, underline     | exempt             |
 | `.z-root :where(p, li, dd, label, …) a:not([class*="z-"])`       | underline in running text  | exempt             |
+| `.z-root :where(.z-alert__body a)`                               | link colour `text` in an alert | exempt         |
 | `.z-root :focus-visible`                                         | 2px ring in `focus`        | exempt, see below  |
 | `.z-root`, `.z-root:where(:not(html))`, `html.z-root`, `body.z-root` | match the class, not a tag | unchanged      |
 | `:where(:root) { color-scheme: dark }`, `.z-root:has(.z-stickybar[data-stuck])` | document level | unchanged |
@@ -167,6 +168,62 @@ size) and loses the base rules. Measured against the same markup on a migrated p
   4.5:1. The `z-root` wrapper brings `bg` and `text` along.
 
 Badge and icon showed no visible difference. That is an observation, not a promise.
+
+## An island without its own surface
+
+`z-root` paints `--bg`. Around a small migrated block inside an old light page, a chip in a header
+or an install card inside an old card, that ground shows as a dark block. `z-root--transparent`
+next to `z-root` leaves the ground out and keeps everything else: tokens, text colour, the 14px/20px
+of a page, the base rules and the focus ring.
+
+The text colour is still the scheme's, and that is the catch. **An island without surface has to
+carry the scheme of the ground it stands on.** Measured on the light ground of `/muster/legacy`
+(`#fafafa`), and on two light greys for the limit:
+
+| Island                                                          | `text`  | `text-muted` | `text-subtle` |
+| --------------------------------------------------------------- | ------- | ------------ | ------------- |
+| transparent, tokens of `dark` (the shell), on `#fafafa`         | 1.07:1  | 2.43:1       | 3.65:1        |
+| transparent, `data-theme="light"`, on `#fafafa`                 | 16.97:1 | 8.39:1       | 5.44:1        |
+| transparent, `data-theme="light"`, on `#eaeaee` (light `surface-raised`) | 14.77:1 | 7.30:1 | 4.74:1 |
+| transparent, `data-theme="light"`, on `#dfdfe5` (light `surface-hover`)  | 13.35:1 | **6.60:1** | **4.28:1** |
+| painted (`z-root` alone), `dark`                                | on its own `bg`, as on every page | | |
+
+Bold is below the rule: `text-muted` needs 7:1 and `text-subtle` 4.5:1.
+
+So the rule is:
+
+- **Light old ground:** `class="z-root z-root--transparent" data-theme="light"`, as long as the
+  ground is no darker than light `--surface-raised` (`#eaeaee`). That is the darkest ground the gate
+  measures the text levels of `light` on: `text-muted` 7.30:1 and `text-subtle` 4.74:1 there. On
+  light `--surface-hover` (`#dfdfe5`) they drop to 6.60:1 and 4.28:1, and on the grey of a Material
+  card (`#e0e0e0`) to 6.63:1 and 4.31:1, both below the rule; such a ground is "any other ground"
+  below. This needs `themes.css` in the `styles` of `angular.json` (see
+  [theming.md](theming.md#how-to-include)); it changes nothing where no `data-theme` is set. Without
+  `themes.css` there is no light scheme to switch to, and the only readable island is the painted
+  one.
+- **Dark old ground:** `class="z-root z-root--transparent"` without an attribute, as long as the
+  ground is no lighter than `--surface-raised` (`#15151a`). That is the lightest ground the gate
+  measures the text levels of `dark` on: `text-muted` 7.17:1 and `text-subtle` 4.78:1 there. On
+  `--surface-hover` (`#1b1b21`) they drop to 6.75:1 and 4.50:1, below the rule for `text-muted`, and
+  `text-subtle` fails on anything lighter than a grey of `#1b1b1b`.
+- **Any other ground, or when in doubt:** `z-root` alone, including a light grey darker than
+  `#eaeaee` and a dark grey lighter than `#15151a`. The dark block is visible, but it is
+  readable, which a transparent island on the wrong ground is not.
+
+The scheme of the island follows its ground, not the choice of the visitor, because the ground of an
+old page does not change with it either. An island with `data-theme="light"` stays light when the
+shell runs `dark` or `contrast`. With an accent other than `rot` set on `<html>`, put the same
+`data-accent` on the island as well: `[data-theme="light"]` restates the accent tokens, and only
+`[data-theme="light"][data-accent="…"]` on the same element brings the accent back.
+
+`.z-legacy` is unaffected: the island is a `z-root` inside it and switches the base rules back on
+exactly as a painted one does; see "Limits" for the second level. `color-scheme` comes with the
+scheme: `light` on an island with `data-theme="light"`, and whatever the old host restated
+otherwise.
+
+`e2e/legacy.spec.ts` checks the island in `dark`, `light` and `contrast` (transparent, light text,
+14px, axe without findings), checks that the same island without `data-theme` fails axe on the light
+ground, and holds a screenshot of it.
 
 ## Overlays and toasts
 

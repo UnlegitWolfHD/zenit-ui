@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, model, input } from '@angular/core';
+import { booleanAttribute, ChangeDetectionStrategy, Component, model, input } from '@angular/core';
 
 /**
  * Folds away settings most visitors do not need: build, Java version, start
@@ -30,7 +30,11 @@ import { ChangeDetectionStrategy, Component, model, input } from '@angular/core'
   selector: 'z-disclosure',
   template: `<details class="z-disclosure" [open]="open()" (toggle)="aufUmschalten($event)">
     <summary>
-      {{ title() }}
+      @if (titleMono()) {
+        <span class="z-mono">{{ title() }}</span>
+      } @else {
+        {{ title() }}
+      }
       @if (summary()) {
         <small>{{ summary() }}</small>
       }
@@ -51,6 +55,16 @@ export class ZDisclosure {
    * @default ''
    */
   readonly title = input('');
+
+  /**
+   * Sets the title in the mono face, for a section named by a technical value
+   * such as an endpoint (`GET /api/v1/gameservers`). The title then stands in a
+   * `span.z-mono` inside the `<summary>`, which keeps it as the accessible name
+   * of the disclosure. Boolean attribute.
+   *
+   * @default false
+   */
+  readonly titleMono = input(false, { transform: booleanAttribute });
 
   /**
    * What is inside, in keywords, for example "Build, Java-Version,

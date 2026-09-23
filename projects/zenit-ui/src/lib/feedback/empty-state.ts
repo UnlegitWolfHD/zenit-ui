@@ -22,7 +22,8 @@ export class ZEmptyAction {}
  * empty list shows no pagination and no filters; data that is missing because
  * of an error is an alert, not an empty state.
  *
- * Renders a host with the class `z-empty`, an optional `span.z-empty__title`, a
+ * Renders a host with the class `z-empty`, an optional `span.z-empty__title`
+ * (a heading `h1` to `h4` with {@link headingLevel}), a
  * `span.z-empty__body` around the projected text, and the projected
  * `[zEmptyAction]` element. The native `title` attribute is suppressed so the
  * browser does not show its own tooltip for the title input.
@@ -41,7 +42,23 @@ export class ZEmptyAction {}
   selector: 'z-empty-state',
   template: `
     @if (title()) {
-      <span class="z-empty__title">{{ title() }}</span>
+      @switch (headingLevel()) {
+        @case (1) {
+          <h1 class="z-empty__title">{{ title() }}</h1>
+        }
+        @case (2) {
+          <h2 class="z-empty__title">{{ title() }}</h2>
+        }
+        @case (3) {
+          <h3 class="z-empty__title">{{ title() }}</h3>
+        }
+        @case (4) {
+          <h4 class="z-empty__title">{{ title() }}</h4>
+        }
+        @default {
+          <span class="z-empty__title">{{ title() }}</span>
+        }
+      }
     }
     <span class="z-empty__body"><ng-content /></span>
     <ng-content select="[zEmptyAction]" />
@@ -62,4 +79,19 @@ export class ZEmptyState {
    * @default ''
    */
   readonly title = input('');
+
+  /**
+   * Makes the title a heading: `1` to `4` for `h1` to `h4`. Unset, the title
+   * stays a `span`, which fits an empty list inside a panel whose own title is
+   * the heading. A page that is nothing but this state, a 404 for example,
+   * sets `1`. The visual size never changes with it.
+   *
+   * @default undefined
+   */
+  readonly headingLevel = input<
+    1 | 2 | 3 | 4 | undefined,
+    1 | 2 | 3 | 4 | '1' | '2' | '3' | '4' | undefined
+  >(undefined, {
+    transform: (wert) => (wert === undefined ? undefined : (Number(wert) as 1 | 2 | 3 | 4)),
+  });
 }

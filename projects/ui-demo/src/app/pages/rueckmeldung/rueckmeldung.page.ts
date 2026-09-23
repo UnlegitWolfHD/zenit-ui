@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import {
   ZAlert,
   ZAlertAction,
+  ZAlertStatus,
   ZButton,
   ZEmptyAction,
   ZEmptyState,
@@ -78,6 +79,37 @@ import {
       <p class="demo-cap caption">Nur Titel, ohne Icon und ohne zweiten Satz</p>
 
       <z-alert status="info" title="Dein Guthaben reicht noch 6 Tage."></z-alert>
+
+      <p class="demo-cap caption">
+        Link im Text, jeder Status auf jedem Untergrund: frei auf bg, im Panel auf surface, im
+        Dialog auf surface-raised. Der Link nimmt text und die Unterstreichung, weil accent-text auf
+        den getönten Flächen unter 4,5:1 fällt.
+      </p>
+      <div class="demo-grid demo-grid--start" data-alert-matrix>
+        <div class="z-stack" data-grund="bg">
+          @for (eintrag of alertStatus; track eintrag.titel) {
+            <z-alert [status]="eintrag.status" [title]="eintrag.titel">
+              Mehr im <a href="#">Statusbericht</a>.
+            </z-alert>
+          }
+        </div>
+        <z-panel title="Im Panel" data-grund="surface">
+          <div class="z-stack">
+            @for (eintrag of alertStatus; track eintrag.titel) {
+              <z-alert [status]="eintrag.status" [title]="eintrag.titel">
+                Mehr im <a href="#">Statusbericht</a>.
+              </z-alert>
+            }
+          </div>
+        </z-panel>
+        <div class="z-stack demo-flaeche-raised" data-grund="surface-raised">
+          @for (eintrag of alertStatus; track eintrag.titel) {
+            <z-alert [status]="eintrag.status" [title]="eintrag.titel">
+              Mehr im <a href="#">Statusbericht</a>.
+            </z-alert>
+          }
+        </div>
+      </div>
     </section>
 
     <section class="demo-section">
@@ -93,6 +125,15 @@ import {
           <button zEmptyAction zBtn="secondary">Ticket erstellen</button>
         </z-empty-state>
       </z-panel>
+
+      <p class="demo-cap caption">
+        Ohne Panel als eigener Abschnitt: headingLevel macht den Titel zur Überschrift, hier h3
+        unter dem h2 dieses Abschnitts. Eine 404-Seite setzt 1. Die Größe bleibt gleich.
+      </p>
+      <z-empty-state title="Seite nicht gefunden" headingLevel="3">
+        Die Adresse gibt es nicht. Prüfe den Link oder geh zur Startseite.
+        <a zEmptyAction zBtn="secondary" href="#">Zur Startseite</a>
+      </z-empty-state>
     </section>
 
     <section class="demo-section">
@@ -186,6 +227,15 @@ import {
 })
 export class RueckmeldungPage {
   protected readonly toast = inject(ZToast);
+
+  /** The five statuses of the link matrix, each spelled out in its title. */
+  protected readonly alertStatus: { status: ZAlertStatus; titel: string }[] = [
+    { status: 'neutral', titel: 'Neutral' },
+    { status: 'info', titel: 'Info' },
+    { status: 'success', titel: 'Erfolg' },
+    { status: 'warning', titel: 'Warnung' },
+    { status: 'danger', titel: 'Fehler' },
+  ];
 
   /** Widths of the placeholders as in spec/components/Skeleton/preview.html. */
   protected readonly platzhalter = [
