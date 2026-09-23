@@ -45,12 +45,14 @@ Drei CI/CD-Variablen, alle optional:
 | Variable | Standard |
 |---|---|
 | `NPM_REGISTRY_URL` | `${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/npm/`, die Registry dieses Projekts |
-| `NPM_TOKEN` | `CI_JOB_TOKEN` |
+| `NPM_TOKEN` | `CI_JOB_TOKEN`, aber nur, solange `NPM_REGISTRY_URL` leer ist |
 | `NPM_PACKAGE_NAME` | `@hosting/zenit-ui` (in `.gitlab-ci.yml`) |
 
-`NPM_TOKEN` als masked und protected anlegen; geschützte Variablen gibt es nur auf geschützten Refs, also auch nur im Tag-Job. `NPM_REGISTRY_URL` darf ungeschützt sein, dann prüft der MR-Dry-Run gegen dieselbe Registry.
+`NPM_REGISTRY_URL` als protected anlegen, `NPM_TOKEN` als masked und protected und mit dem Umgebungsbereich `npm-registry`. Protected allein reicht nicht: Geschützte Variablen gehen an jeden Job auf einem geschützten Ref, auch an `npm ci`. Die Umgebung `npm-registry` haben nur `verify-release` und `publish`, also sieht nur deren Code das Token. Wer mehr will, schützt die Umgebung zusätzlich (Settings > CI/CD > Protected environments).
 
-npmjs.org geht mit derselben Pipeline (`NPM_REGISTRY_URL=https://registry.npmjs.org/`, Token dieses Kontos, ein Name oder Scope, der diesem Konto gehört), aber **nur nach Freigabe durch Kian**. Das Paket ist `UNLICENSED`, und ein Paket mit Scope ist auf npmjs ohne `--access public` privat und kostenpflichtig; beides wäre vorher zu entscheiden.
+`CI_JOB_TOKEN` geht nie an eine fremde Registry. Sieht ein Job `NPM_REGISTRY_URL`, aber kein `NPM_TOKEN`, fragen `npm view` und der Dry-Run anonym, und `publish` bricht ab. Im MR sieht der Dry-Run keine der beiden geschützten Variablen und prüft deshalb gegen die Registry des Projekts.
+
+npmjs.org geht mit derselben Pipeline (`NPM_REGISTRY_URL=https://registry.npmjs.org/`, Token dieses Kontos, ein Name oder Scope, der diesem Konto gehört), aber **nur nach Freigabe durch Kian**. Das Paket ist `UNLICENSED`, und ein Paket mit Scope ist auf npmjs ohne `--access public` privat und kostenpflichtig; beides wäre vorher zu entscheiden. Außerdem vorher `sourceMap` (oder zumindest `sourcesContent`) im Library-Build abschalten, denn `fesm2022/zenit-ui.mjs.map` enthält den vollständigen TypeScript-Quelltext.
 
 ## Einbindung beim Consumer
 
@@ -75,10 +77,12 @@ Das ergibt in der `package.json` `"zenit-ui": "npm:@hosting/zenit-ui@0.2.0"`, un
 2. Remote setzen und pushen: `git remote add origin git@git.zenit-hosting.de:hosting/zenit-ui.git`, dann `git push -u origin main` und die Branches, die gebraucht werden.
 3. Settings > General > Visibility: Package registry aktiv.
 4. Settings > Repository > Protected tags: `v*`, Erstellen nur für Maintainer.
-5. Nur wenn nicht in die Projekt-Registry mit `CI_JOB_TOKEN` veröffentlicht wird: Settings > CI/CD > Variables `NPM_REGISTRY_URL` und `NPM_TOKEN` (masked, protected), bei anderem Namen `NPM_PACKAGE_NAME`.
+5. Nur wenn nicht in die Projekt-Registry mit `CI_JOB_TOKEN` veröffentlicht wird: Settings > CI/CD > Variables `NPM_REGISTRY_URL` (protected) und `NPM_TOKEN` (masked, protected, Umgebung `npm-registry`), bei anderem Namen `NPM_PACKAGE_NAME`.
 6. In der Gruppe `hosting` einen Deploy-Token mit Scope `read_package_registry` für die Consumer anlegen. Im Frontend als masked CI/CD-Variable `ZENIT_UI_NPM_TOKEN`, lokal als Umgebungsvariable.
 7. Die Gruppen-Id von `hosting` (Gruppenseite, unter dem Namen) notieren; sie steht in der `.npmrc` des Consumers.
-8. Prüfen, dass der Runner mit Tag `docker` `KUBERNETES_MEMORY_REQUEST` und `KUBERNETES_MEMORY_LIMIT` überschreiben darf (`allowed_memory_overwrite`), wie beim Frontend.
+8. In der Gruppe `hosting` unter Settings > Packages and registries die Weiterleitung von npm-Anfragen an npmjs.org abschalten. Sonst liefert der Gruppen-Endpunkt ein hier unbekanntes `@hosting/*` von npmjs.org aus, und dort ist der Scope `@hosting` frei.
+9. Am selben Ort für npm „Duplicate packages“ nicht erlauben. Das fängt den Grenzfall von `check-release.mjs` ab: GitLab antwortet ohne Leserecht mit 404, und das wertet die Prüfung als freie Version.
+10. Prüfen, dass der Runner mit Tag `docker` `KUBERNETES_MEMORY_REQUEST` und `KUBERNETES_MEMORY_LIMIT` überschreiben darf (`allowed_memory_overwrite`), wie beim Frontend.
 
 ## Lokal nachspielen
 

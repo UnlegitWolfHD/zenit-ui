@@ -33,9 +33,13 @@ variables:
   # their own, and the GitLab instance endpoint wants the root namespace as
   # scope, hence @hosting.
   #
-  # Target registry: NPM_REGISTRY_URL and NPM_TOKEN, set as CI/CD variables
-  # (masked, protected). Without them the job publishes to the npm registry of
-  # this project with CI_JOB_TOKEN. The same pipeline can publish to npmjs.org
+  # Target registry: NPM_REGISTRY_URL (protected) and NPM_TOKEN (masked,
+  # protected, scoped to the environment npm-registry, so only verify-release
+  # and publish see it, not every job on a protected ref). Without
+  # NPM_REGISTRY_URL the jobs talk to the npm registry of this project with
+  # CI_JOB_TOKEN. CI_JOB_TOKEN never goes to any other registry: a job that
+  # sees the URL but not the token asks anonymously, and publish stops.
+  # The same pipeline can publish to npmjs.org
   # (NPM_REGISTRY_URL=https://registry.npmjs.org/, a token of that account and
   # a name or scope that belongs to it), but only with the owner's approval.
   NPM_PACKAGE_NAME: '@hosting/zenit-ui'
@@ -58,14 +62,22 @@ variables:
 # Registry, token and npm config for the jobs that talk to a registry. The
 # config lives in a temporary file outside the checkout and holds the literal
 # ${NPM_TOKEN}, which npm expands when it reads it, so the token is written
-# nowhere. Prerelease versions (1.2.0-rc.1) go to the dist-tag `next`.
+# nowhere. Without a token the config stays empty and npm asks anonymously.
+# Prerelease versions (1.2.0-rc.1) go to the dist-tag `next`.
 .registry:
   before_script:
-    - export NPM_REGISTRY_URL="${NPM_REGISTRY_URL:-${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/npm/}"
+    - |
+      if [ -z "$NPM_REGISTRY_URL" ]; then
+        NPM_REGISTRY_URL="${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/npm/"
+        NPM_TOKEN="$CI_JOB_TOKEN"
+      fi
     - case "$NPM_REGISTRY_URL" in */) ;; *) NPM_REGISTRY_URL="$NPM_REGISTRY_URL/" ;; esac
-    - export NPM_TOKEN="${NPM_TOKEN:-$CI_JOB_TOKEN}"
+    - export NPM_REGISTRY_URL NPM_TOKEN
     - export NPM_CONFIG_USERCONFIG="$(mktemp)"
-    - echo "//${NPM_REGISTRY_URL#*://}:_authToken=\${NPM_TOKEN}" > "$NPM_CONFIG_USERCONFIG"
+    - |
+      if [ -n "$NPM_TOKEN" ]; then
+        echo "//${NPM_REGISTRY_URL#*://}:_authToken=\${NPM_TOKEN}" > "$NPM_CONFIG_USERCONFIG"
+      fi
     - VERSION="$(node -p "require('./projects/zenit-ui/package.json').version")"
     - case "$VERSION" in *-*) DIST_TAG=next ;; *) DIST_TAG=latest ;; esac
 
@@ -87,6 +99,9 @@ lint:
 verify-release:
   extends: .registry
   stage: check
+  environment:
+    name: npm-registry
+    action: verify
   rules:
     - if: $CI_COMMIT_TAG
   script:
@@ -165,6 +180,8 @@ publish:
   extends: .registry
   stage: release
   resource_group: npm-publish
+  environment:
+    name: npm-registry
   needs:
     - job: lint
       artifacts: false
@@ -179,5 +196,10 @@ publish:
   rules:
     - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/ && $CI_COMMIT_REF_PROTECTED == "true"
   script:
+    - |
+      if [ -z "$NPM_TOKEN" ]; then
+        echo "NPM_REGISTRY_URL is set but NPM_TOKEN is not visible to this job: set it for the environment npm-registry." >&2
+        exit 1
+      fi
     - node tools/check-release.mjs
     - npm publish ./pack/*.tgz --registry "$NPM_REGISTRY_URL" --tag "$DIST_TAG"

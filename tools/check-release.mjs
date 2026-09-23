@@ -14,6 +14,11 @@
  * Authentication comes from the npm user config the job wrote. Any answer of
  * the registry other than "found" or "not found" fails the gate: a version
  * that could not be looked up is not known to be free.
+ *
+ * The one answer this cannot tell apart: GitLab answers 404, not 401, to a
+ * caller without read access, so a missing or wrong token looks like a free
+ * version here. The group setting "Duplicate packages: not allowed" in GitLab
+ * is the backstop for that case, see docs/veroeffentlichen.md.
  */
 
 import { spawnSync } from 'node:child_process';
