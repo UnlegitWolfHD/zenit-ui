@@ -80,9 +80,8 @@ Das ergibt in der `package.json` `"zenit-ui": "npm:@hosting/zenit-ui@0.2.0"`, un
 5. Nur wenn nicht in die Projekt-Registry mit `CI_JOB_TOKEN` veröffentlicht wird: Settings > CI/CD > Variables `NPM_REGISTRY_URL` (protected) und `NPM_TOKEN` (masked, protected, Umgebung `npm-registry`), bei anderem Namen `NPM_PACKAGE_NAME`.
 6. In der Gruppe `hosting` einen Deploy-Token mit Scope `read_package_registry` für die Consumer anlegen. Im Frontend als masked CI/CD-Variable `ZENIT_UI_NPM_TOKEN`, lokal als Umgebungsvariable.
 7. Die Gruppen-Id von `hosting` (Gruppenseite, unter dem Namen) notieren; sie steht in der `.npmrc` des Consumers.
-8. In der Gruppe `hosting` unter Settings > Packages and registries die Weiterleitung von npm-Anfragen an npmjs.org abschalten. Sonst liefert der Gruppen-Endpunkt ein hier unbekanntes `@hosting/*` von npmjs.org aus, und dort ist der Scope `@hosting` frei.
-9. Am selben Ort für npm „Duplicate packages“ nicht erlauben. Das fängt den Grenzfall von `check-release.mjs` ab: GitLab antwortet ohne Leserecht mit 404, und das wertet die Prüfung als freie Version.
-10. Prüfen, dass der Runner mit Tag `docker` `KUBERNETES_MEMORY_REQUEST` und `KUBERNETES_MEMORY_LIMIT` überschreiben darf (`allowed_memory_overwrite`), wie beim Frontend.
+8. In der Gruppe `hosting` unter Settings > Packages and registries die Weiterleitung von npm-Anfragen an npmjs.org abschalten. Sonst liefert der Gruppen-Endpunkt ein hier unbekanntes `@hosting/*` von npmjs.org aus, und dort ist der Scope `@hosting` frei. Ist die Einstellung dort gesperrt, muss ein Admin sie unter Admin > Settings > CI/CD > Package Registry abschalten.
+9. Prüfen, dass der Runner mit Tag `docker` `KUBERNETES_MEMORY_REQUEST` und `KUBERNETES_MEMORY_LIMIT` überschreiben darf (`allowed_memory_overwrite`), wie beim Frontend.
 
 ## Lokal nachspielen
 

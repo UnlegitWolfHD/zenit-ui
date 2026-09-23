@@ -8,8 +8,8 @@
  *    version is semver. A tag that says something else than the package would
  *    publish is a mistake in one of the two, so nothing goes out.
  * 2. That version of NPM_PACKAGE_NAME (default `@hosting/zenit-ui`) does not
- *    exist yet in NPM_REGISTRY_URL. The GitLab registry does not reliably
- *    refuse a second upload of the same version, so this check is the refusal.
+ *    exist yet in NPM_REGISTRY_URL, so a used version stops the tag pipeline
+ *    before the upload instead of at it.
  *
  * Authentication comes from the npm user config the job wrote. Any answer of
  * the registry other than "found" or "not found" fails the gate: a version
@@ -17,8 +17,8 @@
  *
  * The one answer this cannot tell apart: GitLab answers 404, not 401, to a
  * caller without read access, so a missing or wrong token looks like a free
- * version here. The group setting "Duplicate packages: not allowed" in GitLab
- * is the backstop for that case, see docs/veroeffentlichen.md.
+ * version here. The GitLab npm registry itself refuses a second upload of the
+ * same version, which catches that case.
  */
 
 import { spawnSync } from 'node:child_process';
