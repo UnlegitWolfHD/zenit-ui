@@ -21,6 +21,11 @@ name: Publish
 on:
   release:
     types: [published]
+  # Auch ein gepushter Tag v<version> veröffentlicht (ohne Release-Objekt). Wird danach noch ein
+  # Release zum selben Tag angelegt, stoppt check-release den zweiten Lauf: die Version ist schon da.
+  push:
+    tags:
+      - 'v*'
 
 permissions:
   contents: read
@@ -66,7 +71,7 @@ jobs:
       # Tag of the release matches the package version, and the version is not on npm yet.
       - name: Release-Prüfung
         env:
-          CI_COMMIT_TAG: ${{ github.event.release.tag_name }}
+          CI_COMMIT_TAG: ${{ github.event.release.tag_name || github.ref_name }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: node tools/check-release.mjs
 
