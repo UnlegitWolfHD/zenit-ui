@@ -25,6 +25,10 @@ export default defineConfig({
   use: {
     ...devices['Desktop Chrome'],
     baseURL: BASE_URL,
+    // Native date and time fields render in the browser language: on an en-US runner
+    // 12/31/2026 and 03:30 AM instead of 31.12.2026 and 03:30 (the baselines).
+    locale: 'de-DE',
+    timezoneId: 'Europe/Berlin',
     reducedMotion: 'reduce',
     deviceScaleFactor: 1,
     // The application starts with defaultScheme: 'system'. Without this
