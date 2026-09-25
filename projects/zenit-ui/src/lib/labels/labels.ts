@@ -209,6 +209,18 @@ function euroDe(wert: number, stellen: number): string {
   return `${wert.toFixed(stellen).replace('.', ',')}\u00a0€`;
 }
 
+/**
+ * Unit price (E-61): two or three decimals, exact to the tenth of a cent. 0.045 stays 0.045,
+ * 0.05 stays 0.05, never rounded to two places.
+ */
+function einzelpreis(wert: number): string {
+  const drei = wert.toFixed(3);
+  return drei.endsWith('0') ? wert.toFixed(2) : drei;
+}
+
+const einzelpreisDe = (wert: number) => `${einzelpreis(wert).replace('.', ',')}\u00a0€`;
+const einzelpreisEn = (wert: number) => `€${einzelpreis(wert)}`;
+
 /** English amount: the currency in front, point as the decimal mark. */
 function euroEn(wert: number, stellen: number): string {
   return `€${wert.toFixed(stellen)}`;
@@ -241,10 +253,10 @@ export const Z_LABELS_DE = {
   summaryRetry: 'Erneut versuchen',
   chartTitle: 'Monatliche Kosten nach gespielten Stunden',
   chartDesc: (base, rate, cap, capHours) =>
-    `Start bei ${euroDe(base, 2)} Grundbetrag, plus ${euroDe(rate, 2)} je Stunde, ` +
+    `Start bei ${euroDe(base, 2)} Grundbetrag, plus ${einzelpreisDe(rate)} je Stunde, ` +
     `ab ${capHours} Stunden gedeckelt bei ${euroDe(cap, 2)}.`,
   chartDescOpen: (base, rate) =>
-    `Start bei ${euroDe(base, 2)} Grundbetrag, plus ${euroDe(rate, 2)} je Stunde, ohne Deckel auf dieser Achse.`,
+    `Start bei ${euroDe(base, 2)} Grundbetrag, plus ${einzelpreisDe(rate)} je Stunde, ohne Deckel auf dieser Achse.`,
   chartPerHour: 'Pro Stunde',
   chartCapPerMonth: 'Höchstens im Monat',
   chartMoney: (value) => euroDe(value, 2),
@@ -291,10 +303,10 @@ export const Z_LABELS_EN = {
   summaryRetry: 'Try again',
   chartTitle: 'Monthly cost by hours played',
   chartDesc: (base, rate, cap, capHours) =>
-    `Starts at ${euroEn(base, 2)} base, plus ${euroEn(rate, 2)} per hour, ` +
+    `Starts at ${euroEn(base, 2)} base, plus ${einzelpreisEn(rate)} per hour, ` +
     `capped at ${euroEn(cap, 2)} from ${capHours} hours on.`,
   chartDescOpen: (base, rate) =>
-    `Starts at ${euroEn(base, 2)} base, plus ${euroEn(rate, 2)} per hour, with no cap on this axis.`,
+    `Starts at ${euroEn(base, 2)} base, plus ${einzelpreisEn(rate)} per hour, with no cap on this axis.`,
   chartPerHour: 'Per hour',
   chartCapPerMonth: 'At most per month',
   chartMoney: (value) => euroEn(value, 2),
