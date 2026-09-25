@@ -32,6 +32,16 @@ jobs:
 
       - run: npm ci
 
+      # Chrome on Windows formats native date and time fields after the regional
+      # settings of the OS, not after the browser locale: the en-US runner showed
+      # 12/31/2026 and 03:30 AM where the baselines have 31.12.2026 and 03:30.
+      # New processes (the Playwright browsers) pick up the user culture.
+      - name: Windows-Regionalformat Deutsch
+        shell: pwsh
+        run: |
+          Set-Culture de-DE
+          Set-WinHomeLocation -GeoId 94
+
       - run: npm run lint
 
       - run: npm run lint:css

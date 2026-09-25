@@ -4,7 +4,7 @@
  *
  *   CI_COMMIT_TAG=v0.1.0 NPM_REGISTRY_URL=<url> node tools/check-release.mjs
  *
- * 1. The tag is `v<version>` of projects/zenit-ui/package.json, and that
+ * 1. The tag is `v<version>` or `<version>` of projects/zenit-ui/package.json, and that
  *    version is semver. A tag that says something else than the package would
  *    publish is a mistake in one of the two, so nothing goes out.
  * 2. That version of NPM_PACKAGE_NAME (default `@hosting/zenit-ui`) does not
@@ -43,9 +43,10 @@ const registry = process.env.NPM_REGISTRY_URL;
 
 if (!SEMVER.test(version))
   fail(`projects/zenit-ui/package.json has version "${version}", not semver`);
-if (tag !== `v${version}`) {
+// v0.1.0 or 0.1.0: a GitHub release created in the browser often has the tag without the v.
+if (tag !== `v${version}` && tag !== version) {
   fail(
-    `tag "${tag}" does not match projects/zenit-ui/package.json version ${version} (expected v${version})`,
+    `tag "${tag}" does not match projects/zenit-ui/package.json version ${version} (expected v${version} or ${version})`,
   );
 }
 if (!registry) fail('NPM_REGISTRY_URL is not set');
