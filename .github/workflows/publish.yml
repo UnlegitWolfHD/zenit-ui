@@ -1,0 +1,153 @@
+# npm publish of the library from GitHub, the counterpart of the publish job in
+# .gitlab-ci.yml. A tag v<semver> that matches projects/zenit-ui/package.json
+# builds, tests, packs and publishes; "Run workflow" (workflow_dispatch) runs
+# the same steps and publishes only when dry_run is switched off, which is also
+# gated on a tag ref.
+#
+# Target registry, set as repository variables (Settings → Secrets and
+# variables → Actions → Variables):
+#   NPM_REGISTRY_URL  default https://npm.pkg.github.com/ (GitHub Packages)
+#   NPM_PACKAGE_NAME  default @unlegitwolfhd/zenit-ui; GitHub Packages only
+#                     accepts the owner as scope, in lower case
+# For GitHub Packages the built-in GITHUB_TOKEN is enough. For any other
+# registry (npmjs.org, the GitLab registry) set the secret NPM_TOKEN; it wins
+# over GITHUB_TOKEN. The repository keeps the name zenit-ui, only the packed
+# dist/zenit-ui/package.json gets NPM_PACKAGE_NAME (docs/veroeffentlichen.md).
+#
+# Not here, as in GitLab: the Playwright runs. Their baselines were recorded on
+# Windows and fail on Linux runners (see .github/workflows/ci.yml); run
+# `npm run e2e` and `npm run e2e:beispiel` locally before tagging.
+name: Publish
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Nur prüfen und packen, nicht veröffentlichen'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: npm-publish
+  cancel-in-progress: false
+
+env:
+  NPM_REGISTRY_URL: ${{ vars.NPM_REGISTRY_URL || 'https://npm.pkg.github.com/' }}
+  NPM_PACKAGE_NAME: ${{ vars.NPM_PACKAGE_NAME || '@unlegitwolfhd/zenit-ui' }}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci --no-audit --no-fund
+
+      - run: npm run lint
+      - run: npm run lint:css
+      - run: npm run format:check
+      - run: npm run check:themes
+      - run: npm run check:snippets
+      - run: npm run check:order
+
+      # llms texts, library and the compiled schematics that `ng add` needs.
+      - run: npm run build:lib
+      - run: npm run check:llms
+      - run: npm run check:bundle
+
+      - run: npx ng test zenit-ui --watch=false
+      - run: npx ng test beispiel-app --watch=false
+      - run: npm run test:beispiel:jit
+      - run: npm run test:schematics
+
+      - run: npx ng build ui-demo
+      - run: npx ng build beispiel-app
+      - run: npm run check:ssr
+
+      # The tarball that is published: only the built package, named for the
+      # registry, checked for content, credentials, name, version and size.
+      - name: Pack
+        run: |
+          mkdir -p pack
+          cd dist/zenit-ui
+          npm pkg set name="$NPM_PACKAGE_NAME"
+          # Links the package to this repository on GitHub Packages.
+          npm pkg set repository.type=git repository.url="git+https://github.com/${GITHUB_REPOSITORY}.git"
+          npm pack --pack-destination "$GITHUB_WORKSPACE/pack"
+          cd "$GITHUB_WORKSPACE"
+          node tools/check-pack.mjs pack/*.tgz
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pack
+          path: pack/
+          retention-days: 7
+
+  publish:
+    needs: check
+    runs-on: ubuntu-latest
+    # Tag push, or a manual run on a tag with dry_run switched off.
+    if: startsWith(github.ref, 'refs/tags/v') && (github.event_name == 'push' || inputs.dry_run == false)
+    environment: npm-registry
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: ${{ env.NPM_REGISTRY_URL }}
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: pack
+          path: pack
+
+      - name: Token und dist-tag
+        run: |
+          VERSION="$(node -p "require('./projects/zenit-ui/package.json').version")"
+          case "$VERSION" in *-*) echo "DIST_TAG=next" >> "$GITHUB_ENV" ;; *) echo "DIST_TAG=latest" >> "$GITHUB_ENV" ;; esac
+
+      # Tag matches the package version, and the version is not in the registry yet.
+      - name: Release-Prüfung
+        env:
+          CI_COMMIT_TAG: ${{ github.ref_name }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN || secrets.GITHUB_TOKEN }}
+        run: node tools/check-release.mjs
+
+      - name: Veröffentlichen
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN || secrets.GITHUB_TOKEN }}
+        run: npm publish ./pack/*.tgz --registry "$NPM_REGISTRY_URL" --tag "$DIST_TAG"
+
+  # Manual run without publishing: the same tarball against the registry, dry.
+  dry-run:
+    needs: check
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && inputs.dry_run
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: ${{ env.NPM_REGISTRY_URL }}
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: pack
+          path: pack
+
+      - name: npm publish --dry-run
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN || secrets.GITHUB_TOKEN }}
+        run: npm publish ./pack/*.tgz --dry-run --registry "$NPM_REGISTRY_URL"

@@ -83,6 +83,24 @@ Das ergibt in der `package.json` `"zenit-ui": "npm:@hosting/zenit-ui@0.2.0"`, un
 8. In der Gruppe `hosting` unter Settings > Packages and registries die Weiterleitung von npm-Anfragen an npmjs.org abschalten. Sonst liefert der Gruppen-Endpunkt ein hier unbekanntes `@hosting/*` von npmjs.org aus, und dort ist der Scope `@hosting` frei. Ist die Einstellung dort gesperrt, muss ein Admin sie unter Admin > Settings > CI/CD > Package Registry abschalten.
 9. Prüfen, dass der Runner mit Tag `docker` `KUBERNETES_MEMORY_REQUEST` und `KUBERNETES_MEMORY_LIMIT` überschreiben darf (`allowed_memory_overwrite`), wie beim Frontend.
 
+## Über GitHub Actions
+
+`.github/workflows/publish.yml` macht dasselbe wie die GitLab-Pipeline auf GitHub: Ein Tag
+`v<version>` baut, testet (ohne Playwright, siehe oben), packt, prüft das Tarball
+(`tools/check-pack.mjs`) und die Version (`tools/check-release.mjs`) und veröffentlicht. „Run
+workflow“ läuft standardmäßig trocken (`dry_run`), veröffentlicht wird nur von einem Tag aus.
+
+- Ziel ohne weitere Einstellung: GitHub Packages (`https://npm.pkg.github.com/`) als
+  `@unlegitwolfhd/zenit-ui`, mit dem eingebauten `GITHUB_TOKEN`. GitHub Packages nimmt nur den
+  Besitzer als Scope an, klein geschrieben.
+- Anderes Ziel: Repository-Variablen `NPM_REGISTRY_URL` und `NPM_PACKAGE_NAME`, dazu das Secret
+  `NPM_TOKEN`. Für npmjs.org also `https://registry.npmjs.org/`, ein Name oder Scope, der dem
+  Konto gehört, und ein Automation-Token.
+- Der Job `publish` läuft in der Umgebung `npm-registry`. Dort lassen sich Freigabe durch einen
+  Menschen und das Secret `NPM_TOKEN` hinterlegen.
+- Consumer von GitHub Packages brauchen in ihrer `.npmrc`
+  `@unlegitwolfhd:registry=https://npm.pkg.github.com/` und ein Token mit `read:packages`.
+
 ## Lokal nachspielen
 
 ```bash
