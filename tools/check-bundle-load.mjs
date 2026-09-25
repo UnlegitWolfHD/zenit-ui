@@ -25,12 +25,16 @@
  */
 
 import '@angular/compiler';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const WURZEL = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const BUNDLE = resolve(process.argv[2] ?? resolve(WURZEL, 'dist/zenit-ui/fesm2022/zenit-ui.mjs'));
+// The bundle is named after the package (ng-packagr); `module` in the built package.json names it.
+const DIST = resolve(WURZEL, 'dist/zenit-ui');
+const standard = () =>
+  resolve(DIST, JSON.parse(readFileSync(resolve(DIST, 'package.json'), 'utf8')).module);
+const BUNDLE = resolve(process.argv[2] ?? standard());
 
 /** Static fields the partial declarations install on a class. */
 const DEFINITIONEN = ['ɵcmp', 'ɵdir', 'ɵpipe', 'ɵmod', 'ɵinj', 'ɵprov', 'ɵfac'];

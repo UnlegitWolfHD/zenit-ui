@@ -120,9 +120,11 @@ function isDryRun(context: SchematicContext): boolean {
 /** Workspace-relative, forward slashes, no leading or trailing slash; `''` is the workspace root. */
 function normalize(input: string): string {
   let path = input.trim().replace(/\\/g, '/');
-  if (/^[a-zA-Z]:\//.test(path)) {
-    // An absolute Windows path, as a shell completes it.
-    const root = process.cwd().replace(/\\/g, '/').replace(/\/$/, '');
+  const root = process.cwd().replace(/\\/g, '/').replace(/\/$/, '');
+  // An absolute path, as a shell completes it: with a drive letter on Windows, or below the
+  // working directory on Linux and macOS. A leading slash alone stays workspace-relative.
+  const absolute = /^[a-zA-Z]:\//.test(path) || path === root || path.startsWith(`${root}/`);
+  if (absolute) {
     if (
       !path.toLowerCase().startsWith(`${root.toLowerCase()}/`) &&
       path.toLowerCase() !== root.toLowerCase()

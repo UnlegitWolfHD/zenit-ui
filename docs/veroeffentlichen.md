@@ -83,23 +83,22 @@ Das ergibt in der `package.json` `"zenit-ui": "npm:@hosting/zenit-ui@0.2.0"`, un
 8. In der Gruppe `hosting` unter Settings > Packages and registries die Weiterleitung von npm-Anfragen an npmjs.org abschalten. Sonst liefert der Gruppen-Endpunkt ein hier unbekanntes `@hosting/*` von npmjs.org aus, und dort ist der Scope `@hosting` frei. Ist die Einstellung dort gesperrt, muss ein Admin sie unter Admin > Settings > CI/CD > Package Registry abschalten.
 9. Prüfen, dass der Runner mit Tag `docker` `KUBERNETES_MEMORY_REQUEST` und `KUBERNETES_MEMORY_LIMIT` überschreiben darf (`allowed_memory_overwrite`), wie beim Frontend.
 
-## Über GitHub Actions
+## Über GitHub Actions (npmjs.org)
 
-`.github/workflows/publish.yml` macht dasselbe wie die GitLab-Pipeline auf GitHub: Ein Tag
-`v<version>` baut, testet (ohne Playwright, siehe oben), packt, prüft das Tarball
-(`tools/check-pack.mjs`) und die Version (`tools/check-release.mjs`) und veröffentlicht. „Run
-workflow“ läuft standardmäßig trocken (`dry_run`), veröffentlicht wird nur von einem Tag aus.
+`.github/workflows/publish.yml` veröffentlicht `@zenit-hosting/zenit-ui` öffentlich auf npmjs.org,
+sobald auf GitHub ein Release veröffentlicht wird (`release: published`). Das Release braucht den
+Tag `v<version>` passend zu `projects/zenit-ui/package.json`; `tools/check-release.mjs` stoppt
+einen abweichenden Tag oder eine Version, die es auf npm schon gibt.
 
-- Ziel ohne weitere Einstellung: GitHub Packages (`https://npm.pkg.github.com/`) als
-  `@unlegitwolfhd/zenit-ui`, mit dem eingebauten `GITHUB_TOKEN`. GitHub Packages nimmt nur den
-  Besitzer als Scope an, klein geschrieben.
-- Anderes Ziel: Repository-Variablen `NPM_REGISTRY_URL` und `NPM_PACKAGE_NAME`, dazu das Secret
-  `NPM_TOKEN`. Für npmjs.org also `https://registry.npmjs.org/`, ein Name oder Scope, der dem
-  Konto gehört, und ein Automation-Token.
-- Der Job `publish` läuft in der Umgebung `npm-registry`. Dort lassen sich Freigabe durch einen
-  Menschen und das Secret `NPM_TOKEN` hinterlegen.
-- Consumer von GitHub Packages brauchen in ihrer `.npmrc`
-  `@unlegitwolfhd:registry=https://npm.pkg.github.com/` und ein Token mit `read:packages`.
+- Secret `NPM_TOKEN`: Automation- oder Granular-Token mit Publish-Recht auf den Scope
+  `@zenit-hosting` (npm-Organisation `zenit-hosting`).
+- Name und `publishConfig.access: public` stehen in `projects/zenit-ui/package.json`. Die Wurzel
+  ist der private Workspace und wird nie veröffentlicht; gepackt wird `dist/zenit-ui`.
+- Node 24 statt 20: Angular 22 verlangt Node ab 22.22.3.
+- Ablauf: Lint, Build (`build:lib`), Unit-Tests, Release-Prüfung, Pack mit `check-pack`,
+  `npm publish --access public` (Vorabversionen mit dem dist-tag `next`). Playwright läuft nicht
+  mit (Windows-Baselines, siehe oben).
+- Die GitLab-Pipeline setzt beim Packen weiter ihren eigenen Namen (`NPM_PACKAGE_NAME`).
 
 ## Lokal nachspielen
 
