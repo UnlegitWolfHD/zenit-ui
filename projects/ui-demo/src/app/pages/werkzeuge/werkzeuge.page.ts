@@ -1,4 +1,6 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
+import { SPIELE } from '../muster/beispieldaten';
 import {
   ZButton,
   ZConsole,
@@ -8,6 +10,7 @@ import {
   ZFaq,
   ZGameGrid,
   ZGameTile,
+  ZGameTileLink,
   ZHero,
   ZHeroActions,
   ZHeroAside,
@@ -20,6 +23,25 @@ import {
   ZSpecItem,
   ZSpecList,
 } from 'zenit-ui';
+
+/**
+ * Neutral test image, no game artwork: a grey box in the size of a store
+ * header (460x215) with a word at its left and right edge, so the demo shows
+ * that the tile crops neither side of an image in its own ratio.
+ */
+function testbild(breite: number, hoehe: number): string {
+  return (
+    'data:image/svg+xml,' +
+    encodeURIComponent(
+      `<svg xmlns="http://www.w3.org/2000/svg" width="${breite}" height="${hoehe}" viewBox="0 0 ${breite} ${hoehe}">` +
+        `<rect width="${breite}" height="${hoehe}" fill="dimgray"/>` +
+        `<g font-family="sans-serif" font-size="40" fill="white" dominant-baseline="middle">` +
+        `<text x="8" y="${hoehe / 2}">links</text>` +
+        `<text x="${breite - 8}" y="${hoehe / 2}" text-anchor="end">rechts</text></g></svg>`,
+    )
+  );
+}
+const QUERFORMAT = testbild(460, 215);
 
 const STARTZEILEN: ZConsoleLine[] = [
   { time: '[12:04:27]', text: 'Starting minecraft server version 1.21.4' },
@@ -42,6 +64,7 @@ const STARTZEILEN: ZConsoleLine[] = [
 @Component({
   selector: 'demo-werkzeuge-page',
   imports: [
+    RouterLink,
     ZButton,
     ZConsole,
     ZEmptyAction,
@@ -49,6 +72,7 @@ const STARTZEILEN: ZConsoleLine[] = [
     ZFaq,
     ZGameGrid,
     ZGameTile,
+    ZGameTileLink,
     ZHero,
     ZHeroActions,
     ZHeroAside,
@@ -180,6 +204,29 @@ const STARTZEILEN: ZConsoleLine[] = [
       </z-game-grid>
 
       <p class="demo-cap caption">
+        Mit Bild, ohne Bild und mit Ladefehler in einem Raster: die Bildfläche hat das Maß eines
+        Store-Headers (460 × 215), ein Bild in diesem Format steht unbeschnitten darin. Das Testbild
+        ist neutral und trägt an jedem Rand ein Wort. Ohne Bild und nach einem Ladefehler steht der
+        Name auf derselben Fläche, alle Kacheln sind gleich hoch.
+      </p>
+
+      <z-game-grid>
+        <button
+          zGameTile
+          title="Querformat"
+          price="ab 4,98&nbsp;€ / Monat"
+          [cover]="querformat"
+        ></button>
+        <button zGameTile title="Ohne Bild" price="ab 2,70&nbsp;€ / Monat"></button>
+        <button
+          zGameTile
+          title="Ladefehler"
+          price="ab 9,43&nbsp;€ / Monat"
+          cover="/covers/fehlt-quer.jpg"
+        ></button>
+      </z-game-grid>
+
+      <p class="demo-cap caption">
         Lädt: z-skeleton tile hält die Zelle einer Kachel, Cover, Titel und Preis in denselben
         Maßen. Das Raster trägt aria-busy und ein aria-label.
       </p>
@@ -204,6 +251,24 @@ const STARTZEILEN: ZConsoleLine[] = [
           cover="/covers/fehlt.jpg"
           (coverError)="coverFehler.update((n) => n + 1)"
         ></button>
+      </z-game-grid>
+
+      <p class="demo-cap caption">
+        Als Link: a[zGameTile] sieht aus wie die Kachel, führt aber zur Bestellung des Spiels
+        (routerLink mit queryParams). Kein aria-pressed, keine Auswahl; der Linkname ist Titel und
+        Preis.
+      </p>
+
+      <z-game-grid>
+        @for (spiel of linkSpiele; track spiel.titel) {
+          <a
+            zGameTile
+            [title]="spiel.titel"
+            [price]="spiel.preis"
+            routerLink="/muster/server-erstellen"
+            [queryParams]="{ spiel: spiel.titel }"
+          ></a>
+        }
       </z-game-grid>
     </section>
 
@@ -274,8 +339,17 @@ export class WerkzeugePage {
     { titel: '7 Days to Die', preis: 'ab 3,95\u00a0€' },
   ];
 
+  /** Test image of the cover demo, see {@link testbild}. */
+  protected readonly querformat = QUERFORMAT;
+
   /** Four placeholders; a real page shows as many as it normally lists. */
   protected readonly kachelPlaetze = [1, 2, 3, 4];
+
+  /**
+   * Games of the link grid, from the same list /muster/server-erstellen reads
+   * `?spiel=` against, so each tile really opens the order of its game.
+   */
+  protected readonly linkSpiele = SPIELE.slice(0, 3);
 
   protected readonly spiele = [
     { titel: 'Terraria', preis: 'ab 1,98\u00a0€ / Monat' },

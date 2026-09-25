@@ -14,6 +14,15 @@ class Host {
   readonly kurz = signal('Build, Java-Version, Startscript');
 }
 
+@Component({
+  imports: [ZDisclosure],
+  template: `<z-disclosure title="GET /api/v1/gameservers" summary="Liste deiner Server" titleMono>
+    <p>Antwort</p>
+  </z-disclosure>`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class MonoHost {}
+
 function details(fixture: ComponentFixture<Host>): HTMLDetailsElement {
   return fixture.nativeElement.querySelector('details.z-disclosure');
 }
@@ -77,5 +86,26 @@ describe('ZDisclosure', () => {
     fixture.detectChanges();
 
     expect(details(fixture).querySelector('summary small')).toBeNull();
+  });
+
+  it('puts the title in a mono span inside the summary with titleMono', () => {
+    const fixture = TestBed.createComponent(MonoHost);
+    fixture.detectChanges();
+    const summary = fixture.nativeElement.querySelector('summary') as HTMLElement;
+    const titel = summary.querySelector('span.z-mono');
+
+    // The span stays inside <summary>, so it remains the accessible name.
+    expect(titel?.textContent?.trim()).toBe('GET /api/v1/gameservers');
+    expect(summary.firstElementChild).toBe(titel);
+    expect(summary.querySelector('small')?.textContent?.trim()).toBe('Liste deiner Server');
+  });
+
+  it('keeps the title as plain text in the summary without titleMono', () => {
+    const fixture = TestBed.createComponent(Host);
+    fixture.detectChanges();
+    const summary = details(fixture).querySelector('summary') as HTMLElement;
+
+    expect(summary.querySelector('.z-mono')).toBeNull();
+    expect(summary.firstElementChild?.tagName).toBe('SMALL');
   });
 });

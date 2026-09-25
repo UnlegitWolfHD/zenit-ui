@@ -9,6 +9,7 @@ import {
   ZRowNum,
   ZRows,
   ZRowsHead,
+  ZRowThumb,
   ZRowTitle,
 } from './rows';
 
@@ -55,6 +56,41 @@ class RowsHost {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 class LinkZeileHost {}
+
+/** The server list of an application: server name as title, game as thumbnail. */
+@Component({
+  imports: [ZRow, ZRowMain, ZRowThumb, ZRows],
+  template: `<z-rows>
+    <a zRow href="#server-1">
+      <z-row-main title="survival-01" [image]="bild()" [thumbText]="spiel()" [thumb]="thumb()" />
+    </a>
+    <div zRow>
+      <z-row-main title="beispiel.de" image="/assets/nie-gezeigt.png">
+        <span zRowThumb class="eigenes-medium">D</span>
+      </z-row-main>
+    </div>
+  </z-rows>`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class ThumbHost {
+  readonly bild = signal('');
+  readonly spiel = signal('Valheim');
+  readonly thumb = signal(true);
+}
+
+/** A projected medium that comes and goes with a condition of the caller. */
+@Component({
+  imports: [ZRowMain, ZRowThumb],
+  template: `<z-row-main title="survival-01" thumbText="Valheim">
+    @if (eigenes()) {
+      <span zRowThumb>E</span>
+    }
+  </z-row-main>`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class BedingterThumbHost {
+  readonly eigenes = signal(false);
+}
 
 describe('ZRows', () => {
   it('sets columns as the CSS variable --z-cols on z-rows', () => {
@@ -187,5 +223,105 @@ describe('ZRows', () => {
     expect(Array.from<HTMLElement>(zahlen).every((e) => e.classList.contains('z-row__num'))).toBe(
       true,
     );
+  });
+
+  describe('thumbnail', () => {
+    const thumbVon = (fixture: { nativeElement: HTMLElement }) =>
+      fixture.nativeElement.querySelector('z-row-main .z-row__thumb') as HTMLElement;
+
+    it('takes the initial from thumbText instead of the title', () => {
+      const fixture = TestBed.createComponent(ThumbHost);
+      fixture.detectChanges();
+
+      expect(thumbVon(fixture).querySelector('img')).toBeNull();
+      expect(thumbVon(fixture).textContent?.trim()).toBe('V');
+    });
+
+    it('falls back to the title when thumbText is empty', () => {
+      const fixture = TestBed.createComponent(ThumbHost);
+      fixture.componentInstance.spiel.set('  ');
+      fixture.detectChanges();
+
+      expect(thumbVon(fixture).textContent?.trim()).toBe('S');
+    });
+
+    it('drops into the initial when the image fails, and tries a new URL again', () => {
+      const fixture = TestBed.createComponent(ThumbHost);
+      fixture.componentInstance.bild.set('/assets/fehlt.png');
+      fixture.detectChanges();
+      const bild = thumbVon(fixture).querySelector('img') as HTMLImageElement;
+
+      expect(bild.getAttribute('src')).toBe('/assets/fehlt.png');
+
+      bild.dispatchEvent(new Event('error'));
+      fixture.detectChanges();
+
+      expect(thumbVon(fixture).querySelector('img')).toBeNull();
+      expect(thumbVon(fixture).textContent?.trim()).toBe('V');
+
+      fixture.componentInstance.bild.set('/assets/valheim.png');
+      fixture.detectChanges();
+
+      expect(thumbVon(fixture).querySelector('img')?.getAttribute('src')).toBe(
+        '/assets/valheim.png',
+      );
+    });
+
+    it('puts a [zRowThumb] element in place of image and initial', () => {
+      const fixture = TestBed.createComponent(ThumbHost);
+      fixture.detectChanges();
+      const thumb = fixture.nativeElement.querySelectorAll('.z-row__thumb')[1] as HTMLElement;
+
+      expect(thumb.children.length).toBe(1);
+      expect(thumb.firstElementChild?.classList).toContain('eigenes-medium');
+      expect(thumb.querySelector('img')).toBeNull();
+      expect(thumb.textContent?.trim()).toBe('D');
+    });
+
+    it('falls back to image or initial while a [zRowThumb] inside @if is false', () => {
+      const fixture = TestBed.createComponent(BedingterThumbHost);
+      fixture.detectChanges();
+      const text = () => thumbVon(fixture).textContent?.trim();
+
+      expect(text()).toBe('V');
+
+      fixture.componentInstance.eigenes.set(true);
+      fixture.detectChanges();
+
+      expect(text()).toBe('E');
+
+      fixture.componentInstance.eigenes.set(false);
+      fixture.detectChanges();
+
+      expect(text()).toBe('V');
+    });
+
+    it('hides every thumbnail from the accessible name, whatever it shows', () => {
+      const fixture = TestBed.createComponent(ThumbHost);
+      fixture.detectChanges();
+      const [initiale, slot] = fixture.nativeElement.querySelectorAll('.z-row__thumb');
+
+      // The initial and the projected medium are decoration: the link row reads title and meta.
+      expect(initiale.getAttribute('aria-hidden')).toBe('true');
+      expect(slot.getAttribute('aria-hidden')).toBe('true');
+      expect(slot.querySelector('.eigenes-medium')).not.toBeNull();
+
+      fixture.componentInstance.bild.set('/assets/valheim.png');
+      fixture.detectChanges();
+
+      expect(thumbVon(fixture).getAttribute('aria-hidden')).toBe('true');
+      expect(thumbVon(fixture).querySelector('img')?.getAttribute('alt')).toBe('');
+    });
+
+    it('leaves the thumbnail out with thumb false', () => {
+      const fixture = TestBed.createComponent(ThumbHost);
+      fixture.componentInstance.thumb.set(false);
+      fixture.detectChanges();
+      const haupt = fixture.nativeElement.querySelector('z-row-main') as HTMLElement;
+
+      expect(haupt.querySelector('.z-row__thumb')).toBeNull();
+      expect(haupt.firstElementChild?.classList).toContain('z-row__text');
+      expect(haupt.querySelector('.z-row__title')?.textContent?.trim()).toBe('survival-01');
+    });
   });
 });

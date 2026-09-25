@@ -158,4 +158,4 @@ Taken from the acceptance points in `spec/guidelines/00-auftrag.md` and `docs/pa
 
 ## Release
 
-No push, no publish and no deploy without the owner's approval. `npm pack` inside `dist/zenit-ui` is a local dry run only; the library is not on npm.
+No push, no publish and no deploy without the owner's approval. The library is not published yet. `.gitlab-ci.yml` packs it as `@hosting/zenit-ui`, checks the tarball with `tools/check-pack.mjs` and publishes it to the GitLab npm registry from a protected tag `v<version>` only; the release steps, the jobs and the one-time GitLab setup are in [`docs/veroeffentlichen.md`](docs/veroeffentlichen.md). `.github/workflows/ci.yml` stays for the Playwright runs, whose screenshot baselines exist for Windows only.

@@ -18,7 +18,9 @@
 
 /* EmptyState */
 .z-empty { display: grid; justify-items: center; gap: var(--space-2); padding: var(--space-7) var(--space-4); text-align: center; }
-.z-empty__title { font-weight: 600; }
+/* margin and font-size: addition for headingLevel, so an h1 to h4 looks
+   exactly like the span of the reference (no browser margin, no 2em). */
+.z-empty__title { font-weight: 600; margin: 0; font-size: inherit; }
 .z-empty__body { max-width: 40ch; color: var(--text-muted); }
 .z-empty .z-btn { margin-top: var(--space-2); }
 
@@ -27,13 +29,14 @@
 .z-skel--thumb { width: 32px; height: 32px; }
 /* Addition to the reference: the placeholder of a button[zGameTile] for a
    z-game-grid that loads. It repeats the boxes of .z-game (_werkzeuge.css):
-   a grid with the gap space-2, a 3:4 cover area in radius-md, a title line
+   a grid with the gap space-2, a cover area in radius-md whose aspect ratio
+   is set together with .z-game__cover in _werkzeuge.css, a title line
    one line box of the inherited type tall and a price line of 12px/16px, the
    values of .z-game__price. Each text line draws a bar of the 12px skeleton
    height centred in its line box, so the cell is exactly the cell of a tile.
    The host keeps the opacity animation; its own fill is dropped. */
 .z-skel--tile { display: grid; gap: var(--space-2); height: auto; min-width: 0; border-radius: 0; background: none; }
-.z-skel__cover { aspect-ratio: 3 / 4; width: 100%; border-radius: var(--radius-md); background: var(--surface-hover); }
+.z-skel__cover { width: 100%; border-radius: var(--radius-md); background: var(--surface-hover); }
 .z-skel__line { height: 12px; margin-block: calc((1lh - 12px) / 2); border-radius: var(--radius-sm); background: var(--surface-hover); }
 .z-skel__line--title { width: 72%; font-weight: 600; }
 .z-skel__line--price { width: 48%; font-size: 12px; line-height: 16px; }

@@ -169,6 +169,42 @@ describe('ZToastOutlet', () => {
     expect(toast.parentElement).toBe(bereiche()[1]);
   });
 
+  it('puts a warning with live assertive into the assertive region', () => {
+    zeige(() => dienst.warning('Danach wird Beispiel-Server 1 gesperrt', { live: 'assertive' }));
+    const [hoeflich, dringend] = bereiche();
+
+    expect(hoeflich.querySelector('.z-toast')).toBeNull();
+    expect(dringend.querySelector('.z-toast--warning')?.textContent).toContain(
+      'Danach wird Beispiel-Server 1 gesperrt',
+    );
+  });
+
+  it('keeps the action of a standing toast clickable after five toasts in a row', () => {
+    const aktion = vi.fn();
+    zeige(() => {
+      dienst.show('Neue Version verfügbar', {
+        actionLabel: 'Aktualisieren',
+        action: aktion,
+        duration: 0,
+      });
+      for (const text of ['Eins', 'Zwei', 'Drei', 'Vier', 'Fünf']) {
+        dienst.show(text);
+      }
+    });
+
+    expect(toasts()).toHaveLength(3);
+    const knopf = fixture.nativeElement.querySelector('.z-toast__action') as HTMLButtonElement;
+    expect(knopf.textContent?.trim()).toBe('Aktualisieren');
+
+    knopf.click();
+    fixture.detectChanges();
+
+    expect(aktion).toHaveBeenCalledTimes(1);
+    expect(toasts().map((toast) => toast.textContent?.trim())).not.toContain(
+      'Neue Version verfügbar',
+    );
+  });
+
   it('keeps both regions in the dom once every toast is gone', () => {
     zeige(() => dienst.error('Backup fehlgeschlagen: Speicher voll'));
     zeige(() => dienst.dismiss());

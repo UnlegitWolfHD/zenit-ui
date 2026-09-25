@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { ZGameGrid, ZGameTile } from './game-tile';
+import { provideRouter, RouterLink } from '@angular/router';
+import { ZGameGrid, ZGameTile, ZGameTileLink } from './game-tile';
 
 @Component({
   imports: [ZGameGrid, ZGameTile],
@@ -152,6 +153,56 @@ describe('ZGameTile', () => {
     expect(kachel.querySelector('.z-game__cover')?.textContent?.trim()).toBe('');
   });
 
+  // One cover area for every image: the 460:215 ratio and object-fit: cover are
+  // CSS (_werkzeuge.css, measured in e2e/zustaende.spec.ts), so a store header
+  // and an image of another ratio both keep the same img after it loaded, with
+  // no class or attribute that depends on the format.
+  for (const [format, breite, hoehe] of [
+    ['a store header (460x215)', 460, 215],
+    ['an image of another ratio (300x400)', 300, 400],
+  ] as const) {
+    it(`shows ${format} as the same img in the same cover area`, () => {
+      const { kachel, host, rendere } = baue();
+      host.cover.set(`/cover/${breite}x${hoehe}.webp`);
+      rendere();
+      const bild = kachel.querySelector('.z-game__cover img') as HTMLImageElement;
+      Object.defineProperty(bild, 'naturalWidth', { value: breite });
+      Object.defineProperty(bild, 'naturalHeight', { value: hoehe });
+
+      bild.dispatchEvent(new Event('load'));
+      rendere();
+
+      expect(kachel.querySelector('.z-game__cover img')).toBe(bild);
+      expect(bild.getAttribute('src')).toBe(`/cover/${breite}x${hoehe}.webp`);
+      expect(bild.getAttribute('alt')).toBe('');
+      expect(bild.className).toBe('');
+      expect(kachel.className).toBe('z-game');
+      expect(kachel.querySelector('.z-game__cover')?.className).toBe('z-game__cover');
+      expect(kachel.querySelector('.z-game__cover')?.getAttribute('aria-hidden')).toBe('true');
+      expect(host.fehler).toBe(0);
+    });
+  }
+
+  // The fallback stands in the same cover area as an image, so it takes the
+  // same height; z-game__fallback carries the padding and the two-line limit.
+  it('puts the text fallback into z-game__fallback in the same cover area', () => {
+    const { kachel, host, rendere } = baue();
+    const cover = kachel.querySelector('.z-game__cover') as HTMLElement;
+
+    expect(cover.children.length).toBe(1);
+    expect(cover.firstElementChild?.className).toBe('z-game__fallback');
+    expect(cover.firstElementChild?.textContent).toBe('Valheim');
+
+    host.cover.set('/cover/fehlt.webp');
+    rendere();
+    (cover.querySelector('img') as HTMLImageElement).dispatchEvent(new Event('error'));
+    rendere();
+
+    expect(kachel.querySelector('.z-game__cover')).toBe(cover);
+    expect(cover.children.length).toBe(1);
+    expect(cover.firstElementChild?.className).toBe('z-game__fallback');
+  });
+
   it('falls back to the title text when the cover fails and reports it once', () => {
     const { kachel, host, rendere } = baue();
     host.cover.set('/cover/fehlt.webp');
@@ -182,5 +233,108 @@ describe('ZGameTile', () => {
 
     expect(bild.getAttribute('src')).toBe('/cover/valheim.webp');
     expect(host.fehler).toBe(1);
+  });
+});
+
+/** Link tiles in a grid, one with routerLink and query params, one with href. */
+@Component({
+  imports: [RouterLink, ZGameGrid, ZGameTileLink],
+  template: `<z-game-grid>
+    <a
+      zGameTile
+      [title]="titel()"
+      price="ab 1,98 € / Monat"
+      [cover]="cover()"
+      routerLink="/user/games/create"
+      [queryParams]="{ game: 'minecraft' }"
+      (coverError)="fehler = fehler + 1"
+    ></a>
+    <a zGameTile title="Rust" price="ab 4,98 € / Monat" href="/spiele/rust"></a>
+  </z-game-grid>`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class LinkHost {
+  readonly titel = signal('Minecraft');
+  readonly cover = signal('');
+  fehler = 0;
+}
+
+describe('ZGameTileLink', () => {
+  function baue() {
+    TestBed.configureTestingModule({ providers: [provideRouter([])] });
+    const fixture = TestBed.createComponent(LinkHost);
+    fixture.detectChanges();
+    const [kachel, zweite] = fixture.nativeElement.querySelectorAll('a[zGameTile]');
+    return {
+      fixture,
+      kachel: kachel as HTMLAnchorElement,
+      zweite: zweite as HTMLAnchorElement,
+      host: fixture.componentInstance,
+      rendere: () => fixture.detectChanges(),
+    };
+  }
+
+  it('is a link in the grid with the class and the content of a tile', () => {
+    const { fixture, kachel } = baue();
+
+    expect(kachel.parentElement).toBe(fixture.nativeElement.querySelector('z-game-grid'));
+    expect(kachel.className).toBe('z-game');
+    expect(kachel.querySelector('.z-game__cover')?.getAttribute('aria-hidden')).toBe('true');
+    expect(kachel.querySelector('.z-game__title')?.textContent).toBe('Minecraft');
+    expect(kachel.querySelector('.z-game__price')?.textContent).toBe('ab 1,98 € / Monat');
+  });
+
+  it('takes its target from routerLink or href on the same element', () => {
+    const { kachel, zweite } = baue();
+
+    expect(kachel.getAttribute('href')).toBe('/user/games/create?game=minecraft');
+    expect(zweite.getAttribute('href')).toBe('/spiele/rust');
+  });
+
+  it('carries no aria-pressed, no type and no native title', () => {
+    const { kachel } = baue();
+
+    expect(kachel.hasAttribute('aria-pressed')).toBe(false);
+    expect(kachel.hasAttribute('type')).toBe(false);
+    expect(kachel.hasAttribute('title')).toBe(false);
+    expect(kachel.hasAttribute('role')).toBe(false);
+  });
+
+  it('reads title and price as its text, the cover area stays out', () => {
+    const { kachel, host, rendere } = baue();
+    const sichtbar = () =>
+      Array.from(kachel.children)
+        .filter((kind) => kind.getAttribute('aria-hidden') !== 'true')
+        .map((kind) => kind.textContent?.trim());
+
+    expect(sichtbar()).toEqual(['Minecraft', 'ab 1,98 € / Monat']);
+
+    host.cover.set('/cover/minecraft.webp');
+    rendere();
+
+    expect(sichtbar()).toEqual(['Minecraft', 'ab 1,98 € / Monat']);
+    expect(kachel.querySelector('.z-game__cover img')?.getAttribute('alt')).toBe('');
+  });
+
+  it('falls back to the title text when the cover fails and reports it once', () => {
+    const { kachel, host, rendere } = baue();
+    host.cover.set('/cover/fehlt.webp');
+    rendere();
+
+    (kachel.querySelector('.z-game__cover img') as HTMLImageElement).dispatchEvent(
+      new Event('error'),
+    );
+    rendere();
+
+    expect(kachel.querySelector('.z-game__cover img')).toBeNull();
+    expect(kachel.querySelector('.z-game__cover')?.textContent?.trim()).toBe('Minecraft');
+    expect(host.fehler).toBe(1);
+
+    host.cover.set('/cover/minecraft.webp');
+    rendere();
+
+    expect(kachel.querySelector('.z-game__cover img')?.getAttribute('src')).toBe(
+      '/cover/minecraft.webp',
+    );
   });
 });

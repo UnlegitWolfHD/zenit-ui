@@ -255,13 +255,13 @@ for (const status of ['success', 'warning', 'danger', 'info']) {
   PAARE.push([`--${status}`, [`--${status}-subtle`, '--surface'], 4.5]);
   // Control border inside a tinted alert: .z-alert .z-btn--secondary takes
   // text-muted, because border-control misses the 3:1 on the tints. An alert
-  // stands either free on bg or inside a panel on surface.
-  // The same colour is the alert body (.z-alert__body), and that is text: 4.5.
-  // The title is text, a link in the body accent-text.
-  for (const grund of ['--bg', '--surface']) {
+  // stands free on bg, inside a panel on surface, or in a dialog on
+  // surface-raised. The same colour is the alert body (.z-alert__body), and
+  // that is text: 4.5. The title and a link in the body take text
+  // (_grundlage.css): accent-text missed 4.5:1 on the tints in dark.
+  for (const grund of ['--bg', '--surface', '--surface-raised']) {
     PAARE.push(['--text-muted', [`--${status}-subtle`, grund], 4.5]);
     PAARE.push(['--text', [`--${status}-subtle`, grund], 12]);
-    PAARE.push(['--accent-text', [`--${status}-subtle`, grund], 4.5]);
   }
 }
 
@@ -271,14 +271,11 @@ for (const status of ['success', 'warning', 'danger', 'info']) {
  * demand other values there, and it may not hide the miss either. Such a pair
  * is printed as "Referenz", listed at the end and does not fail the run. An
  * entry that passes again is an error, so the list cannot go stale.
- * Both are a link (accent-text) inside a tinted alert that stands in a panel;
- * docs/theming.md lists them under "Open design questions".
+ * Empty since a link in an alert takes text instead of accent-text; the two
+ * pairs it held were such links (docs/theming.md, "Open design questions").
  */
 const REFERENZ = 'dark / rot';
-const REFERENZ_ABWEICHUNGEN = new Set([
-  '--accent-text auf --warning-subtle auf --surface',
-  '--accent-text auf --info-subtle auf --surface',
-]);
+const REFERENZ_ABWEICHUNGEN = new Set([]);
 
 /* -------------------------------------------------------------- Ausfuehren -- */
 

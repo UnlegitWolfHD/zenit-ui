@@ -715,6 +715,33 @@ test.describe('Aktiv und gewählt', () => {
     await expect(gewaehlt).toHaveScreenshot('zustaende-game-tile-selected.png');
   });
 
+  test('GameTile: Bildfläche im Store-Header-Format, Fallback gleich hoch', async ({ page }) => {
+    await seiteOeffnen(page, 'werkzeuge');
+    const mitBild = page.getByRole('button', { name: /Querformat/ });
+    const ohneBild = page.getByRole('button', { name: /Ohne Bild/ });
+    const fehler = page.getByRole('button', { name: /Ladefehler/ });
+    const bild = mitBild.locator('.z-game__cover img');
+    await expect(bild).toHaveJSProperty('complete', true);
+    await expect(fehler.locator('.z-game__cover img')).toHaveCount(0);
+
+    // 460:215 filled by the image: a store header shows uncropped.
+    const flaeche = await kasten(mitBild.locator('.z-game__cover'));
+    expect(flaeche.width / flaeche.height).toBeCloseTo(460 / 215, 1);
+    expect((await stil(bild, ['objectFit'])).objectFit).toBe('cover');
+    const bildKasten = await kasten(bild);
+    expect(bildKasten.width).toBeCloseTo(flaeche.width, 0);
+    expect(bildKasten.height).toBeCloseTo(flaeche.height, 0);
+
+    // Without an image and after a failed one: the same area, the same tile.
+    for (const kachel of [ohneBild, fehler]) {
+      expect((await kasten(kachel.locator('.z-game__cover'))).height).toBeCloseTo(
+        flaeche.height,
+        0,
+      );
+      expect((await kasten(kachel)).height).toBeCloseTo((await kasten(mitBild)).height, 0);
+    }
+  });
+
   test('Checkbox gewählt: accent als Fläche und Rahmen', async ({ page }) => {
     await seiteOeffnen(page, 'formulare');
     const gewaehlt = page.getByRole('checkbox', { name: 'server.properties' });

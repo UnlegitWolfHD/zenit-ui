@@ -57,13 +57,13 @@ export class ZPanelActions {}
         @if (title()) {
           @switch (headingLevel()) {
             @case (2) {
-              <h2 class="z-panel__title">{{ title() }}</h2>
+              <h2 class="z-panel__title" [class.z-mono]="titleMono()">{{ title() }}</h2>
             }
             @case (4) {
-              <h4 class="z-panel__title">{{ title() }}</h4>
+              <h4 class="z-panel__title" [class.z-mono]="titleMono()">{{ title() }}</h4>
             }
             @default {
-              <h3 class="z-panel__title">{{ title() }}</h3>
+              <h3 class="z-panel__title" [class.z-mono]="titleMono()">{{ title() }}</h3>
             }
           }
         }
@@ -102,6 +102,16 @@ export class ZPanel {
   readonly headingLevel = input<2 | 3 | 4, 2 | 3 | 4 | '2' | '3' | '4'>(3, {
     transform: (wert) => Number(wert) as 2 | 3 | 4,
   });
+
+  /**
+   * Sets the title in the mono face, for a title that is a technical value as
+   * a whole, such as an endpoint (`GET /api/v1/gameservers`), a file name or a
+   * configuration key. Adds `z-mono` to the heading; tag and size stay the
+   * same. Boolean attribute.
+   *
+   * @default false
+   */
+  readonly titleMono = input(false, { transform: booleanAttribute });
 
   /**
    * Removes the padding of the body so lists and tables can reach the border.

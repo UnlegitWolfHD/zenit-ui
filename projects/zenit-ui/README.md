@@ -116,6 +116,11 @@ The class `z-root` belongs on `<html>` and on `<body>`. It sets background, text
 </html>
 ```
 
+A small migrated block inside an old page is a `z-root` island. `z-root` paints `--bg`; on an old
+light ground use `class="z-root z-root--transparent" data-theme="light"` (needs `themes.css`), so
+the island shows the old ground and carries the scheme that fits it. When to take which is in
+[`docs/legacy.md`](../../docs/legacy.md#an-island-without-its-own-surface).
+
 ### 3. Self-host the fonts
 
 The library loads no font. Your application brings four, all self-hosted, so that no request to Google is needed:
@@ -204,13 +209,13 @@ Entries marked "(addition)" are not part of the reference table (`spec/guideline
 | Tabs | `nav[zTabs]`, `a[zTab]` | `active` |
 | Segment | `z-segment` | `options: {value, label}[]`, `[(value)]`, `ariaLabel`; Forms; `disabled` (addition) |
 | Stepper | `z-stepper` | `steps: string[]`, `current` |
-| Panel | `z-panel` | `title`, `flush`, `busy`; slot `[zPanelActions]`, `z-pagination` is moved to the end |
+| Panel | `z-panel` | `title`, `flush`, `busy`; slot `[zPanelActions]`, `z-pagination` is moved to the end; `headingLevel`, `titleMono` (additions) |
 | Metric | `z-metrics`, `z-metric` | `label`, `value`, `unit`, `sub`, `percent` (warning from 80, error from 95) |
-| ServerList | `z-rows`, `z-rows-head`, `a[zRow]`, `div[zRow]`, `z-row-main`, `[zRowNum]` | `columns` (grid columns) on `z-rows`; `title`, `meta`, `image` on `z-row-main` |
+| ServerList | `z-rows`, `z-rows-head`, `a[zRow]`, `div[zRow]`, `z-row-main`, `[zRowNum]` | `columns` (grid columns) on `z-rows`; `title`, `meta`, `image` on `z-row-main`; `thumbText`, `thumb` and slot `[zRowThumb]` (additions) |
 | FileTable | `z-table-container`, `table[zTable]`, `[zNum]`, `[zTableName]`, `th[zSortHeader]` | none; `ariaLabel` on `z-table-container`, `[(sort)]` on `table[zTable]` and the sort header with `zSortHeader`, `sortStart`, `disabled` (additions) |
 | Pagination | `z-pagination` | `[(page)]`, `[(pageSize)]` (25), `total`, `itemLabel`; `pageSizeOptions`, `pageSizeLabel`, `rangeLabel`, `ariaLabelPrev`, `ariaLabelNext` (additions) |
 | Alert | `z-alert` | `status`, `title`, `icon`; content is the text; slot `[zAlertAction]` |
-| EmptyState | `z-empty-state` | `title`; content is the text; slot `[zEmptyAction]` |
+| EmptyState | `z-empty-state` | `title`; content is the text; slot `[zEmptyAction]`; `headingLevel` (addition) |
 | Skeleton | `z-skeleton` | `width`, `thumb`, `tile` |
 | Sidebar | `z-sidebar`, `z-sidebar-group`, `[zSidebarItem]` | `ariaLabel`; `label`; `icon`, `active`, `count` |
 | AppHeader | `z-app-header`, `a[zHeaderLink]`, `[zBrand]` | `navLabel`; `active`; slot `[zHeaderEnd]`; `menuLabel` (addition); `[(open)]` (addition) |
@@ -218,11 +223,11 @@ Entries marked "(addition)" are not part of the reference table (`spec/guideline
 | Footer | `z-footer`, `z-footer-col` | `heading`; slot `[zFooterBase]` |
 | Dialog | service `ZDialog`, layout `z-dialog` | `open(component, config)`, `confirm({title, body, confirmLabel, cancelLabel, danger, requireText})` returns `Observable<boolean>`; slot `[zDialogActions]`; `requireLabel` and `cancelLabel` as a required field of the config (additions) |
 | Menu | `z-menu`, `button[zMenuItem]`, `z-menu-separator` | `icon`, `danger`, `disabled`, `(triggered)`; trigger `[cdkMenuTriggerFor]` |
-| Toast | service `ZToast`, `z-toast-outlet` | `show`, `success`, `error`, `dismiss`; options `status`, `icon`, `actionLabel`, `action`, `duration`; `closeLabel` on `z-toast-outlet` (addition) |
+| Toast | service `ZToast`, `z-toast-outlet` | `show`, `success`, `error`, `dismiss`; options `status`, `icon`, `actionLabel`, `action`, `duration`; `closeLabel` on `z-toast-outlet` (addition); option `live` and `provideZenitToast({ maxVisible, overflow })` (additions) |
 | Tooltip | `[zTooltip]` | text as the value |
 | Console | `z-console` | `lines: {time, text, level}[]`, `disabled`, `placeholder`; `(command)`; `logLabel`, `inputLabel`, `endLabel` (additions) |
 | Hero | `z-hero` | `title`, `lead`, `note`; slots `[zHeroActions]`, `[zHeroAside]`; `size` (addition) |
-| GameTile | `z-game-grid`, `button[zGameTile]` | `title`, `price`, `cover`, `selected`; `(coverError)` (addition) |
+| GameTile | `z-game-grid`, `button[zGameTile]`; `a[zGameTile]` (addition) | `title`, `price`, `cover`, `selected`; `(coverError)` (addition); the link has `title`, `price`, `cover` and `(coverError)`, no `selected` |
 | PriceSummary | `z-price-summary` | `label`, `price`, `period`, `lines: {label, value}[]`, `note`; content is the button |
 | SpecList | `z-spec-list` | `items: {term, value, note, mono}[]` |
 | Faq | `z-faq` | `question`, `open`; content is the answer |
@@ -303,6 +308,8 @@ ng add ./zenit-ui-0.1.0.tgz --themes
 
 It registers the stylesheets in `angular.json` in the prescribed order, merges `z-root` into `<html>` and `<body>`, adds `@angular/cdk` and the four font packages with their `@import` rules, and mounts `<z-toast-outlet />` in the root component. With `--themes` it also registers `themes.css`, puts the theme init script into `index.html`, adds `provideZenitTheme()` and sets `inlineCritical: false` for production. Every step is idempotent, and a source file is either fully patched or left untouched with the manual step in the log (NgModule applications, `imports` that are not an array literal). An existing `lang` on `<html>` is kept. To run it again after the package is installed: `ng generate zenit-ui:ng-add --project my-app`. What it changes exactly, which options it takes and its limits are in [`docs/ng-add.md`](../../docs/ng-add.md).
 
+From the GitLab npm registry the package is `@hosting/zenit-ui`: install it under the alias `zenit-ui` (`npm install zenit-ui@npm:@hosting/zenit-ui@<version>`), so every import and stylesheet path stays `zenit-ui`, and run `ng generate zenit-ui:ng-add` instead of `ng add @hosting/zenit-ui`, which would add the package a second time without the alias. Registry and token setup: [`docs/veroeffentlichen.md`](../../docs/veroeffentlichen.md).
+
 ### Coming from Angular Material
 
 `ng generate zenit-ui:migrate-material --path src/app/billing --dry-run` rewrites what can be rewritten mechanically (`mat-icon`, `mat-*-button`, `matTooltip`, standalone `mat-spinner`, static `mat-chip` and the `imports` of the components) by source span, leaves form fields, selects, dialogs, tables, menus and all styles alone, and writes a Markdown and a JSON report with file, line, rule, reason and suggested fix for every spot it did not convert. Run it per route, without `--dry-run` once the report looks right; a second run changes nothing. Details: [`docs/migrate-material.md`](../../docs/migrate-material.md).
@@ -314,7 +321,7 @@ It registers the stylesheets in `angular.json` in the prescribed order, merges `
 - The base rule for `font` and `color` on controls uses `:where(button, input, select, textarea)`. The reference selector has a specificity that beats component classes; `:where()` lowers it to the class level, the values are unchanged.
 - The link base rules are `.z-root :where(a)` and `.z-root :where(a):hover`, for the same reason. At the reference specificity (0,1,1) they beat every class an application can put on a link (0,1,0): an application's own skip link came out red on red (1.29:1), and every link on a page that is not migrated yet changed colour and underline the moment `z-root` was set. The values are unchanged, and none of the library's own link rules moves: they all weigh (0,2,1) or more. Three things follow for your own stylesheet:
   - **Your stylesheet has to load after `zenit-ui.css`.** At (0,1,0) your class now *ties* with the base rule, and a tie is decided by source order, not by specificity. The `styles` order above does that. Measured: a rule `.lg { color: … }` before `zenit-ui.css` still loses, after it wins. The hover rule weighs (0,2,0), so changing the hover needs `.lg:hover`, not `.lg`.
-  - **A rule of yours at (0,1,1), such as `.app a`, now also reaches plain links inside library components**: panel, alert, row, table, empty state, the sub line of the page header, header, tabs, sidebar, stepper, toast, the body of a dialog, tooltip and menu. It does not reach the footer lists, nor any link carrying a library class (`a.z-btn`, `a.z-tab`, `a.z-side__item`, `a.z-header__link`, `a.z-row`, `a.z-skip-link`), which all have a counter-rule at (0,2,1) or more.
+  - **A rule of yours at (0,1,1), such as `.app a`, now also reaches plain links inside library components**: panel, alert, row, table, empty state, the sub line of the page header, header, tabs, sidebar, stepper, toast, the body of a dialog, tooltip and menu. It does not reach the footer lists, nor any link carrying a library class (`a.z-btn`, `a.z-tab`, `a.z-side__item`, `a.z-header__link`, `a.z-row`, `a.z-skip-link`, `a.z-game`), which all have a counter-rule at (0,2,1) or more.
   - **The underline for links in running text stays at (0,2,1)** and cannot be switched off from your stylesheet. Its selector ends in `a:not([class*="z-"])`, so any class whose name contains `z-` takes a link out of it, by accident too (`quiz-link`). Do not build on that: `.z-legacy` below is the documented way to keep the library out of a subtree.
 - The page size lives in `.z-root:where(:not(html))`, not in `.z-root`. The reference writes `font-size: 14px` and `line-height: 20px` into the rule for the page, and the documented setup puts `z-root` on `<html>` as well: there those 14px would move `1rem` from 16px to 14px for the whole document and override the size the visitor set in the browser. Split off like this, the library sets **nothing** on `<html>`, so your own `html { font-size: … }` is the only author rule there and wins at every specificity and in either include order — `html { font-size: var(--base-font-size) }` for a user setting included. `:where()` weighs (0,0,0), so the rule is still (0,1,0), exactly what `.z-root` weighed: `body.z-root` and every page container keep the same weight against a class of yours on the same element, and the tie is decided by source order as above. `body.z-root` carries the class itself and keeps 14px/20px, which is what every component and every overlay inherits. The components of the library compute in px; the one `rem` in its stylesheets is the `1rem` of `.z-legacy`, which hands the visitor's size back to a page that is not migrated.
 - `.z-legacy` is an addition: the class for a subtree that is not migrated yet. It resets the inherited `font-size` to `1rem`, `line-height` to `normal` and `-webkit-font-smoothing` to `auto`, and the base rules that style bare elements (`.z-root *`, `:where(button, input, select, textarea)`, `:where(a)` and its hover, the underline in running text, `:focus-visible`) are each written as two selectors, `.z-root X:not(:where(.z-legacy, .z-legacy *))` and `:where(.z-legacy) .z-root X`. Both `:where()` weigh (0,0,0), so every specificity above still holds; the first leaves out the host and everything in it, the second lets a `z-root` container inside the subtree switch the rule on again. The exclusion on the universal rule costs +14 to +18 % on a forced full style recalculation (4.2 to 4.9 ms on a page of 4130 elements). Family, colour, background and `color-scheme` are left to the application. `@scope` would say the same more directly, but Firefox before 146 and Safari before 17.4 lack it and are inside the range Angular 22 builds for; `revert` rolls back to the browser's stylesheet instead of the application's rule. See [`docs/legacy.md`](../../docs/legacy.md).

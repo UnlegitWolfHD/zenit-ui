@@ -23,6 +23,7 @@ import {
   ZRowNum,
   ZRows,
   ZRowsHead,
+  ZRowThumb,
   ZRowTitle,
   ZSkeleton,
   ZSort,
@@ -101,6 +102,7 @@ interface DemoDatei {
     ZRowNum,
     ZRows,
     ZRowsHead,
+    ZRowThumb,
     ZRowTitle,
     ZSkeleton,
     ZSortHeader,
@@ -261,6 +263,47 @@ interface DemoDatei {
           <button zMenuItem icon="delete" danger>Löschen</button>
         </z-menu>
       </ng-template>
+
+      <p class="demo-cap caption">
+        Vorschaubild: thumbText liefert den Anfangsbuchstaben, wenn das Bild fehlt oder nicht lädt
+        (hier /covers/fehlt.png), zRowThumb setzt ein eigenes Medium ein, thumb=false lässt das
+        Vorschaubild weg. Das Spiel steht trotzdem als Text in der Meta-Zeile.
+      </p>
+      <z-panel title="Vorschaubild" flush>
+        <z-rows columns="minmax(0, 2fr) 128px">
+          <z-rows-head>
+            <span>Eintrag</span>
+            <span>Status</span>
+          </z-rows-head>
+          <a zRow href="#">
+            <z-row-main
+              title="survival-01"
+              meta="Valheim · 203.0.113.13"
+              image="/covers/fehlt.png"
+              thumbText="Valheim"
+            />
+            <span><z-badge status="success" dot>Online</z-badge></span>
+          </a>
+          <a zRow href="#">
+            <z-row-main title="kreativ" meta="Rust · 203.0.113.14" thumbText="Rust" />
+            <span><z-badge dot>Gestoppt</z-badge></span>
+          </a>
+          <div zRow>
+            <z-row-main title="beispiel.de" meta="Domain · läuft bis 18.09.2027">
+              <z-icon zRowThumb name="language" />
+            </z-row-main>
+            <span><z-badge status="success" dot>Aktiv</z-badge></span>
+          </div>
+          <div zRow>
+            <z-row-main
+              title="Ticket 4711"
+              meta="Letzte Antwort 18.09.2026, 15:55"
+              [thumb]="false"
+            />
+            <span><z-badge status="info" dot>Offen</z-badge></span>
+          </div>
+        </z-rows>
+      </z-panel>
 
       <p class="demo-cap caption">
         Lädt: Skelettzeilen im selben Grid wie die echten Zeilen, damit beim Eintreffen der Daten

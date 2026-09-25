@@ -924,18 +924,21 @@ for (const route of ROUTEN) {
  * ------------------------------------------------------------------ */
 
 /**
- * The cover area of a `button[zGameTile]` shows either a picture of what the
- * title below it says or, without a cover and when a cover fails to load, that
- * title as text. Visible text inside a button goes into its accessible name, so
- * the area is `aria-hidden` and the name of every tile is title plus price, no
- * matter what the cover does. Read out of the tree, not out of the DOM, because
- * the name is what the browser computes, not what the markup looks like.
+ * The cover area of a game tile shows either a picture of what the title below
+ * it says or, without a cover and when a cover fails to load, that title as
+ * text. Visible text inside a button or a link goes into its accessible name,
+ * so the area is `aria-hidden` and the name of every tile is title plus price,
+ * no matter what the cover does. Both variants count: `button[zGameTile]` is a
+ * toggle with `aria-pressed`, `a[zGameTile]` a link without it. Read out of the
+ * tree, not out of the DOM, because the name is what the browser computes, not
+ * what the markup looks like.
  */
 test.describe('game tiles', () => {
   test('no game tile names its title twice, whatever its cover does', async ({ page }) => {
     await seiteOeffnen(page, 'werkzeuge', 1440);
     const erwartet = await page.evaluate(() =>
-      Array.from(document.querySelectorAll('button.z-game')).map((el) => ({
+      Array.from(document.querySelectorAll('.z-game')).map((el) => ({
+        link: el.tagName === 'A',
         titel: el.querySelector('.z-game__title')?.textContent?.trim() ?? '',
         preis: el.querySelector('.z-game__price')?.textContent?.trim() ?? '',
         coverText: el.querySelector('.z-game__cover')?.textContent?.trim() ?? '',
@@ -967,10 +970,25 @@ test.describe('game tiles', () => {
     const mitFallback = erwartet.filter((e) => !e.bild && e.coverText);
     expect(mitFallback.length, 'Kacheln mit Text-Fallback').toBeGreaterThan(0);
 
+    // The page shows both variants; without a link tile the link half checks nothing.
+    expect(erwartet.filter((e) => e.link).length, 'Link-Kacheln').toBeGreaterThan(0);
+    expect(erwartet.filter((e) => !e.link).length, 'Button-Kacheln').toBeGreaterThan(0);
+
+    // A button tile is a toggle with aria-pressed, the first one on the page is
+    // chosen. A link tile is a link and carries no pressed state at all.
+    const ersterButton = erwartet.findIndex((e) => !e.link);
     expect(
-      kacheln.map((k) => `${k.rolle} ${zustand(k.eig['pressed'])}`),
-      'jede Kachel ist eine Schaltfläche mit aria-pressed',
-    ).toEqual(erwartet.map((_, i) => `button ${i === 0 ? 'true' : 'false'}`));
+      kacheln.map((k) =>
+        k.rolle === 'link'
+          ? `link pressed=${k.eig['pressed'] ?? 'keins'}`
+          : `${k.rolle} ${zustand(k.eig['pressed'])}`,
+      ),
+      'jede Button-Kachel ist eine Schaltfläche mit aria-pressed, jede Link-Kachel ein Link ohne',
+    ).toEqual(
+      erwartet.map((e, i) =>
+        e.link ? 'link pressed=keins' : `button ${i === ersterButton ? 'true' : 'false'}`,
+      ),
+    );
 
     expect(
       kacheln.map((k) => glatt(k.name)),

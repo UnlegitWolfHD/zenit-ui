@@ -24,11 +24,11 @@ import { ZSkeleton } from 'zenit-ui';
 
 Selector: `z-skeleton`
 
-| Input   | Type      | Default | Description                                                                                                |
-| ------- | --------- | ------- | ---------------------------------------------------------------------------------------------------------- |
-| `width` | `string`  | `''`    | CSS length for the placeholder, for example `40%` or `64px`. Empty means full width.                       |
-| `thumb` | `boolean` | `false` | Renders a square instead of a line, for the image area of a row. Boolean attribute.                        |
-| `tile`  | `boolean` | `false` | Renders the placeholder of a `button[zGameTile]`: 3:4 cover, title line and price line. Boolean attribute. |
+| Input   | Type      | Default | Description                                                                                                      |
+| ------- | --------- | ------- | ---------------------------------------------------------------------------------------------------------------- |
+| `width` | `string`  | `''`    | CSS length for the placeholder, for example `40%` or `64px`. Empty means full width.                             |
+| `thumb` | `boolean` | `false` | Renders a square instead of a line, for the image area of a row. Boolean attribute.                              |
+| `tile`  | `boolean` | `false` | Renders the placeholder of a `button[zGameTile]`: landscape cover, title line and price line. Boolean attribute. |
 
 No outputs, no content projection, no forms support. `width` does not apply to `tile`; the grid cell sets its width. The host is always `aria-hidden="true"`.
 
@@ -110,8 +110,9 @@ which is the single permanent animation in the system and sits behind
 
 The placeholder is a block whose width comes from `width`, so it follows the grid it sits in at
 every width. The `thumb` variant stays 32px square, matching `z-row__thumb`. The `tile` variant
-follows its grid cell: the cover is 3:4 of the cell width, so at every width its box equals that of
-a `button[zGameTile]` in the same grid (about 139 by 238px in the demo at 1440 and at 375px).
+follows its grid cell: the cover has the aspect ratio of the tile's cover area (460:215, one rule for
+both in `_werkzeuge.css`), so at every width its box equals that of a `button[zGameTile]` in the
+same grid.
 
 ## Rendered classes and tokens
 
