@@ -10,12 +10,15 @@ const SCHEMATA = [
   { id: 'system', name: 'System', icon: 'brightness_auto' },
 ] as const;
 
-/** The four accents of `accents.css`. `rot` is the default and carries no attribute. */
+/** The accents of `accents.css`. `rot` is the default and carries no attribute. */
 const AKZENTE = [
   { id: 'rot', name: 'Rot' },
   { id: 'blau', name: 'Blau' },
   { id: 'gruen', name: 'Grün' },
   { id: 'violett', name: 'Violett' },
+  { id: 'indigo', name: 'Indigo' },
+  { id: 'orange', name: 'Orange' },
+  { id: 'rose', name: 'Rose' },
   { id: 'schwarz', name: 'Schwarz' },
 ] as const;
 

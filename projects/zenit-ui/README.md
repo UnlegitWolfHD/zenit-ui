@@ -242,7 +242,7 @@ One thing is worth knowing before you build a page from this table. It turned up
 
 ## Themes
 
-`tokens.css` carries one colour scheme, `dark`. The opt-in stylesheet `zenit-ui/styles/themes.css` adds `light` and `contrast` plus the accents `blau`, `gruen`, `violett` and `schwarz`, and `provideZenitTheme()` switches between them and stores the choice:
+`tokens.css` carries one colour scheme, `dark`. The opt-in stylesheet `zenit-ui/styles/themes.css` adds `light` and `contrast` plus the accents `blau`, `gruen`, `violett`, `indigo`, `orange`, `rose` and `schwarz`, and `provideZenitTheme()` switches between them and stores the choice:
 
 ```json
 "styles": [

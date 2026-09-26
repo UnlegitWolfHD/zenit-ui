@@ -178,7 +178,7 @@ export const appConfig: ApplicationConfig = {
 | Option          | Default                              | Meaning                                                                  |
 | --------------- | ------------------------------------ | ------------------------------------------------------------------------ |
 | `schemes`       | `['dark', 'light', 'contrast']`      | Ids written as `data-theme`. Own ids allowed; validation uses this list.   |
-| `accents`       | `['rot', 'blau', 'gruen', 'violett', 'schwarz']`| Ids written as `data-accent`. Own ids allowed.                             |
+| `accents`       | `['rot', 'blau', 'gruen', 'violett', 'indigo', 'orange', 'rose', 'schwarz']`| Ids written as `data-accent`. Own ids allowed.                             |
 | `defaultScheme` | `'dark'`                             | One of `schemes`, or `'system'` to follow the operating system.            |
 | `defaultAccent` | `'rot'`                              | One of `accents`. Carries no attribute.                                    |
 | `storageKey`    | `'zenit-theme'`                      | `localStorage` key. `null`: no storage, start from the attributes present. |
@@ -243,7 +243,7 @@ carry:
 <head>
   <meta charset="utf-8" />
   <!-- prettier-ignore -->
-  <script>(function(k,S,A,ds,da){var s=ds,a=da,d=document.documentElement,m=function(q,f){try{return matchMedia(q).matches}catch(e){return f}};try{var v=JSON.parse((k&&localStorage.getItem(k))||'null');if(v&&typeof v==='object'){if(v.scheme==='system'||S.indexOf(v.scheme)>-1)s=v.scheme;if(A.indexOf(v.accent)>-1)a=v.accent}}catch(e){}if(s==='system')s=S.indexOf('contrast')>-1&&m('(prefers-contrast: more)',false)?'contrast':m('(prefers-color-scheme: dark)',true)?'dark':'light';d.setAttribute('data-theme',s);if(a!==da)d.setAttribute('data-accent',a)})("zenit-theme",["dark","light","contrast"],["rot","blau","gruen","violett","schwarz"],"dark","rot")</script>
+  <script>(function(k,S,A,ds,da){var s=ds,a=da,d=document.documentElement,m=function(q,f){try{return matchMedia(q).matches}catch(e){return f}};try{var v=JSON.parse((k&&localStorage.getItem(k))||'null');if(v&&typeof v==='object'){if(v.scheme==='system'||S.indexOf(v.scheme)>-1)s=v.scheme;if(A.indexOf(v.accent)>-1)a=v.accent}}catch(e){}if(s==='system')s=S.indexOf('contrast')>-1&&m('(prefers-contrast: more)',false)?'contrast':m('(prefers-color-scheme: dark)',true)?'dark':'light';d.setAttribute('data-theme',s);if(a!==da)d.setAttribute('data-accent',a)})("zenit-theme",["dark","light","contrast"],["rot","blau","gruen","violett","indigo","orange","rose","schwarz"],"dark","rot")</script>
   <title>…</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
@@ -575,6 +575,15 @@ exactly the contrast the word inside it needs.
 | `violett` | dark     | `#7e22ce`  | `#6b1fae`        | `#ffffff`     | `#c795f5`       | `rgba(199,149,245,.12)`   | 6.98 / 8.63 | 8.30                       | 6.98                |
 | `violett` | light    | `#8b2ade`  | `#7420bd`        | `#ffffff`     | `#6b1fae`       | `#f0e4fb`                 | 6.03 / 7.82 | 7.86                       | 3.30                |
 | `violett` | contrast | `#7e22ce`  | `#6b1fae`        | `#ffffff`     | `#c795f5`       | `rgba(199,149,245,.12)`   | 6.98 / 8.63 | 8.47                       | 6.98                |
+| `indigo`  | dark     | `#4f46e5`  | `#4338ca`        | `#ffffff`     | `#a5b4fc`       | `rgba(165,180,252,.12)`   | 6.29 / 7.90 | 9.67                       | 6.29                |
+| `indigo`  | light    | `#4f46e5`  | `#4338ca`        | `#ffffff`     | `#4338ca`       | `#e8e7fc`                 | 6.29 / 7.90 | 7.19                       | 3.16                |
+| `indigo`  | contrast | `#4f46e5`  | `#4338ca`        | `#ffffff`     | `#a5b4fc`       | `rgba(165,180,252,.12)`   | 6.29 / 7.90 | 9.86                       | 6.29                |
+| `orange`  | dark     | `#c2410c`  | `#9a3412`        | `#ffffff`     | `#fdba74`       | `rgba(253,186,116,.12)`   | 5.18 / 7.31 | 11.43                       | 5.18                |
+| `orange`  | light    | `#c2410c`  | `#9a3412`        | `#ffffff`     | `#7c2d12`       | `#fdeee3`                 | 5.18 / 7.31 | 8.53                       | 3.84                |
+| `orange`  | contrast | `#c2410c`  | `#9a3412`        | `#ffffff`     | `#fdba74`       | `rgba(253,186,116,.12)`   | 5.18 / 7.31 | 11.65                       | 5.18                |
+| `rose`    | dark     | `#db2777`  | `#be185d`        | `#ffffff`     | `#f9a8d4`       | `rgba(249,168,212,.12)`   | 4.60 / 6.04 | 10.63                       | 4.60                |
+| `rose`    | light    | `#db2777`  | `#be185d`        | `#ffffff`     | `#9d174d`       | `#fce7f3`                 | 4.60 / 6.04 | 7.18                       | 4.33                |
+| `rose`    | contrast | `#db2777`  | `#be185d`        | `#ffffff`     | `#f9a8d4`       | `rgba(249,168,212,.12)`   | 4.60 / 6.04 | 10.84                       | 4.60                |
 | `schwarz` | dark     | `#52525b`  | `#3f3f46`        | `#ffffff`     | `#d4d4d8`       | `rgba(212,212,216,.12)`   | 7.73 / 10.44 | 13.04                     | 7.73                |
 | `schwarz` | light    | `#18181b`  | `#3f3f46`        | `#ffffff`     | `#18181b`       | `#e4e4e7`                 | 17.72 / 10.44 | 16.13                    | 3.43 (`focus` `#2563eb`) |
 | `schwarz` | contrast | `#52525b`  | `#3f3f46`        | `#ffffff`     | `#d4d4d8`       | `rgba(212,212,216,.12)`   | 7.73 / 10.44 | 13.30                     | 7.73                |

@@ -36,8 +36,11 @@
    4. accent-subtle follows accent-text: 12 % of it on the dark grounds, an
       opaque light tint of the same hue on the light ground.
 
-   Known overlap: with gruen, accent-text sits close to --success, and with
-   blau close to --info. The design system answers that itself, because a
+   Known overlap: with gruen, accent-text sits close to --success, with blau
+   close to --info, and with orange close to --warning. orange on the light
+   ground is the one accent whose accent-text is deeper than accent-hover
+   (#7c2d12): at #9a3412 it stood 1.20:1 from --danger, below the 1.25:1 the
+   check asks for. The design system answers that itself, because a
    status is always written out as a word as well (CLAUDE.md, "Farbe").
 
    All values are verified by tools/check-theme-contrast.mjs. */
@@ -88,6 +91,54 @@
   --on-accent: #ffffff;
   --accent-text: #6b1fae;
   --accent-subtle: #f0e4fb;
+}
+
+/* Indigo */
+[data-accent="indigo"] {
+  --accent: #4f46e5;
+  --accent-hover: #4338ca;
+  --on-accent: #ffffff;
+  --accent-text: #a5b4fc;
+  --accent-subtle: rgba(165, 180, 252, 0.12);
+}
+[data-theme="light"][data-accent="indigo"] {
+  --accent: #4f46e5;
+  --accent-hover: #4338ca;
+  --on-accent: #ffffff;
+  --accent-text: #4338ca;
+  --accent-subtle: #e8e7fc;
+}
+
+/* Orange */
+[data-accent="orange"] {
+  --accent: #c2410c;
+  --accent-hover: #9a3412;
+  --on-accent: #ffffff;
+  --accent-text: #fdba74;
+  --accent-subtle: rgba(253, 186, 116, 0.12);
+}
+[data-theme="light"][data-accent="orange"] {
+  --accent: #c2410c;
+  --accent-hover: #9a3412;
+  --on-accent: #ffffff;
+  --accent-text: #7c2d12;
+  --accent-subtle: #fdeee3;
+}
+
+/* Rose */
+[data-accent="rose"] {
+  --accent: #db2777;
+  --accent-hover: #be185d;
+  --on-accent: #ffffff;
+  --accent-text: #f9a8d4;
+  --accent-subtle: rgba(249, 168, 212, 0.12);
+}
+[data-theme="light"][data-accent="rose"] {
+  --accent: #db2777;
+  --accent-hover: #be185d;
+  --on-accent: #ffffff;
+  --accent-text: #9d174d;
+  --accent-subtle: #fce7f3;
 }
 
 /* Schwarz. Der einzige Akzent ohne Farbton: auf hellem Grund ist die Handlung

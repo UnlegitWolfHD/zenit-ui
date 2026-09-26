@@ -132,7 +132,7 @@ the schematic's. The init script carries a `<!-- prettier-ignore -->`.
           theme before the first paint. Regenerate it when you pass a config to
           provideZenitTheme(); with a CSP, hash or nonce it (docs/theming.md). -->
      <!-- prettier-ignore -->
-     <script>(function(k,S,A,ds,da){var s=ds,a=da,d=document.documentElement,m=function(q,f){try{return matchMedia(q).matches}catch(e){return f}};try{var v=JSON.parse((k&&localStorage.getItem(k))||'null');if(v&&typeof v==='object'){if(v.scheme==='system'||S.indexOf(v.scheme)>-1)s=v.scheme;if(A.indexOf(v.accent)>-1)a=v.accent}}catch(e){}if(s==='system')s=S.indexOf('contrast')>-1&&m('(prefers-contrast: more)',false)?'contrast':m('(prefers-color-scheme: dark)',true)?'dark':'light';d.setAttribute('data-theme',s);if(a!==da)d.setAttribute('data-accent',a)})("zenit-theme",["dark","light","contrast"],["rot","blau","gruen","violett","schwarz"],"dark","rot")</script>
+     <script>(function(k,S,A,ds,da){var s=ds,a=da,d=document.documentElement,m=function(q,f){try{return matchMedia(q).matches}catch(e){return f}};try{var v=JSON.parse((k&&localStorage.getItem(k))||'null');if(v&&typeof v==='object'){if(v.scheme==='system'||S.indexOf(v.scheme)>-1)s=v.scheme;if(A.indexOf(v.accent)>-1)a=v.accent}}catch(e){}if(s==='system')s=S.indexOf('contrast')>-1&&m('(prefers-contrast: more)',false)?'contrast':m('(prefers-color-scheme: dark)',true)?'dark':'light';d.setAttribute('data-theme',s);if(a!==da)d.setAttribute('data-accent',a)})("zenit-theme",["dark","light","contrast"],["rot","blau","gruen","violett","indigo","orange","rose","schwarz"],"dark","rot")</script>
      ```
 
      Together with step 2 the head of a fresh application then reads:
@@ -192,7 +192,7 @@ the schematic's. The init script carries a `<!-- prettier-ignore -->`.
      `providers: [provideZenitTheme()]`. Otherwise the log names the step.
 
    The script matches the default config: storage key `zenit-theme`, schemes
-   `dark`, `light`, `contrast`, accents `rot`, `blau`, `gruen`, `violett`, `schwarz`,
+   `dark`, `light`, `contrast`, accents `rot`, `blau`, `gruen`, `violett`, `indigo`, `orange`, `rose`, `schwarz`,
    default scheme `dark`, default accent `rot` — the last five arguments of the
    call at the end of the script. If you pass a config to `provideZenitTheme()`,
    replace the script with the output of `zenitThemeInitScript(config)`:
