@@ -178,7 +178,7 @@ export const appConfig: ApplicationConfig = {
 | Option          | Default                              | Meaning                                                                  |
 | --------------- | ------------------------------------ | ------------------------------------------------------------------------ |
 | `schemes`       | `['dark', 'light', 'contrast']`      | Ids written as `data-theme`. Own ids allowed; validation uses this list.   |
-| `accents`       | `['rot', 'blau', 'gruen', 'violett']`| Ids written as `data-accent`. Own ids allowed.                             |
+| `accents`       | `['rot', 'blau', 'gruen', 'violett', 'schwarz']`| Ids written as `data-accent`. Own ids allowed.                             |
 | `defaultScheme` | `'dark'`                             | One of `schemes`, or `'system'` to follow the operating system.            |
 | `defaultAccent` | `'rot'`                              | One of `accents`. Carries no attribute.                                    |
 | `storageKey`    | `'zenit-theme'`                      | `localStorage` key. `null`: no storage, start from the attributes present. |
@@ -243,7 +243,7 @@ carry:
 <head>
   <meta charset="utf-8" />
   <!-- prettier-ignore -->
-  <script>(function(k,S,A,ds,da){var s=ds,a=da,d=document.documentElement,m=function(q,f){try{return matchMedia(q).matches}catch(e){return f}};try{var v=JSON.parse((k&&localStorage.getItem(k))||'null');if(v&&typeof v==='object'){if(v.scheme==='system'||S.indexOf(v.scheme)>-1)s=v.scheme;if(A.indexOf(v.accent)>-1)a=v.accent}}catch(e){}if(s==='system')s=S.indexOf('contrast')>-1&&m('(prefers-contrast: more)',false)?'contrast':m('(prefers-color-scheme: dark)',true)?'dark':'light';d.setAttribute('data-theme',s);if(a!==da)d.setAttribute('data-accent',a)})("zenit-theme",["dark","light","contrast"],["rot","blau","gruen","violett"],"dark","rot")</script>
+  <script>(function(k,S,A,ds,da){var s=ds,a=da,d=document.documentElement,m=function(q,f){try{return matchMedia(q).matches}catch(e){return f}};try{var v=JSON.parse((k&&localStorage.getItem(k))||'null');if(v&&typeof v==='object'){if(v.scheme==='system'||S.indexOf(v.scheme)>-1)s=v.scheme;if(A.indexOf(v.accent)>-1)a=v.accent}}catch(e){}if(s==='system')s=S.indexOf('contrast')>-1&&m('(prefers-contrast: more)',false)?'contrast':m('(prefers-color-scheme: dark)',true)?'dark':'light';d.setAttribute('data-theme',s);if(a!==da)d.setAttribute('data-accent',a)})("zenit-theme",["dark","light","contrast"],["rot","blau","gruen","violett","schwarz"],"dark","rot")</script>
   <title>…</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
@@ -575,9 +575,19 @@ exactly the contrast the word inside it needs.
 | `violett` | dark     | `#7e22ce`  | `#6b1fae`        | `#ffffff`     | `#c795f5`       | `rgba(199,149,245,.12)`   | 6.98 / 8.63 | 8.30                       | 6.98                |
 | `violett` | light    | `#8b2ade`  | `#7420bd`        | `#ffffff`     | `#6b1fae`       | `#f0e4fb`                 | 6.03 / 7.82 | 7.86                       | 3.30                |
 | `violett` | contrast | `#7e22ce`  | `#6b1fae`        | `#ffffff`     | `#c795f5`       | `rgba(199,149,245,.12)`   | 6.98 / 8.63 | 8.47                       | 6.98                |
+| `schwarz` | dark     | `#52525b`  | `#3f3f46`        | `#ffffff`     | `#d4d4d8`       | `rgba(212,212,216,.12)`   | 7.73 / 10.44 | 13.04                     | 7.73                |
+| `schwarz` | light    | `#18181b`  | `#3f3f46`        | `#ffffff`     | `#18181b`       | `#e4e4e7`                 | 17.72 / 10.44 | 16.13                    | 3.43 (`focus` `#2563eb`) |
+| `schwarz` | contrast | `#52525b`  | `#3f3f46`        | `#ffffff`     | `#d4d4d8`       | `rgba(212,212,216,.12)`   | 7.73 / 10.44 | 13.30                     | 7.73                |
 
 `dark` and `contrast` share one accent block; only `light` needs its own,
 because there `accent-text` has to be a deep colour instead of a light tint.
+
+`schwarz` is the one accent without a hue, for a light page whose actions should
+not be coloured. It bends two rules on purpose. On the dark grounds there is no
+black that stands off the ground, and a light grey would miss 3:1 against the white
+focus ring, so the fill is graphite there. On the light ground the near-black
+`focus` would sit on a black fill at 1:1, so this accent alone also sets `--focus`,
+to a blue that keeps 3:1 against all four surfaces and against the fill.
 
 Known overlap: with `gruen`, `accent-text` sits close to `--success`, and with
 `blau` close to `--info`. The design system answers that itself, because a

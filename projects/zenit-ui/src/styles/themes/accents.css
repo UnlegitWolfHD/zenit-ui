@@ -89,3 +89,27 @@
   --accent-text: #6b1fae;
   --accent-subtle: #f0e4fb;
 }
+
+/* Schwarz. Der einzige Akzent ohne Farbton: auf hellem Grund ist die Handlung
+   schwarz statt farbig. Zwei Abweichungen von den übrigen Akzenten:
+   - Auf dem dunklen Grund gibt es kein Schwarz, das sich vom Grund abhebt, und
+     ein helles Grau hielte die 3:1 gegen den weißen Fokus nicht. Die Fläche ist
+     dort Graphit (#52525b) mit weißer Schrift, accent-text ein helles Grau.
+   - Auf dem hellen Grund ist focus fast schwarz und läge auf einer schwarzen
+     Fläche bei 1:1. Nur hier setzt der Akzent deshalb auch focus, und zwar auf
+     ein Blau, das gegen alle vier Flächen und gegen accent über 3:1 bleibt. */
+[data-accent="schwarz"] {
+  --accent: #52525b;
+  --accent-hover: #3f3f46;
+  --on-accent: #ffffff;
+  --accent-text: #d4d4d8;
+  --accent-subtle: rgba(212, 212, 216, 0.12);
+}
+[data-theme="light"][data-accent="schwarz"] {
+  --accent: #18181b;
+  --accent-hover: #3f3f46;
+  --on-accent: #ffffff;
+  --accent-text: #18181b;
+  --accent-subtle: #e4e4e7;
+  --focus: #2563eb;
+}

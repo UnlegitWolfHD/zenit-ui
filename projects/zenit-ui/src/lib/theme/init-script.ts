@@ -28,7 +28,7 @@ export interface ZThemeInitConfig {
    * named by {@link defaultAccent} carries no attribute, because the default
    * accent already lives in `tokens.css` and in the scheme blocks.
    *
-   * @default ['rot', 'blau', 'gruen', 'violett']
+   * @default ['rot', 'blau', 'gruen', 'violett', 'schwarz']
    */
   readonly accents?: readonly string[];
 
@@ -66,7 +66,7 @@ export interface ZThemeInitConfig {
 /** @internal Defaults shared by `ZTheme` and the init script. */
 export const THEME_STANDARD: Required<ZThemeInitConfig> = {
   schemes: ['dark', 'light', 'contrast'],
-  accents: ['rot', 'blau', 'gruen', 'violett'],
+  accents: ['rot', 'blau', 'gruen', 'violett', 'schwarz'],
   defaultScheme: 'dark',
   defaultAccent: 'rot',
   storageKey: 'zenit-theme',

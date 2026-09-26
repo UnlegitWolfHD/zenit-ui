@@ -74,6 +74,7 @@ export class App {
     { id: 'blau', name: 'Blau' },
     { id: 'gruen', name: 'Grün' },
     { id: 'violett', name: 'Violett' },
+    { id: 'schwarz', name: 'Schwarz' },
   ];
 
   /**

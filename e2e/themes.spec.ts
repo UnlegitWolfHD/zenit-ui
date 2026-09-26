@@ -15,7 +15,7 @@ import { pruefeAxe } from './pruefungen';
  *   E2E_PORT=4360 npx playwright test e2e/themes.spec.ts
  */
 const SCHEMATA = ['dark', 'light', 'contrast'] as const;
-const AKZENTE = ['rot', 'blau', 'gruen', 'violett'] as const;
+const AKZENTE = ['rot', 'blau', 'gruen', 'violett', 'schwarz'] as const;
 /**
  * Every route of the demo: the list of demo.spec.ts plus /themes. axe runs on
  * each of them in every combination, because a contrast failure only shows
