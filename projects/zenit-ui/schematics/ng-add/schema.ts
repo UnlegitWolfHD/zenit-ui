@@ -1,4 +1,4 @@
-/** Options of the `ng add zenit-ui` schematic. */
+/** Options of the `ng-add` schematic. */
 export interface Schema {
   /**
    * Name of the application the library is wired into. Without it the workspace

@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 
@@ -13,12 +14,16 @@ import { defineConfig } from 'vitest/config';
  * declares `zenit-ui` external, and this alias points the import that is left
  * over at the built bundle.
  */
+// The bundle is named after the package (ng-packagr), so its path comes from the built package.json.
+const dist = new URL('../../dist/zenit-ui/', import.meta.url);
+const bundle = (
+  JSON.parse(readFileSync(new URL('package.json', dist), 'utf8')) as { module: string }
+).module;
+
 export default defineConfig({
   resolve: {
     alias: {
-      'zenit-ui': fileURLToPath(
-        new URL('../../dist/zenit-ui/fesm2022/zenit-ui.mjs', import.meta.url),
-      ),
+      'zenit-ui': fileURLToPath(new URL(bundle, dist)),
     },
   },
 });

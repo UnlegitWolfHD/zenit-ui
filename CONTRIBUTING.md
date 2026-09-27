@@ -158,4 +158,11 @@ Taken from the acceptance points in `spec/guidelines/00-auftrag.md` and `docs/pa
 
 ## Release
 
-No push, no publish and no deploy without the owner's approval. The library is not published yet. `.gitlab-ci.yml` packs it as `@hosting/zenit-ui`, checks the tarball with `tools/check-pack.mjs` and publishes it to the GitLab npm registry from a protected tag `v<version>` only; the release steps, the jobs and the one-time GitLab setup are in [`docs/veroeffentlichen.md`](docs/veroeffentlichen.md). `.github/workflows/ci.yml` stays for the Playwright runs, whose screenshot baselines exist for Windows only.
+The library is published on npmjs.org as `@zenit-hosting/zenit-ui`, and a release is a merge to `main`:
+
+1. Write the notes under `## [Unreleased]` in `CHANGELOG.md`, as with every change.
+2. `npm run release:vorbereiten -- patch` (or `minor`, `major`, an explicit version such as `0.3.0-rc.1`). It raises the version in `projects/zenit-ui/package.json` and turns `[Unreleased]` into `## [<version>] - <date>`; with an empty `[Unreleased]` it stops.
+3. Run `npm run e2e` and `npm run e2e:beispiel` locally on Windows. The screenshot baselines exist for Windows only: `publish.yml` runs on Linux and skips them, `.github/workflows/ci.yml` runs them on a Windows runner.
+4. PR to `main`, merge.
+
+On the merge, `.github/workflows/publish.yml` sees the changed version, runs the checks, publishes to npm (`latest`, prereleases as `next`) and creates the tag `v<version>` and a GitHub release with the changelog section. A push whose version is already on npm publishes nothing, and a missing changelog section fails the run (`tools/check-release.mjs`). Consumers pick new versions up themselves; the Zenit frontend opens a PR for each through its own `.github/workflows/zenit-ui-update.yml`. The GitLab pipeline in `.gitlab-ci.yml` (package name `@hosting/zenit-ui`, GitLab npm registry, protected tag `v<version>`) remains as an alternative. Details, including both pipelines' jobs, are in [`docs/veroeffentlichen.md`](docs/veroeffentlichen.md).

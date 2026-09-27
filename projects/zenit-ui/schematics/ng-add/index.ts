@@ -1,5 +1,5 @@
 /**
- * `ng add zenit-ui`.
+ * the `ng-add` schematic.
  *
  * Performs the setup that `projects/zenit-ui/README.md` documents by hand:
  * style entries in `angular.json`, `z-root` in `index.html`, `@angular/cdk`,

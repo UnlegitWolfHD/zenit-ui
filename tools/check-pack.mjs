@@ -17,7 +17,7 @@
  *   a declaration, schematic fixtures, `.npmrc`, `.env`, a nested tarball,
  * - a file contains something shaped like a credential,
  * - `package.json` does not carry the expected name (NPM_PACKAGE_NAME, default
- *   `@hosting/zenit-ui`) and the version of projects/zenit-ui/package.json,
+ *   `@zenit-hosting/zenit-ui`) and the version of projects/zenit-ui/package.json,
  * - the tarball grows past the size limits below.
  */
 
@@ -39,7 +39,8 @@ const ALLOWED = [
   /^package\.json$/,
   /^README\.md$/,
   /^llms(-full)?\.txt$/,
-  /^fesm2022\/zenit-ui\.mjs(\.map)?$/,
+  // The file is named after the package (ng-packagr): zenit-ui.mjs, zenit-hosting-zenit-ui.mjs …
+  /^fesm2022\/[^/]+\.mjs(\.map)?$/,
   /^types\/[^/]+\.d\.ts$/,
   /^styles\/.+\.css$/,
   /^schematics\//,
@@ -117,20 +118,24 @@ for (const { path, body } of files) {
 }
 
 const manifest = files.find((f) => f.path === 'package/package.json');
-const expectedName = process.env.NPM_PACKAGE_NAME || '@hosting/zenit-ui';
+const expectedName = process.env.NPM_PACKAGE_NAME || '@zenit-hosting/zenit-ui';
 const expectedVersion = JSON.parse(
   readFileSync(resolve(ROOT, 'projects/zenit-ui/package.json'), 'utf8'),
 ).version;
 if (!manifest) {
   problems.push('package.json: missing');
 } else {
-  const { name, version } = JSON.parse(manifest.body.toString('utf8'));
+  const { name, version, module } = JSON.parse(manifest.body.toString('utf8'));
+  // The bundle named in `module` has to be in the tarball.
+  if (!module || !files.some((f) => f.path === `package/${module}`)) {
+    problems.push(`package.json: module ${module ?? '(not set)'} is not in the tarball`);
+  }
   if (name !== expectedName) problems.push(`package.json: name ${name}, expected ${expectedName}`);
   if (version !== expectedVersion) {
     problems.push(`package.json: version ${version}, expected ${expectedVersion}`);
   }
 }
-for (const needed of ['fesm2022/zenit-ui.mjs', 'styles/tokens.css', 'schematics/collection.json']) {
+for (const needed of ['styles/tokens.css', 'schematics/collection.json']) {
   if (!files.some((f) => f.path === `package/${needed}`)) problems.push(`${needed}: missing`);
 }
 

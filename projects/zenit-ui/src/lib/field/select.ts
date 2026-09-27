@@ -77,7 +77,8 @@ export class ZSelect implements AfterContentChecked {
    * the whole attribute: writing the attribute as a whole used to delete a
    * `aria-describedby` of the caller's own.
    *
-   * @internal Angular lifecycle hook.
+   * Angular lifecycle hook. Deliberately without the internal tag: `stripInternal` removed it from the
+   * typings, and consumers with `skipLibCheck: false` got TS2420 (implements without the method).
    */
   ngAfterContentChecked(): void {
     const ziel = this.el.nativeElement.querySelector('select');

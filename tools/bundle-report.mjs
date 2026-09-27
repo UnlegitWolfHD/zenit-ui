@@ -39,7 +39,7 @@ const delta = (n) => `${n >= 0 ? '+' : '−'}${kb(Math.abs(n))} kB`;
 
 const sag = (s = '') => console.log(s);
 
-const fesm = join(dist, 'fesm2022', 'zenit-ui.mjs');
+const fesm = join(dist, JSON.parse(readFileSync(join(dist, 'package.json'), 'utf8')).module);
 const quelle = readFileSync(fesm, 'utf8');
 
 // ---------------------------------------------------------------------------

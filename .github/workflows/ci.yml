@@ -1,5 +1,3 @@
-# The repository is not pushed anywhere yet. This workflow is inert until it is:
-# GitHub Actions only runs it once the repository has a remote on GitHub.
 # Node 24 is the active LTS. Local development ran on Node 25, which builds and
 # tests fine but prints engine warnings, because odd-numbered releases never
 # enter LTS.
@@ -31,6 +29,16 @@ jobs:
           cache: npm
 
       - run: npm ci
+
+      # Chrome on Windows formats native date and time fields after the regional
+      # settings of the OS, not after the browser locale: the en-US runner showed
+      # 12/31/2026 and 03:30 AM where the baselines have 31.12.2026 and 03:30.
+      # New processes (the Playwright browsers) pick up the user culture.
+      - name: Windows-Regionalformat Deutsch
+        shell: pwsh
+        run: |
+          Set-Culture de-DE
+          Set-WinHomeLocation -GeoId 94
 
       - run: npm run lint
 
@@ -89,7 +97,9 @@ jobs:
 
       - run: npm run e2e
 
-      - run: npm run e2e:beispiel
+      # Auch nach einem roten `e2e`, damit ein Lauf beide Ergebnisse zeigt.
+      - if: ${{ !cancelled() }}
+        run: npm run e2e:beispiel
 
       - uses: actions/upload-artifact@v4
         if: failure()

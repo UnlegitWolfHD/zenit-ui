@@ -64,8 +64,8 @@ Two further assertions came out of the blind test (`llms-blindtest.md`):
 
 ## Pointing an assistant at it
 
-After `npm i ./zenit-ui-<version>.tgz` the file sits at
-`node_modules/zenit-ui/llms-full.txt`. Give the assistant that path, or the shorter index:
+After the aliased install (`npm install zenit-ui@npm:@zenit-hosting/zenit-ui`) the file
+sits at `node_modules/zenit-ui/llms-full.txt`. Give the assistant that path, or the shorter index:
 
 ```
 Read node_modules/zenit-ui/llms-full.txt and build the page with zenit-ui only.

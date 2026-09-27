@@ -1,7 +1,10 @@
 {
-  "name": "zenit-ui",
-  "version": "0.1.0",
+  "name": "@zenit-hosting/zenit-ui",
+  "version": "0.2.0",
   "license": "UNLICENSED",
+  "publishConfig": {
+    "access": "public"
+  },
   "peerDependencies": {
     "@angular/cdk": "^22.0.0",
     "@angular/common": "^22.0.0",

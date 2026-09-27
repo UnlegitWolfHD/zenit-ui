@@ -74,6 +74,10 @@ describe('Z_LABELS', () => {
     expect(Z_LABELS_DE.chartTableCapRow(100)).toBe('100 und mehr');
     expect(Z_LABELS_DE.chartDesc(1.5, 0.088, 10.3, 100)).toContain('ab 100 Stunden gedeckelt');
     expect(Z_LABELS_EN.chartDesc(1.5, 0.088, 10.3, 100)).toContain('from 100 hours on');
+    // E-61: der Stundenpreis ist ein Einzelpreis, exakt mit zwei oder drei Nachkommastellen.
+    expect(Z_LABELS_DE.chartDesc(1.5, 0.045, 10.3, 100)).toContain('plus 0,045\u00a0€ je Stunde');
+    expect(Z_LABELS_DE.chartDescOpen(1.5, 0.05)).toContain('plus 0,05\u00a0€ je Stunde');
+    expect(Z_LABELS_EN.chartDescOpen(1.5, 0.045)).toContain('plus €0.045 per hour');
   });
 
   it('holds the new keys of the configurator, in both languages', () => {

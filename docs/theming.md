@@ -178,7 +178,7 @@ export const appConfig: ApplicationConfig = {
 | Option          | Default                              | Meaning                                                                  |
 | --------------- | ------------------------------------ | ------------------------------------------------------------------------ |
 | `schemes`       | `['dark', 'light', 'contrast']`      | Ids written as `data-theme`. Own ids allowed; validation uses this list.   |
-| `accents`       | `['rot', 'blau', 'gruen', 'violett']`| Ids written as `data-accent`. Own ids allowed.                             |
+| `accents`       | `['rot', 'blau', 'gruen', 'violett', 'indigo', 'orange', 'rose', 'schwarz']`| Ids written as `data-accent`. Own ids allowed.                             |
 | `defaultScheme` | `'dark'`                             | One of `schemes`, or `'system'` to follow the operating system.            |
 | `defaultAccent` | `'rot'`                              | One of `accents`. Carries no attribute.                                    |
 | `storageKey`    | `'zenit-theme'`                      | `localStorage` key. `null`: no storage, start from the attributes present. |
@@ -219,9 +219,10 @@ they work:
    and the page is still dark until the full stylesheet arrives. Set
    `optimization.styles.inlineCritical` to `false` for the production build.
 
-`ng add zenit-ui --themes` does all of it: script after `<meta charset>` (or as
-the first child of `<head>`), `inlineCritical: false`, `provideZenitTheme()` in
-the application config. By hand:
+The `ng-add` schematic with `--themes` (`ng generate zenit-ui:ng-add --themes`
+after the install) does all of it: script after `<meta charset>` (or as the
+first child of `<head>`), `inlineCritical: false`, `provideZenitTheme()` in the
+application config. By hand:
 
 ```bash
 # Prints the script body. @angular/compiler has to be loaded FIRST: the package
@@ -236,14 +237,14 @@ module that carries it. Pass the same config as to `provideZenitTheme()`, for ex
 `m.zenitThemeInitScript({ defaultScheme: 'system' })`.
 
 Paste the output into `<head>`, in front of every stylesheet. With the default config this is
-verbatim what `ng add zenit-ui --themes` writes, and what the two applications of this workspace
+verbatim what `ng generate zenit-ui:ng-add --themes` writes, and what the two applications of this workspace
 carry:
 
 ```html
 <head>
   <meta charset="utf-8" />
   <!-- prettier-ignore -->
-  <script>(function(k,S,A,ds,da){var s=ds,a=da,d=document.documentElement,m=function(q,f){try{return matchMedia(q).matches}catch(e){return f}};try{var v=JSON.parse((k&&localStorage.getItem(k))||'null');if(v&&typeof v==='object'){if(v.scheme==='system'||S.indexOf(v.scheme)>-1)s=v.scheme;if(A.indexOf(v.accent)>-1)a=v.accent}}catch(e){}if(s==='system')s=S.indexOf('contrast')>-1&&m('(prefers-contrast: more)',false)?'contrast':m('(prefers-color-scheme: dark)',true)?'dark':'light';d.setAttribute('data-theme',s);if(a!==da)d.setAttribute('data-accent',a)})("zenit-theme",["dark","light","contrast"],["rot","blau","gruen","violett"],"dark","rot")</script>
+  <script>(function(k,S,A,ds,da){var s=ds,a=da,d=document.documentElement,m=function(q,f){try{return matchMedia(q).matches}catch(e){return f}};try{var v=JSON.parse((k&&localStorage.getItem(k))||'null');if(v&&typeof v==='object'){if(v.scheme==='system'||S.indexOf(v.scheme)>-1)s=v.scheme;if(A.indexOf(v.accent)>-1)a=v.accent}}catch(e){}if(s==='system')s=S.indexOf('contrast')>-1&&m('(prefers-contrast: more)',false)?'contrast':m('(prefers-color-scheme: dark)',true)?'dark':'light';d.setAttribute('data-theme',s);if(a!==da)d.setAttribute('data-accent',a)})("zenit-theme",["dark","light","contrast"],["rot","blau","gruen","violett","indigo","orange","rose","schwarz"],"dark","rot")</script>
   <title>…</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
@@ -349,8 +350,8 @@ Two things to get right:
   `scheme()` reports `'system'`, and the page turns light when the operating system does, until
   your code has called `setScheme('dark')`. The call resolves to the value that is already on the
   page, so it changes nothing visible.
-- **Do not run `zenitThemeInitScript` after your own script.** `ng add zenit-ui --themes` installs
-  it, and it does not look at what is on `<html>`: it writes the default `data-theme` over yours, so
+- **Do not run `zenitThemeInitScript` after your own script.** `ng generate zenit-ui:ng-add --themes`
+  installs it, and it does not look at what is on `<html>`: it writes the default `data-theme` over yours, so
   a pre-set `light` ends as `dark`. Remove the library's script, or put yours behind it. (It leaves
   a pre-set `data-accent` alone while the accent is the default one. Do not build on that.)
 
@@ -496,7 +497,7 @@ every failure and then exits with 1 if there was at least one.
 It also fails when a scheme leaves a colour token undefined or an accent leaves
 one of its five undefined, so a new scheme cannot be half finished. Schemes and
 accents are discovered from the stylesheets, so adding one automatically adds
-it to the gate. Today: 3 schemes × 4 accents, 816 pairs.
+it to the gate. Today: 3 schemes × 8 accents, 1776 pairs.
 
 The parser knows flat rules only. A block at-rule (`@media`, `@supports`,
 `@layer`, `@container`) in one of the files stops the run with exit code 2
@@ -575,9 +576,28 @@ exactly the contrast the word inside it needs.
 | `violett` | dark     | `#7e22ce`  | `#6b1fae`        | `#ffffff`     | `#c795f5`       | `rgba(199,149,245,.12)`   | 6.98 / 8.63 | 8.30                       | 6.98                |
 | `violett` | light    | `#8b2ade`  | `#7420bd`        | `#ffffff`     | `#6b1fae`       | `#f0e4fb`                 | 6.03 / 7.82 | 7.86                       | 3.30                |
 | `violett` | contrast | `#7e22ce`  | `#6b1fae`        | `#ffffff`     | `#c795f5`       | `rgba(199,149,245,.12)`   | 6.98 / 8.63 | 8.47                       | 6.98                |
+| `indigo`  | dark     | `#4f46e5`  | `#4338ca`        | `#ffffff`     | `#a5b4fc`       | `rgba(165,180,252,.12)`   | 6.29 / 7.90 | 9.67                       | 6.29                |
+| `indigo`  | light    | `#4f46e5`  | `#4338ca`        | `#ffffff`     | `#4338ca`       | `#e8e7fc`                 | 6.29 / 7.90 | 7.19                       | 3.16                |
+| `indigo`  | contrast | `#4f46e5`  | `#4338ca`        | `#ffffff`     | `#a5b4fc`       | `rgba(165,180,252,.12)`   | 6.29 / 7.90 | 9.86                       | 6.29                |
+| `orange`  | dark     | `#c2410c`  | `#9a3412`        | `#ffffff`     | `#fdba74`       | `rgba(253,186,116,.12)`   | 5.18 / 7.31 | 11.43                       | 5.18                |
+| `orange`  | light    | `#c2410c`  | `#9a3412`        | `#ffffff`     | `#7c2d12`       | `#fdeee3`                 | 5.18 / 7.31 | 8.53                       | 3.84                |
+| `orange`  | contrast | `#c2410c`  | `#9a3412`        | `#ffffff`     | `#fdba74`       | `rgba(253,186,116,.12)`   | 5.18 / 7.31 | 11.65                       | 5.18                |
+| `rose`    | dark     | `#db2777`  | `#be185d`        | `#ffffff`     | `#f9a8d4`       | `rgba(249,168,212,.12)`   | 4.60 / 6.04 | 10.63                       | 4.60                |
+| `rose`    | light    | `#db2777`  | `#be185d`        | `#ffffff`     | `#9d174d`       | `#fce7f3`                 | 4.60 / 6.04 | 7.18                       | 4.33                |
+| `rose`    | contrast | `#db2777`  | `#be185d`        | `#ffffff`     | `#f9a8d4`       | `rgba(249,168,212,.12)`   | 4.60 / 6.04 | 10.84                       | 4.60                |
+| `schwarz` | dark     | `#52525b`  | `#3f3f46`        | `#ffffff`     | `#d4d4d8`       | `rgba(212,212,216,.12)`   | 7.73 / 10.44 | 13.04                     | 7.73                |
+| `schwarz` | light    | `#18181b`  | `#3f3f46`        | `#ffffff`     | `#18181b`       | `#e4e4e7`                 | 17.72 / 10.44 | 16.13                    | 3.43 (`focus` `#2563eb`) |
+| `schwarz` | contrast | `#52525b`  | `#3f3f46`        | `#ffffff`     | `#d4d4d8`       | `rgba(212,212,216,.12)`   | 7.73 / 10.44 | 13.30                     | 7.73                |
 
 `dark` and `contrast` share one accent block; only `light` needs its own,
 because there `accent-text` has to be a deep colour instead of a light tint.
+
+`schwarz` is the one accent without a hue, for a light page whose actions should
+not be coloured. It bends two rules on purpose. On the dark grounds there is no
+black that stands off the ground, and a light grey would miss 3:1 against the white
+focus ring, so the fill is graphite there. On the light ground the near-black
+`focus` would sit on a black fill at 1:1, so this accent alone also sets `--focus`,
+to a blue that keeps 3:1 against all four surfaces and against the fill.
 
 Known overlap: with `gruen`, `accent-text` sits close to `--success`, and with
 `blau` close to `--info`. The design system answers that itself, because a

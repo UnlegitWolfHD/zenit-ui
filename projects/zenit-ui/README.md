@@ -12,25 +12,28 @@ All five are peer dependencies and are not bundled with the library. Its only ow
 
 ## Installation
 
-The library is not published to npm. You build it and install the package locally:
+The package is published on npmjs.org as `@zenit-hosting/zenit-ui`. Install it under the alias `zenit-ui`, so that imports (`from 'zenit-ui'`) and stylesheet paths (`zenit-ui/styles/…`) resolve as every example in this README shows:
 
 ```bash
-ng build zenit-ui
-cd dist/zenit-ui
-npm pack
+npm install zenit-ui@npm:@zenit-hosting/zenit-ui
 ```
 
-This produces `zenit-ui-0.1.0.tgz`. In your application:
+This writes `"zenit-ui": "npm:@zenit-hosting/zenit-ui@^0.2.0"` into your `package.json`. Without the alias the package sits in `node_modules/@zenit-hosting/zenit-ui`, and neither your imports nor what the `ng-add` schematic generates resolve.
+
+> **Never install the unscoped name.** `zenit-ui` on npmjs.com is not this package. `npm i zenit-ui`
+> or `ng add zenit-ui` would fetch whatever somebody else publishes under that name and, in the
+> case of `ng add`, run its schematics against your workspace. Always go through the alias above.
+
+To try an unreleased build of the library, pack it and install the tarball under the same alias:
 
 ```bash
-npm i ./zenit-ui-0.1.0.tgz
+npm run build:lib
+cd dist/zenit-ui && npm pack      # zenit-hosting-zenit-ui-<version>.tgz
 ```
 
-> **Install from the tarball, never from the public registry.** `zenit-ui` is an unscoped name that
-> nobody has claimed on npmjs.com, so `npm i zenit-ui` or `ng add zenit-ui` would fetch whatever
-> somebody else publishes under it and, in the case of `ng add`, run its schematics against your
-> workspace. Point every command at the local file, as the sections below do, until the name is
-> claimed or the package is scoped.
+```bash
+npm i zenit-ui@file:../path/to/zenit-hosting-zenit-ui-<version>.tgz
+```
 
 ### Working against a linked build
 
@@ -62,6 +65,10 @@ both workspaces should be on the same Angular patch version. A tarball or regist
 of this: the package then lives inside your own `node_modules` and resolves `@angular/core` from
 there. The measured table and the alternative via `resolve.dedupe` are in
 [`docs/ng-add.md`](../../docs/ng-add.md), "Working against a linked build".
+
+## Versions and changes
+
+Every published version has a GitHub release with its section of the changelog as text: [releases](https://github.com/UnlegitWolfHD/zenit-ui/releases), full history in [`CHANGELOG.md`](https://github.com/UnlegitWolfHD/zenit-ui/blob/main/CHANGELOG.md). Below 1.0.0 a caret range stays within one minor version (`^0.2.0` takes 0.2.x), so moving to the next minor version is a deliberate update: read its release notes first.
 
 ## Setup
 
@@ -242,7 +249,7 @@ One thing is worth knowing before you build a page from this table. It turned up
 
 ## Themes
 
-`tokens.css` carries one colour scheme, `dark`. The opt-in stylesheet `zenit-ui/styles/themes.css` adds `light` and `contrast` plus the accents `blau`, `gruen` and `violett`, and `provideZenitTheme()` switches between them and stores the choice:
+`tokens.css` carries one colour scheme, `dark`. The opt-in stylesheet `zenit-ui/styles/themes.css` adds `light` and `contrast` plus the accents `blau`, `gruen`, `violett`, `indigo`, `orange`, `rose` and `schwarz`, and `provideZenitTheme()` switches between them and stores the choice:
 
 ```json
 "styles": [
@@ -260,7 +267,7 @@ providers: [provideZenitTheme({ defaultScheme: 'system' })];
 
 The order is binding, because `:root` and `[data-theme="light"]` weigh the same and the later rule wins. A scheme is a block of token overrides, so an own scheme is CSS plus its id in `schemes`. Components never learn about any of this.
 
-**These values are not part of the design system yet.** They were derived by the contrast rules in `docs/theming.md` and checked by `node tools/check-theme-contrast.mjs` (3 schemes × 4 accents, 456 pairs), but they still need the design owner's approval before they move into `tokens.json`. Everything about schemes, accents, the service, SSR and the gate is in [`docs/theming.md`](../../docs/theming.md).
+**These values are not part of the design system yet.** They were derived by the contrast rules in `docs/theming.md` and checked by `node tools/check-theme-contrast.mjs` (3 schemes × 8 accents, 1776 pairs), but they still need the design owner's approval before they move into `tokens.json`. Everything about schemes, accents, the service, SSR and the gate is in [`docs/theming.md`](../../docs/theming.md).
 
 ## Server rendering
 
@@ -300,15 +307,15 @@ providers: [provideZenitLabels(Z_LABELS_EN)];
 
 ## `ng add`
 
-The setup above is a schematic as well. Name the tarball, not the package: `ng add zenit-ui` would resolve the unclaimed name on the public registry and run a stranger's schematics.
+The setup above is a schematic as well. After the aliased install, run it through `ng generate`, not `ng add`:
 
 ```bash
-ng add ./zenit-ui-0.1.0.tgz --themes
+ng generate zenit-ui:ng-add --themes
 ```
 
-It registers the stylesheets in `angular.json` in the prescribed order, merges `z-root` into `<html>` and `<body>`, adds `@angular/cdk` and the four font packages with their `@import` rules, and mounts `<z-toast-outlet />` in the root component. With `--themes` it also registers `themes.css`, puts the theme init script into `index.html`, adds `provideZenitTheme()` and sets `inlineCritical: false` for production. Every step is idempotent, and a source file is either fully patched or left untouched with the manual step in the log (NgModule applications, `imports` that are not an array literal). An existing `lang` on `<html>` is kept. To run it again after the package is installed: `ng generate zenit-ui:ng-add --project my-app`. What it changes exactly, which options it takes and its limits are in [`docs/ng-add.md`](../../docs/ng-add.md).
+`ng add @zenit-hosting/zenit-ui` would add the package a second time without the alias, and `ng add zenit-ui` would resolve the unscoped name on the public registry and run a stranger's schematics. `ng generate zenit-ui:ng-add` takes the same options (`--project`, `--themes`, `--fonts`, `--toast-outlet`) and is also the way to run it again later.
 
-From the GitLab npm registry the package is `@hosting/zenit-ui`: install it under the alias `zenit-ui` (`npm install zenit-ui@npm:@hosting/zenit-ui@<version>`), so every import and stylesheet path stays `zenit-ui`, and run `ng generate zenit-ui:ng-add` instead of `ng add @hosting/zenit-ui`, which would add the package a second time without the alias. Registry and token setup: [`docs/veroeffentlichen.md`](../../docs/veroeffentlichen.md).
+It registers the stylesheets in `angular.json` in the prescribed order, merges `z-root` into `<html>` and `<body>`, adds `@angular/cdk` and the four font packages with their `@import` rules, and mounts `<z-toast-outlet />` in the root component. With `--themes` it also registers `themes.css`, puts the theme init script into `index.html`, adds `provideZenitTheme()` and sets `inlineCritical: false` for production. Every step is idempotent, and a source file is either fully patched or left untouched with the manual step in the log (NgModule applications, `imports` that are not an array literal). An existing `lang` on `<html>` is kept. What it changes exactly, which options it takes and its limits are in [`docs/ng-add.md`](../../docs/ng-add.md).
 
 ### Coming from Angular Material
 
