@@ -97,7 +97,9 @@ jobs:
 
       - run: npm run e2e
 
-      - run: npm run e2e:beispiel
+      # Auch nach einem roten `e2e`, damit ein Lauf beide Ergebnisse zeigt.
+      - if: ${{ !cancelled() }}
+        run: npm run e2e:beispiel
 
       - uses: actions/upload-artifact@v4
         if: failure()
