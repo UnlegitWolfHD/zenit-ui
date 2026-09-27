@@ -2,6 +2,17 @@
 
 Angular workspace for the Zenit design system. It holds the library `zenit-ui` with every building block of the website, the customer area and the server panels, plus a demo application that shows each building block in all of its states. The workspace is independent of the existing Zenit-Hosting frontend and contains no business logic, no API calls and no real customer data.
 
+## Install in an application
+
+The library is published on npmjs.org as `@zenit-hosting/zenit-ui`. Install it under the alias `zenit-ui`, so imports and stylesheet paths stay `zenit-ui`, then run the setup schematic:
+
+```bash
+npm install zenit-ui@npm:@zenit-hosting/zenit-ui
+ng generate zenit-ui:ng-add --themes
+```
+
+Never `npm i zenit-ui` or `ng add zenit-ui`: the unscoped name on npm belongs to somebody else. Details in `projects/zenit-ui/README.md`.
+
 ## Folders
 
 | Folder | Contents |
@@ -15,17 +26,18 @@ Angular workspace for the Zenit design system. It holds the library `zenit-ui` w
 | `docs/theming.md` | colour schemes, accents, `provideZenitTheme`, the page width, the contrast gate |
 | `docs/layout.md` | the classes a page sets by hand, the page shell, what scales with `--container` |
 | `docs/labels.md` | the label registry and how to switch the library's own texts |
-| `docs/ng-add.md` | what `ng add zenit-ui` does, its options and its tests |
+| `docs/ng-add.md` | what the `ng-add` schematic does, its options and its tests |
 | `docs/signals.md` | the signal conventions of this workspace, the audit table and its exceptions |
 | `docs/forms.md` | the three ways to bind a form control, Signal Forms first |
 | `docs/components/` | one usage guide per building block, checked by `node tools/check-docs-examples.mjs` |
 | `docs/migration-from-material.md` | how a page moves off Angular Material |
 | `docs/legacy.md` | `.z-legacy`: keeping the library out of the pages that are not migrated yet |
 | `docs/bundle-report.md` | size of the package per entry point |
+| `docs/veroeffentlichen.md` | how a version is released to npm |
 | `docs/api/` | generated TypeDoc reference, not committed |
 | `tools/` | schematics build, schematics tests, contrast gate, example snippets |
 
-`CLAUDE.md` in the root is the overview of the system: principles, language, color, typography, form, motion and the list of banned constructs. It applies to every change. The design system under `spec/`, `CLAUDE.md` and `docs/pakete.md` are written in German; everything else, including the generated API documentation and the JSDoc in the source, is English. UI copy inside code examples stays German, because German is the product's language.
+`CLAUDE.md` in the root is the overview of the system: principles, language, color, typography, form, motion and the list of banned constructs. It applies to every change. The design system under `spec/`, `CLAUDE.md`, `docs/pakete.md` and `docs/veroeffentlichen.md` are written in German; everything else, including the generated API documentation and the JSDoc in the source, is English. UI copy inside code examples stays German, because German is the product's language.
 
 ## Commands
 
@@ -44,6 +56,7 @@ npm run docs:api       # TypeDoc reference into docs/api
 npm run check          # everything above except the Playwright runs
 ng serve ui-demo       # demo app at http://localhost:4200/
 npm run start:beispiel # example app, library build included
+npm run release:vorbereiten -- minor # bump the version, turn [Unreleased] into its changelog section
 ```
 
 ## Example application
@@ -52,7 +65,7 @@ npm run start:beispiel # example app, library build included
 
 ## Package zenit-ui
 
-How to pull the library into an application is described in `projects/zenit-ui/README.md`: requirements, installation from the locally built `.tgz`, style order, `z-root`, fonts, toast outlet, Minecraft subtheme, the full component API and the documented deviations from the reference styles. That README ships with the package.
+How to pull the library into an application is described in `projects/zenit-ui/README.md`: requirements, installation from npm under the alias `zenit-ui`, style order, `z-root`, fonts, toast outlet, Minecraft subtheme, the full component API and the documented deviations from the reference styles. That README ships with the package.
 
 ## Further reading
 
@@ -61,7 +74,8 @@ How to pull the library into an application is described in `projects/zenit-ui/R
 - `docs/theming.md` — colour schemes, accents, `provideZenitTheme`, the page width, the contrast gate
 - `docs/layout.md` — layout classes, the page shell, `--container` as an application setting
 - `docs/labels.md` — the label registry, `provideZenitLabels`, `Z_LABELS_EN`
-- `docs/ng-add.md` — `ng add zenit-ui`: what it changes, options, tests
+- `docs/ng-add.md` — the `ng-add` schematic: what it changes, options, tests
+- `docs/veroeffentlichen.md` — releasing a version to npm (German)
 - `docs/signals.md` — signals, `resource()`, `linkedSignal()`, and what is deliberately not a signal
 - `docs/forms.md` — Signal Forms, reactive forms and `ngModel` against the library's fields
 - `docs/components/` — one guide per building block: API, examples, states, accessibility
@@ -70,4 +84,4 @@ How to pull the library into an application is described in `projects/zenit-ui/R
 
 ## Release
 
-No push, no publish and no deploy without the owner's approval. `npm pack` in `dist/zenit-ui` is a local dry run only; the library is not published to npm.
+A release is a merge to `main`: write the notes under `## [Unreleased]` in `CHANGELOG.md`, run `npm run release:vorbereiten -- patch` (or `minor`, `major`, an explicit version), run `npm run e2e` and `npm run e2e:beispiel` locally on Windows, then open a PR to `main`. When the merge changes the version in `projects/zenit-ui/package.json`, `.github/workflows/publish.yml` publishes `@zenit-hosting/zenit-ui` to npmjs.org and creates the tag `v<version>` and a GitHub release with the changelog section. A push without a version change publishes nothing. The GitLab pipeline in `.gitlab-ci.yml` remains as an alternative. Details in [`docs/veroeffentlichen.md`](docs/veroeffentlichen.md).

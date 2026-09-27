@@ -4,8 +4,9 @@ import { CodeBlock } from '../../shared/code-block/code-block';
 import { DATEI, quelltext } from '../../shared/quelltexte';
 
 /** Commands, not files: there is nothing they could drift away from. */
-const NG_ADD = `# statt aller Schritte auf dieser Seite
-ng add zenit-ui --themes`;
+const NG_ADD = `# statt aller Schritte auf dieser Seite, nach der Installation unter dem Alias
+npm install zenit-ui@npm:@zenit-hosting/zenit-ui
+ng generate zenit-ui:ng-add --themes`;
 
 /** Example of an own scheme, shortened from docs/theming.md. */
 const EIGENES_THEME = `[data-theme="sepia"] {
@@ -46,10 +47,10 @@ const EIGENES_THEME_PROVIDER = `provideZenitTheme({ schemes: ['dark', 'light', '
       <section class="app-abschnitt">
         <h2 class="heading-2">1. Paket auflösen</h2>
         <p class="z-muted">
-          Eine echte Anwendung installiert das gepackte Paket mit
-          <span class="z-mono">npm i ./zenit-ui-0.1.0.tgz</span> und braucht hier nichts weiter.
-          Dieses Beispiel liegt im Arbeitsbereich der Library und zeigt deshalb über
-          <span class="z-mono">paths</span> auf den Ordner, den
+          Eine echte Anwendung installiert das Paket von npm unter dem Alias
+          <span class="z-mono">npm install zenit-ui@npm:@zenit-hosting/zenit-ui</span> und braucht
+          hier nichts weiter. Dieses Beispiel liegt im Arbeitsbereich der Library und zeigt deshalb
+          über <span class="z-mono">paths</span> auf den Ordner, den
           <span class="z-mono">ng build zenit-ui</span> schreibt. So beweist es, dass das
           ausgelieferte Paket funktioniert.
         </p>

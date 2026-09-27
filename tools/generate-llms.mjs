@@ -909,12 +909,14 @@ const REGELN = `- **No \`@angular/material\`.** Not the components, not the them
 
 const SETUP = (
   kopf,
-) => `1. **Install.** The package is not on npm; it is installed from the tarball built by
-   \`npm pack\` inside \`dist/zenit-ui\`:
+) => `1. **Install.** The package is \`@zenit-hosting/zenit-ui\` on npmjs.org. Install it under the
+   alias \`zenit-ui\`, so imports and stylesheet paths stay \`zenit-ui\`:
    \`\`\`bash
-   npm i ./zenit-ui-${VERSION}.tgz
+   npm install zenit-ui@npm:@zenit-hosting/zenit-ui@^${VERSION}
    \`\`\`
-   \`ng add ./zenit-ui-${VERSION}.tgz --themes\` performs steps 2 to 6 automatically.
+   Never \`npm i zenit-ui\` or \`ng add zenit-ui\`: the unscoped name belongs to somebody else.
+   \`ng generate zenit-ui:ng-add --themes\` then performs steps 2 to 6 automatically (not
+   \`ng add\`, which would add the package a second time without the alias).
 
 2. **Register the stylesheets** in \`angular.json\` (\`projects.<app>.architect.build.options.styles\`)
    or via \`@import\` in your entry stylesheet. The order is binding:
@@ -1027,7 +1029,8 @@ const REGELN_KURZ = `- **No \`@angular/material\`**, not even temporarily. The o
 - **Copy comes from you.** The library holds no product strings, only accessible names.`;
 
 /** The same six steps as SETUP, without the code blocks, for the index file. */
-const SETUP_KURZ = `1. \`npm i ./zenit-ui-${VERSION}.tgz\` (the package is not on npm). \`ng add ./zenit-ui-${VERSION}.tgz --themes\`
+const SETUP_KURZ = `1. \`npm install zenit-ui@npm:@zenit-hosting/zenit-ui@^${VERSION}\` (the alias keeps the import
+   path \`zenit-ui\`; never install the unscoped \`zenit-ui\`). \`ng generate zenit-ui:ng-add --themes\`
    does steps 2 to 6 for you.
 2. Register the stylesheets in \`angular.json\`, in this order:
    \`zenit-ui/styles/tokens.css\`, \`@angular/cdk/overlay-prebuilt.css\`,

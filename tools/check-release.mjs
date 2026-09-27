@@ -7,7 +7,7 @@
  * 1. The tag is `v<version>` or `<version>` of projects/zenit-ui/package.json, and that
  *    version is semver. A tag that says something else than the package would
  *    publish is a mistake in one of the two, so nothing goes out.
- * 2. That version of NPM_PACKAGE_NAME (default `@hosting/zenit-ui`) does not
+ * 2. That version of NPM_PACKAGE_NAME (default `@zenit-hosting/zenit-ui`) does not
  *    exist yet in NPM_REGISTRY_URL, so a used version stops the tag pipeline
  *    before the upload instead of at it.
  * 3. CHANGELOG.md has a non-empty section `## [<version>]`; it becomes the text
@@ -53,7 +53,7 @@ const output = (publish) => {
   if (process.env.GITHUB_OUTPUT)
     appendFileSync(process.env.GITHUB_OUTPUT, `publish=${publish}\nversion=${version}\n`);
 };
-const name = process.env.NPM_PACKAGE_NAME || '@hosting/zenit-ui';
+const name = process.env.NPM_PACKAGE_NAME || '@zenit-hosting/zenit-ui';
 const registry = process.env.NPM_REGISTRY_URL;
 
 if (!SEMVER.test(version))

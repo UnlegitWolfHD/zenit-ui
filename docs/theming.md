@@ -219,9 +219,10 @@ they work:
    and the page is still dark until the full stylesheet arrives. Set
    `optimization.styles.inlineCritical` to `false` for the production build.
 
-`ng add zenit-ui --themes` does all of it: script after `<meta charset>` (or as
-the first child of `<head>`), `inlineCritical: false`, `provideZenitTheme()` in
-the application config. By hand:
+The `ng-add` schematic with `--themes` (`ng generate zenit-ui:ng-add --themes`
+after the install) does all of it: script after `<meta charset>` (or as the
+first child of `<head>`), `inlineCritical: false`, `provideZenitTheme()` in the
+application config. By hand:
 
 ```bash
 # Prints the script body. @angular/compiler has to be loaded FIRST: the package
@@ -236,7 +237,7 @@ module that carries it. Pass the same config as to `provideZenitTheme()`, for ex
 `m.zenitThemeInitScript({ defaultScheme: 'system' })`.
 
 Paste the output into `<head>`, in front of every stylesheet. With the default config this is
-verbatim what `ng add zenit-ui --themes` writes, and what the two applications of this workspace
+verbatim what `ng generate zenit-ui:ng-add --themes` writes, and what the two applications of this workspace
 carry:
 
 ```html
@@ -349,8 +350,8 @@ Two things to get right:
   `scheme()` reports `'system'`, and the page turns light when the operating system does, until
   your code has called `setScheme('dark')`. The call resolves to the value that is already on the
   page, so it changes nothing visible.
-- **Do not run `zenitThemeInitScript` after your own script.** `ng add zenit-ui --themes` installs
-  it, and it does not look at what is on `<html>`: it writes the default `data-theme` over yours, so
+- **Do not run `zenitThemeInitScript` after your own script.** `ng generate zenit-ui:ng-add --themes`
+  installs it, and it does not look at what is on `<html>`: it writes the default `data-theme` over yours, so
   a pre-set `light` ends as `dark`. Remove the library's script, or put yours behind it. (It leaves
   a pre-set `data-accent` alone while the accent is the default one. Do not build on that.)
 
@@ -496,7 +497,7 @@ every failure and then exits with 1 if there was at least one.
 It also fails when a scheme leaves a colour token undefined or an accent leaves
 one of its five undefined, so a new scheme cannot be half finished. Schemes and
 accents are discovered from the stylesheets, so adding one automatically adds
-it to the gate. Today: 3 schemes × 4 accents, 816 pairs.
+it to the gate. Today: 3 schemes × 8 accents, 1776 pairs.
 
 The parser knows flat rules only. A block at-rule (`@media`, `@supports`,
 `@layer`, `@container`) in one of the files stops the run with exit code 2

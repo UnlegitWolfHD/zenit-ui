@@ -1,4 +1,4 @@
-# `ng add zenit-ui`
+# The `ng-add` schematic
 
 The library ships a schematics collection so that the setup from
 `projects/zenit-ui/README.md` does not have to be done by hand. One command
@@ -6,11 +6,16 @@ registers the stylesheets, sets `z-root`, pulls in `@angular/cdk` and the four
 self-hosted fonts and mounts the toast outlet.
 
 ```bash
-ng add ./zenit-ui-0.1.0.tgz
+npm install zenit-ui@npm:@zenit-hosting/zenit-ui
+ng generate zenit-ui:ng-add --themes
 ```
 
-Name the tarball, not the package: `zenit-ui` is unclaimed on the public
-registry, see the warning in the package README.
+The package is `@zenit-hosting/zenit-ui` on npmjs.org and is installed under the
+alias `zenit-ui`, so imports and stylesheet paths stay `zenit-ui`. Run the
+schematic with `ng generate`, not `ng add`: `ng add @zenit-hosting/zenit-ui`
+would add the package a second time without the alias, and `ng add zenit-ui`
+would fetch the unscoped name from the public registry, which belongs to
+somebody else. See the warning in the package README.
 
 The collection has a second schematic for applications that come from Angular Material: `ng generate zenit-ui:migrate-material --path src/app/<route>` rewrites the mechanical usages (icons, buttons, tooltips, spinners, static chips, `imports`) and reports the rest. It is described in [`migrate-material.md`](migrate-material.md).
 
@@ -304,27 +309,31 @@ What is worth knowing before you copy it:
   copied into it resolved to the consumer's own copy. So `server.deps.inline` is scaffolding for
   the link phase; it does no harm afterwards, but it is not needed.
 
-## Running it against the local build
+## Running it
 
-The library is not published, so the schematic runs from a local package:
+After the aliased install from npm (see the top of this page) the schematic
+runs from `node_modules/zenit-ui`:
+
+```bash
+ng generate zenit-ui:ng-add --project my-app --themes
+```
+
+`ng generate zenit-ui:ng-add` takes the options of the table above, exactly as
+`ng add` would pass them, and it is also the way to run it again later. The
+schematic adds `@angular/cdk` and the font packages to `package.json` itself and
+schedules the install; it never writes a dependency on the library.
+
+To try an unreleased build, pack it and install the tarball under the same
+alias. A plain `npm i ./….tgz` or `ng add ./….tgz` would install it as
+`@zenit-hosting/zenit-ui`, and nothing the schematic generates would resolve:
 
 ```bash
 npm run build:lib                     # ng build zenit-ui + tools/build-schematics.mjs
-cd dist/zenit-ui && npm pack          # zenit-ui-0.1.0.tgz
+cd dist/zenit-ui && npm pack          # zenit-hosting-zenit-ui-<version>.tgz
 ```
 
-In the application, either let `ng add` install the tarball and run the
-schematic:
-
 ```bash
-ng add ../path/to/zenit-ui-0.1.0.tgz --themes
-```
-
-or install first and run the schematic on its own. `npm i` of a tarball does not
-run it, and this is also the way to run it again later:
-
-```bash
-npm i ../path/to/zenit-ui-0.1.0.tgz
+npm i zenit-ui@file:../path/to/zenit-hosting-zenit-ui-<version>.tgz
 ng generate zenit-ui:ng-add --project my-app --themes
 ```
 
