@@ -1,5 +1,21 @@
 # Veröffentlichen
 
+## Auf npmjs.org über GitHub (der Weg für `@zenit-hosting/zenit-ui`)
+
+Ein Release ist ein Merge. Niemand setzt einen Tag von Hand.
+
+1. Notizen unter `## [Unreleased]` in `CHANGELOG.md` schreiben, wie bei jeder Änderung.
+2. `npm run release:vorbereiten -- patch` (oder `minor`, `major`, eine Version wie `0.3.0-rc.1`). Das hebt die Version in `projects/zenit-ui/package.json` und macht aus `[Unreleased]` den Abschnitt `## [<version>] - <heute>`. Ist `[Unreleased]` leer, bricht es ab.
+3. Lokal unter Windows `npm run e2e` und `npm run e2e:beispiel` (die Screenshot-Tests laufen in keiner CI).
+4. Committen, PR nach `main`, mergen.
+5. `.github/workflows/publish.yml` sieht die geänderte Version, prüft und baut alles, veröffentlicht auf npm (`latest`, Vorabversionen als `next`) und legt den Tag `v<version>` und ein GitHub-Release mit dem CHANGELOG-Abschnitt als Text an.
+
+Ist die Version schon auf npm, tut der Push nichts. Fehlt der CHANGELOG-Abschnitt, ist der Lauf rot (`tools/check-release.mjs`). Ein von Hand gepushter Tag, ein im Browser angelegtes Release oder „Run workflow“ in Actions laufen weiter über denselben Workflow.
+
+Consumer ziehen neue Versionen selbst nach: Das Frontend hat dafür `.github/workflows/zenit-ui-update.yml`, das nach einer neuen Version sucht und einen PR öffnet.
+
+## Über GitLab
+
 Die Library wird über die GitLab-CI (`.gitlab-ci.yml`) als npm-Paket veröffentlicht, standardmäßig in die npm-Registry des GitLab-Projekts `hosting/zenit-ui`. Veröffentlicht wird nur ein geschützter Tag `v<version>`. Ohne Freigabe des Owners gibt es keinen Push, keinen Tag und kein Publish.
 
 ## Paketname

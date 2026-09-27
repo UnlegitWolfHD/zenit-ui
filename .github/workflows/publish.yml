@@ -1,7 +1,15 @@
-# npm publish of @zenit-hosting/zenit-ui to npmjs.org, triggered by a GitHub
-# Release (type published). Create the release from a tag v<version> that
-# matches projects/zenit-ui/package.json; tools/check-release.mjs stops a
-# mismatched tag or a version that is already on npm.
+# npm publish of @zenit-hosting/zenit-ui to npmjs.org.
+#
+# The usual way is a merge: a push to main that changes the version in
+# projects/zenit-ui/package.json publishes that version, creates the tag
+# v<version> and a GitHub release whose text is the CHANGELOG section of the
+# version. `npm run release:vorbereiten -- minor` prepares both files. A push
+# whose version is already on npm does nothing (check-release, RELEASE_AUTO).
+#
+# A tag v<version> pushed by hand, a release created in the browser and a manual
+# run (workflow_dispatch) still work; they go through the same steps. The tag
+# and the release this workflow creates itself come from GITHUB_TOKEN and
+# therefore start no second run.
 #
 # Secret: NPM_TOKEN (npm automation or granular token with publish rights on
 # the scope @zenit-hosting). The package carries publishConfig.access=public.
@@ -19,23 +27,56 @@
 name: Publish
 
 on:
-  release:
-    types: [published]
-  # Auch ein gepushter Tag v<version> veröffentlicht (ohne Release-Objekt). Wird danach noch ein
-  # Release zum selben Tag angelegt, stoppt check-release den zweiten Lauf: die Version ist schon da.
+  # Der Normalfall: der Merge nach main mit gehobener Version.
   push:
+    branches: [main]
+    paths:
+      - 'projects/zenit-ui/package.json'
     tags:
       - 'v*'
+  release:
+    types: [published]
+  workflow_dispatch:
 
 permissions:
-  contents: read
+  # Tag und GitHub-Release anlegen.
+  contents: write
 
 concurrency:
   group: npm-publish
   cancel-in-progress: false
 
 jobs:
+  # Ist diese Version schon auf npm? Beim Push nach main ist das kein Fehler, sondern
+  # "nichts zu tun" (publish=false), und der Job publish läuft gar nicht erst an. Außerdem:
+  # Tag passt zur Version, CHANGELOG.md hat einen Abschnitt für sie.
+  pruefen:
+    runs-on: ubuntu-latest
+    env:
+      NPM_PACKAGE_NAME: '@zenit-hosting/zenit-ui'
+      NPM_REGISTRY_URL: 'https://registry.npmjs.org/'
+    outputs:
+      publish: ${{ steps.check.outputs.publish }}
+      version: ${{ steps.check.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Release-Prüfung
+        id: check
+        env:
+          CI_COMMIT_TAG: ${{ github.event.release.tag_name || (github.ref_type == 'tag' && github.ref_name) || '' }}
+          RELEASE_AUTO: ${{ github.ref_type == 'tag' && '0' || '1' }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: node tools/check-release.mjs
+
   publish:
+    needs: pruefen
+    if: needs.pruefen.outputs.publish == 'true'
     runs-on: ubuntu-latest
     env:
       NPM_PACKAGE_NAME: '@zenit-hosting/zenit-ui'
@@ -68,10 +109,10 @@ jobs:
       - run: npm run test:beispiel:jit
       - run: npm run test:schematics
 
-      # Tag of the release matches the package version, and the version is not on npm yet.
-      - name: Release-Prüfung
+      # Noch einmal kurz vor dem Upload, jetzt streng: ist die Version inzwischen doch da, ist das rot.
+      - name: Release-Prüfung vor dem Upload
         env:
-          CI_COMMIT_TAG: ${{ github.event.release.tag_name || github.ref_name }}
+          CI_COMMIT_TAG: v${{ needs.pruefen.outputs.version }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: node tools/check-release.mjs
 
@@ -90,3 +131,18 @@ jobs:
           VERSION="$(node -p "require('./projects/zenit-ui/package.json').version")"
           case "$VERSION" in *-*) TAG=next ;; *) TAG=latest ;; esac
           npm publish ./pack/*.tgz --access public --tag "$TAG"
+
+      # Tag und GitHub-Release mit dem CHANGELOG-Abschnitt. Gibt es das Release schon (von Hand
+      # im Browser angelegt), bleibt es, wie es ist.
+      - name: Tag und Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.pruefen.outputs.version }}
+        run: |
+          node tools/release-notes.mjs "$VERSION" > release-notes.md
+          if gh release view "v$VERSION" >/dev/null 2>&1; then
+            echo "Release v$VERSION gibt es schon."
+            exit 0
+          fi
+          case "$VERSION" in *-*) PRE=--prerelease ;; *) PRE= ;; esac
+          gh release create "v$VERSION" --target "$GITHUB_SHA" --title "zenit-ui $VERSION" --notes-file release-notes.md $PRE

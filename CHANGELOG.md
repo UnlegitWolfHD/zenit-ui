@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **A release is a merge.** `.github/workflows/publish.yml` also runs on a push to `main` that changes the version in `projects/zenit-ui/package.json`: it publishes that version, then creates the tag `v<version>` and a GitHub release whose text is the version's section of this file (`tools/release-notes.mjs`). A push whose version is already on npm does nothing (`RELEASE_AUTO=1` in `tools/check-release.mjs`, which now also fails a version without a CHANGELOG section). `npm run release:vorbereiten -- patch|minor|major|<version>` (`tools/release-prepare.mjs`) raises the version and turns `[Unreleased]` into the dated section. Documented in [`docs/veroeffentlichen.md`](docs/veroeffentlichen.md).
+
 ## [0.2.0] - 2026-09-26
 
 ### Added
