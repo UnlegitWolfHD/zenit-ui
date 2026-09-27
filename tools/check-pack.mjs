@@ -17,7 +17,7 @@
  *   a declaration, schematic fixtures, `.npmrc`, `.env`, a nested tarball,
  * - a file contains something shaped like a credential,
  * - `package.json` does not carry the expected name (NPM_PACKAGE_NAME, default
- *   `@hosting/zenit-ui`) and the version of projects/zenit-ui/package.json,
+ *   `@zenit-hosting/zenit-ui`) and the version of projects/zenit-ui/package.json,
  * - the tarball grows past the size limits below.
  */
 
@@ -118,7 +118,7 @@ for (const { path, body } of files) {
 }
 
 const manifest = files.find((f) => f.path === 'package/package.json');
-const expectedName = process.env.NPM_PACKAGE_NAME || '@hosting/zenit-ui';
+const expectedName = process.env.NPM_PACKAGE_NAME || '@zenit-hosting/zenit-ui';
 const expectedVersion = JSON.parse(
   readFileSync(resolve(ROOT, 'projects/zenit-ui/package.json'), 'utf8'),
 ).version;

@@ -1,5 +1,5 @@
 /**
- * Unit tests of the `ng add zenit-ui` schematic.
+ * Unit tests of the `ng-add` schematic.
  *
  * The runner loads the *compiled* collection from `dist/zenit-ui/schematics`,
  * so `node tools/build-schematics.mjs` has to run first. `node

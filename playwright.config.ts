@@ -20,6 +20,10 @@ export default defineConfig({
   fullyParallel: false,
   workers: 1,
   timeout: 90_000,
+  // In der CI einmal wiederholen: auf dem Windows-Runner blieb einmal eine Seite 90 s ohne
+  // h1, die davor und danach sofort lud (lokal in fünf Läufen nicht nachstellbar). Ein Test,
+  // der erst im zweiten Versuch besteht, steht im Bericht als "flaky" und bleibt sichtbar.
+  retries: process.env['CI'] ? 1 : 0,
   expect: { timeout: 15_000 },
   reporter: [['list']],
   use: {

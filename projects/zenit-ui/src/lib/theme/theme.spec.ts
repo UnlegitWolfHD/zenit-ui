@@ -259,7 +259,7 @@ describe('ZTheme', () => {
 
     it('replaces an id that is not registered with the default', () => {
       ziel.setAttribute('data-theme', 'sepia');
-      ziel.setAttribute('data-accent', 'orange');
+      ziel.setAttribute('data-accent', 'gelb');
 
       const theme = dienst({ storageKey: null });
 
@@ -300,7 +300,7 @@ describe('ZTheme', () => {
   });
 
   it('ignores a stored unknown id and keeps the defaults', () => {
-    ablage.setItem('zenit-theme', JSON.stringify({ scheme: 'sepia', accent: 'orange' }));
+    ablage.setItem('zenit-theme', JSON.stringify({ scheme: 'sepia', accent: 'gelb' }));
 
     const theme = dienst();
 
@@ -360,7 +360,7 @@ describe('ZTheme', () => {
     theme.setAccent('blau');
 
     expect(theme.setScheme('sepia')).toBe(false);
-    expect(theme.setAccent('orange')).toBe(false);
+    expect(theme.setAccent('gelb')).toBe(false);
 
     expect(theme.scheme()).toBe('light');
     expect(theme.accent()).toBe('blau');
@@ -483,21 +483,21 @@ describe('ZTheme', () => {
     const theme = dienst();
 
     expect(theme.setScheme('sepia')).toBe(false);
-    expect(theme.setAccent('orange')).toBe(false);
+    expect(theme.setAccent('gelb')).toBe(false);
 
     expect(warnung).toHaveBeenCalledTimes(2);
     expect(warnung.mock.calls[0][0]).toContain('setScheme("sepia")');
-    expect(warnung.mock.calls[1][0]).toContain('setAccent("orange")');
+    expect(warnung.mock.calls[1][0]).toContain('setAccent("gelb")');
   });
 
   it('warns in dev mode about defaults that are not registered', () => {
     const warnung = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
 
-    dienst({ defaultScheme: 'sepia', defaultAccent: 'orange' });
+    dienst({ defaultScheme: 'sepia', defaultAccent: 'gelb' });
 
     expect(warnung.mock.calls.map((aufruf) => String(aufruf[0]))).toEqual([
       expect.stringContaining('defaultScheme "sepia"'),
-      expect.stringContaining('defaultAccent "orange"'),
+      expect.stringContaining('defaultAccent "gelb"'),
     ]);
   });
 
@@ -650,7 +650,7 @@ describe('zenitThemeInitScript', () => {
     JSON.stringify({ scheme: 'contrast' }),
     JSON.stringify({ accent: 'gruen' }),
     JSON.stringify({ scheme: 'system', accent: 'rot' }),
-    JSON.stringify({ scheme: 'sepia', accent: 'orange' }),
+    JSON.stringify({ scheme: 'sepia', accent: 'gelb' }),
     JSON.stringify({ scheme: ['light'], accent: 5 }),
     JSON.stringify({ scheme: 'tuerkis-schema', accent: 'tuerkis' }),
   ];

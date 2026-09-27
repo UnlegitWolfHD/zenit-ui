@@ -1,5 +1,5 @@
 /*
- * Plain TypeScript without a single import, on purpose: `ng add zenit-ui`
+ * Plain TypeScript without a single import, on purpose: the `ng-add` schematic
  * needs the same script, and schematics are compiled apart from the library
  * (CommonJS, no DOM types, `rootDir: schematics`). A byte-identical copy of
  * this file therefore lives at `schematics/ng-add/init-script.ts`; the test in
@@ -28,7 +28,7 @@ export interface ZThemeInitConfig {
    * named by {@link defaultAccent} carries no attribute, because the default
    * accent already lives in `tokens.css` and in the scheme blocks.
    *
-   * @default ['rot', 'blau', 'gruen', 'violett']
+   * @default ['rot', 'blau', 'gruen', 'violett', 'indigo', 'orange', 'rose', 'schwarz']
    */
   readonly accents?: readonly string[];
 
@@ -66,7 +66,7 @@ export interface ZThemeInitConfig {
 /** @internal Defaults shared by `ZTheme` and the init script. */
 export const THEME_STANDARD: Required<ZThemeInitConfig> = {
   schemes: ['dark', 'light', 'contrast'],
-  accents: ['rot', 'blau', 'gruen', 'violett'],
+  accents: ['rot', 'blau', 'gruen', 'violett', 'indigo', 'orange', 'rose', 'schwarz'],
   defaultScheme: 'dark',
   defaultAccent: 'rot',
   storageKey: 'zenit-theme',
@@ -151,7 +151,7 @@ function alsLiteral(wert: unknown): string {
  * "critical" CSS and loads the rest late; `[data-theme="light"]` is never
  * critical, because nothing in `index.html` matches it. Set
  * `optimization.styles.inlineCritical` to `false` in the `production`
- * configuration of the build target; `ng add zenit-ui --themes` writes both
+ * configuration of the build target; `ng generate zenit-ui:ng-add --themes` writes both
  * the script and that setting.
  *
  * With a Content Security Policy the returned string is what you hash

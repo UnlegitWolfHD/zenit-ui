@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **A release is a merge.** `.github/workflows/publish.yml` also runs on a push to `main` that changes the version in `projects/zenit-ui/package.json`: it publishes that version, then creates the tag `v<version>` and a GitHub release whose text is the version's section of this file (`tools/release-notes.mjs`). A push whose version is already on npm does nothing (`RELEASE_AUTO=1` in `tools/check-release.mjs`, which now also fails a version without a CHANGELOG section). `npm run release:vorbereiten -- patch|minor|major|<version>` (`tools/release-prepare.mjs`) raises the version and turns `[Unreleased]` into the dated section. Documented in [`docs/veroeffentlichen.md`](docs/veroeffentlichen.md).
+- **Documentation matches the npm release.** The package README, the root README, `CONTRIBUTING.md`, `docs/ng-add.md`, `docs/migration-from-material.md`, `docs/theming.md`, `docs/llms.md`, the example app README and the setup step of `llms.txt`/`llms-full.txt` install `@zenit-hosting/zenit-ui` from npmjs.org under the alias `zenit-ui` (`npm install zenit-ui@npm:@zenit-hosting/zenit-ui@^0.2.0`) and run the setup with `ng generate zenit-ui:ng-add` instead of `ng add`; a local tarball is only the way to try an unreleased build, installed under the same alias. The release sections describe the merge-to-publish flow with `npm run release:vorbereiten`, `docs/veroeffentlichen.md` marks the GitLab pipeline as the alternative and states that the package ships its source map with the TypeScript sources, and the contrast gate figures read 3 schemes × 8 accents, 1776 pairs. The page "Einbindung" of `beispiel-app` shows the aliased install and `ng generate zenit-ui:ng-add` instead of `ng add zenit-ui` and a tarball (its `e2e:beispiel` baselines need re-recording), and `tools/check-pack.mjs` and `tools/check-release.mjs` default to `@zenit-hosting/zenit-ui`; the GitLab CI keeps setting `@hosting/zenit-ui` itself.
+
+## [0.2.0] - 2026-09-26
+
+### Added
+
+- **Accents `indigo`, `orange` and `rose`.** With `blau`, `gruen`, `violett` and the default `rot` every accent a Zenit account can pick now has a library counterpart, so an application passes the choice through as `data-accent` instead of keeping its own colours. Derived by the same four rules as the others; on the light ground `orange` takes a deeper `accent-text` (`#7c2d12`) to keep 1.25:1 from `--danger`. Added to the default `accents`, the demo theme controls and `e2e/themes.spec.ts`; `check:themes` covers 24 combinations with 1776 pairs.
+- **Accent `schwarz`.** An accent without a hue: on the light scheme the fill and `accent-text` are near black (`#18181b`, white on it 17.72:1), for pages whose actions should not be coloured. On `dark` and `contrast` the fill is graphite (`#52525b`) with a light grey `accent-text`, because a black fill disappears on a black ground and a light grey one would miss 3:1 against the white focus ring. On `light` this accent also sets `--focus` to `#2563eb`, the only accent that touches a token outside the five: the near-black ring would sit on the black fill at 1:1. Added to the default `accents` of `zenitThemeInitScript` and the `ng add` script, the theme controls of both demo applications and `e2e/themes.spec.ts`; `check:themes` covered 15 combinations at that point. Values and reasoning in [`docs/theming.md`](docs/theming.md).
+
+## Earlier, not yet assigned to a release
+
 ### Added
 
 - **Publishing to npmjs.org through GitHub Actions.** The library is now named `@zenit-hosting/zenit-ui` with `publishConfig.access: public`, so the built files are `fesm2022/zenit-hosting-zenit-ui.mjs` and `types/zenit-hosting-zenit-ui.d.ts`; the import path in consumers stays whatever their dependency key is. `.github/workflows/publish.yml` runs on a published GitHub Release: lint, build, unit tests, release check, pack check, `npm publish --access public` with the secret `NPM_TOKEN`. See [`docs/veroeffentlichen.md`](docs/veroeffentlichen.md).

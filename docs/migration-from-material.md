@@ -23,7 +23,7 @@ What this means in practice: a route is migrated by rewriting its template and d
 
 Phases 4 to 6 of `00-auftrag.md` and "Einbau in die App" in `40-bibliothek.md` agree on this order:
 
-1. **Install and wire up the library.** `ng build zenit-ui`, `npm pack` in `dist/zenit-ui`, `npm i ./zenit-ui-0.1.0.tgz` in the application. Then the four styles in `angular.json` in exactly this order: `zenit-ui/styles/tokens.css`, `@angular/cdk/overlay-prebuilt.css`, `zenit-ui/styles/zenit-ui.css`, `src/styles.css`.
+1. **Install and wire up the library.** `npm install zenit-ui@npm:@zenit-hosting/zenit-ui` in the application (the alias keeps the import path `zenit-ui`; never install the unscoped `zenit-ui`). Then the four styles in `angular.json` in exactly this order: `zenit-ui/styles/tokens.css`, `@angular/cdk/overlay-prebuilt.css`, `zenit-ui/styles/zenit-ui.css`, `src/styles.css`.
 2. **`z-root` on `<html>` and on `<body>`.** This is what makes Arial disappear: the class sets `font: inherit` for `button`, `input`, `select` and `textarea`. `20-bestandsaufnahme.md` counts 72 elements on the start page and 51 in the panel that fall back to Arial today.
 3. **Self-host the fonts.** Material Icons, Inter, Space Grotesk, JetBrains Mono, with `layer(schriften)` on the Material Icons import — see `projects/zenit-ui/README.md`, step 3. Press Start 2P and Fira Code are dropped.
 4. **Shell.** AppHeader, page frame, Footer. Mount `<z-toast-outlet />` once at the end of the layout.
