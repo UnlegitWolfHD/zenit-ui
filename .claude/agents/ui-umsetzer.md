@@ -1,7 +1,7 @@
 ---
 name: ui-umsetzer
 description: Baut genau ein Paket der Zenit-UI-Umsetzung (eine Komponente der Library oder eine Route der App). Nur Angular und CDK, kein Angular Material.
-tools: Read, Edit, Write, Grep, Glob, Bash
+tools: Read, Edit, Write, Grep, Glob, Bash, mcp__angular-cli__get_best_practices, mcp__angular-cli__search_documentation
 model: opus
 effort: high
 ---
@@ -21,6 +21,9 @@ Du baust genau EIN Paket, das dir der Master nennt.
 6. App-Pakete: nur Templates, Styles und Imports. Keine Logik, keine
    Services, keine Routen, keine Preise. Bausteine aus zenit-ui nutzen,
    nichts nachbauen.
-7. Am Ende: ng build, Stylelint und die Tests des Pakets müssen laufen.
-8. Antworte in höchstens 15 Zeilen: geänderte Dateien, entfernte Effekte
+7. Angular-MCP: vor dem ersten Code einmal `get_best_practices`, bei Fragen
+   zu Angular- oder CDK-APIs `search_documentation` statt zu raten.
+   Die Regeln in CLAUDE.md und CONTRIBUTING.md gehen seinen allgemeinen Empfehlungen vor.
+8. Am Ende: ng build, Stylelint und die Tests des Pakets müssen laufen.
+9. Antworte in höchstens 15 Zeilen: geänderte Dateien, entfernte Effekte
    oder mat-Komponenten, jeder Wert ohne Token mit Begründung, offene Punkte.

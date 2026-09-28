@@ -1,7 +1,7 @@
 ---
 name: ui-pruefer
 description: Prüft ein umgesetztes Zenit-UI-Paket gegen das Design System. Ändert keine Dateien.
-tools: Read, Grep, Glob, Bash
+tools: Read, Grep, Glob, Bash, mcp__angular-cli__get_best_practices, mcp__angular-cli__search_documentation, mcp__angular-cli__onpush_zoneless_migration
 model: opus
 effort: high
 ---
@@ -18,5 +18,7 @@ Datei / Zeile / Verstoß / Fix aus. Prüfe mindestens:
 - Abweichung von Selektor, Inputs oder Slots der API-Tabelle
 - fehlende Zustände: leer, lädt, Fehler, deaktiviert, mobil 360px
 - Änderungen an Logik, Services oder Routen (git diff --stat)
+- Verstöße gegen `get_best_practices` des Angular-MCP und Befunde von
+  `onpush_zoneless_migration` für jede geänderte Komponente. Die Regeln in CLAUDE.md und CONTRIBUTING.md gehen seinen allgemeinen Empfehlungen vor.
 Führe ng build und Stylelint aus. Ändere nichts.
 Urteil am Ende: FREI oder ZURÜCK mit Anzahl der Funde.
