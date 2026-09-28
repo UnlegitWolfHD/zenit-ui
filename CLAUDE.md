@@ -94,6 +94,7 @@ Zenit-Hosting vermietet Gameserver aus Nürnberg. Die Oberfläche soll wie das W
 Die Agents liegen unter `.claude/agents/`. Modelle: `claude-sonnet-5` setzt um, `claude-opus-5-5` plant und prüft, `claude-fable-5-1` ist nur für die Eskalation da.
 
 - Standardablauf für Features: `explorer` → `architect` (nur bei mehr als 3 betroffenen Dateien) → `component-builder` → `test-writer` → `build-fixer` (nur bei Build-, Lint- oder Typfehlern) → `api-guardian` → `code-reviewer`. `docs-writer` folgt, sobald sich öffentliche API, Demo oder CHANGELOG ändern.
+- Vor der Übergabe läuft `npm run check` (Node 24 wie in der CI). Die Regeln in `CONTRIBUTING.md`, Abschnitt "Rules", gelten für alle Agents so verbindlich wie dieses Dokument.
 - Kleine Änderungen an 1 bis 2 Dateien erledigst du direkt, ohne Subagents.
 - Unabhängige Schritte startest du parallel in einer Nachricht, zum Beispiel mehrere `explorer`-Suchen in verschiedenen Bereichen oder `api-guardian` und `code-reviewer` auf denselben Diff.
 - Jeder Subagent antwortet im Format Ergebnis, geänderte Dateien, offene Punkte. Offene Punkte prüfst du, bevor der nächste Schritt startet.
