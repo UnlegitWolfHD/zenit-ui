@@ -88,3 +88,14 @@ Zenit-Hosting vermietet Gameserver aus Nürnberg. Die Oberfläche soll wie das W
 ## Verboten
 
 `@angular/material`, `linear-gradient`, `radial-gradient`, `backdrop-filter`, `text-shadow`, farbige `box-shadow`, Raster-Hintergründe, Pill-Badges über Überschriften, Versal-Labels, Icon-Flächen, Karten mit farbigem Rand, Kennzahlen-Kacheln für Marketing-Zahlen, Hex-Werte oder Pixel-Werte außerhalb der Tokens.
+
+## Subagents
+
+Die Agents liegen unter `.claude/agents/`. Modelle: `claude-sonnet-5` setzt um, `claude-opus-5-5` plant und prüft, `claude-fable-5-1` ist nur für die Eskalation da.
+
+- Standardablauf für Features: `explorer` → `architect` (nur bei mehr als 3 betroffenen Dateien) → `component-builder` → `test-writer` → `build-fixer` (nur bei Build-, Lint- oder Typfehlern) → `api-guardian` → `code-reviewer`. `docs-writer` folgt, sobald sich öffentliche API, Demo oder CHANGELOG ändern.
+- Kleine Änderungen an 1 bis 2 Dateien erledigst du direkt, ohne Subagents.
+- Unabhängige Schritte startest du parallel in einer Nachricht, zum Beispiel mehrere `explorer`-Suchen in verschiedenen Bereichen oder `api-guardian` und `code-reviewer` auf denselben Diff.
+- Jeder Subagent antwortet im Format Ergebnis, geänderte Dateien, offene Punkte. Offene Punkte prüfst du, bevor der nächste Schritt startet.
+- `escalation` rufst du nur auf, wenn ein anderer Agent dieselbe Aufgabe zweimal nicht lösen konnte oder der `architect` ausdrücklich dazu rät. Im Aufruf steht eine Zusammenfassung der bisherigen Fehlversuche: Aufgabe, jeweiliger Ansatz, Fehlerausgabe, berührte Dateien.
+- `ui-umsetzer`, `ui-umsetzer-fable`, `ui-pruefer` und `ui-pruefer-fable` bleiben für die paketweise Umsetzung des Design Systems bestehen.
