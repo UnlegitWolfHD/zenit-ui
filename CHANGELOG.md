@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-09-28
+
+### Added
+
+- **Tooling for Claude Code.** Subagents in `.claude/agents/` (explorer, architect, component-builder, designer, test-writer, build-fixer, api-guardian, code-reviewer, docs-writer, escalation) with the rules of `CONTRIBUTING.md`, the skill `/feature` for their order, and the Angular CLI MCP server (`.mcp.json`, `tools/angular-mcp.mjs`). `npm run design:shot -- <route>` (`tools/design-shot.mjs`) renders demo pages at any width and colour scheme to `tmp/design/`, with axe, an overflow check and focus and hover close-ups. `npm run check:agents` (`tools/check-agents.mjs`) validates the frontmatter, models, tools and paths of the agents and skills and is the first step of `npm run check`. Hooks format written files with Prettier and, in cloud sessions, run `npm ci`; `tools/cloud-setup.sh` installs Node 24 there. Nothing in the published package changes.
+
 ### Changed
 
 - **A release is a merge.** `.github/workflows/publish.yml` also runs on a push to `main` that changes the version in `projects/zenit-ui/package.json`: it publishes that version, then creates the tag `v<version>` and a GitHub release whose text is the version's section of this file (`tools/release-notes.mjs`). A push whose version is already on npm does nothing (`RELEASE_AUTO=1` in `tools/check-release.mjs`, which now also fails a version without a CHANGELOG section). `npm run release:vorbereiten -- patch|minor|major|<version>` (`tools/release-prepare.mjs`) raises the version and turns `[Unreleased]` into the dated section. Documented in [`docs/veroeffentlichen.md`](docs/veroeffentlichen.md).
