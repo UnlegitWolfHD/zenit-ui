@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-09-28
+
+### Changed
+
+- **MIT license.** The package was published as `UNLICENSED`, which gave nobody the right to use it. It is now `"license": "MIT"`, with `LICENSE` at the repository root and in the package (`projects/zenit-ui/LICENSE`, shipped by ng-packagr). The name Zenit-Hosting and its logo are not covered; the new section "License" in the package README says so and names the licenses of the fonts an application self-hosts (SIL OFL 1.1, Apache 2.0). `CONTRIBUTING.md` states that contributions come under the same license. `tools/check-pack.mjs` now fails when the manifest does not declare MIT or when `LICENSE` is missing from the tarball or differs from the root file.
+
 ## [0.2.1] - 2026-09-28
 
 ### Added

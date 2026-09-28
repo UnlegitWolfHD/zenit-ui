@@ -166,3 +166,7 @@ The library is published on npmjs.org as `@zenit-hosting/zenit-ui`, and a releas
 4. PR to `main`, merge.
 
 On the merge, `.github/workflows/publish.yml` sees the changed version, runs the checks, publishes to npm (`latest`, prereleases as `next`) and creates the tag `v<version>` and a GitHub release with the changelog section. A push whose version is already on npm publishes nothing, and a missing changelog section fails the run (`tools/check-release.mjs`). Consumers pick new versions up themselves; the Zenit frontend opens a PR for each through its own `.github/workflows/zenit-ui-update.yml`. The GitLab pipeline in `.gitlab-ci.yml` (package name `@hosting/zenit-ui`, GitLab npm registry, protected tag `v<version>`) remains as an alternative. Details, including both pipelines' jobs, are in [`docs/veroeffentlichen.md`](docs/veroeffentlichen.md).
+
+## License of contributions
+
+The project is licensed under MIT (`LICENSE`). By opening a pull request you agree that your contribution is published under the same license, and you confirm that you wrote it yourself or have the right to submit it under MIT. Do not copy code, styles, fonts or images whose license is incompatible with MIT or unknown. `LICENSE` at the root and `projects/zenit-ui/LICENSE` stay identical: ng-packagr ships the second one, and `tools/check-pack.mjs` fails the release when they differ.

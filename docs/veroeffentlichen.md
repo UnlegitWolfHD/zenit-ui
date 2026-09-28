@@ -27,7 +27,7 @@ Consumer ziehen neue Versionen selbst nach: Das Frontend hat dafür `.github/wor
 
 ### Was im Paket steht
 
-Das Paket ist öffentlich und `UNLICENSED`. Es enthält `fesm2022/zenit-hosting-zenit-ui.mjs.map` mit dem vollständigen TypeScript-Quelltext der Library (`sourcesContent`): Der Library-Build schaltet Sourcemaps nicht ab, und `tools/check-pack.mjs` lässt die Datei zu. Soll der Quelltext nicht mehr mitgehen, muss das im Build geändert werden, nicht hier.
+Das Paket ist öffentlich und steht unter der MIT-Lizenz (`"license": "MIT"`, `LICENSE` liegt im Paket). `tools/check-pack.mjs` bricht ab, wenn das Manifest nicht MIT angibt oder `LICENSE` fehlt oder von der Datei im Wurzelverzeichnis abweicht. Name und Logo von Zenit-Hosting sind davon ausgenommen, siehe Abschnitt "License" im Paket-README. Das Paket enthält `fesm2022/zenit-hosting-zenit-ui.mjs.map` mit dem vollständigen TypeScript-Quelltext der Library (`sourcesContent`): Der Library-Build schaltet Sourcemaps nicht ab, und `tools/check-pack.mjs` lässt die Datei zu. Soll der Quelltext nicht mehr mitgehen, muss das im Build geändert werden, nicht hier.
 
 ## Paketname
 
