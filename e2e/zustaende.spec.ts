@@ -169,11 +169,7 @@ const BAUSTEINE: Baustein[] = [
   {
     name: 'button-danger',
     route: 'grundlage',
-    ziel: (p) =>
-      abschnitt(p, 'Button')
-        .locator('.demo-row')
-        .first()
-        .getByRole('button', { name: 'Hart beenden' }),
+    ziel: (p) => reihe(p, 'Button', 'Unumkehrbar').getByRole('button', { name: 'Hart beenden' }),
     hoverFarbe: true,
   },
   {

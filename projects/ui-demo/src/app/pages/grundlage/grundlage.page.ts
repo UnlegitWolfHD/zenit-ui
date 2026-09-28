@@ -46,6 +46,13 @@ import {
         <button zBtn="primary"><z-icon name="add" />Server erstellen</button>
         <button zBtn="secondary">Preis berechnen</button>
         <button zBtn="ghost">Abbrechen</button>
+      </div>
+
+      <div class="demo-row">
+        <p class="demo-cap caption">
+          Unumkehrbar: danger steht nie neben primary, sondern im Menü oder im Bestätigungsdialog
+        </p>
+        <button zBtn="ghost">Abbrechen</button>
         <button zBtn="danger"><z-icon name="power_settings_new" />Hart beenden</button>
       </div>
 
