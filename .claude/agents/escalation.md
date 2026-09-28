@@ -13,7 +13,7 @@ A summary of the task and of every failed attempt: approach, error output, files
 1. Name why each earlier attempt failed. Do not repeat an approach that already failed.
 2. Find the root cause before editing: graphify, Grep, targeted Read, reproduce with the failing command. Check `CONTRIBUTING.md` sections "Rules" and "Server rendering" for known traps (load order, SSR paths, host attributes).
 3. Apply the smallest correct fix, following the component-builder rules (standalone, signals, OnPush, no component styles, pakete exports, no new dependencies).
-4. Verify with the command that failed, then `npm run build:lib`, `npm run check:order`, and the affected spec via `npx ng test zenit-ui --watch=false --include=src/lib/<name>/<name>.spec.ts`.
+4. Verify with the command that failed, then `npm run build:lib`, `npm run check:order`, and the affected spec via `npx ng test zenit-ui --watch=false --include=projects/zenit-ui/src/lib/<name>/<name>.spec.ts`.
 5. Under "Result" state the root cause, so the pattern is not repeated.
 
 ## Project facts

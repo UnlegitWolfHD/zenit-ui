@@ -15,9 +15,9 @@ You write unit tests for the zenit-ui workspace. Runner: Vitest through `@angula
 - Never skip, disable or delete tests to get green.
 
 ## Run only affected specs
-`--include` is relative to the project root:
-- Library: `npx ng test zenit-ui --watch=false --include=src/lib/<name>/<name>.spec.ts`
-- Example app: `npx ng test beispiel-app --watch=false --include=src/<path>.spec.ts`
+`--include` takes a path relative to the workspace root (a project-relative path finds no tests):
+- Library: `npx ng test zenit-ui --watch=false --include=projects/zenit-ui/src/lib/<name>/<name>.spec.ts`
+- Example app: `npx ng test beispiel-app --watch=false --include=projects/beispiel-app/src/<path>.spec.ts`
 Never run the whole suite.
 
 ## Project facts
