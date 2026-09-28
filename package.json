@@ -11,6 +11,7 @@
     "snippets": "node tools/generate-example-snippets.mjs",
     "check:snippets": "node tools/generate-example-snippets.mjs --check",
     "check:themes": "node tools/check-theme-contrast.mjs",
+    "check:agents": "node tools/check-agents.mjs",
     "check:order": "node tools/check-declaration-order.mjs",
     "check:bundle": "node tools/check-bundle-load.mjs",
     "check:ssr": "node tools/check-ssr.mjs",
@@ -29,7 +30,7 @@
     "docs:llms": "node tools/generate-llms.mjs",
     "check:llms": "node tools/generate-llms.mjs --check",
     "release:vorbereiten": "node tools/release-prepare.mjs",
-    "check": "npm run lint && npm run lint:css && npm run check:themes && npm run check:snippets && npm run check:order && npm run build:lib && npm run check:llms && npm run check:bundle && ng build ui-demo && ng build beispiel-app && npm run check:ssr && ng test zenit-ui --watch=false && ng test beispiel-app --watch=false && npm run test:beispiel:jit && npm run test:schematics && npm run format:check",
+    "check": "npm run check:agents && npm run lint && npm run lint:css && npm run check:themes && npm run check:snippets && npm run check:order && npm run build:lib && npm run check:llms && npm run check:bundle && ng build ui-demo && ng build beispiel-app && npm run check:ssr && ng test zenit-ui --watch=false && ng test beispiel-app --watch=false && npm run test:beispiel:jit && npm run test:schematics && npm run format:check",
     "design:shot": "node tools/design-shot.mjs"
   },
   "private": true,

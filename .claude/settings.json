@@ -15,6 +15,18 @@
           }
         ]
       }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/after-edit.mjs\"",
+            "timeout": 30
+          }
+        ]
+      }
     ]
   },
   "permissions": {
@@ -41,6 +53,20 @@
       "mcp__angular-cli__search_documentation",
       "mcp__angular-cli__list_projects",
       "mcp__angular-cli__onpush_zoneless_migration"
+    ],
+    "ask": [
+      "Bash(npm publish*)",
+      "Bash(npm run release*)",
+      "Bash(npm version*)",
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
+      "Bash(git push * --force*)",
+      "Bash(git push * -f*)",
+      "Bash(git reset --hard*)",
+      "Bash(git clean*)",
+      "Bash(git checkout -- *)",
+      "Bash(git restore *)",
+      "Bash(rm -rf *)"
     ]
   }
 }
