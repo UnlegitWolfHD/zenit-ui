@@ -405,3 +405,12 @@ npm run start:beispiel # example app: one complete page against dist/zenit-ui
 The demo app `ui-demo` shows every building block in the states idle, hover, focus, active, disabled, loading, error, empty and success. It is the reference for markup and classes.
 
 The example app `beispiel-app` shows one complete page of the customer area, built the way an application builds it: it imports from the package in `dist/zenit-ui` and follows the setup steps above one by one. Its page "Einbindung" and the disclosures on the Gameserver page show the real files of that setup, generated from the sources themselves. Copy it as the starting point for a real page; `projects/beispiel-app/README.md` maps every region of the page to the rule it follows.
+
+## License
+
+MIT, see [`LICENSE`](LICENSE). You may use, change and ship the library in open and closed, free and commercial projects. The one condition: keep the copyright notice and the license text with every copy of the code you pass on. The library comes without any warranty.
+
+What the license does not cover:
+
+- **The name and the logo.** "Zenit-Hosting" and the Zenit logo stay with Zenit-Hosting. You may say that your product uses `zenit-ui`. You may not present your product, or a fork of the library, as made by or endorsed by Zenit-Hosting. The logo is not part of the package.
+- **Fonts and icons.** The package contains none. The fonts your application self-hosts come with their own licenses: Inter, Space Grotesk and JetBrains Mono under the SIL Open Font License 1.1, Material Icons under the Apache License 2.0.

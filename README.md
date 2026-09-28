@@ -85,3 +85,7 @@ How to pull the library into an application is described in `projects/zenit-ui/R
 ## Release
 
 A release is a merge to `main`: write the notes under `## [Unreleased]` in `CHANGELOG.md`, run `npm run release:vorbereiten -- patch` (or `minor`, `major`, an explicit version), run `npm run e2e` and `npm run e2e:beispiel` locally on Windows, then open a PR to `main`. When the merge changes the version in `projects/zenit-ui/package.json`, `.github/workflows/publish.yml` publishes `@zenit-hosting/zenit-ui` to npmjs.org and creates the tag `v<version>` and a GitHub release with the changelog section. A push without a version change publishes nothing. The GitLab pipeline in `.gitlab-ci.yml` remains as an alternative. Details in [`docs/veroeffentlichen.md`](docs/veroeffentlichen.md).
+
+## License
+
+MIT, see [`LICENSE`](LICENSE). The license covers the code, the styles and the documentation in this repository, not the name Zenit-Hosting or its logo; the details are in the [package README](projects/zenit-ui/README.md#license). Contributions are accepted under the same license (see `CONTRIBUTING.md`).

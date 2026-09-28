@@ -1,7 +1,7 @@
 {
   "name": "@zenit-hosting/zenit-ui",
-  "version": "0.2.1",
-  "license": "UNLICENSED",
+  "version": "0.2.2",
+  "license": "MIT",
   "publishConfig": {
     "access": "public"
   },

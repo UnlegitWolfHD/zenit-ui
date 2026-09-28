@@ -34,6 +34,7 @@
     "design:shot": "node tools/design-shot.mjs"
   },
   "private": true,
+  "license": "MIT",
   "packageManager": "npm@11.11.0",
   "dependencies": {
     "@angular/cdk": "^22.1.7",

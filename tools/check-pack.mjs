@@ -12,12 +12,15 @@
  *
  * Fails when
  * - a file lies outside the allowed top-level entries of a built package
- *   (fesm2022, types, styles, schematics, llms*.txt, package.json, README.md),
+ *   (fesm2022, types, styles, schematics, llms*.txt, package.json, README.md,
+ *   LICENSE),
  * - anything looks like source or tooling: `src/`, a spec, a `.ts` that is not
  *   a declaration, schematic fixtures, `.npmrc`, `.env`, a nested tarball,
  * - a file contains something shaped like a credential,
  * - `package.json` does not carry the expected name (NPM_PACKAGE_NAME, default
  *   `@zenit-hosting/zenit-ui`) and the version of projects/zenit-ui/package.json,
+ * - `package.json` does not declare `"license": "MIT"`, or `LICENSE` is missing
+ *   or differs from the LICENSE at the repository root,
  * - the tarball grows past the size limits below.
  */
 
@@ -38,6 +41,7 @@ const MAX_UNPACKED = 4_000_000;
 const ALLOWED = [
   /^package\.json$/,
   /^README\.md$/,
+  /^LICENSE$/,
   /^llms(-full)?\.txt$/,
   // The file is named after the package (ng-packagr): zenit-ui.mjs, zenit-hosting-zenit-ui.mjs …
   /^fesm2022\/[^/]+\.mjs(\.map)?$/,
@@ -125,7 +129,9 @@ const expectedVersion = JSON.parse(
 if (!manifest) {
   problems.push('package.json: missing');
 } else {
-  const { name, version, module } = JSON.parse(manifest.body.toString('utf8'));
+  const { name, version, module, license } = JSON.parse(manifest.body.toString('utf8'));
+  if (license !== 'MIT')
+    problems.push(`package.json: license ${license ?? '(not set)'}, expected MIT`);
   // The bundle named in `module` has to be in the tarball.
   if (!module || !files.some((f) => f.path === `package/${module}`)) {
     problems.push(`package.json: module ${module ?? '(not set)'} is not in the tarball`);
@@ -135,6 +141,13 @@ if (!manifest) {
     problems.push(`package.json: version ${version}, expected ${expectedVersion}`);
   }
 }
+// ng-packagr copies projects/zenit-ui/LICENSE; it has to be the repository's own.
+const licence = files.find((f) => f.path === 'package/LICENSE');
+if (!licence) problems.push('LICENSE: missing');
+else if (licence.body.toString('utf8') !== readFileSync(resolve(ROOT, 'LICENSE'), 'utf8')) {
+  problems.push('LICENSE: differs from the LICENSE at the repository root');
+}
+
 for (const needed of ['styles/tokens.css', 'schematics/collection.json']) {
   if (!files.some((f) => f.path === `package/${needed}`)) problems.push(`${needed}: missing`);
 }
