@@ -88,3 +88,21 @@ Zenit-Hosting vermietet Gameserver aus Nürnberg. Die Oberfläche soll wie das W
 ## Verboten
 
 `@angular/material`, `linear-gradient`, `radial-gradient`, `backdrop-filter`, `text-shadow`, farbige `box-shadow`, Raster-Hintergründe, Pill-Badges über Überschriften, Versal-Labels, Icon-Flächen, Karten mit farbigem Rand, Kennzahlen-Kacheln für Marketing-Zahlen, Hex-Werte oder Pixel-Werte außerhalb der Tokens.
+
+## Subagents
+
+Die Agents liegen unter `.claude/agents/`. Modelle: `claude-sonnet-5` setzt um, `claude-opus-5-5` plant, gestaltet und prüft, `claude-fable-5-1` ist nur für die Eskalation da.
+
+- Kleine Änderungen an 1 bis 2 Dateien erledigst du direkt, ohne Subagents. Alles Größere läuft über den Skill `/feature` (`.claude/skills/feature/SKILL.md`), der Reihenfolge, Parallelität und Übergaben festlegt.
+- `designer` entscheidet das Erscheinungsbild innerhalb der Tokens und der Spezifikation ohne Rückfrage. Neue Tokens, Theme-Werte, Selektoren, Inputs, Outputs und Slots entscheidet der Owner.
+- `escalation` rufst du nur auf, wenn ein anderer Agent dieselbe Aufgabe zweimal nicht lösen konnte oder der `architect` ausdrücklich dazu rät. Im Aufruf steht eine Zusammenfassung der bisherigen Fehlversuche: Aufgabe, jeweiliger Ansatz, Fehlerausgabe, berührte Dateien.
+- `ui-umsetzer`, `ui-umsetzer-fable`, `ui-pruefer` und `ui-pruefer-fable` bleiben für die paketweise Umsetzung des Design Systems bestehen.
+
+### Werkzeuge und Regeln
+
+- Die Regeln in `CONTRIBUTING.md`, Abschnitt "Rules", gelten für alle Agents so verbindlich wie dieses Dokument.
+- Der Angular-MCP-Server `angular-cli` (`.mcp.json`) gehört zu jeder Angular-Aufgabe: `get_best_practices` vor dem ersten Angular-Code, `search_documentation` für Angular- und CDK-APIs, `list_projects` statt `angular.json` zu lesen. Die Regeln in `CONTRIBUTING.md` und hier gehen seinen Empfehlungen vor.
+- `npm run design:shot -- <route>` rendert Demo-Seiten nach `tmp/design/`, in beliebigen Breiten und Farbschemata, mit axe und mit Nahaufnahmen per `--focus` und `--hover`.
+- `graphify query`, `graphify explain "<Symbol>"` und `graphify path "A" "B"` beantworten, wo etwas definiert und benutzt wird, schneller als Grep. Der Graph liegt in `graphify-out/` (nicht eingecheckt).
+- Hooks: Nach jedem Edit und Write formatiert `.claude/hooks/after-edit.mjs` die Datei mit Prettier und aktualisiert den Graph. In Cloud-Sitzungen installiert `tools/cloud-setup.sh` (Setup-Skript der Umgebung) Node 24, und `.claude/hooks/session-start.sh` führt `npm ci` aus und baut den Graph.
+- Veröffentlichen, Release, Force-Push, `git reset --hard`, `git clean` und `rm -rf` fragen immer nach (`permissions.ask`).

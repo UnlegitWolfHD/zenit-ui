@@ -1,0 +1,72 @@
+{
+  "env": {
+    "MCP_TIMEOUT": "120000"
+  },
+  "enabledMcpjsonServers": ["angular-cli"],
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.sh\"",
+            "timeout": 600
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/after-edit.mjs\"",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(npm run build:lib)",
+      "Bash(npm run lint)",
+      "Bash(npm run lint:css)",
+      "Bash(npm run check*)",
+      "Bash(npm run format:check)",
+      "Bash(npm run docs:llms)",
+      "Bash(npm run snippets)",
+      "Bash(npx ng build *)",
+      "Bash(npx ng test *)",
+      "Bash(npx ng lint *)",
+      "Bash(npx prettier *)",
+      "Bash(npm run design:shot*)",
+      "Bash(node tools/check-docs-examples.mjs)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git show*)",
+      "Bash(graphify *)",
+      "mcp__angular-cli__get_best_practices",
+      "mcp__angular-cli__search_documentation",
+      "mcp__angular-cli__list_projects",
+      "mcp__angular-cli__onpush_zoneless_migration"
+    ],
+    "ask": [
+      "Bash(npm publish*)",
+      "Bash(npm run release*)",
+      "Bash(npm version*)",
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
+      "Bash(git push * --force*)",
+      "Bash(git push * -f*)",
+      "Bash(git reset --hard*)",
+      "Bash(git clean*)",
+      "Bash(git checkout -- *)",
+      "Bash(git restore *)",
+      "Bash(rm -rf *)"
+    ]
+  }
+}

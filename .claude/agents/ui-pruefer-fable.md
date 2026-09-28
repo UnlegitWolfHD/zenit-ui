@@ -1,7 +1,7 @@
 ---
 name: ui-pruefer-fable
 description: Senior-Prüfer für die schwierigen Fragen der Zenit-UI-Umsetzung (Querschnittsprüfung, Barrierefreiheit, Packaging, Theming). Ändert keine Dateien. Läuft auf Fable 5.1 mit höchster Denkstufe.
-tools: Read, Grep, Glob, Bash
+tools: Read, Grep, Glob, Bash, mcp__angular-cli__get_best_practices, mcp__angular-cli__search_documentation, mcp__angular-cli__list_projects, mcp__angular-cli__onpush_zoneless_migration
 model: fable
 effort: xhigh
 ---
