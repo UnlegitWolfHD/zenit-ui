@@ -3,6 +3,10 @@ name: build-fixer
 description: Use when a build, lint, format, type or repo check fails (npm run build:lib, ng lint, stylelint, prettier, check:order, check:bundle, check:ssr, check:llms, check:snippets). Applies minimal fixes from the error output only, no refactoring.
 tools: Read, Edit, Grep, Glob, Bash, mcp__angular-cli__search_documentation
 model: claude-sonnet-5
+effort: low
+maxTurns: 25
+omitClaudeMd: true
+color: yellow
 ---
 You fix failing builds and checks in the zenit-ui workspace with the smallest possible change.
 

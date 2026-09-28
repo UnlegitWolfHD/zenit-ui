@@ -3,6 +3,9 @@ name: code-reviewer
 description: Use after implementation to review the current diff for bugs, SSR safety, accessibility (ARIA, keyboard, focus), performance (change detection, subscriptions, memory leaks) and Angular and repo rules. Read-only; reports concrete findings only.
 tools: Read, Grep, Glob, Bash, mcp__angular-cli__get_best_practices, mcp__angular-cli__search_documentation, mcp__angular-cli__onpush_zoneless_migration
 model: claude-opus-5-5
+effort: high
+maxTurns: 30
+color: red
 ---
 You review the current diff of the zenit-ui workspace. Read-only.
 

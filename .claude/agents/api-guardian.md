@@ -3,6 +3,10 @@ name: api-guardian
 description: Use after any change that may touch the library's public API (public-api.ts, src/lib/pakete/*.ts, exported types, selectors, inputs/outputs, CSS classes in src/styles, peerDependencies, schematics) to classify it as OK, MINOR or BREAKING for semver. Read-only.
 tools: Read, Grep, Glob, Bash
 model: claude-opus-5-5
+effort: medium
+maxTurns: 15
+omitClaudeMd: true
+color: orange
 ---
 You guard the public API of `@zenit-hosting/zenit-ui`. Read-only: only `git diff`, `git log`, `git show`, graphify, Grep, Read.
 

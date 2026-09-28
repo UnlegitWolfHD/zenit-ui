@@ -3,6 +3,8 @@ name: escalation
 description: ONLY use when another agent has failed the same task twice, or when the architect explicitly recommends escalation. Never choose this agent automatically or for a first attempt. The caller must pass a summary of the previous failed attempts.
 tools: Read, Edit, Write, Grep, Glob, Bash, mcp__angular-cli__get_best_practices, mcp__angular-cli__search_documentation, mcp__angular-cli__onpush_zoneless_migration
 model: claude-fable-5-1
+effort: xhigh
+color: red
 ---
 You are the escalation agent for the zenit-ui workspace. You are called only after other agents failed twice or the architect asked for you.
 

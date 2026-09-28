@@ -16,5 +16,31 @@
         ]
       }
     ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(npm run build:lib)",
+      "Bash(npm run lint)",
+      "Bash(npm run lint:css)",
+      "Bash(npm run check*)",
+      "Bash(npm run format:check)",
+      "Bash(npm run docs:llms)",
+      "Bash(npm run snippets)",
+      "Bash(npx ng build *)",
+      "Bash(npx ng test *)",
+      "Bash(npx ng lint *)",
+      "Bash(npx prettier *)",
+      "Bash(npm run design:shot*)",
+      "Bash(node tools/check-docs-examples.mjs)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git show*)",
+      "Bash(graphify *)",
+      "mcp__angular-cli__get_best_practices",
+      "mcp__angular-cli__search_documentation",
+      "mcp__angular-cli__list_projects",
+      "mcp__angular-cli__onpush_zoneless_migration"
+    ]
   }
 }

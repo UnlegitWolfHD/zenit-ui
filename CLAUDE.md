@@ -91,14 +91,38 @@ Zenit-Hosting vermietet Gameserver aus Nürnberg. Die Oberfläche soll wie das W
 
 ## Subagents
 
-Die Agents liegen unter `.claude/agents/`. Modelle: `claude-sonnet-5` setzt um, `claude-opus-5-5` plant und prüft, `claude-fable-5-1` ist nur für die Eskalation da.
+Die Agents liegen unter `.claude/agents/`. Modelle: `claude-sonnet-5` setzt um, `claude-opus-5-5` plant, gestaltet und prüft, `claude-fable-5-1` ist nur für die Eskalation da. Jeder Agent hat Aufwand (`effort`) und eine Rundengrenze (`maxTurns`) passend zu seiner Aufgabe.
 
-- Standardablauf für Features: `explorer` → `architect` (nur bei mehr als 3 betroffenen Dateien) → `component-builder` → `test-writer` → `build-fixer` (nur bei Build-, Lint- oder Typfehlern) → `api-guardian` → `code-reviewer`. `docs-writer` folgt, sobald sich öffentliche API, Demo oder CHANGELOG ändern.
-- Vor der Übergabe läuft `npm run check` (Node 24 wie in der CI). Die Regeln in `CONTRIBUTING.md`, Abschnitt "Rules", gelten für alle Agents so verbindlich wie dieses Dokument.
+### Ablauf
+
+1. `explorer`, nur wenn die betroffenen Dateien nicht schon feststehen.
+2. `architect`, nur bei mehr als 3 betroffenen Dateien oder wenn öffentliche API, Paketstruktur, Theming oder SSR berührt sind.
+3. `component-builder` baut Struktur, Markup und Klassen.
+4. Parallel in einer Nachricht: `designer` für das Erscheinungsbild und `test-writer` für die Tests.
+5. `build-fixer`, nur bei Build-, Lint- oder Typfehlern.
+6. Parallel in einer Nachricht: `api-guardian` und `code-reviewer` auf denselben Diff.
+7. `docs-writer`, sobald sich öffentliche API, Demo oder CHANGELOG ändern.
+8. Vor der Übergabe läuft `npm run check` (Node 24 wie in der CI).
+
+### Effizienz
+
+- Kleine Änderungen an 1 bis 2 Dateien erledigst du direkt, ohne Subagents.
+- Gib jedem Agent mit, was schon bekannt ist: Dateiliste des `explorer`, Plan des `architect`, Befunde der Prüfer. Kein Agent sucht, was ein anderer schon gefunden hat.
+- Eine Nachbesserung schickst du mit `SendMessage` an denselben Agent, statt einen neuen zu starten. Er behält seinen Kontext.
+- Unabhängige Schritte startest du parallel in einer Nachricht, zum Beispiel mehrere `explorer`-Suchen in verschiedenen Bereichen.
+- Jeder Subagent antwortet im Format Ergebnis, geänderte Dateien, offene Punkte. Offene Punkte prüfst du, bevor der nächste Schritt startet.
+
+### Design-Befugnis
+
+- `designer` entscheidet über das Erscheinungsbild innerhalb der Tokens und der Spezifikation: Layout, Abstandsstufe, Textstil, Token-Wahl, alle Zustände, responsives Verhalten, Fokus, Kontrast, Oberflächentexte. Er fragt dafür nicht nach.
+- Er ändert die Style-Partials, die Demo-Seiten und Markup und Klassen der Library-Templates. Ein Wert, den `spec/components/bundle.css` nicht hat, ist als dokumentierte Abweichung erlaubt: Kommentar an der Regel und Zeile unter "Documented deviations" im Paket-README.
+- Neue Tokens, Werte in `tokens.css` und in den Themes sowie Selektoren, Inputs, Outputs und Slots entscheidet der Owner. Der Agent nennt sie unter offenen Punkten.
+- Gestaltet wird mit Blick auf das Ergebnis: `npm run design:shot -- <route>` rendert Demo-Seiten in beliebigen Breiten und Farbschemata nach `tmp/design/`, prüft sie mit axe und zeigt mit `--focus` und `--hover` einzelne Elemente in diesen Zuständen.
+
+### Werkzeuge und Regeln
+
+- Die Regeln in `CONTRIBUTING.md`, Abschnitt "Rules", gelten für alle Agents so verbindlich wie dieses Dokument.
 - Der Angular-MCP-Server `angular-cli` (`.mcp.json`, startet `ng mcp` der installierten CLI) gehört zu jeder Angular-Aufgabe: `get_best_practices` vor dem ersten Angular-Code, `search_documentation` für Fragen zu Angular- und CDK-APIs, `list_projects` statt `angular.json` zu lesen. Die Regeln in `CONTRIBUTING.md` und hier gehen seinen allgemeinen Empfehlungen vor. Er braucht Node 22.22.3, 24.15 oder neuer.
 - Cloud-Sitzungen: `tools/cloud-setup.sh` steht als Setup-Skript in der Cloud-Umgebung und installiert Node 24. `.claude/hooks/session-start.sh` führt `npm ci` aus, und `tools/angular-mcp.mjs` startet den MCP-Server erst danach.
-- Kleine Änderungen an 1 bis 2 Dateien erledigst du direkt, ohne Subagents.
-- Unabhängige Schritte startest du parallel in einer Nachricht, zum Beispiel mehrere `explorer`-Suchen in verschiedenen Bereichen oder `api-guardian` und `code-reviewer` auf denselben Diff.
-- Jeder Subagent antwortet im Format Ergebnis, geänderte Dateien, offene Punkte. Offene Punkte prüfst du, bevor der nächste Schritt startet.
 - `escalation` rufst du nur auf, wenn ein anderer Agent dieselbe Aufgabe zweimal nicht lösen konnte oder der `architect` ausdrücklich dazu rät. Im Aufruf steht eine Zusammenfassung der bisherigen Fehlversuche: Aufgabe, jeweiliger Ansatz, Fehlerausgabe, berührte Dateien.
-- `ui-umsetzer`, `ui-umsetzer-fable`, `ui-pruefer` und `ui-pruefer-fable` bleiben für die paketweise Umsetzung des Design Systems bestehen.
+- `ui-umsetzer`, `ui-umsetzer-fable`, `ui-pruefer` und `ui-pruefer-fable` bleiben für die paketweise Umsetzung des Design Systems bestehen und nutzen `npm run design:shot` ebenfalls.

@@ -3,6 +3,9 @@ name: test-writer
 description: Use to write, extend or repair unit tests (*.spec.ts, Vitest via @angular/build:unit-test in jsdom) for zenit-ui components, directives, pipes and services, including ssr.spec.ts cases. Runs only the affected specs.
 tools: Read, Edit, Write, Grep, Glob, Bash, mcp__angular-cli__get_best_practices, mcp__angular-cli__search_documentation
 model: claude-sonnet-5
+effort: medium
+maxTurns: 40
+color: green
 ---
 You write unit tests for the zenit-ui workspace. Runner: Vitest through `@angular/build:unit-test` in jsdom, globals from `vitest/globals`, TestBed.
 

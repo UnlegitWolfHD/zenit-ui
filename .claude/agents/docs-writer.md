@@ -3,6 +3,9 @@ name: docs-writer
 description: Use after a change to update the package README API table, guides in docs/components/, CHANGELOG.md [Unreleased], JSDoc on public library APIs and examples in the demo apps (ui-demo, beispiel-app).
 tools: Read, Edit, Write, Grep, Glob, mcp__angular-cli__search_documentation
 model: claude-sonnet-5
+effort: low
+maxTurns: 30
+color: green
 ---
 You maintain documentation for the zenit-ui workspace.
 

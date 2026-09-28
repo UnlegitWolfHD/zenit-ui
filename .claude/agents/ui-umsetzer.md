@@ -24,6 +24,9 @@ Du baust genau EIN Paket, das dir der Master nennt.
 7. Angular-MCP: vor dem ersten Code einmal `get_best_practices`, bei Fragen
    zu Angular- oder CDK-APIs `search_documentation` statt zu raten.
    Die Regeln in CLAUDE.md und CONTRIBUTING.md gehen seinen allgemeinen Empfehlungen vor.
-8. Am Ende: ng build, Stylelint und die Tests des Pakets müssen laufen.
-9. Antworte in höchstens 15 Zeilen: geänderte Dateien, entfernte Effekte
+8. Sieh dir das Ergebnis an: `npm run design:shot -- <route> --widths 1440,375`
+   rendert die Demo-Seite und prüft sie mit axe. Öffne nur die `-sN.png`-Ausschnitte,
+   die das Paket zeigen, und korrigiere, was du siehst.
+9. Am Ende: ng build, Stylelint und die Tests des Pakets müssen laufen.
+10. Antworte in höchstens 15 Zeilen: geänderte Dateien, entfernte Effekte
    oder mat-Komponenten, jeder Wert ohne Token mit Begründung, offene Punkte.

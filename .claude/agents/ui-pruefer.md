@@ -20,5 +20,8 @@ Datei / Zeile / Verstoß / Fix aus. Prüfe mindestens:
 - Änderungen an Logik, Services oder Routen (git diff --stat)
 - Verstöße gegen `get_best_practices` des Angular-MCP und Befunde von
   `onpush_zoneless_migration` für jede geänderte Komponente. Die Regeln in CLAUDE.md und CONTRIBUTING.md gehen seinen allgemeinen Empfehlungen vor.
-Führe ng build und Stylelint aus. Ändere nichts.
+Sieh dir jede betroffene Route mit `npm run design:shot -- <route> --widths 1440,640,360`
+an, bei Farbfragen auch mit `--scheme light` und `--scheme contrast`, Fokus und Hover
+mit `--focus "<selektor>"` und `--hover "<selektor>"`. Ein Befund braucht
+den Ausschnitt (`-sN.png`), der ihn zeigt. Führe ng build und Stylelint aus. Ändere nichts.
 Urteil am Ende: FREI oder ZURÜCK mit Anzahl der Funde.
