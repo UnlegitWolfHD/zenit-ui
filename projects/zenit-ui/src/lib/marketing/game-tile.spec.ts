@@ -11,6 +11,9 @@ import { ZGameGrid, ZGameTile, ZGameTileLink } from './game-tile';
       [title]="titel()"
       [price]="preis()"
       [cover]="cover()"
+      [coverSrcset]="srcset()"
+      [coverSizes]="sizes()"
+      [coverLoading]="laden()"
       [selected]="gewaehlt()"
       (coverError)="fehler = fehler + 1"
     ></button>
@@ -21,6 +24,9 @@ class GameHost {
   readonly titel = signal('Valheim');
   readonly preis = signal('ab 2,70 € / Monat');
   readonly cover = signal('');
+  readonly srcset = signal('');
+  readonly sizes = signal('');
+  readonly laden = signal<'lazy' | 'eager'>('lazy');
   readonly gewaehlt = signal(false);
   fehler = 0;
 }
@@ -218,6 +224,76 @@ describe('ZGameTile', () => {
     expect(host.fehler).toBe(1);
   });
 
+  it('loads the cover lazily and asynchronously, without srcset or sizes by default', () => {
+    const { kachel, host, rendere } = baue();
+    host.cover.set('/cover/valheim.webp');
+    rendere();
+    const bild = kachel.querySelector('.z-game__cover img') as HTMLImageElement;
+
+    expect(bild.getAttribute('loading')).toBe('lazy');
+    expect(bild.getAttribute('decoding')).toBe('async');
+    expect(bild.hasAttribute('srcset')).toBe(false);
+    expect(bild.hasAttribute('sizes')).toBe(false);
+  });
+
+  it('loads the cover eagerly when coverLoading is eager', () => {
+    const { kachel, host, rendere } = baue();
+    host.cover.set('/cover/valheim.webp');
+    host.laden.set('eager');
+    rendere();
+
+    expect(kachel.querySelector('.z-game__cover img')?.getAttribute('loading')).toBe('eager');
+  });
+
+  it('passes coverSrcset through and takes the grid default for an empty coverSizes', () => {
+    const { kachel, host, rendere } = baue();
+    host.cover.set('/cover/valheim?w=640');
+    host.srcset.set('/cover/valheim?w=320 320w, /cover/valheim?w=640 640w');
+    rendere();
+    const bild = kachel.querySelector('.z-game__cover img') as HTMLImageElement;
+
+    expect(bild.getAttribute('src')).toBe('/cover/valheim?w=640');
+    expect(bild.getAttribute('srcset')).toBe(
+      '/cover/valheim?w=320 320w, /cover/valheim?w=640 640w',
+    );
+    expect(bild.getAttribute('sizes')).toBe('(max-width: 639px) 50vw, 272px');
+
+    host.sizes.set('(min-width: 900px) 220px, 50vw');
+    rendere();
+
+    expect(bild.getAttribute('sizes')).toBe('(min-width: 900px) 220px, 50vw');
+  });
+
+  it('drops a coverSizes without coverSrcset', () => {
+    const { kachel, host, rendere } = baue();
+    host.cover.set('/cover/valheim.webp');
+    host.sizes.set('50vw');
+    rendere();
+
+    expect(kachel.querySelector('.z-game__cover img')?.hasAttribute('sizes')).toBe(false);
+  });
+
+  it('tries again when only the srcset changes after a failure', () => {
+    const { kachel, host, rendere } = baue();
+    host.cover.set('/cover/valheim?w=640');
+    host.srcset.set('/cover/fehlt?w=320 320w');
+    rendere();
+    (kachel.querySelector('.z-game__cover img') as HTMLImageElement).dispatchEvent(
+      new Event('error'),
+    );
+    rendere();
+
+    expect(kachel.querySelector('.z-game__cover img')).toBeNull();
+    expect(host.fehler).toBe(1);
+
+    host.srcset.set('/cover/valheim?w=320 320w');
+    rendere();
+
+    expect(kachel.querySelector('.z-game__cover img')?.getAttribute('srcset')).toBe(
+      '/cover/valheim?w=320 320w',
+    );
+  });
+
   it('tries again when the cover changes', () => {
     const { kachel, host, rendere } = baue();
     host.cover.set('/cover/fehlt.webp');
@@ -245,6 +321,7 @@ describe('ZGameTile', () => {
       [title]="titel()"
       price="ab 1,98 € / Monat"
       [cover]="cover()"
+      [coverSrcset]="srcset()"
       routerLink="/user/games/create"
       [queryParams]="{ game: 'minecraft' }"
       (coverError)="fehler = fehler + 1"
@@ -256,6 +333,7 @@ describe('ZGameTile', () => {
 class LinkHost {
   readonly titel = signal('Minecraft');
   readonly cover = signal('');
+  readonly srcset = signal('');
   fehler = 0;
 }
 
@@ -336,5 +414,20 @@ describe('ZGameTileLink', () => {
     expect(kachel.querySelector('.z-game__cover img')?.getAttribute('src')).toBe(
       '/cover/minecraft.webp',
     );
+  });
+
+  it('takes coverSrcset, the default sizes and lazy loading like the button', () => {
+    const { kachel, host, rendere } = baue();
+    host.cover.set('/cover/minecraft?w=640');
+    host.srcset.set('/cover/minecraft?w=320 320w, /cover/minecraft?w=640 640w');
+    rendere();
+    const bild = kachel.querySelector('.z-game__cover img') as HTMLImageElement;
+
+    expect(bild.getAttribute('srcset')).toBe(
+      '/cover/minecraft?w=320 320w, /cover/minecraft?w=640 640w',
+    );
+    expect(bild.getAttribute('sizes')).toBe('(max-width: 639px) 50vw, 272px');
+    expect(bild.getAttribute('loading')).toBe('lazy');
+    expect(bild.getAttribute('decoding')).toBe('async');
   });
 });

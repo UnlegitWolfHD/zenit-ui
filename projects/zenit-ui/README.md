@@ -234,7 +234,7 @@ Entries marked "(addition)" are not part of the reference table (`spec/guideline
 | Tooltip | `[zTooltip]` | text as the value |
 | Console | `z-console` | `lines: {time, text, level}[]`, `disabled`, `placeholder`; `(command)`; `logLabel`, `inputLabel`, `endLabel` (additions) |
 | Hero | `z-hero` | `title`, `lead`, `note`; slots `[zHeroActions]`, `[zHeroAside]`; `size` (addition) |
-| GameTile | `z-game-grid`, `button[zGameTile]`; `a[zGameTile]` (addition) | `title`, `price`, `cover`, `selected`; `(coverError)` (addition); the link has `title`, `price`, `cover` and `(coverError)`, no `selected` |
+| GameTile | `z-game-grid`, `button[zGameTile]`; `a[zGameTile]` (addition) | `title`, `price`, `cover`, `selected`; `coverSrcset`, `coverSizes`, `coverLoading`, `(coverError)` (additions); the link has the same inputs and `(coverError)`, no `selected` |
 | PriceSummary | `z-price-summary` | `label`, `price`, `period`, `lines: {label, value}[]`, `note`; content is the button |
 | SpecList | `z-spec-list` | `items: {term, value, note, mono}[]` |
 | Faq | `z-faq` | `question`, `open`; content is the answer |

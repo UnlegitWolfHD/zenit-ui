@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.3] - 2026-10-16
+
+### Added
+
+- **Responsive game covers.** `button[zGameTile]` and `a[zGameTile]` take three optional inputs. `coverSrcset` is passed through as `srcset`, `coverSizes` as `sizes`; with a `srcset` and no `sizes` the library sets `"(max-width: 639px) 50vw, 272px"`, the widest a cell of `z-game-grid` gets. `coverLoading` (`'lazy' | 'eager'`, default `'lazy'`) lets the first visible tiles load at once. `cover` stays the `src` and the fallback; a failing `srcset` candidate ends in the same text fallback and `(coverError)`.
+
+### Changed
+
+- **Cover images load lazily.** The `<img>` of a game tile now always carries `loading="lazy"` (or the value of `coverLoading`) and `decoding="async"`. Without the new inputs this is the only change to the markup of 0.2.2; classes, skeleton and accessibility stay as they were. Tiles visible on first paint should get `coverLoading="eager"`.
+
 ## [0.2.2] - 2026-09-28
 
 ### Changed
