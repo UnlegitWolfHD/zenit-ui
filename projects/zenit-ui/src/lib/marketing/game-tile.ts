@@ -15,13 +15,31 @@ import {
  */
 const KACHEL = `<span class="z-game__cover" aria-hidden="true">
     @if (cover() && !coverFailed()) {
-      <img [src]="cover()" alt="" (error)="coverFehlt()" />
+      <img
+        [attr.loading]="coverLoading()"
+        decoding="async"
+        [attr.sizes]="coverSrcset() ? coverSizes() || standardSizes : null"
+        [attr.srcset]="coverSrcset() || null"
+        [src]="cover()"
+        alt=""
+        (error)="coverFehlt()"
+      />
     } @else {
       <span class="z-game__fallback">{{ title() }}</span>
     }
   </span>
   <span class="z-game__title">{{ title() }}</span>
   <span class="z-game__price">{{ price() }}</span>`;
+
+/**
+ * `sizes` of the cover when a {@link ZGameTile.coverSrcset} is set and
+ * {@link ZGameTile.coverSizes} is empty. The grid places columns with
+ * `repeat(auto-fill, minmax(128px, 1fr))` and a 16px gap, so a cell grows to
+ * at most 2 × 128px + 16px = 272px before one more column fits. Below 640px
+ * two columns share the viewport minus its gutters, so a cell is less than
+ * half of it.
+ */
+const COVER_SIZES = '(max-width: 639px) 50vw, 272px';
 
 /**
  * Grid of the game tiles: `auto-fill` from 128px width, so the number of
@@ -129,6 +147,38 @@ export class ZGameTile {
   readonly cover = input('');
 
   /**
+   * `srcset` of the cover image, passed through unchanged, for example
+   * `"/covers/valheim?w=320 320w, /covers/valheim?w=640 640w"`. {@link cover}
+   * stays the `src` and the fallback for browsers without `srcset`. Empty
+   * renders no `srcset`. A candidate that fails to load ends in the same text
+   * fallback and {@link coverError} as a failing {@link cover}.
+   *
+   * @default ''
+   */
+  readonly coverSrcset = input('');
+
+  /**
+   * `sizes` of the cover image, passed through unchanged. Only rendered
+   * together with {@link coverSrcset}. Empty takes the library default
+   * `"(max-width: 639px) 50vw, 272px"`: a cell of `z-game-grid` is never wider
+   * than 272px, and below 640px less than half the viewport. Set your own when
+   * the grid sits in a narrower column, for example
+   * `"(min-width: 900px) 220px, (min-width: 640px) 33vw, 50vw"`.
+   *
+   * @default ''
+   */
+  readonly coverSizes = input('');
+
+  /**
+   * `loading` of the cover image. `'eager'` for the tiles visible on first
+   * paint, so they do not wait for layout; every other tile loads when it
+   * nears the viewport. The image always decodes with `decoding="async"`.
+   *
+   * @default 'lazy'
+   */
+  readonly coverLoading = input<'lazy' | 'eager'>('lazy');
+
+  /**
    * Fires once when the {@link cover} fails to load, so an application can log
    * the dead URL. The tile handles the failure itself and needs no answer: it
    * shows the text fallback of a missing cover from then on.
@@ -153,13 +203,16 @@ export class ZGameTile {
 
   /**
    * True once the browser reported `error` for the current cover. A new
-   * {@link cover} is a new URL, so the flag falls back to `false` with it
-   * instead of hiding an image that may well load.
+   * {@link cover} or {@link coverSrcset} is a new image, so the flag falls
+   * back to `false` with it instead of hiding an image that may well load.
    */
   protected readonly coverFailed = linkedSignal<string, boolean>({
-    source: this.cover,
+    source: () => `${this.cover()} ${this.coverSrcset()}`,
     computation: () => false,
   });
+
+  /** {@link COVER_SIZES}, for the template. */
+  protected readonly standardSizes = COVER_SIZES;
 
   /** `(error)` of the `<img>`: text fallback from now on, and one report. */
   protected coverFehlt(): void {
@@ -234,6 +287,38 @@ export class ZGameTileLink {
   readonly cover = input('');
 
   /**
+   * `srcset` of the cover image, passed through unchanged, for example
+   * `"/covers/valheim?w=320 320w, /covers/valheim?w=640 640w"`. {@link cover}
+   * stays the `src` and the fallback for browsers without `srcset`. Empty
+   * renders no `srcset`. A candidate that fails to load ends in the same text
+   * fallback and {@link coverError} as a failing {@link cover}.
+   *
+   * @default ''
+   */
+  readonly coverSrcset = input('');
+
+  /**
+   * `sizes` of the cover image, passed through unchanged. Only rendered
+   * together with {@link coverSrcset}. Empty takes the library default
+   * `"(max-width: 639px) 50vw, 272px"`: a cell of `z-game-grid` is never wider
+   * than 272px, and below 640px less than half the viewport. Set your own when
+   * the grid sits in a narrower column, for example
+   * `"(min-width: 900px) 220px, (min-width: 640px) 33vw, 50vw"`.
+   *
+   * @default ''
+   */
+  readonly coverSizes = input('');
+
+  /**
+   * `loading` of the cover image. `'eager'` for the tiles visible on first
+   * paint, so they do not wait for layout; every other tile loads when it
+   * nears the viewport. The image always decodes with `decoding="async"`.
+   *
+   * @default 'lazy'
+   */
+  readonly coverLoading = input<'lazy' | 'eager'>('lazy');
+
+  /**
    * Fires once when the {@link cover} fails to load, so an application can log
    * the dead URL. The tile already shows the text fallback by then.
    */
@@ -241,9 +326,12 @@ export class ZGameTileLink {
 
   /** True once the browser reported `error` for the current cover. */
   protected readonly coverFailed = linkedSignal<string, boolean>({
-    source: this.cover,
+    source: () => `${this.cover()} ${this.coverSrcset()}`,
     computation: () => false,
   });
+
+  /** {@link COVER_SIZES}, for the template. */
+  protected readonly standardSizes = COVER_SIZES;
 
   /** `(error)` of the `<img>`: text fallback from now on, and one report. */
   protected coverFehlt(): void {

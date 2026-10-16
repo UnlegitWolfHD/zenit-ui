@@ -33,12 +33,15 @@ available space. The content is the tiles.
 
 ### `button[zGameTile]`
 
-| Input      | Type      | Default | Description                                                                                                   |
-| ---------- | --------- | ------- | ------------------------------------------------------------------------------------------------------------- |
-| `title`    | `string`  | `''`    | Name of the game. Stands below the cover and, without a `cover`, as the text fallback on the cover area.      |
-| `price`    | `string`  | `''`    | Starting price including the period, for example "ab 1,98 € / Monat", shown in the mono face below the title. |
-| `cover`    | `string`  | `''`    | `src` of the cover image, best a store header in 460:215. Empty shows the title as text on the cover area.    |
-| `selected` | `boolean` | `false` | Marks the tile as the chosen game. Boolean attribute.                                                         |
+| Input          | Type                | Default  | Description                                                                                                   |
+| -------------- | ------------------- | -------- | ------------------------------------------------------------------------------------------------------------- |
+| `title`        | `string`            | `''`     | Name of the game. Stands below the cover and, without a `cover`, as the text fallback on the cover area.      |
+| `price`        | `string`            | `''`     | Starting price including the period, for example "ab 1,98 € / Monat", shown in the mono face below the title. |
+| `cover`        | `string`            | `''`     | `src` of the cover image, best a store header in 460:215. Empty shows the title as text on the cover area.    |
+| `coverSrcset`  | `string`            | `''`     | `srcset` of the cover, passed through unchanged. `cover` stays `src` and fallback. Empty renders no `srcset`. |
+| `coverSizes`   | `string`            | `''`     | `sizes` of the cover, only with `coverSrcset`. Empty takes `"(max-width: 639px) 50vw, 272px"`.                |
+| `coverLoading` | `'lazy' \| 'eager'` | `'lazy'` | `loading` of the cover. `'eager'` for the tiles visible on first paint.                                       |
+| `selected`     | `boolean`           | `false`  | Marks the tile as the chosen game. Boolean attribute.                                                         |
 
 | Output         | Type   | Description                                                                             |
 | -------------- | ------ | --------------------------------------------------------------------------------------- |
@@ -58,16 +61,28 @@ A cover that 404s needs no handling: the tile drops into the text fallback of a 
 no broken-image icon is ever shown. `(coverError)` is there to log the dead URL, and it fires once
 per URL — a new `cover` is tried again.
 
+Responsive covers: `coverSrcset` lists the widths the server delivers, `cover` stays the `src` and
+the fallback. Without `coverSizes` the browser assumes the widest cell of `z-game-grid`: the grid
+uses `repeat(auto-fill, minmax(128px, 1fr))` with a 16px gap, so a cell grows to at most
+2 × 128px + 16px = 272px before one more column fits, and below 640px two columns share the
+viewport. Set your own `coverSizes` when the grid sits in a narrower column. A failing `srcset`
+candidate ends in the same text fallback and `(coverError)` as a failing `cover`. Every cover
+carries `decoding="async"` and, by default, `loading="lazy"`; give the tiles of the first screen
+`coverLoading="eager"`.
+
 The host gets `type="button"`, so a tile inside a form does not submit it; a static `type` written
 by the caller stays.
 
 ### `a[zGameTile]`
 
-| Input   | Type     | Default | Description                                                                                                   |
-| ------- | -------- | ------- | ------------------------------------------------------------------------------------------------------------- |
-| `title` | `string` | `''`    | Name of the game. Stands below the cover and, without a `cover`, as the text fallback on the cover area.      |
-| `price` | `string` | `''`    | Starting price including the period, for example "ab 1,98 € / Monat", shown in the mono face below the title. |
-| `cover` | `string` | `''`    | `src` of the cover image, best a store header in 460:215. Empty shows the title as text on the cover area.    |
+| Input          | Type                | Default  | Description                                                                                                   |
+| -------------- | ------------------- | -------- | ------------------------------------------------------------------------------------------------------------- |
+| `title`        | `string`            | `''`     | Name of the game. Stands below the cover and, without a `cover`, as the text fallback on the cover area.      |
+| `price`        | `string`            | `''`     | Starting price including the period, for example "ab 1,98 € / Monat", shown in the mono face below the title. |
+| `cover`        | `string`            | `''`     | `src` of the cover image, best a store header in 460:215. Empty shows the title as text on the cover area.    |
+| `coverSrcset`  | `string`            | `''`     | `srcset` of the cover, passed through unchanged. `cover` stays `src` and fallback. Empty renders no `srcset`. |
+| `coverSizes`   | `string`            | `''`     | `sizes` of the cover, only with `coverSrcset`. Empty takes `"(max-width: 639px) 50vw, 272px"`.                |
+| `coverLoading` | `'lazy' \| 'eager'` | `'lazy'` | `loading` of the cover. `'eager'` for the tiles visible on first paint.                                       |
 
 | Output         | Type   | Description                                                                             |
 | -------------- | ------ | --------------------------------------------------------------------------------------- |
@@ -125,6 +140,20 @@ The same fallback when the cover is gone, with the dead URL logged:
   price="ab 4,98 € / Monat"
   cover="/covers/rust.jpg"
   (coverError)="melde('/covers/rust.jpg')"
+></button>
+```
+
+With widths from the server and the first row loaded at once:
+
+```html
+<button
+  zGameTile
+  title="Valheim"
+  price="ab 3,98 € / Monat"
+  cover="/covers/valheim?w=640"
+  coverSrcset="/covers/valheim?w=320 320w, /covers/valheim?w=640 640w"
+  coverSizes="(min-width: 900px) 220px, (min-width: 640px) 33vw, 50vw"
+  coverLoading="eager"
 ></button>
 ```
 
