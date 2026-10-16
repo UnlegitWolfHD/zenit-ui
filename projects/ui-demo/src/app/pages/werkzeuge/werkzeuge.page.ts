@@ -216,6 +216,7 @@ const STARTZEILEN: ZConsoleLine[] = [
           title="Querformat"
           price="ab 4,98&nbsp;€ / Monat"
           [cover]="querformat"
+          coverLoading="eager"
         ></button>
         <button zGameTile title="Ohne Bild" price="ab 2,70&nbsp;€ / Monat"></button>
         <button
@@ -223,6 +224,7 @@ const STARTZEILEN: ZConsoleLine[] = [
           title="Ladefehler"
           price="ab 9,43&nbsp;€ / Monat"
           cover="/covers/fehlt-quer.jpg"
+          coverLoading="eager"
         ></button>
       </z-game-grid>
 
@@ -249,6 +251,7 @@ const STARTZEILEN: ZConsoleLine[] = [
           title="Ark: Survival Ascended"
           price="ab 6,98&nbsp;€ / Monat"
           cover="/covers/fehlt.jpg"
+          coverLoading="eager"
           (coverError)="coverFehler.update((n) => n + 1)"
         ></button>
       </z-game-grid>
